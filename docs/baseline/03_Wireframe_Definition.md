@@ -2,9 +2,9 @@
 
 - **문서명:** `03_Wireframe_Definition.md`
 - **상태:** FINAL / GO / READ-ONLY
-- **문서 버전:** v1.2
-- **기준일:** 2026-09-03
-- **기준선 ID:** `HC-RSV-RCP-20260903-R2`
+- **문서 버전:** v1.3
+- **기준일:** 2026-09-04
+- **기준선 ID:** `HC-RSV-RCP-20260904-R3`
 - **대상 환경:** C# WinForms / .NET Framework 4.6.1 / DevExpress Components 20.2 / MSSQL
 - **기준문서:** `00_Project_Policy.md`, `01_Process_Definition.md`, `02_Function_Definition.xlsx`
 - **설계 원칙:** 정책·프로세스·기능을 UI로 표현하되 신규 업무기능이나 정책을 추가하지 않는다.
@@ -60,21 +60,23 @@ Transaction 업무
 | 예약 변경 | Modal | 예약일·시간대·AEX 변경 |
 | 접수 처리 | Modal | 예약·검사구성 최종확인 후 RSV→RCP |
 | 접수완료 추가검사 변경 | Modal | RCP 상태에서 AEX만 변경 |
-| 예약/접수 취소 | Confirmation | RSV 또는 RCP를 CNL로 변경 |
+| 예약/접수 취소 | Confirmation | RSV를 CNR로, RCP를 CNC로 변경 |
 
 ## 1.3 공통 업무조건 표시
 
-MainForm 하단 상태영역 또는 `RibbonStatusBar`에 공통 업무상태를 표시한다.
+MainForm 하단 상태영역 또는 `RibbonStatusBar`에 공통 업무상태와 조작자를 표시한다.
 
 ```text
 업무 상태 : 업무 가능
 업무 상태 : 업무 불가 — 휴무일
 업무 상태 : 업무 불가 — 운영시간 외 (09:00~18:00)
+조작자 : 접수1번창구
 ```
 
 - 공통 업무불가 상태에서는 업무 수행 Ribbon Action을 비활성화한다.
 - `컬럼설정`처럼 데이터 변경과 무관한 화면설정은 사용 가능하다.
 - 화면 상태는 안내값이며 저장 성공을 보장하지 않는다.
+- 조작자는 WinForms 설정 파일의 값을 읽기 전용으로 표시하며 입력 Control이 아니다. Write Stored Procedure 호출 시 `@OperatorName`으로 전달한다. 로그인·권한·사용자별 개인화는 구현하지 않는다.
 
 ## 1.4 DevExpress 20.2 구현 기준
 
@@ -306,7 +308,7 @@ E-mail
 제외:
 
 - PatientId
-- CelNumberS / TelNumberS
+- CelNumberS
 - CreationDate / LastEditDate
 - 과제 미사용 컬럼
 
@@ -318,39 +320,27 @@ E-mail
 - Double Click 업무 Action 없음
 - 재조회 시 SelectedRow 해제와 상세 Clear
 
-## 5.6 `INFO_PATIENTS` 29개 컬럼 UI·저장 계약
+## 5.6 `수검자` 17개 컬럼 UI·저장 계약
 
 | No | 컬럼 | UI 노출 / 편집 | 값 생성·저장 기준 |
 |---:|---|---|---|
 | 1 | PatientId | 화면 미표시 | DB 자동생성, 저장 성공 시 호출 화면 반환, 불변 |
 | 2 | ChartNo | 등록/수정 Editor | New 자동발급 또는 수동입력, Edit 수동수정, DB 최종 고유성 검증 |
 | 3 | Name | 등록/수정, 조회/Grid/상세 | 필수 |
-| 4 | PassportNumber | UI 미사용 | NULL |
-| 5 | SocialNumber | 등록/수정, 조회, 상세, 선택 컬럼 | 테스트 전체값 표시; `-` 제거 후 숫자 13자리 저장; DB 최종 고유성 검증 |
-| 6 | Birthday | ReadOnly | SocialNumber에서 `yyyyMMdd` 자동산출 |
-| 7 | Gender | ReadOnly | SocialNumber에서 M/F 자동산출; UI 남/여 |
-| 8 | InsuranceNumber | UI 미사용 | NULL |
-| 9 | EMail | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
-| 10 | CelNumberS | 화면 미표시 | CelNumber에서 `-` 제거하여 동시 갱신 |
-| 11 | TelNumberS | 화면 미표시 | TelNumber에서 `-` 제거하여 동시 갱신 |
-| 12 | TelNumber | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
-| 13 | CelNumber | 등록/수정, 조회/Grid/상세 | 선택, 미입력 NULL |
-| 14 | Zipcode | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
-| 15 | Address | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
-| 16 | AddressDetail | 등록/수정, 상세 | 선택, 미입력 NULL |
-| 17 | Memo | 등록/수정, 상세 | 선택, 미입력 NULL |
-| 18 | Active | UI 미사용 | 신규 기본값 1; 비활성화 UI 없음 |
-| 19 | IsStudent | UI 미사용 | 신규 기본값 0 |
-| 20 | IsVIP | UI 미사용 | 신규 기본값 0 |
-| 21 | IsReceiveCall | UI 미사용 | 신규 기본값 0 |
-| 22 | IsReceiveSMS | UI 미사용 | 신규 기본값 0 |
-| 23 | IsReceiveEmail | UI 미사용 | 신규 기본값 0 |
-| 24 | IsReceivePost | UI 미사용 | 신규 기본값 0 |
-| 25 | IsMarketingConsent | UI 미사용 | 신규 기본값 0 |
-| 26 | MConsentDate | UI 미사용 | NULL |
-| 27 | MCancelDate | UI 미사용 | NULL |
-| 28 | CreationDate | 화면 미표시 | INSERT 시 DB 서버시각 |
-| 29 | LastEditDate | 화면 미표시 | INSERT 시 생성시각, UPDATE 성공 시 DB 서버시각; 수정 동시성 기준 |
+| 4 | SocialNumber | 등록/수정, 조회, 상세, 선택 컬럼 | 테스트 전체값 표시; `-` 제거 후 숫자 13자리 저장; DB 최종 고유성 검증 |
+| 5 | Birthday | ReadOnly | SocialNumber에서 `yyyyMMdd` 자동산출 |
+| 6 | Gender | ReadOnly | SocialNumber에서 M/F 자동산출; UI 남/여 |
+| 7 | EMail | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
+| 8 | CelNumberS | 화면 미표시 | CelNumber에서 `-` 제거하여 동시 갱신 |
+| 9 | CelNumber | 등록/수정, 조회/Grid/상세 | 선택, 미입력 NULL |
+| 10 | TelNumber | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
+| 11 | Zipcode | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
+| 12 | Address | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
+| 13 | AddressDetail | 등록/수정, 상세 | 선택, 미입력 NULL |
+| 14 | Memo | 등록/수정, 상세 | 선택, 미입력 NULL |
+| 15 | HepatitisBExcluded | UI 미사용 | 신규 기본값 0; NEX-03 제외 판정 입력이며 Seed/Test Data로만 설정한다 |
+| 16 | CreationDate | 화면 미표시 | INSERT 시 DB 서버시각 |
+| 17 | LastEditDate | 화면 미표시 | INSERT 시 생성시각, UPDATE 성공 시 DB 서버시각; 수정 동시성 기준 |
 
 - UI 미사용 NOT NULL 컬럼은 DB Default 또는 저장 SP가 보장한다.
 - `PatientId`는 내부 연결키이며 화면에 표시하지 않는다.
@@ -452,7 +442,7 @@ Mode = New / Edit
 - 별도 수검자로 계속: 현재 Name+Birthday+SocialNumber 조합에만 유효
 - 세 값 중 하나가 바뀌면 확인상태 해제 후 다시 후보검증
 - 같은 확인값으로 저장 재시도 시 Dialog를 반복 표시하지 않음
-- DB 최종 고유성은 `INFO_PATIENTS.SocialNumber` 정확값 기준
+- DB 최종 고유성은 `수검자.SocialNumber` 정확값 기준
 
 ---
 
@@ -580,7 +570,7 @@ TGT=비대상 / NEX 없음 / AEX Disabled / 예약저장 Disabled
 - WalkIn: 예약일=DB 오늘, ReadOnly
 - 월~토 운영, 일요일/HOL 불가
 - 토요일 PM 불가
-- 정원은 RSV+RCP, CNL 제외
+- 정원은 RSV+RCP, CNR·CNC 제외
 - 20/20 시간대 선택 불가
 - 저장 직전 DB에서 정원과 중복 재검증
 
@@ -729,7 +719,7 @@ Context 전환
 
 ```text
 예약/접수일 [From] ~ [To]
-상태 [전체/예약/접수완료/취소]
+상태 [전체/예약/접수완료/예약취소/접수취소]
 차트번호 [          ]
 이름 [          ]
 ```
@@ -793,7 +783,8 @@ Context 전환
 | 미선택 | X | X | X |
 | RSV | O | O | 조건부 O |
 | RCP | X | X | X |
-| CNL | X | X | X |
+| CNR | X | X | X |
+| CNC | X | X | X |
 | 공통 업무불가 | X | X | X |
 
 `접수`는 P02 상태변경 버튼이 아니라 Reception Context/P03로 연결하는 Shortcut이다.
@@ -811,7 +802,8 @@ Context 전환
 | 미선택 | O | X | X | X | X |
 | RSV | O | O | 조건부 O | X | X |
 | RCP | O | X | X | O | O |
-| CNL | O | X | X | X | X |
+| CNR | O | X | X | X | X |
+| CNC | O | X | X | X | X |
 | 공통 업무불가 | X | X | X | X | X |
 
 현장 당일예약은 선택행과 무관한 독립 Action이다.
@@ -821,7 +813,7 @@ Context 전환
 ```text
 [현장 당일예약]
 → DLG-PAT-02 수검자 확정
-→ 당일 CNL 제외 업무 확인
+→ 당일 취소(CNR·CNC) 제외 업무 확인
 ├─ RSV 존재: 해당 WorkId 선택 후 접수조건 검증
 ├─ RCP 존재: 중복접수 안내
 └─ 당일 업무 없음
@@ -953,7 +945,7 @@ Context 전환
 ```
 
 - RSV만 가능
-- DB에서 상태·RowVersion 재확인 후 CNL
+- DB에서 상태·RowVersion 재확인 후 CNR
 
 ## 13.2 CNF-RCP-01
 
@@ -964,7 +956,7 @@ Context 전환
 ```
 
 - RCP만 가능
-- DB에서 상태·RowVersion 재확인 후 CNL
+- DB에서 상태·RowVersion 재확인 후 CNC
 
 ---
 
@@ -976,7 +968,8 @@ Context 전환
 |---|---|
 | RSV | 예약 |
 | RCP | 접수완료 |
-| CNL | 취소 |
+| CNR | 예약취소 |
+| CNC | 접수취소 |
 
 ## 14.2 NEX/AEX 편집
 
@@ -987,7 +980,7 @@ Context 전환
 | 예약변경 | ReadOnly | Editable |
 | 접수처리 | ReadOnly | ReadOnly |
 | 접수완료 추가검사변경 | ReadOnly | Editable |
-| 취소 상태 | ReadOnly | ReadOnly |
+| 취소 상태(CNR·CNC) | ReadOnly | ReadOnly |
 
 ## 14.3 Work 상태별 Action
 
@@ -995,7 +988,8 @@ Context 전환
 |---|:---:|:---:|:---:|:---:|:---:|
 | RSV | O | O | 조건부 O | X | X |
 | RCP | X | X | X | O | O |
-| CNL | X | X | X | X | X |
+| CNR | X | X | X | X | X |
+| CNC | X | X | X | X | X |
 
 ---
 
@@ -1035,11 +1029,11 @@ Context 전환
 | AEX NEX 중복 | Disabled+국가검진 포함 사유 | 선택 불가 |
 | 접수일 불일치 | Modal 사유+버튼 Disabled | 접수 불가 |
 | 접수마감 | Modal 사유+버튼 Disabled | 접수 불가 |
-| RCP/CNL 재접수 | Action/Modal 차단 | 접수 불가 |
+| RCP/CNR/CNC 재접수 | Action/Modal 차단 | 접수 불가 |
 | Work RowVersion 불일치 | Blocking+최신 Work Refresh | 변경 Rollback |
 | Single Instance 재호출+Dirty | 폐기 Confirm | 확인 Reset / 취소 유지 |
 | 저장 직전 정원·중복·상태 변경 | Blocking+Refresh | Transaction Rollback |
-| 취소 | Confirm 후 DB 재검증 | CNL 상태전이 |
+| 취소 | Confirm 후 DB 재검증 | CNR/CNC 상태전이 |
 
 ## 15.3 DB 실패 후 UI
 
@@ -1258,9 +1252,9 @@ Reception Context [현장 당일예약]
 ## 21.7 취소
 
 ```text
-RSV → 예약취소 Confirm → CNL
-RCP → 접수취소 Confirm → CNL
-CNL → 복원 없음 / 재진행 신규예약
+RSV → 예약취소 Confirm → CNR
+RCP → 접수취소 Confirm → CNC
+CNR · CNC → 복원 없음 / 재진행 신규예약
 ```
 
 ## 21.8 Single Instance 대상 교체
@@ -1287,7 +1281,7 @@ CNL → 복원 없음 / 재진행 신규예약
 | Birthday/Gender | 입력·변경 자동산출, 실패 시 저장차단 | PASS |
 | ChartNo New/Edit | New 자동/수동, Edit 수동수정 | PASS |
 | 중복 후보 | 재입력/별도등록/중단 분기 | PASS |
-| INFO_PATIENTS | 29/29 컬럼 입력·파생·기본값·내부관리 계약 | PASS |
+| 수검자 | 17/17 컬럼 입력·파생·기본값·내부관리 계약 | PASS |
 | 검색계약 | 최소조건, AND, 정확/접두검색, 정규화 확정 | PASS |
 | Single Instance | Dirty Confirm/Reset/Targeted Navigation | PASS |
 | WalkIn | 오늘 ReadOnly, 접수마감 전 저장 | PASS |
@@ -1310,7 +1304,7 @@ CNL → 복원 없음 / 재진행 신규예약
 | Single Instance 상태 오염 | 8.10, 9.1, 21.8 |
 | UI Enabled와 DB 성공 혼재 | 8.11, 15 |
 | Reception Matrix 현장 당일예약 누락 | 9.7~9.8, 14 |
-| 29개 컬럼 NOT NULL 값 출처 미정 | 5.6 |
+| 17개 컬럼 NOT NULL 값 출처 미정 | 5.6 |
 | WorkId Targeted Navigation 불명확 | 3, 9.1 |
 | 예약변경 자기 Work 오탐 가능성 | 10.3, 15.2 |
 | 과거 03 파일 중복 기준본 | 본 문서 파일명으로 단일화 |
@@ -1326,10 +1320,10 @@ CNL → 복원 없음 / 재진행 신규예약
 5. Workbench는 Reservation/Reception Context를 공유하고 WorkId Targeted Navigation을 지원한다.
 6. NEX는 항상 ReadOnly, AEX는 신규예약·예약변경·RCP AEX 변경에서만 Editable이다.
 7. 직접접수는 없고 현장 내원도 WalkIn 예약 후 접수한다.
-8. 상태는 예약/접수완료/취소이며 취소는 복원하지 않는다.
+8. 상태는 예약/접수완료/예약취소/접수취소이며 취소는 복원하지 않는다.
 9. 주민번호는 임의 테스트 전체값을 표시할 수 있으며 DB에는 숫자 13자리 정규화값을 저장한다.
 10. 모든 저장·상태전이는 Stored Procedure/Transaction 최종검증을 통과해야 한다.
 11. `03_Wireframe_Definition.md`만 유효 기준본으로 사용한다.
 12. 후속 Phase는 이 문서를 수정하지 않고 Table/SP/Transaction 계약을 구현한다.
 
-> **최종 판정: GO — 본 문서는 `HC-RSV-RCP-20260903-R2` 기준선의 최종 UI 구현 기준이며 이후 READ-ONLY로 사용한다.**
+> **최종 판정: GO — 본 문서는 `HC-RSV-RCP-20260904-R3` 기준선의 최종 UI 구현 기준이며 이후 READ-ONLY로 사용한다.**
