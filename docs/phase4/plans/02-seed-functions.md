@@ -18,23 +18,23 @@
 - Create: `deploy/02_Seed.sql`
 
 **Interfaces:**
-- Produces: `MST_EXAM_ITEMS` 19행, `MST_HOLIDAYS` 2행
+- Produces: `검사코드` 19행, `휴무일` 2행
 
 **금지사항:** `MERGE`·존재검사 가드를 쓰지 않는다(clean-create라 테이블이 비어 있다). 검사 코드·이름·역할을 바꾸지 않는다. 휴무일을 상대날짜로 계산하지 않는다.
 
 - [ ] **Step 1: `deploy/02_Seed.sql` 작성 (UTF-8 with BOM)**
 
-**선행 `DELETE` 를 넣지 않는다.** clean-create(`01_Schema.sql` 이 `DROP`→`CREATE`)이므로 테이블이 항상 비어 있어 효과가 없고, Fixture 배치 후 이 파일만 단독 재실행하면 `INFO_CHECKUP_WORK_EXAMS`·`INFO_PATIENT_EXAM_EXCLUSIONS` 의 FK 때문에 **`Msg 547`** 로 실패한다. 멱등성은 **"clean-create 직후 한정"** 이다.
+**선행 `DELETE` 를 넣지 않는다.** clean-create(`01_Schema.sql` 이 `DROP`→`CREATE`)이므로 테이블이 항상 비어 있어 효과가 없고, Fixture 배치 후 이 파일만 단독 재실행하면 `검사항목` 의 FK 때문에 **`Msg 547`** 로 실패한다. 멱등성은 **"clean-create 직후 한정"** 이다.
 
 ```sql
 SET NOCOUNT ON;
 PRINT '--- 02_Seed 시작 ---';
 GO
 -- clean-create 전제. 비어 있지 않으면 배포 순서가 잘못된 것이므로 즉시 중단한다.
-IF EXISTS (SELECT 1 FROM [dbo].[MST_EXAM_ITEMS]) OR EXISTS (SELECT 1 FROM [dbo].[MST_HOLIDAYS])
+IF EXISTS (SELECT 1 FROM [dbo].[검사코드]) OR EXISTS (SELECT 1 FROM [dbo].[휴무일])
     THROW 51002, N'02_Seed: Master 테이블이 비어 있지 않습니다. 01_Schema 를 먼저 실행하십시오.', 1;
 GO
-INSERT INTO [dbo].[MST_EXAM_ITEMS]
+INSERT INTO [dbo].[검사코드]
     ([ExamItemCode], [ExamItemName], [NexRuleCode], [AdditionalExamCode], [AdditionalGenderCode], [AdditionalActive])
 VALUES
     ('EX001', N'문진/진찰',     'NEX-01', NULL,    NULL, 0),
@@ -57,13 +57,13 @@ VALUES
     ('EX018', N'HbA1c',         NULL,     'OPT06', 'A',  1),
     ('EX019', N'HPV 검사',      NULL,     'OPT07', 'F',  1);
 GO
-INSERT INTO [dbo].[MST_HOLIDAYS] ([HolidayDate], [HolidayName], [Active], [Memo])
+INSERT INTO [dbo].[휴무일] ([HolidayDate], [HolidayName], [Active], [Memo])
 VALUES
     ('2026-12-25', N'성탄절',     1, N'평일(금) 휴무일 — HOL-05 테스트용'),
     ('2026-12-26', N'센터 휴진일', 1, N'토요일 휴무일 — HOL-05 테스트용');
 GO
-PRINT 'PASS SEED-DEPLOY Exam ' + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[MST_EXAM_ITEMS]))
-    + ' / Holiday ' + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[MST_HOLIDAYS]));
+PRINT 'PASS SEED-DEPLOY Exam ' + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[검사코드]))
+    + ' / Holiday ' + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[휴무일]));
 GO
 ```
 
@@ -91,7 +91,7 @@ echo "재실행 exit=$RC   (1 이어야 한다)"
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i deploy/01_Schema.sql
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i deploy/02_Seed.sql
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W \
-  -Q "SELECT 'Exam='+CONVERT(varchar(5),COUNT(*)) FROM MST_EXAM_ITEMS;"
+  -Q "SELECT 'Exam='+CONVERT(varchar(5),COUNT(*)) FROM 검사코드;"
 ```
 
 Expected: (a) `exit=1` + `Msg 51002`, (b) exit 0 + `Exam=19`.
@@ -164,9 +164,9 @@ INSERT INTO @ExpExam VALUES
 
 IF NOT EXISTS (SELECT Code,Nm,Nex,Aex,G,Act FROM @ExpExam
                EXCEPT SELECT [ExamItemCode],[ExamItemName],[NexRuleCode],[AdditionalExamCode],
-                             [AdditionalGenderCode],[AdditionalActive] FROM [dbo].[MST_EXAM_ITEMS])
+                             [AdditionalGenderCode],[AdditionalActive] FROM [dbo].[검사코드])
    AND NOT EXISTS (SELECT [ExamItemCode],[ExamItemName],[NexRuleCode],[AdditionalExamCode],
-                          [AdditionalGenderCode],[AdditionalActive] FROM [dbo].[MST_EXAM_ITEMS]
+                          [AdditionalGenderCode],[AdditionalActive] FROM [dbo].[검사코드]
                    EXCEPT SELECT Code,Nm,Nex,Aex,G,Act FROM @ExpExam)
     PRINT 'PASS SED-001 Exam Master 19행 전건 값 일치';
 ELSE
@@ -174,54 +174,54 @@ BEGIN
     PRINT 'FAIL SED-001 Exam Master 불일치';
     SELECT '기대에만' AS Side, * FROM (SELECT Code,Nm,Nex,Aex,G,Act FROM @ExpExam
         EXCEPT SELECT [ExamItemCode],[ExamItemName],[NexRuleCode],[AdditionalExamCode],
-                      [AdditionalGenderCode],[AdditionalActive] FROM [dbo].[MST_EXAM_ITEMS]) a;
+                      [AdditionalGenderCode],[AdditionalActive] FROM [dbo].[검사코드]) a;
     SET @Fail += 1;
 END
 
-IF ((SELECT COUNT(*) FROM [dbo].[MST_EXAM_ITEMS] WHERE [NexRuleCode] IS NOT NULL) = 13)
+IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [NexRuleCode] IS NOT NULL) = 13)
     PRINT 'PASS SED-002 NEX 역할 13행';
 ELSE BEGIN PRINT 'FAIL SED-002 NEX 역할 행수 불일치'; SET @Fail += 1; END
 
-IF ((SELECT COUNT(*) FROM [dbo].[MST_EXAM_ITEMS] WHERE [AdditionalExamCode] IS NOT NULL) = 7)
+IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [AdditionalExamCode] IS NOT NULL) = 7)
     PRINT 'PASS SED-003 AEX 역할 7행';
 ELSE BEGIN PRINT 'FAIL SED-003 AEX 역할 행수 불일치'; SET @Fail += 1; END
 
-IF EXISTS (SELECT 1 FROM [dbo].[MST_EXAM_ITEMS]
+IF EXISTS (SELECT 1 FROM [dbo].[검사코드]
             WHERE [ExamItemCode] = 'EX012' AND [NexRuleCode] = 'NEX-05'
               AND [AdditionalExamCode] = 'OPT04' AND [AdditionalGenderCode] = 'A' AND [AdditionalActive] = 1)
     PRINT 'PASS SED-004 EX012 가 NEX-05 와 OPT04 역할을 동시에 가짐';
 ELSE BEGIN PRINT 'FAIL SED-004 EX012 이중역할 불일치'; SET @Fail += 1; END
 
-IF ((SELECT COUNT(DISTINCT [AdditionalExamCode]) FROM [dbo].[MST_EXAM_ITEMS] WHERE [AdditionalExamCode] IS NOT NULL) = 7
-    AND NOT EXISTS (SELECT [AdditionalExamCode] FROM [dbo].[MST_EXAM_ITEMS] WHERE [AdditionalExamCode] IS NOT NULL
+IF ((SELECT COUNT(DISTINCT [AdditionalExamCode]) FROM [dbo].[검사코드] WHERE [AdditionalExamCode] IS NOT NULL) = 7
+    AND NOT EXISTS (SELECT [AdditionalExamCode] FROM [dbo].[검사코드] WHERE [AdditionalExamCode] IS NOT NULL
                     EXCEPT SELECT v.c FROM (VALUES ('OPT01'),('OPT02'),('OPT03'),('OPT04'),('OPT05'),('OPT06'),('OPT07')) v(c)))
     PRINT 'PASS SED-005 AEX 코드가 OPT01~OPT07 정확히 7개';
 ELSE BEGIN PRINT 'FAIL SED-005 AEX 코드 집합 불일치'; SET @Fail += 1; END
 
-IF ((SELECT COUNT(*) FROM [dbo].[MST_EXAM_ITEMS] WHERE [NexRuleCode] = 'NEX-01') = 8)
+IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [NexRuleCode] = 'NEX-01') = 8)
     PRINT 'PASS SED-006 NEX-01 기본검사 8행';
 ELSE BEGIN PRINT 'FAIL SED-006 NEX-01 행수 불일치'; SET @Fail += 1; END
 
-IF ((SELECT COUNT(*) FROM [dbo].[MST_EXAM_ITEMS] WHERE [NexRuleCode] IN ('NEX-02','NEX-03','NEX-04','NEX-05','NEX-06')) = 5)
+IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [NexRuleCode] IN ('NEX-02','NEX-03','NEX-04','NEX-05','NEX-06')) = 5)
     PRINT 'PASS SED-007 조건부 NEX 5행';
 ELSE BEGIN PRINT 'FAIL SED-007 조건부 NEX 행수 불일치'; SET @Fail += 1; END
 
-IF ((SELECT COUNT(*) FROM [dbo].[MST_HOLIDAYS] WHERE [Active] = 1) = 2)
+IF ((SELECT COUNT(*) FROM [dbo].[휴무일] WHERE [Active] = 1) = 2)
     PRINT 'PASS SED-008 활성 휴무일 2행';
 ELSE BEGIN PRINT 'FAIL SED-008 휴무일 행수 불일치'; SET @Fail += 1; END
 
-IF EXISTS (SELECT 1 FROM [dbo].[MST_HOLIDAYS] WHERE [HolidayDate] = '2026-12-25' AND DATEDIFF(DAY,0,[HolidayDate])%7 = 4)
+IF EXISTS (SELECT 1 FROM [dbo].[휴무일] WHERE [HolidayDate] = '2026-12-25' AND DATEDIFF(DAY,0,[HolidayDate])%7 = 4)
     PRINT 'PASS SED-009 평일(금) 휴무일 존재';
 ELSE BEGIN PRINT 'FAIL SED-009 평일 휴무일 없음 또는 요일 불일치'; SET @Fail += 1; END
 
-IF EXISTS (SELECT 1 FROM [dbo].[MST_HOLIDAYS] WHERE [HolidayDate] = '2026-12-26' AND DATEDIFF(DAY,0,[HolidayDate])%7 = 5)
+IF EXISTS (SELECT 1 FROM [dbo].[휴무일] WHERE [HolidayDate] = '2026-12-26' AND DATEDIFF(DAY,0,[HolidayDate])%7 = 5)
     PRINT 'PASS SED-010 토요일 휴무일 존재';
 ELSE BEGIN PRINT 'FAIL SED-010 토요일 휴무일 없음 또는 요일 불일치'; SET @Fail += 1; END
 
 -- SED-011 AEX 7종이 전부 AdditionalActive=1 인가
 --   CORRUPT-3 이 tests/03 에서 일시적으로 0 으로 바꾸고 ROLLBACK 하므로,
 --   이 검사는 그 오염이 남지 않았음을 보증한다.
-IF ((SELECT COUNT(*) FROM [dbo].[MST_EXAM_ITEMS]
+IF ((SELECT COUNT(*) FROM [dbo].[검사코드]
       WHERE [AdditionalExamCode] IS NOT NULL AND [AdditionalActive] = 1) = 7)
     PRINT 'PASS SED-011 AEX 7종 전부 AdditionalActive=1';
 ELSE BEGIN PRINT 'FAIL SED-011 AEX Active 오염'; SET @Fail += 1; END
@@ -266,7 +266,7 @@ git commit -m "test(phase4): Master Seed 검증 10건 추가"
 - Create: `tests/00_Test_Harness.sql`
 
 **Interfaces:**
-- Produces: 테스트 수검자 (`ChartNo` `T001`~`T019`, 정원용 `F001`~`F020`), 완료이력, 제외정보, 기존 예약 19건 + `F020` 의 `CNL` 1건, 손상 데이터 **2종**(`CORRUPT-1`·`CORRUPT-2`)
+- Produces: 테스트 수검자 (`ChartNo` `T001`~`T019`, 정원용 `F001`~`F020`), 완료이력, B형간염 제외여부, 기존 예약 19건 + `F020` 의 `CNR` 1건, 손상 데이터 **2종**(`CORRUPT-1`·`CORRUPT-2`)
 
 **금지사항:** 실제 주민등록번호를 사용하지 않는다. `PatientId`·`WorkId` 를 하드코딩하지 않는다. Fixture를 Write SP로 만들지 않는다(업무시간 밖에 실패한다).
 
@@ -302,8 +302,8 @@ CONVERT(CHAR(1),
 | `T004` | `021001300004` | 2002-10-01 | M | 24 | NEX-02 남 해당 |
 | `T005` | `981001100005` | 1998-10-01 | M | 28 | NEX-02 남 해당 |
 | `T006` | `871001200006` | 1987-10-01 | F | 39 | NEX-02 여 미해당 |
-| `T007` | `861001200007` | 1986-10-01 | F | 40 | NEX-02 여 + NEX-03 (제외행 없음) |
-| `T008` | `861001200008` | 1986-10-01 | F | 40 | NEX-03 제외행 있음 |
+| `T007` | `861001200007` | 1986-10-01 | F | 40 | NEX-02 여 + NEX-03 (`HepatitisBExcluded=0`) |
+| `T008` | `861001200008` | 1986-10-01 | F | 40 | NEX-03 `HepatitisBExcluded=1` |
 | `T009` | `711001100009` | 1971-10-01 | M | 55 | NEX-04 미해당 |
 | `T010` | `701001200010` | 1970-10-01 | F | 56 | **NEX-02+04+06 → 11행** |
 | `T011` | `721001200011` | 1972-10-01 | F | 54 | NEX-05 해당 |
@@ -316,13 +316,13 @@ CONVERT(CHAR(1),
 SET NOCOUNT ON;
 PRINT '--- 00_Test_Harness 시작 ---';
 GO
-DELETE FROM [dbo].[INFO_CHECKUP_WORK_EXAMS];
-DELETE FROM [dbo].[INFO_CHECKUP_WORKS];
-DELETE FROM [dbo].[INFO_PATIENT_EXAM_EXCLUSIONS];
-DELETE FROM [dbo].[HIS_GENERAL_CHECKUP_COMPLETIONS];
-DELETE FROM [dbo].[INFO_PATIENTS];
+DELETE FROM [dbo].[검사항목];
+DELETE FROM [dbo].[예약접수];
+DELETE FROM [dbo].[변경이력];
+DELETE FROM [dbo].[완료이력];
+DELETE FROM [dbo].[수검자];
 GO
-INSERT INTO [dbo].[INFO_PATIENTS]
+INSERT INTO [dbo].[수검자]
     ([ChartNo], [Name], [SocialNumber], [Birthday], [Gender], [CelNumber], [CelNumberS])
 SELECT
       p.ChartNo
@@ -386,7 +386,7 @@ GO
 Slot 날짜는 **리터럴 하나로 통일**한다. 변수를 선언해 놓고 리터럴을 쓰면 날짜를 옮길 때 조용히 어긋난다. `2026-11-16` 은 월요일임을 실측 확인했다.
 
 ```sql
-INSERT INTO [dbo].[INFO_PATIENTS] ([ChartNo], [Name], [SocialNumber], [Birthday], [Gender])
+INSERT INTO [dbo].[수검자] ([ChartNo], [Name], [SocialNumber], [Birthday], [Gender])
 SELECT
       'F' + RIGHT('000' + CONVERT(VARCHAR(3), n.n), 3)
     , N'정원채움' + CONVERT(NVARCHAR(3), n.n)
@@ -403,51 +403,51 @@ SELECT
     , 'M'
 FROM (VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),
              (11),(12),(13),(14),(15),(16),(17),(18),(19),
-             (20)) n(n)   -- [X] F020 추가. RWR-012(305 SlotFull) 가 CNL→RSV 로 뒤집어 20/20 을 만든다.
+             (20)) n(n)   -- [X] F020 추가. RWR-012(305 SlotFull) 가 CNR→RSV 로 뒤집어 20/20 을 만든다.
 CROSS APPLY (SELECT Prefix12 = '8001011' + RIGHT('00000' + CONVERT(VARCHAR(5), n.n), 5)) x;
 GO
 -- [X] LIKE 'F0%' 만 쓰면 F020 까지 RSV 가 되어 슬롯이 20/20 이 된다.
---     CON-002(19/20 경합 → 최종 20) 의 사전조건이 깨지므로 F020 을 제외하고, 별도로 CNL 을 넣는다.
-INSERT INTO [dbo].[INFO_CHECKUP_WORKS] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+--     CON-002(19/20 경합 → 최종 20) 의 사전조건이 깨지므로 F020 을 제외하고, 별도로 CNR 을 넣는다.
+INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
 SELECT [PatientId], '2026-11-16', 'AM', 'RSV'
-FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] LIKE 'F0%' AND [ChartNo] <> 'F020';
+FROM [dbo].[수검자] WHERE [ChartNo] LIKE 'F0%' AND [ChartNo] <> 'F020';
 
-INSERT INTO [dbo].[INFO_CHECKUP_WORKS] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
-SELECT [PatientId], '2026-11-16', 'AM', 'CNL'
-FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'F020';
+INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+SELECT [PatientId], '2026-11-16', 'AM', 'CNR'
+FROM [dbo].[수검자] WHERE [ChartNo] = 'F020';
 GO
 -- T020 의 RSV Work. 2026-11-17 기준 만 53세라 EX012 가 없고 OPT04 를 선택할 수 있다.
 -- RWR-031 이 이 Work 의 예약일을 2026-11-20 으로 옮기면 만 54세가 되어 EX012 가 생기고 OPT04 가 412 다.
 -- 이 Work 는 2026-11-17 슬롯이므로 2026-11-16 정원(CON-002)과 무관하다.
-INSERT INTO [dbo].[INFO_CHECKUP_WORKS] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
 SELECT [PatientId], '2026-11-17', 'AM', 'RSV'
-FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T020';
+FROM [dbo].[수검자] WHERE [ChartNo] = 'T020';
 GO
-INSERT INTO [dbo].[INFO_CHECKUP_WORK_EXAMS] ([WorkId], [ExamItemCode], [ExamSourceCode])
+INSERT INTO [dbo].[검사항목] ([WorkId], [ExamItemCode], [ExamSourceCode])
 SELECT w.[WorkId], e.[ExamItemCode], 'NEX'
-FROM [dbo].[INFO_CHECKUP_WORKS] w
-JOIN [dbo].[INFO_PATIENTS] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] = 'T020'
-CROSS JOIN [dbo].[MST_EXAM_ITEMS] e
+FROM [dbo].[예약접수] w
+JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] = 'T020'
+CROSS JOIN [dbo].[검사코드] e
 WHERE e.[NexRuleCode] = 'NEX-01';
-INSERT INTO [dbo].[INFO_CHECKUP_WORK_EXAMS] ([WorkId], [ExamItemCode], [ExamSourceCode])
+INSERT INTO [dbo].[검사항목] ([WorkId], [ExamItemCode], [ExamSourceCode])
 SELECT w.[WorkId], 'EX012', 'AEX'   -- OPT04 를 선택한 상태 (만 53세라 아직 중복이 아니다)
-FROM [dbo].[INFO_CHECKUP_WORKS] w
-JOIN [dbo].[INFO_PATIENTS] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] = 'T020';
+FROM [dbo].[예약접수] w
+JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] = 'T020';
 GO
-INSERT INTO [dbo].[INFO_CHECKUP_WORK_EXAMS] ([WorkId], [ExamItemCode], [ExamSourceCode])
+INSERT INTO [dbo].[검사항목] ([WorkId], [ExamItemCode], [ExamSourceCode])
 SELECT w.[WorkId], e.[ExamItemCode], 'NEX'
-FROM [dbo].[INFO_CHECKUP_WORKS] w
-JOIN [dbo].[INFO_PATIENTS] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] LIKE 'F0%'
-CROSS JOIN [dbo].[MST_EXAM_ITEMS] e
+FROM [dbo].[예약접수] w
+JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] LIKE 'F0%'
+CROSS JOIN [dbo].[검사코드] e
 WHERE e.[NexRuleCode] = 'NEX-01';
 GO
 ```
 
-`F001`~`F020` 20건 × 8 NEX = **160행**. 그중 `F020` 은 `CNL` 이므로 정원 계수에서 빠져 이 Slot 은 **19/20** 상태가 되고, 이것이 `CON-002` 경합 시나리오의 사전조건이다.
+`F001`~`F020` 20건 × 8 NEX = **160행**. 그중 `F020` 은 `CNR` 이므로 정원 계수에서 빠져 이 Slot 은 **19/20** 상태가 되고, 이것이 `CON-002` 경합 시나리오의 사전조건이다.
 
-`RWR-012` 는 이 파일이 아니라 `tests/06` 머리에서 `F020` 을 `RSV` 로 되돌려 20/20 을 만들고, 단언 후 다시 `CNL` 로 복원한다 — Fixture 파일을 오염시키지 않는다.
+`RWR-012` 는 이 파일이 아니라 `tests/06` 머리에서 `F020` 을 `RSV` 로 되돌려 20/20 을 만들고, 단언 후 다시 `CNR` 로 복원한다 — Fixture 파일을 오염시키지 않는다.
 
-- [ ] **Step 4: 완료이력 · 제외정보**
+- [ ] **Step 4: 완료이력 · B형간염 제외여부**
 
 `[X]` **`T003` 에 완료이력을 주면 안 된다.** `T003`(만 23세 남)의 프로필 목적은 "NEX-02 남 미해당 → NEX **8행**"인데, 1년차 완료이력을 붙이면 TGT `401 NotDue` 비대상이 되어 **NEX 0행**이 나온다. 두 용도가 양립하지 않는다. `401` 전담 수검자 **`T016`** 을 Step 2 표에 추가한다.
 
@@ -456,18 +456,17 @@ GO
 | `T016` | `901001100016` | 1990-10-01 | M | 36 | **TGT `401 NotDue` 전담** (1년차 완료이력) |
 
 ```sql
-INSERT INTO [dbo].[HIS_GENERAL_CHECKUP_COMPLETIONS] ([PatientId], [CompletionDate])
-SELECT p.[PatientId], '2025-05-01' FROM [dbo].[INFO_PATIENTS] p WHERE p.[ChartNo] = 'T016';  -- 1년차 → 401 NotDue
-INSERT INTO [dbo].[HIS_GENERAL_CHECKUP_COMPLETIONS] ([PatientId], [CompletionDate])
-SELECT p.[PatientId], '2024-05-01' FROM [dbo].[INFO_PATIENTS] p WHERE p.[ChartNo] = 'T004';  -- 2년차 → 대상
-INSERT INTO [dbo].[HIS_GENERAL_CHECKUP_COMPLETIONS] ([PatientId], [CompletionDate])
-SELECT p.[PatientId], '2026-10-01' FROM [dbo].[INFO_PATIENTS] p WHERE p.[ChartNo] = 'T005';  -- 예약일 당일 → 제외
-INSERT INTO [dbo].[HIS_GENERAL_CHECKUP_COMPLETIONS] ([PatientId], [CompletionDate])
-SELECT p.[PatientId], '2026-11-01' FROM [dbo].[INFO_PATIENTS] p WHERE p.[ChartNo] = 'T006';  -- 예약일 이후 → 제외
+INSERT INTO [dbo].[완료이력] ([PatientId], [CompletionDate])
+SELECT p.[PatientId], '2025-05-01' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T016';  -- 1년차 → 401 NotDue
+INSERT INTO [dbo].[완료이력] ([PatientId], [CompletionDate])
+SELECT p.[PatientId], '2024-05-01' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T004';  -- 2년차 → 대상
+INSERT INTO [dbo].[완료이력] ([PatientId], [CompletionDate])
+SELECT p.[PatientId], '2026-10-01' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T005';  -- 예약일 당일 → 제외
+INSERT INTO [dbo].[완료이력] ([PatientId], [CompletionDate])
+SELECT p.[PatientId], '2026-11-01' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T006';  -- 예약일 이후 → 제외
 GO
-INSERT INTO [dbo].[INFO_PATIENT_EXAM_EXCLUSIONS] ([PatientId], [ExamItemCode], [Memo])
-SELECT p.[PatientId], 'EX010', N'B형간염 제외 — NEX-03 테스트'
-FROM [dbo].[INFO_PATIENTS] p WHERE p.[ChartNo] = 'T008';
+UPDATE [dbo].[수검자] SET [HepatitisBExcluded] = 1
+ WHERE [ChartNo] = 'T008';   -- B형간염 제외 — NEX-03 테스트
 GO
 ```
 
@@ -479,14 +478,14 @@ GO
 PRINT '--- CORRUPT 구획 (701 검증 전용) ---';
 GO
 -- CORRUPT-1: 동일 Patient 에 유효업무 2건  → 701
-INSERT INTO [dbo].[INFO_CHECKUP_WORKS] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
-SELECT p.[PatientId], '2026-11-17', 'AM', 'RSV' FROM [dbo].[INFO_PATIENTS] p WHERE p.[ChartNo] = 'T012';
-INSERT INTO [dbo].[INFO_CHECKUP_WORKS] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
-SELECT p.[PatientId], '2026-11-18', 'PM', 'RSV' FROM [dbo].[INFO_PATIENTS] p WHERE p.[ChartNo] = 'T012';
+INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+SELECT p.[PatientId], '2026-11-17', 'AM', 'RSV' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T012';
+INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+SELECT p.[PatientId], '2026-11-18', 'PM', 'RSV' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T012';
 GO
 -- CORRUPT-2: NEX 0행인 Work  → 701
-INSERT INTO [dbo].[INFO_CHECKUP_WORKS] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
-SELECT p.[PatientId], '2026-11-19', 'AM', 'RSV' FROM [dbo].[INFO_PATIENTS] p WHERE p.[ChartNo] = 'T013';
+INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+SELECT p.[PatientId], '2026-11-19', 'AM', 'RSV' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T013';
 GO
 ```
 
@@ -515,38 +514,38 @@ GO
 
 ```sql
 -- CORRUPT-4  tests/07 의 CWR-011 직전. ExamSourceCode 를 Master 역할과 어긋나게 만든다.
-DECLARE @W4 BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[INFO_CHECKUP_WORKS] w
-                       JOIN [dbo].[INFO_PATIENTS] p ON p.[PatientId] = w.[PatientId]
+DECLARE @W4 BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
+                       JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
                       WHERE p.[ChartNo] = 'T009' AND w.[StatusCode] = 'RSV');
-UPDATE [dbo].[INFO_CHECKUP_WORK_EXAMS] SET [ExamSourceCode] = 'AEX'
+UPDATE [dbo].[검사항목] SET [ExamSourceCode] = 'AEX'
  WHERE [WorkId] = @W4 AND [ExamItemCode] = 'EX001';   -- EX001 은 Master 상 NEX 전용이다
 -- … CWR-011 실행 …
-UPDATE [dbo].[INFO_CHECKUP_WORK_EXAMS] SET [ExamSourceCode] = 'NEX'
+UPDATE [dbo].[검사항목] SET [ExamSourceCode] = 'NEX'
  WHERE [WorkId] = @W4 AND [ExamItemCode] = 'EX001';
 
 -- CORRUPT-5  tests/06 의 RWR-034 직전. NEX 를 12행 이상으로 만든다(상한 11 초과).
 -- [X] 초안은 T011 의 RSV Work 를 찾았으나 **T011 에는 Work 를 만드는 코드가 없다** — @W5 가 NULL 이 되어
 --     RWR-034 가 무의미하게 통과한다. 정원용 F002(만 46세 남, NEX 8행)의 Work 를 쓴다.
 --     F002 는 2026-11-16 AM 슬롯이지만 RWR-034 는 변경이 **거부**되는지 보므로 슬롯이 움직이지 않는다.
-DECLARE @W5 BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[INFO_CHECKUP_WORKS] w
-                       JOIN [dbo].[INFO_PATIENTS] p ON p.[PatientId] = w.[PatientId]
+DECLARE @W5 BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
+                       JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
                       WHERE p.[ChartNo] = 'F002' AND w.[StatusCode] = 'RSV');
-INSERT INTO [dbo].[INFO_CHECKUP_WORK_EXAMS] ([WorkId], [ExamItemCode], [ExamSourceCode])
+INSERT INTO [dbo].[검사항목] ([WorkId], [ExamItemCode], [ExamSourceCode])
 SELECT @W5, e.[ExamItemCode], 'NEX'
-FROM [dbo].[MST_EXAM_ITEMS] e
+FROM [dbo].[검사코드] e
 WHERE e.[NexRuleCode] IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM [dbo].[INFO_CHECKUP_WORK_EXAMS] x
+  AND NOT EXISTS (SELECT 1 FROM [dbo].[검사항목] x
                    WHERE x.[WorkId] = @W5 AND x.[ExamItemCode] = e.[ExamItemCode]);
 -- 이 Work 의 NEX 가 12행 이상이 되는지 먼저 확인한다 — 아니면 시험이 성립하지 않는다.
-IF ((SELECT COUNT(*) FROM [dbo].[INFO_CHECKUP_WORK_EXAMS]
+IF ((SELECT COUNT(*) FROM [dbo].[검사항목]
       WHERE [WorkId] = @W5 AND [ExamSourceCode] = 'NEX') <= 11)
 BEGIN PRINT 'FAIL CORRUPT-5 NEX 가 12행에 도달하지 못했다'; SET @Fail += 1; END
 -- … RWR-034 실행 …
-DELETE x FROM [dbo].[INFO_CHECKUP_WORK_EXAMS] x
+DELETE x FROM [dbo].[검사항목] x
  WHERE x.[WorkId] = @W5 AND x.[ExamSourceCode] = 'NEX'
    AND x.[ExamItemCode] NOT IN (SELECT [ExamCode] FROM [dbo].[UFN_HC_국가검사구성](
-        (SELECT [PatientId] FROM [dbo].[INFO_CHECKUP_WORKS] WHERE [WorkId] = @W5),
-        (SELECT [ReservationDate] FROM [dbo].[INFO_CHECKUP_WORKS] WHERE [WorkId] = @W5)));
+        (SELECT [PatientId] FROM [dbo].[예약접수] WHERE [WorkId] = @W5),
+        (SELECT [ReservationDate] FROM [dbo].[예약접수] WHERE [WorkId] = @W5)));
 ```
 
 - [ ] **Step 6: 주민번호 무효 검수 (스펙 §16.2)**
@@ -558,19 +557,19 @@ DECLARE @Fail INT = 0;
 DECLARE @Bad INT;
 
 -- SSN-001 13자리 숫자
-SELECT @Bad = COUNT(*) FROM [dbo].[INFO_PATIENTS]
+SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
  WHERE LEN([SocialNumber]) <> 13 OR [SocialNumber] LIKE '%[^0-9]%';
 IF @Bad = 0 PRINT 'PASS SSN-001 전 행 13자리 숫자';
 ELSE BEGIN PRINT 'FAIL SSN-001 형식 위반 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
 -- SSN-002 7번째 자리 = 1/2/3/4
-SELECT @Bad = COUNT(*) FROM [dbo].[INFO_PATIENTS]
+SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
  WHERE SUBSTRING([SocialNumber], 7, 1) NOT IN ('1','2','3','4');
 IF @Bad = 0 PRINT 'PASS SSN-002 세기·성별 코드 유효';
 ELSE BEGIN PRINT 'FAIL SSN-002 세기·성별 코드 위반 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
 -- SSN-003 앞 6자리가 실제 날짜
-SELECT @Bad = COUNT(*) FROM [dbo].[INFO_PATIENTS]
+SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
  WHERE TRY_CONVERT(DATE,
         CASE WHEN SUBSTRING([SocialNumber],7,1) IN ('1','2') THEN '19' ELSE '20' END
         + SUBSTRING([SocialNumber], 1, 6), 112) IS NULL;
@@ -578,21 +577,21 @@ IF @Bad = 0 PRINT 'PASS SSN-003 앞 6자리가 실제 날짜';
 ELSE BEGIN PRINT 'FAIL SSN-003 날짜 아님 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
 -- SSN-004 Birthday 파생값 일치
-SELECT @Bad = COUNT(*) FROM [dbo].[INFO_PATIENTS]
+SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
  WHERE [Birthday] <> CASE WHEN SUBSTRING([SocialNumber],7,1) IN ('1','2') THEN '19' ELSE '20' END
                      + SUBSTRING([SocialNumber], 1, 6);
 IF @Bad = 0 PRINT 'PASS SSN-004 Birthday 파생값 일치';
 ELSE BEGIN PRINT 'FAIL SSN-004 Birthday 불일치 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
 -- SSN-005 Gender 파생값 일치
-SELECT @Bad = COUNT(*) FROM [dbo].[INFO_PATIENTS]
+SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
  WHERE [Gender] <> CASE WHEN SUBSTRING([SocialNumber],7,1) IN ('1','3') THEN 'M' ELSE 'F' END;
 IF @Bad = 0 PRINT 'PASS SSN-005 Gender 파생값 일치';
 ELSE BEGIN PRINT 'FAIL SSN-005 Gender 불일치 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
 -- SSN-006 *** 체크디지트가 전 행 무효 — 실제 주민등록번호 미사용의 기계적 증거 ***
 SELECT @Bad = COUNT(*)
-FROM [dbo].[INFO_PATIENTS] s
+FROM [dbo].[수검자] s
 CROSS APPLY (SELECT Valid =
       ( 11 - (
         ( CAST(SUBSTRING(s.[SocialNumber], 1,1) AS INT)*2 + CAST(SUBSTRING(s.[SocialNumber], 2,1) AS INT)*3
@@ -629,7 +628,7 @@ Expected: exit 0, `PASS SSN-001` ~ `PASS SSN-006` 6건 + `PASS FIX-DEPLOY`.
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W -Q "
 SELECT '2026-11-16 dow=' + CONVERT(varchar(2), DATEDIFF(DAY,0,CONVERT(DATE,'2026-11-16'))%7);
-SELECT 'slot count=' + CONVERT(varchar(5), COUNT(*)) FROM INFO_CHECKUP_WORKS
+SELECT 'slot count=' + CONVERT(varchar(5), COUNT(*)) FROM 예약접수
  WHERE ReservationDate='2026-11-16' AND TimeSlotCode='AM' AND StatusCode IN ('RSV','RCP');"
 ```
 
@@ -829,9 +828,9 @@ RETURN
                     , NowTime      = CONVERT(TIME(7), @ServerTime)
                     , TodayDow     = DATEDIFF(DAY, 0, CONVERT(DATE, @ServerTime)) % 7
                     , ReqDow       = DATEDIFF(DAY, 0, @ReservationDate) % 7
-                    , TodayHoliday = (SELECT TOP (1) h.[HolidayName] FROM [dbo].[MST_HOLIDAYS] h
+                    , TodayHoliday = (SELECT TOP (1) h.[HolidayName] FROM [dbo].[휴무일] h
                                        WHERE h.[HolidayDate] = CONVERT(DATE, @ServerTime) AND h.[Active] = 1)
-                    , ReqHoliday   = (SELECT TOP (1) h.[HolidayName] FROM [dbo].[MST_HOLIDAYS] h
+                    , ReqHoliday   = (SELECT TOP (1) h.[HolidayName] FROM [dbo].[휴무일] h
                                        WHERE h.[HolidayDate] = @ReservationDate AND h.[Active] = 1)
                     , RawCutoff    = CASE WHEN @CutoffType = 'NORMAL'    AND @TimeSlot = 'AM' THEN CONVERT(TIME(0), '10:00:00')
                                           WHEN @CutoffType = 'NORMAL'    AND @TimeSlot = 'PM' THEN CONVERT(TIME(0), '15:00:00')
@@ -938,7 +937,7 @@ git commit -m "feat(phase4): UFN_HC_일정확인 구현 및 시간·일정 경�
 **Interfaces:**
 - Produces: `[dbo].[UFN_HC_검진대상확인](@PatientId BIGINT, @ReservationDate DATE)` → Patient 존재 시 1행 `(Eligible BIT, Age INT, LastCheckupDate DATE, ReasonCode INT, ReasonMessage NVARCHAR(300))`, 없으면 0행
 
-**금지사항:** 완료이력 범위를 `CompletionDate < @ReservationDate` 외로 넓히지 않는다. Work 상태(RSV/RCP/CNL)를 완료이력으로 쓰지 않는다.
+**금지사항:** 완료이력 범위를 `CompletionDate < @ReservationDate` 외로 넓히지 않는다. Work 상태(RSV/RCP/CNR/CNC)를 완료이력으로 쓰지 않는다.
 
 - [ ] **Step 1: RED — `RUL-G01`~`G08` 을 먼저 작성**
 
@@ -948,12 +947,12 @@ git commit -m "feat(phase4): UFN_HC_일정확인 구현 및 시간·일정 경�
 DECLARE @Ref DATE = '2026-10-01';
 DECLARE @P BIGINT;
 
-SELECT @P = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T001';   -- 만 19세
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T001';   -- 만 19세
 IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_검진대상확인](@P, @Ref)) = 400)
     PRINT 'PASS RUL-G01 만 19세 400 UnderAge';
 ELSE BEGIN PRINT 'FAIL RUL-G01'; SET @Fail += 1; END
 
-SELECT @P = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T002';   -- 만 20세
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T002';   -- 만 20세
 IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@P, @Ref)) = 1)
     PRINT 'PASS RUL-G02 만 20세 대상';
 ELSE BEGIN PRINT 'FAIL RUL-G02'; SET @Fail += 1; END
@@ -963,25 +962,25 @@ ELSE BEGIN PRINT 'FAIL RUL-G02'; SET @Fail += 1; END
 --   기준 예약일은 §15.5 의 Rule Test 기준일 '2026-10-01' 이다.
 DECLARE @Pg BIGINT;
 
-SELECT @Pg = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T005';
+SELECT @Pg = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T005';
 IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 1
     AND (SELECT LastCheckupDate FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) IS NULL)
     PRINT 'PASS RUL-G03 완료이력 없음 → Eligible=1, LastCheckupDate NULL';
 ELSE BEGIN PRINT 'FAIL RUL-G03'; SET @Fail += 1; END
 
-SELECT @Pg = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T016';
+SELECT @Pg = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T016';
 IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 0
     AND (SELECT ReasonCode FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 401)
     PRINT 'PASS RUL-G04 1년차 완료이력 → 401 NotDue';
 ELSE BEGIN PRINT 'FAIL RUL-G04'; SET @Fail += 1; END
 
-SELECT @Pg = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T004';
+SELECT @Pg = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T004';
 IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 1)
     PRINT 'PASS RUL-G05 2년차 완료이력 → 대상';
 ELSE BEGIN PRINT 'FAIL RUL-G05'; SET @Fail += 1; END
 
 -- RUL-G06 완료일 = 예약일 당일 → 완료이력으로 쓰지 않는다 (T016 의 완료일을 예약일로 준다)
-SELECT @Pg = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T016';
+SELECT @Pg = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T016';
 IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2025-05-01')) = 1)
     PRINT 'PASS RUL-G06 완료일 당일은 완료이력으로 사용하지 않는다';
 ELSE BEGIN PRINT 'FAIL RUL-G06'; SET @Fail += 1; END
@@ -1035,12 +1034,12 @@ RETURN
                         - CASE WHEN (MONTH(@ReservationDate) * 100 + DAY(@ReservationDate))
                                   < (MONTH(p.[Birthday_D])  * 100 + DAY(p.[Birthday_D])) THEN 1 ELSE 0 END
                 , LastCheckupDate = (SELECT TOP (1) h.[CompletionDate]
-                                       FROM [dbo].[HIS_GENERAL_CHECKUP_COMPLETIONS] h
+                                       FROM [dbo].[완료이력] h
                                       WHERE h.[PatientId] = @PatientId
                                         AND h.[CompletionDate] < @ReservationDate
                                       ORDER BY h.[CompletionDate] DESC)
             FROM (SELECT [Birthday_D] = CONVERT(DATE, i.[Birthday], 112)
-                    FROM [dbo].[INFO_PATIENTS] i WHERE i.[PatientId] = @PatientId) p
+                    FROM [dbo].[수검자] i WHERE i.[PatientId] = @PatientId) p
         ) a
     ) x
 );
@@ -1093,63 +1092,63 @@ git commit -m "feat(phase4): UFN_HC_검진대상확인 구현 및 TGT 경계 테
 핵심 3건 예시:
 
 ```sql
-SELECT @P = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T001';   -- 만 19세, 비대상
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T001';   -- 만 19세, 비대상
 IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](@P, @Ref)) = 0)
     PRINT 'PASS RUL-N01 TGT 비대상 0행';
 ELSE BEGIN PRINT 'FAIL RUL-N01'; SET @Fail += 1; END
 
-SELECT @P = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T002';   -- 만 20세, 조건부 0종
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T002';   -- 만 20세, 조건부 0종
 IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](@P, @Ref)) = 8)
     PRINT 'PASS RUL-N02 기본 8행';
 ELSE BEGIN PRINT 'FAIL RUL-N02'; SET @Fail += 1; END
 
-SELECT @P = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T010';   -- 여 만 56세
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T010';   -- 여 만 56세
 IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](@P, @Ref)) = 11)
     PRINT 'PASS RUL-N10 조건부 3종 동시 → 11행';
 ELSE BEGIN PRINT 'FAIL RUL-N10'; SET @Fail += 1; END
 
 -- RUL-N03 ~ N09, N12  조건부 NEX 5종 술어 (스펙 §17.2)
 --   NEX-02 EX009  남 Age>=24 AND (Age-24)%4=0  /  여 Age>=40 AND (Age-40)%4=0
---   NEX-03 EX010  Age=40 AND 제외행 없음      NEX-04 EX011  Age=56
+--   NEX-03 EX010  Age=40 AND HepatitisBExcluded=0   NEX-04 EX011  Age=56
 --   NEX-05 EX012  Gender='F' AND Age IN (54,60,66)   NEX-06 EX013  Age IN (56,66)
 
 -- RUL-N03  남 23(T003) / 24(T004) / 28(T005) → EX009 없음 / 있음 / 있음
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T003'), @Ref) WHERE ExamCode='EX009') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T004'), @Ref) WHERE ExamCode='EX009') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T005'), @Ref) WHERE ExamCode='EX009')
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T003'), @Ref) WHERE ExamCode='EX009') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T004'), @Ref) WHERE ExamCode='EX009') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T005'), @Ref) WHERE ExamCode='EX009')
     PRINT 'PASS RUL-N03 남 23/24/28 → EX009 없음/있음/있음';
 ELSE BEGIN PRINT 'FAIL RUL-N03'; SET @Fail += 1; END
 
 -- RUL-N04  여 39(T006) / 40(T007) / 44(T018) → EX009 없음 / 있음 / 있음
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T006'), @Ref) WHERE ExamCode='EX009') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T007'), @Ref) WHERE ExamCode='EX009') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T018'), @Ref) WHERE ExamCode='EX009')
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T006'), @Ref) WHERE ExamCode='EX009') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T007'), @Ref) WHERE ExamCode='EX009') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T018'), @Ref) WHERE ExamCode='EX009')
     PRINT 'PASS RUL-N04 여 39/40/44 → EX009 없음/있음/있음';
 ELSE BEGIN PRINT 'FAIL RUL-N04'; SET @Fail += 1; END
 
--- RUL-N05  만 40세, 제외행 없음(T007) → EX010 있음 / 제외행 있음(T008) → EX010 없음
-IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T007'), @Ref) WHERE ExamCode='EX010') AND NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T008'), @Ref) WHERE ExamCode='EX010')
-    PRINT 'PASS RUL-N05 만 40세 — 제외행이 EX010 을 제거한다';
+-- RUL-N05  만 40세, HepatitisBExcluded=0(T007) → EX010 있음 / =1(T008) → EX010 없음
+IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T007'), @Ref) WHERE ExamCode='EX010') AND NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T008'), @Ref) WHERE ExamCode='EX010')
+    PRINT 'PASS RUL-N05 만 40세 — HepatitisBExcluded=1 이 EX010 을 제거한다';
 ELSE BEGIN PRINT 'FAIL RUL-N05'; SET @Fail += 1; END
 
 -- RUL-N06  만 55(T009) / 56(T010) → EX011 없음 / 있음
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T009'), @Ref) WHERE ExamCode='EX011') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T010'), @Ref) WHERE ExamCode='EX011')
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T009'), @Ref) WHERE ExamCode='EX011') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T010'), @Ref) WHERE ExamCode='EX011')
     PRINT 'PASS RUL-N06 만 55/56 → EX011 없음/있음';
 ELSE BEGIN PRINT 'FAIL RUL-N06'; SET @Fail += 1; END
 
 -- RUL-N07  여 54(T011) / 60(T012) / 66(T013) → EX012 전부 있음
-IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T011'), @Ref) WHERE ExamCode='EX012') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T012'), @Ref) WHERE ExamCode='EX012') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T013'), @Ref) WHERE ExamCode='EX012')
+IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T011'), @Ref) WHERE ExamCode='EX012') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T012'), @Ref) WHERE ExamCode='EX012') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T013'), @Ref) WHERE ExamCode='EX012')
     PRINT 'PASS RUL-N07 여 54/60/66 → EX012 있음';
 ELSE BEGIN PRINT 'FAIL RUL-N07'; SET @Fail += 1; END
 
 -- RUL-N08  남 54(T019) → EX012 없음 (NEX-05 는 여성 전용)
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T019'), @Ref) WHERE ExamCode='EX012')
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T019'), @Ref) WHERE ExamCode='EX012')
     PRINT 'PASS RUL-N08 남 54세는 EX012 비대상';
 ELSE BEGIN PRINT 'FAIL RUL-N08 남성에게 EX012 가 나왔다'; SET @Fail += 1; END
 
 -- RUL-N09  만 56(T010) / 66(T013) → EX013 있음
-IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T010'), @Ref) WHERE ExamCode='EX013') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='T013'), @Ref) WHERE ExamCode='EX013')
+IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T010'), @Ref) WHERE ExamCode='EX013') AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T013'), @Ref) WHERE ExamCode='EX013')
     PRINT 'PASS RUL-N09 만 56/66 → EX013 있음';
 ELSE BEGIN PRINT 'FAIL RUL-N09'; SET @Fail += 1; END
 
 -- RUL-N12  정렬 = ExamCode ASC. 반환 순서와 정렬한 순서를 행번호로 맞대어 본다.
-SELECT @P = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T010';
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T010';
 IF NOT EXISTS (
     SELECT 1
     FROM (SELECT ExamCode, rn = ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
@@ -1162,7 +1161,7 @@ ELSE BEGIN PRINT 'FAIL RUL-N12 정렬 위반'; SET @Fail += 1; END
 
 -- RUL-N11 모든 TGT 대상 프로필의 행수가 8~11 범위인지 전수 확인
 IF NOT EXISTS (
-    SELECT 1 FROM [dbo].[INFO_PATIENTS] p
+    SELECT 1 FROM [dbo].[수검자] p
     CROSS APPLY (SELECT Cnt = COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](p.[PatientId], @Ref)) n
     CROSS APPLY [dbo].[UFN_HC_검진대상확인](p.[PatientId], @Ref) g
     WHERE g.Eligible = 1 AND (n.Cnt < 8 OR n.Cnt > 11))
@@ -1187,11 +1186,11 @@ RETURN
         , ExamName = CONVERT(NVARCHAR(100), m.[ExamItemName])
         , ExamType = CONVERT(VARCHAR(12), CASE WHEN m.[NexRuleCode] = 'NEX-01' THEN 'BASIC' ELSE 'CONDITIONAL' END)
         , RuleCode = CONVERT(VARCHAR(10),  m.[NexRuleCode])
-    FROM [dbo].[MST_EXAM_ITEMS] m
+    FROM [dbo].[검사코드] m
     CROSS JOIN
     (
-        SELECT g.Eligible, g.Age, i.[Gender]
-        FROM [dbo].[INFO_PATIENTS] i
+        SELECT g.Eligible, g.Age, i.[Gender], i.[HepatitisBExcluded]
+        FROM [dbo].[수검자] i
         CROSS APPLY [dbo].[UFN_HC_검진대상확인](i.[PatientId], @ReservationDate) g
         WHERE i.[PatientId] = @PatientId
     ) t
@@ -1204,8 +1203,7 @@ RETURN
             (  (t.[Gender] = 'M' AND t.Age >= 24 AND (t.Age - 24) % 4 = 0)
             OR (t.[Gender] = 'F' AND t.Age >= 40 AND (t.Age - 40) % 4 = 0) ))
         OR (m.[NexRuleCode] = 'NEX-03' AND t.Age = 40
-            AND NOT EXISTS (SELECT 1 FROM [dbo].[INFO_PATIENT_EXAM_EXCLUSIONS] x
-                             WHERE x.[PatientId] = @PatientId AND x.[ExamItemCode] = 'EX010'))
+            AND t.[HepatitisBExcluded] = 0)
         OR (m.[NexRuleCode] = 'NEX-04' AND t.Age = 56)
         OR (m.[NexRuleCode] = 'NEX-05' AND t.[Gender] = 'F' AND t.Age IN (54, 60, 66))
         OR (m.[NexRuleCode] = 'NEX-06' AND t.Age IN (56, 66))
@@ -1260,7 +1258,7 @@ git commit -m "feat(phase4): UFN_HC_국가검사구성 구현 및 NEX 경계 테
 - [ ] **Step 1: RED — `RUL-A01`~`A10` 작성 (스펙 §35.5)**
 
 ```sql
-SELECT @P = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T015';   -- 남 만 46세, 대상
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T015';   -- 남 만 46세, 대상
 IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,0,0)) = 7)
     PRINT 'PASS RUL-A01 정확히 7행';
 ELSE BEGIN PRINT 'FAIL RUL-A01'; SET @Fail += 1; END
@@ -1278,14 +1276,14 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0
 ELSE BEGIN PRINT 'FAIL RUL-A02'; SET @Fail += 1; END
 
 -- RUL-A04  여성(T010) + OPT05(PSA, 남성 전용) → 411
-SELECT @P = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T010';
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T010';
 IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,1,0,0)
       WHERE OptionCode = 'OPT05') = 411)
     PRINT 'PASS RUL-A04 여성 OPT05 411 WrongGender';
 ELSE BEGIN PRINT 'FAIL RUL-A04'; SET @Fail += 1; END
 
 -- RUL-A05  남성(T015) + OPT07(HPV, 여성 전용) → 411
-SELECT @P = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T015';
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T015';
 IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,0,1)
       WHERE OptionCode = 'OPT07') = 411)
     PRINT 'PASS RUL-A05 남성 OPT07 411 WrongGender';
@@ -1294,15 +1292,15 @@ ELSE BEGIN PRINT 'FAIL RUL-A05'; SET @Fail += 1; END
 -- RUL-A06  AdditionalActive=0 인 항목 요청 → 410
 --   Seed 는 7종 전부 Active=1 이므로(SED-011) 이 시험만 잠시 하나를 끄고 즉시 되돌린다.
 --   되돌리지 않으면 SED-011 과 G07 이 뒤에서 FAIL 한다.
-UPDATE [dbo].[MST_EXAM_ITEMS] SET [AdditionalActive] = 0 WHERE [ExamItemCode] = 'OPT06';
+UPDATE [dbo].[검사코드] SET [AdditionalActive] = 0 WHERE [ExamItemCode] = 'OPT06';
 IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,1,0)
       WHERE OptionCode = 'OPT06') = 410)
     PRINT 'PASS RUL-A06 비활성 항목 요청 410 ExamInactive';
 ELSE BEGIN PRINT 'FAIL RUL-A06'; SET @Fail += 1; END
-UPDATE [dbo].[MST_EXAM_ITEMS] SET [AdditionalActive] = 1 WHERE [ExamItemCode] = 'OPT06';
+UPDATE [dbo].[검사코드] SET [AdditionalActive] = 1 WHERE [ExamItemCode] = 'OPT06';
 
 -- RUL-A08  TGT 비대상(T001) + @UseSavedExams=0 → 7행 전부 CanSelect=0, Selected=0
-SELECT @P = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T001';
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T001';
 IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 1,1,1,1,1,1,1)) = 7
     AND NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 1,1,1,1,1,1,1)
                      WHERE CanSelect = 1 OR Selected = 1))
@@ -1315,8 +1313,8 @@ ELSE BEGIN PRINT 'FAIL RUL-A08'; SET @Fail += 1; END
 --     T014 의 저장 NEX 에는 EX012 가 없고 OPT04 는 412 가 아니라 0 이 나온다 — 시험이 성립하지 않는다.
 --     412 는 EX012 를 가진 프로필(여 54·60·66세)에서만 관측할 수 있다(스펙 §17.2a).
 --     → T011(여 만 54세)의 RCP Work 를 쓴다. tests/00b 가 만든다.
-DECLARE @Pa BIGINT = (SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T011');
-DECLARE @Wa BIGINT = (SELECT TOP (1) [WorkId] FROM [dbo].[INFO_CHECKUP_WORKS]
+DECLARE @Pa BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T011');
+DECLARE @Wa BIGINT = (SELECT TOP (1) [WorkId] FROM [dbo].[예약접수]
                        WHERE [PatientId] = @Pa AND [StatusCode] = 'RCP' ORDER BY [WorkId]);
 IF @Wa IS NULL
 BEGIN PRINT 'FAIL RUL-A09 사전조건 — T011 의 RCP Work 가 없다 (tests/00b 를 먼저 실행했는가)'; SET @Fail += 1; END
@@ -1326,14 +1324,14 @@ ELSE IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@Pa, @Ref, @W
 ELSE BEGIN PRINT 'FAIL RUL-A09'; SET @Fail += 1; END
 
 -- RUL-A10  선택하지 않은 무효 항목은 사유만 표시하고 저장을 막지 않는다
-SELECT @P = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T015';   -- 남 → OPT03 무효
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T015';   -- 남 → OPT03 무효
 IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 1,0,0,0,0,0,0)
             WHERE OptionCode = 'OPT03' AND CanSelect = 0 AND Requested = 0)
     PRINT 'PASS RUL-A10 미선택 무효 항목은 사유만 표시된다';
 ELSE BEGIN PRINT 'FAIL RUL-A10'; SET @Fail += 1; END
 
 -- NEX 에 EX012 가 있는 여 만 54세(T011) 가 OPT04 요청 → 412
-SELECT @P = [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T011';
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T011';
 IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,1,0,0,0)
       WHERE OptionCode = 'OPT04') = 412)
     PRINT 'PASS RUL-A07 NEX EX012 중복 412 ExamDuplicate';
@@ -1389,19 +1387,19 @@ RETURN
                                   SELECT n.ExamCode FROM [dbo].[UFN_HC_국가검사구성](@PatientId, @ReservationDate) n
                                    WHERE @UseSavedExams = 0
                                   UNION ALL
-                                  SELECT d.[ExamItemCode] FROM [dbo].[INFO_CHECKUP_WORK_EXAMS] d
+                                  SELECT d.[ExamItemCode] FROM [dbo].[검사항목] d
                                    WHERE @UseSavedExams = 1 AND d.[WorkId] = @WorkId AND d.[ExamSourceCode] = 'NEX'
                               ) nx WHERE nx.ExamCode = m.[ExamItemCode]
                           )                                                       THEN 412
                      ELSE 0
                  END
-        FROM [dbo].[MST_EXAM_ITEMS] m
+        FROM [dbo].[검사코드] m
         CROSS JOIN
         (
             SELECT i.[Gender]
                  , Eligible   = ISNULL(g.Eligible, CONVERT(BIT,0))
                  , ReasonCode = ISNULL(g.ReasonCode, 400)
-            FROM [dbo].[INFO_PATIENTS] i
+            FROM [dbo].[수검자] i
             OUTER APPLY [dbo].[UFN_HC_검진대상확인](i.[PatientId], @ReservationDate) g
             WHERE i.[PatientId] = @PatientId
         ) t
@@ -1481,68 +1479,68 @@ SET NOCOUNT ON;
 PRINT '--- 00b_Test_Harness_RCP 시작 ---';
 GO
 -- 재실행 가능하도록 기존 RCP fixture 를 먼저 제거한다
-DELETE d FROM [dbo].[INFO_CHECKUP_WORK_EXAMS] d
-  JOIN [dbo].[INFO_CHECKUP_WORKS] w ON w.[WorkId] = d.[WorkId]
-  JOIN [dbo].[INFO_PATIENTS] p ON p.[PatientId] = w.[PatientId]
+DELETE d FROM [dbo].[검사항목] d
+  JOIN [dbo].[예약접수] w ON w.[WorkId] = d.[WorkId]
+  JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
  WHERE p.[ChartNo] = 'T014' AND w.[StatusCode] = 'RCP';
-DELETE w FROM [dbo].[INFO_CHECKUP_WORKS] w
-  JOIN [dbo].[INFO_PATIENTS] p ON p.[PatientId] = w.[PatientId]
+DELETE w FROM [dbo].[예약접수] w
+  JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
  WHERE p.[ChartNo] = 'T014' AND w.[StatusCode] = 'RCP';
 GO
 -- T014 (남, 기준일 2026-10-01 에 만 56세) 의 RCP Work
 --   ReservationDate 와 NEX 산출 기준일을 동일하게 '2026-10-01' 로 맞춘다.
 --   초안은 Work 날짜를 SYSDATETIME(), NEX 를 2026-10-01 기준으로 뽑아 서로 달랐다.
-INSERT INTO [dbo].[INFO_CHECKUP_WORKS] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
 SELECT p.[PatientId], '2026-10-01', 'AM', 'RCP'
-FROM [dbo].[INFO_PATIENTS] p WHERE p.[ChartNo] = 'T014';
+FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T014';
 GO
 DECLARE @Wrcp BIGINT, @Prcp BIGINT;
 SELECT TOP (1) @Wrcp = w.[WorkId], @Prcp = w.[PatientId]
-  FROM [dbo].[INFO_CHECKUP_WORKS] w
-  JOIN [dbo].[INFO_PATIENTS] p ON p.[PatientId] = w.[PatientId]
+  FROM [dbo].[예약접수] w
+  JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
  WHERE p.[ChartNo] = 'T014' AND w.[StatusCode] = 'RCP'
  ORDER BY w.[WorkId] DESC;
 
-INSERT INTO [dbo].[INFO_CHECKUP_WORK_EXAMS] ([WorkId], [ExamItemCode], [ExamSourceCode])
+INSERT INTO [dbo].[검사항목] ([WorkId], [ExamItemCode], [ExamSourceCode])
 SELECT @Wrcp, n.ExamCode, 'NEX'
 FROM [dbo].[UFN_HC_국가검사구성](@Prcp, '2026-10-01') n;
 
-INSERT INTO [dbo].[INFO_CHECKUP_WORK_EXAMS] ([WorkId], [ExamItemCode], [ExamSourceCode])
+INSERT INTO [dbo].[검사항목] ([WorkId], [ExamItemCode], [ExamSourceCode])
 VALUES (@Wrcp, 'EX014', 'AEX');   -- OPT01 복부초음파
 
 DECLARE @Fail INT = 0;
-IF ((SELECT COUNT(*) FROM [dbo].[INFO_CHECKUP_WORK_EXAMS] WHERE [WorkId]=@Wrcp AND [ExamSourceCode]='NEX') = 11)
+IF ((SELECT COUNT(*) FROM [dbo].[검사항목] WHERE [WorkId]=@Wrcp AND [ExamSourceCode]='NEX') = 11)
     PRINT 'PASS FIX-RCP-001 NEX 11행 (T014 만 56세 조건부 3종)';
 ELSE BEGIN PRINT 'FAIL FIX-RCP-001 NEX 행수 불일치'; SET @Fail += 1; END
 
-IF ((SELECT COUNT(*) FROM [dbo].[INFO_CHECKUP_WORK_EXAMS] WHERE [WorkId]=@Wrcp AND [ExamSourceCode]='AEX') = 1)
+IF ((SELECT COUNT(*) FROM [dbo].[검사항목] WHERE [WorkId]=@Wrcp AND [ExamSourceCode]='AEX') = 1)
     PRINT 'PASS FIX-RCP-002 AEX 1행 (OPT01)';
 ELSE BEGIN PRINT 'FAIL FIX-RCP-002 AEX 행수 불일치'; SET @Fail += 1; END
 
 -- T011 (여, 기준일 2026-10-01 에 만 54세) 의 RCP Work
 -- [X] T014 는 남성이라 저장 NEX 에 EX012 가 없다. NEX-05 술어가 Gender='F' 를 요구하기 때문이다.
 --     412 ExamDuplicate 는 EX012 로만 발생하므로(스펙 §17.2a) RUL-A09·CWR-024 는 이 Work 를 쓴다.
-DELETE x FROM [dbo].[INFO_CHECKUP_WORK_EXAMS] x
- JOIN [dbo].[INFO_CHECKUP_WORKS] w ON w.[WorkId] = x.[WorkId]
- JOIN [dbo].[INFO_PATIENTS] p ON p.[PatientId] = w.[PatientId]
+DELETE x FROM [dbo].[검사항목] x
+ JOIN [dbo].[예약접수] w ON w.[WorkId] = x.[WorkId]
+ JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
  WHERE p.[ChartNo] = 'T011' AND w.[StatusCode] = 'RCP';
-DELETE w FROM [dbo].[INFO_CHECKUP_WORKS] w
- JOIN [dbo].[INFO_PATIENTS] p ON p.[PatientId] = w.[PatientId]
+DELETE w FROM [dbo].[예약접수] w
+ JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
  WHERE p.[ChartNo] = 'T011' AND w.[StatusCode] = 'RCP';
 GO
-INSERT INTO [dbo].[INFO_CHECKUP_WORKS] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
 SELECT p.[PatientId], '2026-10-01', 'AM', 'RCP'
-FROM [dbo].[INFO_PATIENTS] p WHERE p.[ChartNo] = 'T011';
+FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T011';
 GO
-DECLARE @W11 BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[INFO_CHECKUP_WORKS] w
-                        JOIN [dbo].[INFO_PATIENTS] p ON p.[PatientId] = w.[PatientId]
+DECLARE @W11 BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
+                        JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
                        WHERE p.[ChartNo] = 'T011' AND w.[StatusCode] = 'RCP' ORDER BY w.[WorkId] DESC);
-DECLARE @P11 BIGINT = (SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T011');
-INSERT INTO [dbo].[INFO_CHECKUP_WORK_EXAMS] ([WorkId], [ExamItemCode], [ExamSourceCode])
+DECLARE @P11 BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T011');
+INSERT INTO [dbo].[검사항목] ([WorkId], [ExamItemCode], [ExamSourceCode])
 SELECT @W11, n.[ExamCode], 'NEX' FROM [dbo].[UFN_HC_국가검사구성](@P11, '2026-10-01') n;
 
 DECLARE @F11 INT = 0;
-IF EXISTS (SELECT 1 FROM [dbo].[INFO_CHECKUP_WORK_EXAMS]
+IF EXISTS (SELECT 1 FROM [dbo].[검사항목]
             WHERE [WorkId] = @W11 AND [ExamSourceCode] = 'NEX' AND [ExamItemCode] = 'EX012')
     PRINT 'PASS FIX-RCP-003 T011 저장 NEX 에 EX012 포함 (412 시험 사전조건)';
 ELSE BEGIN PRINT 'FAIL FIX-RCP-003 T011 저장 NEX 에 EX012 가 없다 — 412 를 관측할 수 없다'; SET @F11 += 1; END

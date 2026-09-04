@@ -2,9 +2,9 @@
 
 - **문서명:** `05_DB_Rule_SP_Contract.md`
 - **상태:** FINAL / GO / READ-ONLY — Phase 3 Rule·Stored Procedure 계약 확정
-- **문서 버전:** v1.1
-- **기준일:** 2026-09-03
-- **기준선 ID:** `HC-RSV-RCP-20260903-R2`
+- **문서 버전:** v2.0
+- **기준일:** 2026-09-04
+- **기준선 ID:** `HC-RSV-RCP-20260904-R3`
 - **Solution:** `HealthCheckupReservationReception`
 - **WinForms Project:** `HealthCheckupReservationReception.WinForms`
 - **Database:** `HealthCheckupReservationReceptionDb`
@@ -49,8 +49,8 @@ Phase 4 Transaction·잠금·권한·Seed 구현 인계
 ```text
 물리 테이블 7개와 전체 컬럼
 PK / FK / UQ / CK / DF / Sequence
-INFO_PATIENTS.SocialNumber = 숫자 13자리 임의 테스트값
-상태코드 RSV / RCP / CNL
+수검자.SocialNumber = 숫자 13자리 임의 테스트값
+상태코드 RSV / RCP / CNR / CNC
 시간대코드 AM / PM
 AEX OPT01~OPT07의 7개 BIT 입력경계
 Patient 동시성 = LastEditDate
@@ -76,7 +76,7 @@ TRY/CATCH 및 THROW 본문
 sp_getapplock 또는 UPDLOCK/HOLDLOCK 선택
 잠금 Resource 문자열과 잠금 획득순서
 SocialNumber 형식·고유성·실제 주민등록번호 사용 금지 검수 Script
-검사·휴무일·완료이력·제외정보 Seed/Test Data
+검사·휴무일·완료이력 Seed/Test Data
 DB Role·GRANT EXECUTE·직접 DML 통제·배포 순서
 실제 CREATE FUNCTION / CREATE PROCEDURE Script
 ```
@@ -144,13 +144,14 @@ Function은 다음 형식을 사용한다.
 | SP-RSV-01 | `[dbo].[USP_HC_SELECT_예약가능정보]` | SELECT | 날짜·시간대·정원·TGT·NEX·AEX 사전정보 |
 | SP-RSV-02 | `[dbo].[USP_HC_INSERT_예약]` | INSERT | Normal/WalkIn 예약 생성 |
 | SP-RSV-03 | `[dbo].[USP_HC_UPDATE_예약변경]` | UPDATE | 예약일·시간대·AEX 영향범위 변경 |
-| SP-RSV-04 | `[dbo].[USP_HC_UPDATE_예약취소]` | UPDATE | RSV → CNL |
+| SP-RSV-04 | `[dbo].[USP_HC_UPDATE_예약취소]` | UPDATE | RSV → CNR |
 | SP-WRK-01 | `[dbo].[USP_HC_SELECT_예약접수목록]` | SELECT | Workbench 공통 목록 |
 | SP-WRK-02 | `[dbo].[USP_HC_SELECT_예약접수상세]` | SELECT | Work 상세·검사구성·Action 가능 여부 |
 | SP-RCP-01 | `[dbo].[USP_HC_UPDATE_접수완료]` | UPDATE | RSV → RCP |
 | SP-RCP-02 | `[dbo].[USP_HC_UPDATE_접수추가검사]` | UPDATE | RCP 상태 AEX 변경 |
-| SP-RCP-03 | `[dbo].[USP_HC_UPDATE_접수취소]` | UPDATE | RCP → CNL |
+| SP-RCP-03 | `[dbo].[USP_HC_UPDATE_접수취소]` | UPDATE | RCP → CNC |
 
+Write Stored Procedure 8개(`SP-PAT-03`·`SP-PAT-04`·`SP-RSV-02`~`04`·`SP-RCP-01`~`03`)는 업무 결과가 확정된 호출마다 `변경이력` 1행을 함께 기록한다. 기록은 트랜잭션 밖에서 자체 `TRY/CATCH`로 수행하며 실패해도 업무 호출 결과를 바꾸지 않는다 — `04_DB_Design.md` §8.7.4.
 ## 1.4 내부 Inline TVF 4개
 
 | ID | 물리 객체명 | 책임 |
@@ -268,7 +269,7 @@ Stored Procedure 입구에서 다음 규칙을 적용한다.
 ```text
 ReservationType : NORMAL / WALKIN
 TimeSlot        : AM / PM
-Status          : RSV / RCP / CNL
+Status          : RSV / RCP / CNR / CNC
 Scope           : ALL / SLOT / EXTRA / SLOT_EXTRA / NONE
 ExamType        : BASIC / CONDITIONAL
 ```
@@ -682,7 +683,7 @@ RuleCode=NEX-01
 | ExamCode | RuleCode | 조건 |
 |---|---|---|
 | EX009 | NEX-02 | 남성: 만 24세 이상이며 `(Age-24)%4=0`; 여성: 만 40세 이상이며 `(Age-40)%4=0` |
-| EX010 | NEX-03 | 만 40세이며 B형간염 제외행이 없음 |
+| EX010 | NEX-03 | 만 40세이며 `수검자.HepatitisBExcluded = 0` |
 | EX011 | NEX-04 | 만 56세 |
 | EX012 | NEX-05 | 여성 만 54·60·66세 |
 | EX013 | NEX-06 | 만 56·66세 |
@@ -952,7 +953,7 @@ RS1:
 |---|---|:---:|---|
 | `@FromDate` | `DATE` | O | 시작일 포함 |
 | `@ToDate` | `DATE` | O | 종료일 포함 |
-| `@Status` | `CHAR(3)` | O | NULL / RSV / RCP / CNL |
+| `@Status` | `CHAR(3)` | O | NULL / RSV / RCP / CNR / CNC |
 | `@ChartNo` | `NVARCHAR(100)` | O | 정확검색 |
 | `@Name` | `NVARCHAR(100)` | O | 접두검색 |
 
@@ -1438,6 +1439,7 @@ BlockCode=0
 | `@AddressDetail` | `NVARCHAR(200)` | O |
 | `@Memo` | `NVARCHAR(MAX)` | O |
 | `@ConfirmSimilarPatient` | `BIT` | X |
+| `@OperatorName` | `NVARCHAR(50)` | X |
 
 조합:
 
@@ -1511,7 +1513,7 @@ RS1 Schema:
 → 이름+산출 Birthday 후보
 → 수동 ChartNo 고유성
 → 자동 ChartNo 발급
-→ INFO_PATIENTS 1행 Transaction 저장
+→ 수검자 1행 Transaction 저장
 ```
 
 - `ConfirmSimilarPatient=1`은 현재 요청의 Name+산출 Birthday+SocialNumber 조합에만 유효하다.
@@ -1537,6 +1539,7 @@ RS1 Schema:
 | `@Address` | `NVARCHAR(200)` | O |
 | `@AddressDetail` | `NVARCHAR(200)` | O |
 | `@Memo` | `NVARCHAR(MAX)` | O |
+| `@OperatorName` | `NVARCHAR(50)` | X |
 
 ### Result Set
 
@@ -1576,7 +1579,7 @@ RS1:
 → ChartNo 변경 시 다른 Patient 고유성
 → 주민번호 변경 시 다른 Patient SocialNumber 고유성
 → 주민번호 변경 시 대상 Patient의 모든 RSV/RCP 존재 확인
-→ INFO_PATIENTS Transaction 수정
+→ 수검자 Transaction 수정
 ```
 
 - No-op에서는 DB 행을 갱신하지 않고 기존 `LastEditDate`를 반환한다.
@@ -1610,6 +1613,7 @@ RS1:
 | `@AexOpt05Selected` | `BIT` | X |
 | `@AexOpt06Selected` | `BIT` | X |
 | `@AexOpt07Selected` | `BIT` | X |
+| `@OperatorName` | `NVARCHAR(50)` | X |
 
 `ReservationType`:
 
@@ -1646,8 +1650,8 @@ RS1 Work결과
 저장:
 
 ```text
-INFO_CHECKUP_WORKS.StatusCode='RSV'
-INFO_CHECKUP_WORK_EXAMS=NEX 전체 + Selected=1인 AEX
+예약접수.StatusCode='RSV'
+검사항목=NEX 전체 + Selected=1인 AEX
 ```
 
 Write SP는 조회 SP 결과를 신뢰하지 않고 모든 조건을 다시 검증한다.
@@ -1671,6 +1675,7 @@ Write SP는 조회 SP 결과를 신뢰하지 않고 모든 조건을 다시 검�
 | `@AexOpt05Selected` | `BIT` | X |
 | `@AexOpt06Selected` | `BIT` | X |
 | `@AexOpt07Selected` | `BIT` | X |
+| `@OperatorName` | `NVARCHAR(50)` | X |
 
 ### Result Set
 
@@ -1717,7 +1722,7 @@ RS1 Work결과
 
 ```text
 AEX Detail 변경
-+ INFO_CHECKUP_WORKS.LastEditDate 갱신
++ 예약접수.LastEditDate 갱신
 → 새 RowVersion 반환
 ```
 
@@ -1742,6 +1747,7 @@ Code=1
 |---|---|:---:|
 | `@WorkId` | `BIGINT` | X |
 | `@RowVersion` | `BINARY(8)` | X |
+| `@OperatorName` | `NVARCHAR(50)` | X |
 
 ### Result Set
 
@@ -1758,12 +1764,12 @@ RS1 Work결과
 → Status=RSV
 → RowVersion
 → 현재 공통 업무 가능
-→ RSV→CNL
+→ RSV→CNR
 ```
 
 - Detail은 삭제하지 않는다.
 - 예약 마감시각은 취소 가능조건이 아니다.
-- CNL에서 RSV로 복원하지 않는다.
+- CNR에서 RSV로 복원하지 않는다.
 
 ---
 
@@ -1777,6 +1783,7 @@ RS1 Work결과
 |---|---|:---:|
 | `@WorkId` | `BIGINT` | X |
 | `@RowVersion` | `BINARY(8)` | X |
+| `@OperatorName` | `NVARCHAR(50)` | X |
 
 ### Result Set
 
@@ -1827,6 +1834,7 @@ AEX
 | `@AexOpt05Selected` | `BIT` | X |
 | `@AexOpt06Selected` | `BIT` | X |
 | `@AexOpt07Selected` | `BIT` | X |
+| `@OperatorName` | `NVARCHAR(50)` | X |
 
 ### Result Set
 
@@ -1865,6 +1873,7 @@ No-op에서는 현재 Master 비활성·성별·중복 Rule을 재평가하지 �
 |---|---|:---:|
 | `@WorkId` | `BIGINT` | X |
 | `@RowVersion` | `BINARY(8)` | X |
+| `@OperatorName` | `NVARCHAR(50)` | X |
 
 ### Result Set
 
@@ -1881,7 +1890,7 @@ RS1 Work결과
 → Status=RCP
 → RowVersion
 → 현재 공통 업무 가능
-→ RCP→CNL
+→ RCP→CNC
 ```
 
 - RSV로 복원하지 않는다.
@@ -1928,8 +1937,8 @@ RS1 Work결과
 
 | Write SP | 같은 Transaction 대상 | 논리 잠금영역 |
 |---|---|---|
-| INSERT_수검자 | INFO_PATIENTS | ChartNo, SocialNumber |
-| UPDATE_수검자정보 | INFO_PATIENTS | PatientId, 변경 ChartNo/SocialNumber |
+| INSERT_수검자 | 수검자 | ChartNo, SocialNumber |
+| UPDATE_수검자정보 | 수검자 | PatientId, 변경 ChartNo/SocialNumber |
 | INSERT_예약 | Work + NEX/AEX Detail | PatientId, 대상 Date+Slot |
 | UPDATE_예약변경 | Work + 영향 Detail | WorkId, PatientId, 기존/신규 Slot |
 | UPDATE_예약취소 | Work | WorkId |
@@ -1937,6 +1946,7 @@ RS1 Work결과
 | UPDATE_접수추가검사 | AEX Detail + Work | WorkId |
 | UPDATE_접수취소 | Work | WorkId |
 
+`변경이력` INSERT는 위 표의 Transaction 대상이 아니다. 항상 `@@TRANCOUNT = 0` 지점에서 자동커밋으로 수행하므로 논리 잠금영역을 넓히지 않고, 실패해도 업무 Transaction을 되돌리지 않는다.
 고정 동시 실행 결과:
 
 ```text
@@ -2047,8 +2057,8 @@ public sealed class DbResult
 ## 16.3 동시성값
 
 ```text
-INFO_PATIENTS.LastEditDate → C# DateTime
-INFO_CHECKUP_WORKS.RowVersion → C# byte[8]
+수검자.LastEditDate → C# DateTime
+예약접수.RowVersion → C# byte[8]
 ```
 
 - DB에서 읽은 값을 문자열로 변환해 재전송하지 않는다.
@@ -2116,7 +2126,7 @@ RS1.CanSave와 BlockCode로 저장버튼·안내문 결정
 ```text
 남성 만 23/24/28세 이상지질혈증
 여성 만 39/40/44세 이상지질혈증
-만 40세 B형간염 제외행 있음/없음
+만 40세 B형간염 HepatitisBExcluded 1/0
 만 55/56세 C형간염
 여성 만 54/60/66세 골밀도
 만 56/66세 폐기능
@@ -2187,7 +2197,7 @@ RowVersion 충돌
 과거 RSV 접수
 미래 RSV 접수
 RCP 재접수
-CNL 접수
+CNR·CNC 접수
 접수마감 경계
 RCP AEX 동일집합 No-op
 RCP AEX 실제 변경
@@ -2265,7 +2275,7 @@ SocialNumber 숫자 13자리·파생값·고유성 검증 SQL
 실제 주민등록번호 금지와 임의 테스트값 Seed 검수
 19개 검사 Master Seed
 평일·토요일 휴무일 Seed
-완료이력·제외정보 Test Data
+완료이력 Test Data
 DB 배포·검증 Script
 DB Role·GRANT EXECUTE·직접 DML 통제
 동시성·Deadlock·Rollback 실행 테스트
@@ -2280,7 +2290,7 @@ DB Role·GRANT EXECUTE·직접 DML 통제
 HC 접두사 의미
 15개 Stored Procedure 이름과 수
 4개 Inline TVF 이름과 수
-각 SP Parameter 이름·타입·NULL
+각 SP Parameter 이름·타입·NULL (R3에서 Write SP 8개에 `@OperatorName`을 추가하며 한 번 열렸고, 그 외에는 고정이다)
 RS0 공통 컬럼
 SP별 Result Set 순서·컬럼·Cardinality
 3자리 ResultCode와 영역
@@ -2294,4 +2304,4 @@ Patient LastEditDate / Work RowVersion 계약
 Phase 4 논리 Transaction·잠금 인계
 ```
 
-> **최종 판정: FINAL / GO / READ-ONLY — Phase 3 Rule·Stored Procedure 계약이 완결되었다. `HC-RSV-RCP-20260903-R2` 기준선의 00~05를 수정하지 않고 `06_DB_Transaction_Security_Seed.md`로 진행한다.**
+> **최종 판정: FINAL / GO / READ-ONLY — Phase 3 Rule·Stored Procedure 계약이 완결되었다. `HC-RSV-RCP-20260904-R3` 기준선의 00~05를 수정하지 않고 `06_DB_Transaction_Security_Seed.md`로 진행한다.**

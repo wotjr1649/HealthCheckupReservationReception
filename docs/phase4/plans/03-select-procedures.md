@@ -382,7 +382,7 @@ WHERE w.[PatientId] = @PatientId
 2. Patient 미존재        → 200
 3. 위 조건 COUNT >= 2   → 701 WorkDataError, Field='WorkId'
 4. 그 외                → RS0 성공 + RS1 0행 또는 1행
-StatusName  RSV=N'예약' / RCP=N'접수완료' / CNL=N'취소'
+StatusName  RSV=N'예약' / RCP=N'접수완료' / CNR=N'예약취소' / CNC=N'접수취소'
 IsToday     CASE WHEN ReservationDate = @Today THEN 1 ELSE 0 END
 ```
 
@@ -431,7 +431,7 @@ EXEC [dbo].[USP_HC_SELECT_예약접수목록] '2026-12-01', '2026-11-01', NULL, 
 
 ```text
 1. 문자열 정규화, @Status 는 UPPER
-2. @Status 가 NOT NULL 인데 RSV/RCP/CNL 이 아니면 → 101, Field='Status'
+2. @Status 가 NOT NULL 인데 RSV/RCP/CNR/CNC 가 아니면 → 101, Field='Status'
 3. @FromDate > @ToDate                          → 104 BadDateRange, Field='FromDate'
 4. @FromDate/@ToDate/@ChartNo/@Name/@Status 가 **전부 NULL** → 103
    — `05` §8.1 은 "**Status=NULL은** 조회조건으로 보지 않음" 이라고 NULL 을 한정했다.
@@ -505,14 +505,14 @@ EXEC [dbo].[USP_HC_SELECT_예약접수상세] -1;
 
 ```sql
 Capacity     = 20
-CurrentCount = (SELECT COUNT(*) FROM INFO_CHECKUP_WORKS x
+CurrentCount = (SELECT COUNT(*) FROM 예약접수 x
                  WHERE x.ReservationDate = w.ReservationDate
                    AND x.TimeSlotCode    = w.TimeSlotCode
                    AND x.StatusCode IN ('RSV','RCP'))
 SeatsLeft    = CASE WHEN 20 - CurrentCount < 0 THEN 0 ELSE 20 - CurrentCount END
 ```
 
-`RS2` = `ExamSourceCode='NEX'` 인 Detail 을 `MST_EXAM_ITEMS` 와 JOIN, `ExamCode ASC`.
+`RS2` = `ExamSourceCode='NEX'` 인 Detail 을 `검사코드` 와 JOIN, `ExamCode ASC`.
 `RS3` = `ExamSourceCode='AEX'` 인 Detail, `OptionCode ASC`.
 
 `RS4` 는 **고정 5행**을 `VALUES` 로 만들고 각 행에 허용조건을 평가한다.
@@ -523,7 +523,7 @@ SELECT
     , Allowed       = CAST(... AS BIT)
     , ReasonCode    = CAST(... AS INT)
     , ReasonMessage = CAST(... AS NVARCHAR(300))
-FROM [dbo].[INFO_CHECKUP_WORKS] w
+FROM [dbo].[예약접수] w
 CROSS JOIN (VALUES ('EDIT_RESERVATION'),('CANCEL_RESERVATION'),('START_RECEPTION'),
                    ('EDIT_EXTRA'),('CANCEL_RECEPTION')) a(Code)
 CROSS APPLY [dbo].[UFN_HC_일정확인](@ServerTime, w.[ReservationDate], w.[TimeSlotCode], 'RECEPTION') s
@@ -623,7 +623,7 @@ RS2는 AM·PM 두 행을 반환하며, **각 행을 "이 시간대를 선택한�
 
 ```sql
 -- 표시용 CurrentCount 는 05 §9.7 대로 현재 Work 를 포함한 실제 인원이다
-CurrentCount  = (SELECT COUNT(*) FROM INFO_CHECKUP_WORKS
+CurrentCount  = (SELECT COUNT(*) FROM 예약접수
                   WHERE ReservationDate = @ReservationDate
                     AND TimeSlotCode    = s.TimeSlot          -- 'AM' / 'PM'
                     AND StatusCode IN ('RSV','RCP'))
@@ -631,7 +631,7 @@ CurrentCount  = (SELECT COUNT(*) FROM INFO_CHECKUP_WORKS
 -- 계산용으로만 현재 Work 를 뺀다
 ExcludingSelf = CurrentCount
                 - CASE WHEN @WorkId IS NOT NULL
-                        AND EXISTS (SELECT 1 FROM INFO_CHECKUP_WORKS
+                        AND EXISTS (SELECT 1 FROM 예약접수
                                      WHERE WorkId = @WorkId
                                        AND ReservationDate = @ReservationDate
                                        AND TimeSlotCode    = s.TimeSlot
@@ -858,7 +858,7 @@ BIZ=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
   SELECT CASE WHEN DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
               AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
               AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
-              AND NOT EXISTS (SELECT 1 FROM dbo.MST_HOLIDAYS
+              AND NOT EXISTS (SELECT 1 FROM dbo.휴무일
                                WHERE HolidayDate = CONVERT(DATE, SYSDATETIME()) AND Active = 1)
          THEN 1 ELSE 0 END;" | tr -d ' \r')
 

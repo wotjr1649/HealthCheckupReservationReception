@@ -106,7 +106,7 @@ DECLARE @Fail INT = 0;
 IF NOT (DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
         AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
         AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
-        AND NOT EXISTS (SELECT 1 FROM [dbo].[MST_HOLIDAYS]
+        AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
                          WHERE [HolidayDate] = CONVERT(DATE, SYSDATETIME()) AND [Active] = 1))
 BEGIN
     PRINT 'SKIP 05_Patient_Write_Tests 업무시간(월~토 09:00~18:00, 비휴무일) 밖';
@@ -115,14 +115,14 @@ END
 
 -- PWR-011  Birthday/Gender 가 SP 산출값과 일치한다 (Fixture 가 직접 지정한 값과 같아야 한다)
 EXEC [dbo].[USP_HC_INSERT_수검자] 1, NULL, N'산출확인', '9001011000018', NULL,NULL,NULL,NULL,NULL,NULL,NULL, 0;
-IF EXISTS (SELECT 1 FROM [dbo].[INFO_PATIENTS]
+IF EXISTS (SELECT 1 FROM [dbo].[수검자]
             WHERE [SocialNumber] = '9001011000018'
               AND [Birthday] = '19900101' AND [Gender] = 'M')
     PRINT 'PASS PWR-011 Birthday/Gender 가 주민번호 산출값과 일치';
 ELSE BEGIN PRINT 'FAIL PWR-011'; SET @Fail += 1; END
 
 -- PWR-012  자동 발급 ChartNo 형식 = 'C' + 6자리
-IF EXISTS (SELECT 1 FROM [dbo].[INFO_PATIENTS]
+IF EXISTS (SELECT 1 FROM [dbo].[수검자]
             WHERE [SocialNumber] = '9001011000018'
               AND [ChartNo] LIKE 'C[0-9][0-9][0-9][0-9][0-9][0-9]'
               AND LEN([ChartNo]) = 7)
@@ -130,15 +130,32 @@ IF EXISTS (SELECT 1 FROM [dbo].[INFO_PATIENTS]
 ELSE BEGIN PRINT 'FAIL PWR-012'; SET @Fail += 1; END
 
 -- PWR-002 의 DB 측면: 동일 주민번호 재등록이 행을 늘리지 않았다
-IF ((SELECT COUNT(*) FROM [dbo].[INFO_PATIENTS] WHERE [SocialNumber] = '9001011000018') = 1)
+IF ((SELECT COUNT(*) FROM [dbo].[수검자] WHERE [SocialNumber] = '9001011000018') = 1)
     PRINT 'PASS PWR-002 동일 주민번호 재등록이 행을 만들지 않았다';
 ELSE BEGIN PRINT 'FAIL PWR-002 중복 행 생성'; SET @Fail += 1; END
 
 -- PWR-004/005/007/008/013/014 의 DB 측면: 실패 경로는 행을 남기지 않는다
-IF NOT EXISTS (SELECT 1 FROM [dbo].[INFO_PATIENTS]
+IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자]
                 WHERE [Name] IN (N'짧은번호', N'잘못된날짜', N'차트없음', N'중복차트', N'열네자리', N'비숫자'))
     PRINT 'PASS PWR-004/005/007/008/013/014 실패 경로가 행을 남기지 않았다';
 ELSE BEGIN PRINT 'FAIL 실패 경로가 행을 남겼다'; SET @Fail += 1; END
+```
+
+`[R3]` 이 SP 는 Parameter 목록 **맨 끝**에 `@OperatorName NVARCHAR(50)` 을 받는다(`05` §19.2). 아래 시험의 모든 호출은 마지막 인자로 `@OperatorName = N'TEST'` 를 명시 전달한다 — `05` §2.1 이 선택 Parameter 의 생략을 금지한다.
+
+`[R3]` 성공·업무실패 두 경로 모두 `04` §8.7.4 의 `<감사 블록>` 을 통과해 `변경이력` 1행을 남긴다. 감사 INSERT 는 트랜잭션 밖·자체 `TRY/CATCH`·해당 Result Set `SELECT` 뒤이며, 업무 INSERT 계열은 `SCOPE_IDENTITY()` 를 **감사 INSERT 앞에서** 변수로 확정한다.
+
+```sql
+-- PWR-030  USP_HC_INSERT_수검자 가 변경이력 1행을 남긴다 (성공·업무실패 각각)
+DECLARE @H0 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'PAT_INSERT');
+--   … 성공 호출 1회 + 업무실패 호출 1회를 수행한다 …
+IF ((SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'PAT_INSERT') = @H0 + 2
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
+                     WHERE [OperationCode] = 'PAT_INSERT' AND [TargetTable] <> N'수검자')
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
+                     WHERE [OperationCode] = 'PAT_INSERT' AND [ResultCode] < 100 AND [TargetKey] IS NULL))
+    PRINT 'PASS PWR-030 PAT_INSERT 감사 2행 · TargetTable · 성공행 TargetKey NOT NULL';
+ELSE BEGIN PRINT 'FAIL PWR-030 감사 기록 불일치'; SET @Fail += 1; END
 ```
 
 **완료조건:** 스펙 §45.2 의 `PWR-001`~`PWR-014` 가 계약 판정(`verify-contract.js`) + DB 상태 단언으로 **각각** 증명된다. 업무시간 밖 실행이면 `SKIP 1건 + FAIL 0건`.
@@ -180,7 +197,7 @@ Expected: exit **1**, `Msg 2812`.
                         → Code=203 SimilarPatient, Success=0, RS1=후보 N행
 12. 수동 ChartNo 가 이미 존재      → 201 ChartNoUsed, Field='ChartNo'
 13. 자동 ChartNo 발급 (아래 Step 3)
-14. INFO_PATIENTS 1행 INSERT, SCOPE_IDENTITY() 로 PatientId 확보
+14. 수검자 1행 INSERT, SCOPE_IDENTITY() 로 PatientId 확보
 15. COMMIT → RS0 성공 + RS1 신규 1행
 ```
 
@@ -241,9 +258,9 @@ BEGIN
         --     한 번의 호출이 최대 999,999개 후보를 5초씩 순회할 수 있다.
         IF @rc < 0 BEGIN ROLLBACK; IF @rc = -3 THROW 50002, N'잠금 교착', 1; ELSE THROW 50001, N'잠금 실패', 1; END
 
-        IF NOT EXISTS (SELECT 1 FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = @Cand)
+        IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [ChartNo] = @Cand)
         BEGIN
-            INSERT INTO [dbo].[INFO_PATIENTS] (...) VALUES (...);
+            INSERT INTO [dbo].[수검자] (...) VALUES (...);
             COMMIT;
             BREAK;                      -- 발급 성공
         END
@@ -348,30 +365,30 @@ git commit -m "feat(phase4): USP_HC_INSERT_수검자 구현 및 등록 경계 �
 ```sql
 DECLARE @Pid BIGINT, @Led DATETIME, @Ssn VARCHAR(13), @Nm NVARCHAR(100), @Before DATETIME;
 SELECT @Pid = [PatientId], @Led = [LastEditDate], @Ssn = [SocialNumber], @Nm = [Name]
-  FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T015';
+  FROM [dbo].[수검자] WHERE [ChartNo] = 'T015';
 
 -- PWR-020  No-op 은 LastEditDate 를 건드리지 않는다
 SET @Before = @Led;
 EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Pid, @Led, N'T015', @Nm, @Ssn, NULL,NULL,NULL,NULL,NULL,NULL,NULL;
-IF ((SELECT [LastEditDate] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pid) = @Before)
+IF ((SELECT [LastEditDate] FROM [dbo].[수검자] WHERE [PatientId] = @Pid) = @Before)
     PRINT 'PASS PWR-020 No-op 은 LastEditDate 불변';
 ELSE BEGIN PRINT 'FAIL PWR-020 No-op 이 LastEditDate 를 바꿨다'; SET @Fail += 1; END
 
 -- PWR-022  실제 변경은 LastEditDate 를 반드시 증가시킨다
 --   DATETIME 의 해상도는 약 3.33ms 다. @Before 를 한 번만 읽고 '>' 로 비교한다.
-SELECT @Led = [LastEditDate] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pid;
+SELECT @Led = [LastEditDate] FROM [dbo].[수검자] WHERE [PatientId] = @Pid;
 SET @Before = @Led;
 EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Pid, @Led, N'T015', N'이름변경됨', @Ssn, NULL,NULL,NULL,NULL,NULL,NULL,NULL;
-IF ((SELECT [LastEditDate] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pid) > @Before
-    AND (SELECT [Name] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pid) = N'이름변경됨')
+IF ((SELECT [LastEditDate] FROM [dbo].[수검자] WHERE [PatientId] = @Pid) > @Before
+    AND (SELECT [Name] FROM [dbo].[수검자] WHERE [PatientId] = @Pid) = N'이름변경됨')
     PRINT 'PASS PWR-022 실제 변경 시 LastEditDate 단조증가 + 값 반영';
 ELSE BEGIN PRINT 'FAIL PWR-022'; SET @Fail += 1; END
 
 -- PWR-023  주민번호 변경이 차단됐으므로 DB 값은 그대로다
-DECLARE @Pf BIGINT = (SELECT TOP (1) [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] LIKE 'F0%' ORDER BY [ChartNo]);
-DECLARE @Lf DATETIME = (SELECT [LastEditDate] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pf);
-DECLARE @Nf NVARCHAR(100) = (SELECT [Name] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pf);
-DECLARE @Sf VARCHAR(13) = (SELECT [SocialNumber] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pf);
+DECLARE @Pf BIGINT = (SELECT TOP (1) [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] LIKE 'F0%' ORDER BY [ChartNo]);
+DECLARE @Lf DATETIME = (SELECT [LastEditDate] FROM [dbo].[수검자] WHERE [PatientId] = @Pf);
+DECLARE @Nf NVARCHAR(100) = (SELECT [Name] FROM [dbo].[수검자] WHERE [PatientId] = @Pf);
+DECLARE @Sf VARCHAR(13) = (SELECT [SocialNumber] FROM [dbo].[수검자] WHERE [PatientId] = @Pf);
 DECLARE @P12 CHAR(12) = '850715199999';   -- 1985-07-15 남 + 미사용 순번
 DECLARE @NewSsn VARCHAR(13) = @P12 + CONVERT(CHAR(1),
     ( ( ( 11 - (
@@ -384,25 +401,25 @@ DECLARE @NewSsn VARCHAR(13) = @P12 + CONVERT(CHAR(1),
           ) % 11 ) ) % 10 + 1 ) % 10 );
 
 EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Pf, @Lf, N'F001', @Nf, @NewSsn, NULL,NULL,NULL,NULL,NULL,NULL,NULL;
-IF ((SELECT [SocialNumber] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pf) = @Sf)
+IF ((SELECT [SocialNumber] FROM [dbo].[수검자] WHERE [PatientId] = @Pf) = @Sf)
     PRINT 'PASS PWR-023 활성 Work 존재 시 주민번호가 바뀌지 않았다';
 ELSE BEGIN PRINT 'FAIL PWR-023 주민번호가 바뀌었다 — EP-08 위반'; SET @Fail += 1; END
 
 -- PWR-024  차트번호 변경은 활성 Work 가 있어도 성공한다 (EP-08 은 주민번호만 막는다)
-SELECT @Lf = [LastEditDate] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pf;
+SELECT @Lf = [LastEditDate] FROM [dbo].[수검자] WHERE [PatientId] = @Pf;
 EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Pf, @Lf, N'F001X', @Nf, @Sf, NULL,NULL,NULL,NULL,NULL,NULL,NULL;
-IF ((SELECT [ChartNo] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pf) = N'F001X')
+IF ((SELECT [ChartNo] FROM [dbo].[수검자] WHERE [PatientId] = @Pf) = N'F001X')
     PRINT 'PASS PWR-024 활성 Work 가 있어도 차트번호는 변경된다';
 ELSE BEGIN PRINT 'FAIL PWR-024 차트번호 변경이 차단됐다'; SET @Fail += 1; END
 -- 되돌린다 — 뒤 테스트가 F001 을 ChartNo 로 찾는다
-SELECT @Lf = [LastEditDate] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pf;
+SELECT @Lf = [LastEditDate] FROM [dbo].[수검자] WHERE [PatientId] = @Pf;
 EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Pf, @Lf, N'F001', @Nf, @Sf, NULL,NULL,NULL,NULL,NULL,NULL,NULL;
 
 -- PWR-027  RCP 상태 Work 도 주민번호 변경을 막는다 (05 §17 — RSV 만이 아니다)
-DECLARE @Pr BIGINT = (SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T014');
-DECLARE @Sr VARCHAR(13) = (SELECT [SocialNumber] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pr);
-DECLARE @Lr DATETIME = (SELECT [LastEditDate] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pr);
-DECLARE @Nr NVARCHAR(100) = (SELECT [Name] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pr);
+DECLARE @Pr BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T014');
+DECLARE @Sr VARCHAR(13) = (SELECT [SocialNumber] FROM [dbo].[수검자] WHERE [PatientId] = @Pr);
+DECLARE @Lr DATETIME = (SELECT [LastEditDate] FROM [dbo].[수검자] WHERE [PatientId] = @Pr);
+DECLARE @Nr NVARCHAR(100) = (SELECT [Name] FROM [dbo].[수검자] WHERE [PatientId] = @Pr);
 SET @P12 = '850716199998';
 SET @NewSsn = @P12 + CONVERT(CHAR(1),
     ( ( ( 11 - (
@@ -414,7 +431,7 @@ SET @NewSsn = @P12 + CONVERT(CHAR(1),
           + CAST(SUBSTRING(@P12,11,1) AS INT)*4 + CAST(SUBSTRING(@P12,12,1) AS INT)*5
           ) % 11 ) ) % 10 + 1 ) % 10 );
 
-IF NOT EXISTS (SELECT 1 FROM [dbo].[INFO_CHECKUP_WORKS] WHERE [PatientId] = @Pr AND [StatusCode] = 'RCP')
+IF NOT EXISTS (SELECT 1 FROM [dbo].[예약접수] WHERE [PatientId] = @Pr AND [StatusCode] = 'RCP')
 BEGIN
     PRINT 'FAIL PWR-027 사전조건 미충족 — T014 의 RCP Work 가 없다 (tests/00b 를 먼저 실행했는가)';
     SET @Fail += 1;
@@ -422,26 +439,26 @@ END
 ELSE
 BEGIN
     EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Pr, @Lr, N'T014', @Nr, @NewSsn, NULL,NULL,NULL,NULL,NULL,NULL,NULL;
-    IF ((SELECT [SocialNumber] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pr) = @Sr)
+    IF ((SELECT [SocialNumber] FROM [dbo].[수검자] WHERE [PatientId] = @Pr) = @Sr)
         PRINT 'PASS PWR-027 RCP 상태에서도 주민번호가 바뀌지 않았다';
     ELSE BEGIN PRINT 'FAIL PWR-027 RCP 상태에서 주민번호가 바뀌었다'; SET @Fail += 1; END
 
     -- PWR-028  RCP 상태에서도 차트번호 변경은 허용된다
-    SELECT @Lr = [LastEditDate] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pr;
+    SELECT @Lr = [LastEditDate] FROM [dbo].[수검자] WHERE [PatientId] = @Pr;
     EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Pr, @Lr, N'T014X', @Nr, @Sr, NULL,NULL,NULL,NULL,NULL,NULL,NULL;
-    IF ((SELECT [ChartNo] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pr) = N'T014X')
+    IF ((SELECT [ChartNo] FROM [dbo].[수검자] WHERE [PatientId] = @Pr) = N'T014X')
         PRINT 'PASS PWR-028 RCP 상태에서도 차트번호는 변경된다';
     ELSE BEGIN PRINT 'FAIL PWR-028'; SET @Fail += 1; END
-    SELECT @Lr = [LastEditDate] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pr;
+    SELECT @Lr = [LastEditDate] FROM [dbo].[수검자] WHERE [PatientId] = @Pr;
     EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Pr, @Lr, N'T014', @Nr, @Sr, NULL,NULL,NULL,NULL,NULL,NULL,NULL;
 END
 
 -- PWR-025  다른 Patient 의 주민번호로 변경 시도 → 값이 바뀌지 않는다
-DECLARE @S1 VARCHAR(13) = (SELECT [SocialNumber] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T001');
-DECLARE @S15 VARCHAR(13) = (SELECT [SocialNumber] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pid);
-SELECT @Led = [LastEditDate] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pid;
+DECLARE @S1 VARCHAR(13) = (SELECT [SocialNumber] FROM [dbo].[수검자] WHERE [ChartNo] = 'T001');
+DECLARE @S15 VARCHAR(13) = (SELECT [SocialNumber] FROM [dbo].[수검자] WHERE [PatientId] = @Pid);
+SELECT @Led = [LastEditDate] FROM [dbo].[수검자] WHERE [PatientId] = @Pid;
 EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Pid, @Led, N'T015', N'이름변경됨', @S1, NULL,NULL,NULL,NULL,NULL,NULL,NULL;
-IF ((SELECT [SocialNumber] FROM [dbo].[INFO_PATIENTS] WHERE [PatientId] = @Pid) = @S15)
+IF ((SELECT [SocialNumber] FROM [dbo].[수검자] WHERE [PatientId] = @Pid) = @S15)
     PRINT 'PASS PWR-025 다른 Patient 의 주민번호로 바뀌지 않았다';
 ELSE BEGIN PRINT 'FAIL PWR-025 주민번호 고유성 위반'; SET @Fail += 1; END
 
@@ -472,11 +489,11 @@ PRINT '=== 05_Patient_Write_Tests 완료 ===';
        IF EXISTS (
            SELECT p.[ChartNo],p.[Name],p.[SocialNumber],p.[Birthday],p.[Gender]
                 , p.[CelNumber],p.[TelNumber],p.[EMail],p.[Zipcode],p.[Address],p.[AddressDetail]
-             FROM [dbo].[INFO_PATIENTS] p WHERE p.[PatientId] = @PatientId
+             FROM [dbo].[수검자] p WHERE p.[PatientId] = @PatientId
            INTERSECT
            SELECT @ChartNo,@Name,@SocialNumber,@Birthday,@Gender
                 , @MobilePhone,@Phone,@Email,@Zipcode,@Address,@AddressDetail )
-          AND EXISTS ( SELECT 1 FROM [dbo].[INFO_PATIENTS] p
+          AND EXISTS ( SELECT 1 FROM [dbo].[수검자] p
                         WHERE p.[PatientId] = @PatientId
                           AND ((p.[Memo] IS NULL AND @Memo IS NULL) OR p.[Memo] = @Memo) )
            SET @Code = 1;
@@ -496,7 +513,7 @@ PRINT '=== 05_Patient_Write_Tests 완료 ===';
 DECLARE @NewEdit DATETIME = CONVERT(DATETIME, @ServerTime);
 IF @NewEdit <= @OldEdit SET @NewEdit = DATEADD(MILLISECOND, 4, @OldEdit);
 
-UPDATE [dbo].[INFO_PATIENTS]
+UPDATE [dbo].[수검자]
    SET [ChartNo] = @ChartNo, [Name] = @Name, [SocialNumber] = @SocialNumber
      , [Birthday] = @Birthday, [Gender] = @Gender
      , [CelNumber]  = @MobilePhone
@@ -512,7 +529,7 @@ UPDATE [dbo].[INFO_PATIENTS]
 IF @@ROWCOUNT = 0 BEGIN SET @Code = 600; SET @Field = 'LastEditDate'; END
 ```
 
-`[X]` **`REPLACE(ISNULL(@MobilePhone,''),'-','')` 는 CHECK 제약을 위반한다.** `@MobilePhone IS NULL` 이면 `CelNumber = NULL`, `CelNumberS = ''` 가 되는데, `CK_INFO_PATIENTS_CEL_NORMALIZED` 는
+`[X]` **`REPLACE(ISNULL(@MobilePhone,''),'-','')` 는 CHECK 제약을 위반한다.** `@MobilePhone IS NULL` 이면 `CelNumber = NULL`, `CelNumberS = ''` 가 되는데, `CK_수검자_CEL_NORMALIZED` 는
 
 ```text
 (CelNumber IS NULL AND CelNumberS IS NULL) OR (CelNumber IS NOT NULL AND CelNumberS = REPLACE(CelNumber,'-',''))
@@ -539,21 +556,21 @@ Expected: exit 0, PASS 개수 **19건** (`PWR-001`~`012` + `PWR-020`~`026`).
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W -Q "
 SET NOCOUNT ON;
-DECLARE @P BIGINT=(SELECT PatientId FROM INFO_PATIENTS WHERE ChartNo='T015');
-DECLARE @S VARCHAR(13)=(SELECT SocialNumber FROM INFO_PATIENTS WHERE PatientId=@P);
-DECLARE @L0 DATETIME=(SELECT LastEditDate FROM INFO_PATIENTS WHERE PatientId=@P);  -- 최초 1회만 읽는다
+DECLARE @P BIGINT=(SELECT PatientId FROM 수검자 WHERE ChartNo='T015');
+DECLARE @S VARCHAR(13)=(SELECT SocialNumber FROM 수검자 WHERE PatientId=@P);
+DECLARE @L0 DATETIME=(SELECT LastEditDate FROM 수검자 WHERE PatientId=@P);  -- 최초 1회만 읽는다
 DECLARE @L DATETIME=@L0, @i INT=0, @Nm NVARCHAR(100);
 WHILE @i<5
 BEGIN
   SET @Nm = N'반복' + CONVERT(NVARCHAR(3), @i);   -- 매 회 실제 변경이어야 No-op 이 아니다
   EXEC dbo.USP_HC_UPDATE_수검자정보 @P, @L, N'T015', @Nm, @S, NULL,NULL,NULL,NULL,NULL,NULL,NULL;
-  SELECT @L = LastEditDate FROM INFO_PATIENTS WHERE PatientId=@P;   -- SP 가 갱신한 값을 다음 호출에 넘긴다
+  SELECT @L = LastEditDate FROM 수검자 WHERE PatientId=@P;   -- SP 가 갱신한 값을 다음 호출에 넘긴다
   SET @i+=1;
 END
 SELECT CASE WHEN @L > @L0 THEN 'PASS 4MS-001 5회 연속 수정 후 LastEditDate 증가'
             ELSE 'FAIL 4MS-001 LastEditDate 미증가' END
      + '  최초=' + CONVERT(VARCHAR(30), @L0, 121) + '  최종=' + CONVERT(VARCHAR(30), @L, 121);
-SELECT 'final=' + CONVERT(varchar(30), LastEditDate, 121) FROM INFO_PATIENTS WHERE PatientId=@P;"
+SELECT 'final=' + CONVERT(varchar(30), LastEditDate, 121) FROM 수검자 WHERE PatientId=@P;"
 ```
 
 Expected: `PASS 4MS-001`, 최종 `LastEditDate` > 최초.
@@ -571,5 +588,22 @@ git commit -m "feat(phase4): USP_HC_UPDATE_수검자정보 구현 및 수정·�
 **회귀시험:** `tests/00`~`05`
 
 **로그 경로:** `artifacts/logs/test_05.log`
+
+`[R3]` 이 SP 는 Parameter 목록 **맨 끝**에 `@OperatorName NVARCHAR(50)` 을 받는다(`05` §19.2). 아래 시험의 모든 호출은 마지막 인자로 `@OperatorName = N'TEST'` 를 명시 전달한다 — `05` §2.1 이 선택 Parameter 의 생략을 금지한다.
+
+`[R3]` 성공·업무실패 두 경로 모두 `04` §8.7.4 의 `<감사 블록>` 을 통과해 `변경이력` 1행을 남긴다. 감사 INSERT 는 트랜잭션 밖·자체 `TRY/CATCH`·해당 Result Set `SELECT` 뒤이며, 업무 INSERT 계열은 `SCOPE_IDENTITY()` 를 **감사 INSERT 앞에서** 변수로 확정한다.
+
+```sql
+-- PWR-031  USP_HC_UPDATE_수검자정보 가 변경이력 1행을 남긴다 (성공·업무실패 각각)
+DECLARE @H0 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'PAT_UPDATE');
+--   … 성공 호출 1회 + 업무실패 호출 1회를 수행한다 …
+IF ((SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'PAT_UPDATE') = @H0 + 2
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
+                     WHERE [OperationCode] = 'PAT_UPDATE' AND [TargetTable] <> N'수검자')
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
+                     WHERE [OperationCode] = 'PAT_UPDATE' AND [ResultCode] < 100 AND [TargetKey] IS NULL))
+    PRINT 'PASS PWR-031 PAT_UPDATE 감사 2행 · TargetTable · 성공행 TargetKey NOT NULL';
+ELSE BEGIN PRINT 'FAIL PWR-031 감사 기록 불일치'; SET @Fail += 1; END
+```
 
 **완료조건:** 스펙 §45.2 의 `PWR-020`~`PWR-028` 전건 PASS + 연속 5회 수정 성공(단조증가 실증).

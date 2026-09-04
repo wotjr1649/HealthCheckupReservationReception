@@ -49,7 +49,7 @@ DECLARE @Fail INT = 0;
 IF NOT (DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
         AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
         AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
-        AND NOT EXISTS (SELECT 1 FROM [dbo].[MST_HOLIDAYS]
+        AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
                          WHERE [HolidayDate] = CONVERT(DATE, SYSDATETIME()) AND [Active] = 1))
 BEGIN
     PRINT 'SKIP 08_Rollback_Tests 업무시간(월~토 09:00~18:00, 비휴무일) 밖';
@@ -57,14 +57,14 @@ BEGIN
 END
 
 -- RBK-001 INSERT_예약 이 AEX 성별 위반(411)으로 실패 → Work·Detail 신규 0건
-DECLARE @P  BIGINT = (SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo] = 'T009');
-DECLARE @W0 INT = (SELECT COUNT(*) FROM [dbo].[INFO_CHECKUP_WORKS]);
-DECLARE @D0 INT = (SELECT COUNT(*) FROM [dbo].[INFO_CHECKUP_WORK_EXAMS]);
+DECLARE @P  BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T009');
+DECLARE @W0 INT = (SELECT COUNT(*) FROM [dbo].[예약접수]);
+DECLARE @D0 INT = (SELECT COUNT(*) FROM [dbo].[검사항목]);
 
 EXEC [dbo].[USP_HC_INSERT_예약] @P, 'NORMAL', '2026-11-17', 'AM', 0,0,1,0,0,0,0;  -- 남성 + OPT03
 
-IF ((SELECT COUNT(*) FROM [dbo].[INFO_CHECKUP_WORKS])      = @W0
-    AND (SELECT COUNT(*) FROM [dbo].[INFO_CHECKUP_WORK_EXAMS]) = @D0)
+IF ((SELECT COUNT(*) FROM [dbo].[예약접수])      = @W0
+    AND (SELECT COUNT(*) FROM [dbo].[검사항목]) = @D0)
     PRINT 'PASS RBK-001 AEX 실패 시 Work·Detail 신규 0건';
 ELSE BEGIN PRINT 'FAIL RBK-001 부분저장 발생'; SET @Fail += 1; END
 ```
@@ -76,7 +76,7 @@ ELSE BEGIN PRINT 'FAIL RBK-001 부분저장 발생'; SET @Fail += 1; END
 | `RBK-002` | `UPDATE_예약변경` 예약일 변경 후 TGT 비대상 `400` | Work의 `ReservationDate`·`TimeSlotCode`·`RowVersion` 및 Detail 전량 동일 |
 | `RBK-003` | `UPDATE_예약변경` 정원 마감 `305` | 동일 |
 | `RBK-004` | `UPDATE_접수추가검사` 성별 위반 `411` | AEX Detail 집합·Work `RowVersion` 동일 |
-| `RBK-005` | `UPDATE_수검자정보` 주민번호 변경 차단 `205` | `INFO_PATIENTS` 행 전체·`LastEditDate` 동일 |
+| `RBK-005` | `UPDATE_수검자정보` 주민번호 변경 차단 `205` | `수검자` 행 전체·`LastEditDate` 동일 |
 | `RBK-006` | `INSERT_수검자` ChartNo 중복 `201` | 신규 Patient 0건 (Sequence 결번은 허용) |
 | `RBK-007` | 위 모든 실패 직후 | `@@TRANCOUNT = 0` |
 | `RBK-008` | 실패 응답 | Result Set 1개 (RS0만). `202`/`203` 만 예외 |
@@ -86,19 +86,19 @@ ELSE BEGIN PRINT 'FAIL RBK-001 부분저장 발생'; SET @Fail += 1; END
 ```sql
 -- Detail 스냅샷을 테이블 변수에 담고 EXCEPT 양방향으로 비교한다.
 --   FOR XML PATH 는 쓰지 않는다 — 스펙 §9.2 허용목록에 없고 index 금지 목록에 XML 이 있다.
-DECLARE @RvBefore BINARY(8) = (SELECT [RowVersion] FROM [dbo].[INFO_CHECKUP_WORKS] WHERE [WorkId]=@W);
+DECLARE @RvBefore BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId]=@W);
 DECLARE @Before TABLE (ExamItemCode VARCHAR(10) PRIMARY KEY, ExamSourceCode CHAR(3));
 INSERT INTO @Before SELECT [ExamItemCode], [ExamSourceCode]
-  FROM [dbo].[INFO_CHECKUP_WORK_EXAMS] WHERE [WorkId] = @W;
+  FROM [dbo].[검사항목] WHERE [WorkId] = @W;
 
 -- … 실패 유도 …
 
 DECLARE @Same BIT =
     CASE WHEN NOT EXISTS (SELECT ExamItemCode, ExamSourceCode FROM @Before
                           EXCEPT SELECT [ExamItemCode], [ExamSourceCode]
-                                   FROM [dbo].[INFO_CHECKUP_WORK_EXAMS] WHERE [WorkId] = @W)
+                                   FROM [dbo].[검사항목] WHERE [WorkId] = @W)
           AND NOT EXISTS (SELECT [ExamItemCode], [ExamSourceCode]
-                            FROM [dbo].[INFO_CHECKUP_WORK_EXAMS] WHERE [WorkId] = @W
+                            FROM [dbo].[검사항목] WHERE [WorkId] = @W
                           EXCEPT SELECT ExamItemCode, ExamSourceCode FROM @Before)
          THEN 1 ELSE 0 END;
 -- @Same = 1 이고 RowVersion 이 @RvBefore 와 같아야 한다
@@ -222,7 +222,7 @@ BEGIN
 END
 ELSE IF @Scen = 2
 BEGIN
-    DECLARE @P BIGINT = (SELECT [PatientId] FROM [dbo].[INFO_PATIENTS] WHERE [ChartNo]='CONC1');   -- 09_Concurrency_Setup.sql 이 심는 전용 수검자
+    DECLARE @P BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='CONC1');   -- 09_Concurrency_Setup.sql 이 심는 전용 수검자
     EXEC [dbo].[USP_HC_INSERT_예약] @P, 'NORMAL', '2026-11-16', 'AM', 0,0,0,0,0,0,0;
 END
 -- … 시나리오 3~7
@@ -235,11 +235,11 @@ GO
 
 | # | Test ID | 시나리오 | Session A | Session B | DB 최종 상태 판정 |
 |---:|---|---|---|---|---|
-| 1 | `CON-001` | 동일 SocialNumber 동시등록 | `INSERT_수검자` | 동일 SSN | `SELECT COUNT(*) FROM INFO_PATIENTS WHERE SocialNumber=…` = **1** |
+| 1 | `CON-001` | 동일 SocialNumber 동시등록 | `INSERT_수검자` | 동일 SSN | `SELECT COUNT(*) FROM 수검자 WHERE SocialNumber=…` = **1** |
 | 2 | `CON-002` | 19/20 Slot 동시 신규예약 | `INSERT_예약` | 다른 Patient, 같은 Slot | 해당 Slot `RSV+RCP` = **20** |
 | 3 | `CON-003` | 동일 Patient 다른 Slot 동시예약 | `INSERT_예약`(AM) | `INSERT_예약`(PM) | 해당 Patient 유효업무 = **1** |
 | 4 | `CON-004` | 주민번호 변경 vs 신규예약 | `UPDATE_수검자정보`(SSN 변경) | `INSERT_예약`(동일 Patient) | (SSN 변경됨 ∧ Work 0건) 또는 (SSN 불변 ∧ Work 1건). **둘 다 성공 금지** |
-| 5 | `CON-005` | 접수완료 vs 예약취소 | `UPDATE_접수완료` | `UPDATE_예약취소` | Work `StatusCode` ∈ {`RCP`,`CNL`} 이고 **정확히 하나만** 전이 |
+| 5 | `CON-005` | 접수완료 vs 예약취소 | `UPDATE_접수완료` | `UPDATE_예약취소` | Work `StatusCode` ∈ {`RCP`,`CNC`} 이고 **정확히 하나만** 전이 |
 | 6 | `CON-006` | 같은 Work AEX 동시변경 | `UPDATE_접수추가검사` | 동일 stale `RowVersion` | 로그 중 하나에 **`601`** |
 | 7 | `CON-007` | 예약 교차이동 | `UPDATE_예약변경` S1→S2 | `UPDATE_예약변경` S2→S1 | **`Msg 1205` 및 `Msg 50002` 각 0건** |
 | **8** | **`CON-008`** | **접수완료 동시 실행** (스펙 §24.2·§38.5) | `INSERT_예약`(오늘 AM, `WALKIN`) | `UPDATE_접수완료`(같은 Slot 의 RSV 하나) | 해당 Slot `RSV+RCP` = **정확히 20**. 21이면 §24.2 결함 재발 |
@@ -280,7 +280,7 @@ EXEC [dbo].[USP_HC_INSERT_예약] ...;
 ```sql
 IF @Scen = 2
 BEGIN
-    DECLARE @Cnt INT = (SELECT COUNT(*) FROM [dbo].[INFO_CHECKUP_WORKS]
+    DECLARE @Cnt INT = (SELECT COUNT(*) FROM [dbo].[예약접수]
                          WHERE [ReservationDate]='2026-11-16' AND [TimeSlotCode]='AM'
                            AND [StatusCode] IN ('RSV','RCP'));
     IF @Cnt = 20 PRINT 'PASS CON-002 19/20 동시예약 2건 → 정확히 1건 성공 (최종 20)';
@@ -370,7 +370,7 @@ IF ((SELECT COUNT(*) FROM sys.triggers WHERE is_ms_shipped=0) = 0
     AND (SELECT COUNT(*) FROM sys.table_types) = 0)
     PRINT 'PASS VER-006 Trigger 0 / TVP 0';
 ELSE BEGIN PRINT 'FAIL VER-006 금지 객체 존재'; SET @Fail += 1; END
-IF ((SELECT COUNT(*) FROM [dbo].[MST_EXAM_ITEMS]) = 19 AND (SELECT COUNT(*) FROM [dbo].[MST_HOLIDAYS]) = 2)
+IF ((SELECT COUNT(*) FROM [dbo].[검사코드]) = 19 AND (SELECT COUNT(*) FROM [dbo].[휴무일]) = 2)
     PRINT 'PASS VER-007 Seed Exam 19 / Holiday 2';
 ELSE BEGIN PRINT 'FAIL VER-007 Seed'; SET @Fail += 1; END
 
@@ -417,8 +417,8 @@ DECLARE @FP VARCHAR(200) = 'INVENTORY|'
                              AND t.is_ms_shipped=0
                              WHERE i.type=2 AND i.is_primary_key=0 AND i.is_unique_constraint=0 AND i.is_unique=0)) + '|'
      + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM sys.triggers WHERE is_ms_shipped=0)) + '|'
-     + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[MST_EXAM_ITEMS]))            + '|'
-     + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[MST_HOLIDAYS]));
+     + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[검사코드]))            + '|'
+     + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[휴무일]));
 
 IF @FP = 'INVENTORY|7|4|15|1|7|6|2|1|5|0|19|2'
     PRINT 'PASS RBD-004 인벤토리 지문 일치  ' + @FP;
@@ -461,10 +461,10 @@ PRINT '--- SEED ---';
 SELECT 'SEED|EXAM|' + [ExamItemCode] + '|' + [ExamItemName] + '|' + ISNULL([NexRuleCode],'-')
      + '|' + ISNULL([AdditionalExamCode],'-') + '|' + ISNULL([AdditionalGenderCode],'-')
      + '|' + CONVERT(VARCHAR(1), [AdditionalActive])
-FROM [dbo].[MST_EXAM_ITEMS] ORDER BY [ExamItemCode];
+FROM [dbo].[검사코드] ORDER BY [ExamItemCode];
 SELECT 'SEED|HOL|' + CONVERT(VARCHAR(10), [HolidayDate], 23) + '|' + [HolidayName]
      + '|' + CONVERT(VARCHAR(1), [Active])
-FROM [dbo].[MST_HOLIDAYS] ORDER BY [HolidayDate];
+FROM [dbo].[휴무일] ORDER BY [HolidayDate];
 
 IF @Fail > 0 THROW 51000, N'Clean Rebuild 검증 실패', 1;
 PRINT '=== 14_Clean_Rebuild_Verify 완료 ===';
@@ -519,8 +519,8 @@ RC=0
 
 # RBD-006  2회 Rebuild 후 Seed 19행 전건 값 동일 (개수가 아니라 값이다)
 sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -o artifacts/logs/seed_now.txt \
-  -Q "SET NOCOUNT ON; SELECT ExamItemCode+'|'+ExamItemName+'|'+ISNULL(NexRuleCode,'-')+'|'+CONVERT(VARCHAR(1),AdditionalActive) FROM dbo.MST_EXAM_ITEMS ORDER BY ExamItemCode;
-      SELECT CONVERT(VARCHAR(10),HolidayDate,120)+'|'+HolidayName FROM dbo.MST_HOLIDAYS ORDER BY HolidayDate;"
+  -Q "SET NOCOUNT ON; SELECT ExamItemCode+'|'+ExamItemName+'|'+ISNULL(NexRuleCode,'-')+'|'+CONVERT(VARCHAR(1),AdditionalActive) FROM dbo.검사코드 ORDER BY ExamItemCode;
+      SELECT CONVERT(VARCHAR(10),HolidayDate,120)+'|'+HolidayName FROM dbo.휴무일 ORDER BY HolidayDate;"
 diff artifacts/logs/seed_first.txt artifacts/logs/seed_now.txt \
   && echo "PASS RBD-006 2회 Rebuild 후 Seed 19+2행 값까지 동일" \
   || { echo "FAIL RBD-006 Seed 값 불일치"; RC=1; }
@@ -616,11 +616,11 @@ Write SP는 **성공 경로와 실패 경로를 각각** 호출한다. 실패 �
 
 ```sql
 -- [X] 초안은 SELECT 로 덤프만 하고 눈으로 보라고 했다. 이름·순서·타입이 틀려도 조회는 정상 종료하므로
---     완료조건 "Parameter 87개 일치" 를 근거 없이 주장할 수 있다. EXCEPT 양방향 + THROW 로 바꾼다.
+--     완료조건 "Parameter 95개 일치" 를 근거 없이 주장할 수 있다. EXCEPT 양방향 + THROW 로 바꾼다.
 DECLARE @ExpParam TABLE (SpName SYSNAME, Ord INT, ParamName SYSNAME, TypeName VARCHAR(50), PRIMARY KEY (SpName, Ord));
 INSERT INTO @ExpParam (SpName, Ord, ParamName, TypeName) VALUES
  -- 87행 전건. 기준선 05 §7~§12 에서 기계 생성했다.
- -- USP_HC_SELECT_공통업무상태 는 무인자라 이 표에 나타나지 않는다 (14 SP × 87 Parameter).
+ -- USP_HC_SELECT_공통업무상태 는 무인자라 이 표에 나타나지 않는다 (14 SP × 95 Parameter).
  -- USP_HC_SELECT_수검자목록 5개
  (N'USP_HC_SELECT_수검자목록',  1, N'@ChartNo',               'nvarchar(100)'),
  (N'USP_HC_SELECT_수검자목록',  2, N'@Name',                  'nvarchar(100)'),
@@ -666,6 +666,7 @@ INSERT INTO @ExpParam (SpName, Ord, ParamName, TypeName) VALUES
  (N'USP_HC_INSERT_수검자', 10, N'@AddressDetail',         'nvarchar(200)'),
  (N'USP_HC_INSERT_수검자', 11, N'@Memo',                  'nvarchar(max)'),
  (N'USP_HC_INSERT_수검자', 12, N'@ConfirmSimilarPatient', 'bit'),
+ (N'USP_HC_INSERT_수검자', 13, N'@OperatorName',          'nvarchar(50)'),
  -- USP_HC_UPDATE_수검자정보 12개
  (N'USP_HC_UPDATE_수검자정보',  1, N'@PatientId',             'bigint'),
  (N'USP_HC_UPDATE_수검자정보',  2, N'@LastEditDate',          'datetime'),
@@ -679,6 +680,7 @@ INSERT INTO @ExpParam (SpName, Ord, ParamName, TypeName) VALUES
  (N'USP_HC_UPDATE_수검자정보', 10, N'@Address',               'nvarchar(200)'),
  (N'USP_HC_UPDATE_수검자정보', 11, N'@AddressDetail',         'nvarchar(200)'),
  (N'USP_HC_UPDATE_수검자정보', 12, N'@Memo',                  'nvarchar(max)'),
+ (N'USP_HC_UPDATE_수검자정보', 13, N'@OperatorName',          'nvarchar(50)'),
  -- USP_HC_INSERT_예약 11개
  (N'USP_HC_INSERT_예약',  1, N'@PatientId',             'bigint'),
  (N'USP_HC_INSERT_예약',  2, N'@ReservationType',       'varchar(10)'),
@@ -691,6 +693,7 @@ INSERT INTO @ExpParam (SpName, Ord, ParamName, TypeName) VALUES
  (N'USP_HC_INSERT_예약',  9, N'@AexOpt05Selected',      'bit'),
  (N'USP_HC_INSERT_예약', 10, N'@AexOpt06Selected',      'bit'),
  (N'USP_HC_INSERT_예약', 11, N'@AexOpt07Selected',      'bit'),
+ (N'USP_HC_INSERT_예약', 12, N'@OperatorName',          'nvarchar(50)'),
  -- USP_HC_UPDATE_예약변경 11개
  (N'USP_HC_UPDATE_예약변경',  1, N'@WorkId',                'bigint'),
  (N'USP_HC_UPDATE_예약변경',  2, N'@RowVersion',            'binary(8)'),
@@ -703,12 +706,15 @@ INSERT INTO @ExpParam (SpName, Ord, ParamName, TypeName) VALUES
  (N'USP_HC_UPDATE_예약변경',  9, N'@AexOpt05Selected',      'bit'),
  (N'USP_HC_UPDATE_예약변경', 10, N'@AexOpt06Selected',      'bit'),
  (N'USP_HC_UPDATE_예약변경', 11, N'@AexOpt07Selected',      'bit'),
+ (N'USP_HC_UPDATE_예약변경', 12, N'@OperatorName',          'nvarchar(50)'),
  -- USP_HC_UPDATE_예약취소 2개
  (N'USP_HC_UPDATE_예약취소',  1, N'@WorkId',                'bigint'),
  (N'USP_HC_UPDATE_예약취소',  2, N'@RowVersion',            'binary(8)'),
+ (N'USP_HC_UPDATE_예약취소', 3, N'@OperatorName',          'nvarchar(50)'),
  -- USP_HC_UPDATE_접수완료 2개
  (N'USP_HC_UPDATE_접수완료',  1, N'@WorkId',                'bigint'),
  (N'USP_HC_UPDATE_접수완료',  2, N'@RowVersion',            'binary(8)'),
+ (N'USP_HC_UPDATE_접수완료', 3, N'@OperatorName',          'nvarchar(50)'),
  -- USP_HC_UPDATE_접수추가검사 9개
  (N'USP_HC_UPDATE_접수추가검사',  1, N'@WorkId',                'bigint'),
  (N'USP_HC_UPDATE_접수추가검사',  2, N'@RowVersion',            'binary(8)'),
@@ -719,9 +725,11 @@ INSERT INTO @ExpParam (SpName, Ord, ParamName, TypeName) VALUES
  (N'USP_HC_UPDATE_접수추가검사',  7, N'@AexOpt05Selected',      'bit'),
  (N'USP_HC_UPDATE_접수추가검사',  8, N'@AexOpt06Selected',      'bit'),
  (N'USP_HC_UPDATE_접수추가검사',  9, N'@AexOpt07Selected',      'bit'),
+ (N'USP_HC_UPDATE_접수추가검사', 10, N'@OperatorName',          'nvarchar(50)'),
  -- USP_HC_UPDATE_접수취소 2개
  (N'USP_HC_UPDATE_접수취소',  1, N'@WorkId',                'bigint'),
- (N'USP_HC_UPDATE_접수취소',  2, N'@RowVersion',            'binary(8)');
+ (N'USP_HC_UPDATE_접수취소',  2, N'@RowVersion',            'binary(8)'),
+ (N'USP_HC_UPDATE_접수취소', 3, N'@OperatorName',          'nvarchar(50)');
 
 ;WITH Act AS (
     SELECT SpName = p.name, Ord = pa.parameter_id, ParamName = pa.name,
@@ -738,7 +746,7 @@ IF NOT EXISTS (SELECT SpName, Ord, ParamName, TypeName FROM @ExpParam
                EXCEPT SELECT SpName, Ord, ParamName, TypeName FROM Act)
    AND NOT EXISTS (SELECT SpName, Ord, ParamName, TypeName FROM Act
                    EXCEPT SELECT SpName, Ord, ParamName, TypeName FROM @ExpParam)
-    PRINT 'PASS Parameter 87개 이름·순서·타입 전건 일치';
+    PRINT 'PASS Parameter 95개 이름·순서·타입 전건 일치';
 ELSE
 BEGIN
     PRINT 'FAIL Parameter 계약 불일치 — 아래 차집합';
@@ -836,7 +844,7 @@ Expected: 전부 `PASS`, exit 0.
 
 - [ ] **Step 5: Commit** — `test(phase4): 15개 SP 전체 Result Set·Parameter 계약 검증`
 
-**완료조건:** Parameter 87행 `EXCEPT` 차집합 0, RS0 메타 75행 + `error_number` 0건, **15/15 SP** 의 후속 RS 시나리오 전부 PASS, 관측 RS0 `Code` 가 전건 `tools/allowed-codes.json` 의 해당 SP 허용집합 안. **G09 충족.**
+**완료조건:** Parameter 95행 `EXCEPT` 차집합 0, RS0 메타 75행 + `error_number` 0건, **15/15 SP** 의 후속 RS 시나리오 전부 PASS, 관측 RS0 `Code` 가 전건 `tools/allowed-codes.json` 의 해당 SP 허용집합 안. **G09 충족.**
 
 - [ ] **Step 5: `tools/allowed-codes.json` 생성 및 미관측 Code 보고**
 
@@ -922,7 +930,7 @@ echo "baseline exit=$RC"
 ./scripts/verify-winforms-unchanged.sh
 echo "winforms exit=$?"
 cd /d/AIDEV/HealthCheckupReservationReception
-git diff --stat baseline-HC-RSV-RCP-20260903-R2 -- docs/baseline winforms
+git diff --stat baseline-HC-RSV-RCP-20260904-R3 -- docs/baseline winforms
 echo "(위 diff 가 비어야 한다)"
 ```
 
@@ -963,7 +971,7 @@ Expected: `PASS G13-b` 2줄. `(c)` 는 보고서에 **`REVIEWED`** 로만 적는
 
 ```text
 - 상태          CANDIDATE → FINAL / GO (실행 검증 완료)
-- 문서 버전      v0.3 → v1.0 (SQL 실행검증 완료 시점에 CANDIDATE 해제)
+- 문서 버전      v0.4 → v1.0 (SQL 실행검증 완료 시점에 CANDIDATE 해제)
 - §42 Gate 표    PLANNED → 실제 관측 결과(PASS / FAIL / SKIP)로 전부 교체
 - §43 알려진 한계 실행 중 확인된 항목 추가 (예: 업무시간 밖 SKIP 건수)
 - §44 Deviation  실행 중 새로 발견된 이탈 추가
@@ -990,7 +998,7 @@ Expected: `PASS G13-b` 2줄. `(c)` 는 보고서에 **`REVIEWED`** 로만 적는
 cd /d/AIDEV/HealthCheckupReservationReception
 git add docs/phase4/ database/artifacts/reports/
 git commit -m "docs(phase4): 06 FINAL 후보 및 Phase 4 실행 보고서 작성"
-git log --oneline baseline-HC-RSV-RCP-20260903-R2..HEAD | head -50
+git log --oneline baseline-HC-RSV-RCP-20260904-R3..HEAD | head -50
 ```
 
 - [ ] **Step 8: 완료 보고**

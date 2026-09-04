@@ -173,9 +173,9 @@ ELSE BEGIN PRINT 'FAIL SEC-002 sysadmin 권한이 남아 있어 보안 테스트
 -- (1) dbo 컨텍스트에서 목록 확정 — SCH-002 가 이미 고정한 7개 이름과 동일하다
 DECLARE @Obj TABLE (Kind VARCHAR(6), Name SYSNAME, PRIMARY KEY (Kind, Name));
 INSERT INTO @Obj VALUES
- ('TABLE', N'INFO_PATIENTS'), ('TABLE', N'INFO_CHECKUP_WORKS'), ('TABLE', N'INFO_CHECKUP_WORK_EXAMS'),
- ('TABLE', N'MST_EXAM_ITEMS'), ('TABLE', N'MST_HOLIDAYS'),
- ('TABLE', N'HIS_GENERAL_CHECKUP_COMPLETIONS'), ('TABLE', N'INFO_PATIENT_EXAM_EXCLUSIONS');
+ ('TABLE', N'수검자'), ('TABLE', N'예약접수'), ('TABLE', N'검사항목'),
+ ('TABLE', N'검사코드'), ('TABLE', N'휴무일'),
+ ('TABLE', N'완료이력'), ('TABLE', N'변경이력');
 
 DECLARE @Denied INT = 0, @Total INT = 0, @Prev SYSNAME = N'', @T SYSNAME;
 

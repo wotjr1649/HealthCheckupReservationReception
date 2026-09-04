@@ -10,6 +10,7 @@ const ROOT = path.resolve(__dirname, '..', '..', 'docs');
 const SPEC = path.join(ROOT, 'phase4', '06_DB_Transaction_Security_Seed_CANDIDATE.md');
 const PLANDIR = path.join(ROOT, 'phase4', 'plans');
 const BASE04 = path.join(ROOT, 'baseline', '04_DB_Design.md');
+const BASE05 = path.join(ROOT, 'baseline', '05_DB_Rule_SP_Contract.md');
 
 let fail = 0, pass = 0;
 const P = (id, msg) => { pass++; console.log('PASS ' + id + ' ' + msg); };
@@ -24,6 +25,20 @@ const spec = read(SPEC);
 const plans = Object.fromEntries(planFiles.map(f => [path.basename(f), read(f)]));
 const allPlans = Object.values(plans).join('\n');
 const rel = f => path.basename(f);
+
+// 기준선 04 에서 제목 문자열로 한 절을 잘라낸다. 절 번호가 아니라 제목을 키로 쓰므로
+// 04 의 장 번호가 바뀌어도 같은 코드가 동작한다.
+function sliceSection(src, title) {
+  const m = src.match(new RegExp('^#+[^\\n]*' + title + '[^\\n]*$', 'm'));
+  if (!m) return '';
+  const rest = src.slice(src.indexOf(m[0]) + m[0].length);
+  const nx = rest.search(/^# (?!#)/m);
+  return nx < 0 ? rest : rest.slice(0, nx);
+}
+const base04 = read(BASE04);
+const sec04Table = sliceSection(base04, '테이블 상세 정의');
+const sec04Summary = sliceSection(base04, '물리 테이블 요약');
+const uniq = re => new Set(sec04Table.match(re) || []).size;
 
 // 코드펜스 안/밖을 나눈다. 금지패턴은 코드 안에서만 의미가 있다.
 function splitFences(src) {
@@ -176,9 +191,11 @@ function splitFences(src) {
 
 // V08 CHECK / DEFAULT 수치 vs 기준선 실측
 {
-  const b = read(BASE04);
-  const uniq = re => new Set(b.match(re) || []).size;
-  const ck = uniq(/\bCK_[A-Z_0-9]+/g), df = uniq(/\bDF_[A-Z_0-9]+/g);
+  // R3: 테이블명이 한글이라 \bCK_[A-Z_0-9]+ 는 0 개를 세어 fail-open 한다.
+  // 04 의 "테이블 상세 정의" 절만 잘라내고 그 안의 백틱 한정 이름만 센다.
+  // 백틱이 경계라 한국어 조사 흡수가 원리적으로 불가능하고,
+  // 명명규칙 예시·삭제 설명이 절 밖이라 자동으로 제외된다.
+  const ck = uniq(/\`CK_[^\`\n]+\`/g), df = uniq(/\`DF_[^\`\n]+\`/g);
   const claims = [];
   const scan = (name, src) => src.split('\n').forEach((l, i) => {
     let m;
@@ -230,13 +247,23 @@ function splitFences(src) {
   // Table 축은 주석이 약속만 하고 구현돼 있지 않았다. 그래서 R2 물리 테이블명이 남은
   // 계획 파일을 한 건도 잡지 못했다(실측 확인). Table 의 출처는 스펙이 아니라 기준선 04 다.
   const OBJ = /\b(?:USP_HC_|UFN_HC_|SEQ_HC_)[가-힣A-Za-z_0-9]+/g;
-  const TBL = /\b(?:INFO_|MST_|HIS_)[A-Z][A-Z_0-9]*/g;
-  const known = new Set([...(spec.match(OBJ) || []), ...(read(BASE04).match(TBL) || [])]);
+  // R2 잔존 탐지. R3 기준선에 이 형태의 테이블명이 없으므로 걸리면 전부 미정의 참조다.
+  const TBLR2 = /\b(?:INFO_|MST_|HIS_)[A-Z][A-Z_0-9]*/g;
+  // R3 테이블명은 한글이라 접두사로 잡을 수 없고 한글 단어를 통째로 세면 산문이 전부 걸린다.
+  // dbo 스키마 한정 참조만 센다 — 계획의 SQL 이 테이블을 부르는 형태이고 산문과 섞이지 않는다.
+  // SP/TVF/Sequence 는 영문으로 시작하므로 이 정규식에 걸리지 않는다.
+  const TBLR3 = /(?:\bdbo\.|\[dbo\]\.)\[?([가-힣][가-힣A-Za-z_0-9]*)\]?/g;
+  const known = new Set([
+    ...(spec.match(OBJ) || []),
+    ...[...sec04Summary.matchAll(/\`([가-힣][가-힣A-Za-z_0-9]*)\`/g)].map(x => x[1]),
+  ]);
   const hits = [];
   for (const [n, s] of Object.entries(plans))
     s.split('\n').forEach((l, i) => {
-      for (const o of [...(l.match(OBJ) || []), ...(l.match(TBL) || [])])
+      for (const o of [...(l.match(OBJ) || []), ...(l.match(TBLR2) || [])])
         if (!known.has(o)) hits.push(n + ':' + (i + 1) + ': ' + o);
+      for (const m of l.matchAll(TBLR3))
+        if (!known.has(m[1])) hits.push(n + ':' + (i + 1) + ': ' + m[1]);
     });
   hits.length ? F('V11', '스펙·기준선에 없는 객체명 참조 ' + hits.length + '건', [...new Set(hits)].join('\n'))
               : P('V11', '계획의 SP/TVF/Sequence/Table 참조 ' + known.size + '종 전부 스펙·기준선에 정의됨');
@@ -279,6 +306,43 @@ function splitFences(src) {
   }
   hits.length ? F('V13', '412 를 기대하는데 EX012 보유 프로필(여 54/60/66)이 문맥에 없다 ' + hits.length + '건', hits.join('\n'))
               : P('V13', '412 기대 테스트가 전부 EX012 보유 프로필을 쓴다 (§17.2a)');
+}
+
+// V14 계획서 SQL 의 컬럼·식별자가 기준선 스키마에 실재하는가.
+// C4 는 Table 축만 닫았다. E1(존재하지 않는 [IsActive] 참조 7곳)이 그 구멍으로 들어왔고
+// R3 가 계획 SQL 을 다시 쓰므로 같은 드리프트가 다시 생길 수 있다.
+// 알려진 집합의 출처는 배포 산출물이 아니라 기준선이다 — deploy/*.sql 은 계획의 결과물이다.
+{
+  const known = new Set();
+  for (const m of sec04Table.matchAll(/\`([A-Za-z가-힣][A-Za-z0-9_가-힣]*)\`/g)) known.add(m[1]);   // 04 §8 컬럼·제약·인덱스
+  for (const m of spec.matchAll(/\[([A-Za-z가-힣][A-Za-z0-9_가-힣]*)\]/g)) known.add(m[1]);            // 06 대괄호 식별자
+  for (const m of read(BASE05).matchAll(/\`@?([A-Za-z][A-Za-z0-9_]*)\`/g)) known.add(m[1]);          // 05 반환 컬럼·Parameter
+  for (const n of ['tables','columns','types','indexes','index_columns','key_constraints','foreign_keys',
+                   'check_constraints','default_constraints','sequences','triggers','table_types','objects',
+                   'procedures','parameters','database_principals','database_permissions',
+                   'dm_exec_describe_first_result_set_for_object']) known.add(n);                       // sys 카탈로그 뷰
+
+  const hits = [];
+  for (const [n, src] of Object.entries(plans)) {
+    // 같은 파일에서 정의된 파생 별칭은 실재 컬럼이 아니어도 정당하다.
+    const alias = new Set();
+    for (const m of src.matchAll(/\[([A-Za-z가-힣][A-Za-z0-9_가-힣]*)\]\s*=/g)) alias.add(m[1]);
+    for (const m of src.matchAll(/\bAS\s+\[([A-Za-z가-힣][A-Za-z0-9_가-힣]*)\]/gi)) alias.add(m[1]);
+    let inF = false, lang = '';
+    src.split('\n').forEach((l, i) => {
+      const f = l.match(/^\s*\`\`\`(\w*)/);
+      if (f) { if (!inF) { inF = true; lang = f[1]; } else inF = false; return; }
+      if (!inF || !/^sql$/i.test(lang)) return;
+      if (/\b(LIKE|PATINDEX|ESCAPE)\b/i.test(l)) return;   // 패턴 문자열의 대괄호는 식별자가 아니다
+      for (const m of l.matchAll(/\[([A-Za-z가-힣][A-Za-z0-9_가-힣]*)\]/g)) {
+        const id = m[1];
+        if (id.length <= 2 || /^(dbo|sys|INFORMATION_SCHEMA)$/i.test(id)) return;
+        if (!known.has(id) && !alias.has(id)) hits.push(n + ':' + (i + 1) + ': [' + id + ']');
+      }
+    });
+  }
+  hits.length ? F('V14', '기준선에 없는 식별자를 계획 SQL 이 참조 ' + hits.length + '건', [...new Set(hits)].join('\n'))
+              : P('V14', '계획 SQL 의 대괄호 식별자 전부 기준선에 실재');
 }
 
 console.log('\n=== verify-docs: PASS ' + pass + ' / FAIL ' + fail + ' ===');

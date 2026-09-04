@@ -8,7 +8,7 @@
 
 **Tech Stack:** Microsoft SQL Server 2025 Express (`.\SQLEXPRESS`, `17.0.1125.2`) / T-SQL / `sqlcmd 15.0.1300.359` / Git Bash / `node v24.19.0` (표준 라이브러리만) / `git 2.55.0`
 
-**Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md` (v0.3, `CANDIDATE / IMPLEMENTATION READY`)
+**Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md` (v0.4, `CANDIDATE / IMPLEMENTATION READY`)
 
 **Test ID 는 이 계획에 없다.** 스펙 **§45.2 카탈로그**가 유일한 출처다(234건). 완료조건은 건수를 다시 적지 않고 *"§45.2 의 `SEL` 전건 PASS"* 로 쓴다. `node tools/verify-docs.js` 가 카탈로그↔배치를 양방향 대조한다(§45.3).
 
@@ -19,7 +19,7 @@
 모든 Task의 요구사항에 아래가 암묵적으로 포함된다. 값은 스펙에서 그대로 복사했다.
 
 ```text
-기준선 ID            HC-RSV-RCP-20260903-R2
+기준선 ID            HC-RSV-RCP-20260904-R3
 Database             HealthCheckupReservationReceptionDb
 Instance             .\SQLEXPRESS   (SQL Server 2025 Express 17.0.1125.2)
 Collation            Korean_Wansung_CI_AS   (CREATE DATABASE 에 명시 고정)
@@ -36,7 +36,7 @@ Preflight 가드 위반   THROW 50010 ~ 50015   (00_Preflight.sql, 대상 DB 컨
 Rebuild 가드 위반     THROW 50020 ~ 50024   (Rebuild.sql, master 컨텍스트)
 테스트 파일 실패      THROW 51000
 barrier 시각 경과     THROW 51001
-정원                  Capacity = 20  (RSV + RCP, CNL 제외)
+정원                  Capacity = 20  (RSV + RCP, CNR·CNC 제외)
 NEX Cardinality      TGT 대상 8~11행 / 비대상 0행
 AEX                   OPT01~OPT07 7개 BIT, NULL 불허, 0개 이상 선택 허용
 ResultCode Catalog    정확히 38개. 새 코드를 추가하지 않는다
@@ -45,8 +45,8 @@ Rule Test 기준 예약일  2026-10-01
 휴무일 Seed           2026-12-25(금, 평일 휴무) / 2026-12-26(토, 토요일 휴무)
 요일 계산             DATEDIFF(DAY, 0, @d) % 7    (0=월 … 5=토, 6=일)
 만 나이               DATEDIFF(YEAR,@b,@d) - CASE WHEN (MONTH(@d)*100+DAY(@d)) < (MONTH(@b)*100+DAY(@b)) THEN 1 ELSE 0 END
-Patient 동시성        INFO_PATIENTS.LastEditDate DATETIME. 증가하지 않으면 DATEADD(MILLISECOND, 4, @Old)
-Work 동시성           INFO_CHECKUP_WORKS.RowVersion BINARY(8)
+Patient 동시성        수검자.LastEditDate DATETIME. 증가하지 않으면 DATEADD(MILLISECOND, 4, @Old)
+Work 동시성           예약접수.RowVersion BINARY(8)
 ```
 
 ### 절대 금지 (모든 Task 공통)
@@ -150,12 +150,12 @@ echo "exit=$RC"
 
 `-b` 없이 실행하지 않는다. exit code가 유일한 자동 판정 근거다.
 
-**`-I` 없이 실행하지 않는다 (`SET QUOTED_IDENTIFIER ON`).** `[X]` 초안의 모든 호출에 이 옵션이 빠져 있었다. sqlcmd 는 SSMS 와 달리 `QUOTED_IDENTIFIER` **OFF** 로 접속하는데, 필터형 인덱스(`IX_INFO_PATIENTS_CEL_NUMBER_S`·`UX_MST_EXAM_ITEMS_AEX_CODE`)는 생성 시점뿐 아니라 **그 테이블에 대한 모든 `INSERT`/`UPDATE`/`DELETE` 시점에도** ON 을 요구한다. 실측:
+**`-I` 없이 실행하지 않는다 (`SET QUOTED_IDENTIFIER ON`).** `[X]` 초안의 모든 호출에 이 옵션이 빠져 있었다. sqlcmd 는 SSMS 와 달리 `QUOTED_IDENTIFIER` **OFF** 로 접속하는데, 필터형 인덱스(`IX_수검자_CEL_NUMBER_S`·`UX_검사코드_AEX_CODE`)는 생성 시점뿐 아니라 **그 테이블에 대한 모든 `INSERT`/`UPDATE`/`DELETE` 시점에도** ON 을 요구한다. 실측:
 
 ```text
 CREATE INDEX (필터형)                       → Msg 1934
-INSERT INTO MST_EXAM_ITEMS                  → Msg 1934
-INSERT INTO INFO_PATIENTS                   → Msg 1934
+INSERT INTO 검사코드                  → Msg 1934
+INSERT INTO 수검자                   → Msg 1934
 ```
 
 `T08` Seed 부터 Write SP 시험·동시성 harness 까지 전부 이 벽에 부딪힌다. 배포 `.sql` 파일은 자체적으로도 첫 배치에 `SET QUOTED_IDENTIFIER ON;` + `GO` 를 둔다 — `SET` 은 parse 시점에 적용되므로 같은 배치 안에서는 소급되지 않는다.
@@ -240,7 +240,7 @@ DECLARE @Dow  INT     = DATEDIFF(DAY, 0, CONVERT(DATE, SYSDATETIME())) % 7;
 DECLARE @Biz  BIT     = CASE WHEN @Dow <> 6
                               AND @NowT >= CONVERT(TIME(7),'09:00:00')
                               AND @NowT <  CONVERT(TIME(7),'18:00:00')
-                              AND NOT EXISTS (SELECT 1 FROM [dbo].[MST_HOLIDAYS]
+                              AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
                                                WHERE [HolidayDate] = CONVERT(DATE, SYSDATETIME())
                                                  AND [Active] = 1)
                              THEN 1 ELSE 0 END;
@@ -291,7 +291,7 @@ BEGIN
         -- [4] 재검증: 존재 → 소유 → 상태 → 동시성 → Master 구성 → Rule → 정원
         --     Work 검사구성은 세 가지 전부 확인한다 (스펙 §21.2a)
         --       (1) NEX 개수 NOT BETWEEN 8 AND 11  → 701
-        --       (2) ExamSourceCode 가 MST_EXAM_ITEMS 역할과 불일치 → 701
+        --       (2) ExamSourceCode 가 검사코드 역할과 불일치 → 701
         --       (3) AEX 개수 > 6 → 701
         IF @Code <> 0
         BEGIN
@@ -381,7 +381,7 @@ SET @Res = N'HC|SLOT|' + CONVERT(CHAR(8), @ReservationDate, 112) + N'|' + @TimeS
 ### 조건부 UPDATE 표준형
 
 ```sql
-UPDATE [dbo].[INFO_CHECKUP_WORKS]
+UPDATE [dbo].[예약접수]
    SET StatusCode = '<새 상태>', LastEditDate = @StoredNow
  WHERE WorkId       = @WorkId
    AND StatusCode   = '<기대 상태>'
