@@ -129,5 +129,57 @@ IF @Sun1 = 301 AND @Sun7 = 301
     PRINT 'PASS RUL-D09 DATEFIRST 비종속 확인';
 ELSE BEGIN PRINT 'FAIL RUL-D09 DATEFIRST 종속성 발견'; SET @Fail += 1; END
 
+-- ── TGT 경계 RUL-G01~G08 (스펙 §35.3) ────────────────────────────────────────
+-- 기준 예약일은 §15.5 의 Rule Test 기준일 2026-10-01 이다.
+DECLARE @Ref DATE = '2026-10-01';
+DECLARE @P BIGINT;
+
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T001';   -- 만 19세
+IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_검진대상확인](@P, @Ref)) = 400)
+    PRINT 'PASS RUL-G01 만 19세 400 UnderAge';
+ELSE BEGIN PRINT 'FAIL RUL-G01'; SET @Fail += 1; END
+
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T002';   -- 만 20세
+IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@P, @Ref)) = 1)
+    PRINT 'PASS RUL-G02 만 20세 대상';
+ELSE BEGIN PRINT 'FAIL RUL-G02'; SET @Fail += 1; END
+
+-- RUL-G03 ~ RUL-G07  완료이력 판정 (스펙 §35.3)
+--   T005(완료이력 없음) / T016(2025-05-01, 1년차) / T004(2024-05-01, 2년차) 를 쓴다.
+DECLARE @Pg BIGINT;
+
+SELECT @Pg = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T005';
+IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 1
+    AND (SELECT LastCheckupDate FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) IS NULL)
+    PRINT 'PASS RUL-G03 완료이력 없음 → Eligible=1, LastCheckupDate NULL';
+ELSE BEGIN PRINT 'FAIL RUL-G03'; SET @Fail += 1; END
+
+SELECT @Pg = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T016';
+IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 0
+    AND (SELECT ReasonCode FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 401)
+    PRINT 'PASS RUL-G04 1년차 완료이력 → 401 NotDue';
+ELSE BEGIN PRINT 'FAIL RUL-G04'; SET @Fail += 1; END
+
+SELECT @Pg = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T004';
+IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 1)
+    PRINT 'PASS RUL-G05 2년차 완료이력 → 대상';
+ELSE BEGIN PRINT 'FAIL RUL-G05'; SET @Fail += 1; END
+
+-- RUL-G06 완료일 = 예약일 당일 → 완료이력으로 쓰지 않는다 (T016 의 완료일을 예약일로 준다)
+SELECT @Pg = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T016';
+IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2025-05-01')) = 1)
+    PRINT 'PASS RUL-G06 완료일 당일은 완료이력으로 사용하지 않는다';
+ELSE BEGIN PRINT 'FAIL RUL-G06'; SET @Fail += 1; END
+
+-- RUL-G07 완료일 > 예약일 → 완료이력으로 쓰지 않는다
+IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2025-04-30')) = 1)
+    PRINT 'PASS RUL-G07 예약일 이후의 완료일은 완료이력으로 사용하지 않는다';
+ELSE BEGIN PRINT 'FAIL RUL-G07'; SET @Fail += 1; END
+
+-- RUL-G08 존재하지 않는 PatientId → 0행
+IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_검진대상확인](-1, @Ref)) = 0)
+    PRINT 'PASS RUL-G08 미존재 Patient 0행';
+ELSE BEGIN PRINT 'FAIL RUL-G08'; SET @Fail += 1; END
+
 IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
 GO

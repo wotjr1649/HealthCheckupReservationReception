@@ -82,3 +82,49 @@ RETURN
     ) d
 );
 GO
+-- 완료이력 범위를 CompletionDate < @ReservationDate 외로 넓히지 않는다.
+-- Work 상태(RSV/RCP/CNR/CNC)를 완료이력으로 쓰지 않는다.
+-- Patient 가 없으면 0행을 반환한다 (내부 derived table 이 0행이 되어 자연히 그렇게 된다).
+CREATE OR ALTER FUNCTION [dbo].[UFN_HC_검진대상확인]
+(
+    @PatientId       BIGINT,
+    @ReservationDate DATE
+)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT
+          Eligible        = CONVERT(BIT, CASE WHEN x.ReasonCode = 0 THEN 1 ELSE 0 END)
+        , Age             = CONVERT(INT, x.Age)
+        , LastCheckupDate = CONVERT(DATE, x.LastCheckupDate)
+        , ReasonCode      = CONVERT(INT, x.ReasonCode)
+        , ReasonMessage   = CONVERT(NVARCHAR(300),
+                              CASE x.ReasonCode
+                                  WHEN 400 THEN N'예약일 기준 만 20세 미만으로 검진 대상이 아닙니다.'
+                                  WHEN 401 THEN N'일반건강검진 2년 주기가 도래하지 않았습니다.'
+                                  ELSE N'' END)
+    FROM
+    (
+        SELECT a.Age, a.LastCheckupDate
+             , ReasonCode = CASE WHEN a.Age < 20 THEN 400
+                                 WHEN a.LastCheckupDate IS NOT NULL
+                                  AND (YEAR(@ReservationDate) - YEAR(a.LastCheckupDate)) < 2 THEN 401
+                                 ELSE 0 END
+        FROM
+        (
+            SELECT
+                  Age = DATEDIFF(YEAR, p.[Birthday_D], @ReservationDate)
+                        - CASE WHEN (MONTH(@ReservationDate) * 100 + DAY(@ReservationDate))
+                                  < (MONTH(p.[Birthday_D])  * 100 + DAY(p.[Birthday_D])) THEN 1 ELSE 0 END
+                , LastCheckupDate = (SELECT TOP (1) h.[CompletionDate]
+                                       FROM [dbo].[완료이력] h
+                                      WHERE h.[PatientId] = @PatientId
+                                        AND h.[CompletionDate] < @ReservationDate
+                                      ORDER BY h.[CompletionDate] DESC)
+            FROM (SELECT [Birthday_D] = CONVERT(DATE, i.[Birthday], 112)
+                    FROM [dbo].[수검자] i WHERE i.[PatientId] = @PatientId) p
+        ) a
+    ) x
+);
+GO
