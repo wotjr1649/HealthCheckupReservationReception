@@ -1,0 +1,9 @@
+Table       = 7
+PK          = 7
+FK          = 6
+UQ          = 2
+FilteredUX  = 1
+Sequence    = 1
+Trigger     = 0
+TVF         = 0
+Procedure   = 0
