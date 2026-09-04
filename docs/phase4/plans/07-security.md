@@ -157,7 +157,7 @@ IF @UserName = N'HC_APP_TEST'
 ELSE BEGIN PRINT 'FAIL SEC-001 컨텍스트 전환 실패'; SET @Fail += 1; END
 
 IF @IsSa = 0
-    PRINT 'PASS SEC-002 앱 컨텍스트에서 sysadmin 아님 — dbo 오인 배제';
+    PRINT N'PASS SEC-002 앱 컨텍스트에서 sysadmin 아님 — dbo 오인 배제';
 ELSE BEGIN PRINT 'FAIL SEC-002 sysadmin 권한이 남아 있어 보안 테스트가 무의미함'; SET @Fail += 1; END
 ```
 

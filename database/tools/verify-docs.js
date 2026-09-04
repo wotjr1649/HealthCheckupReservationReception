@@ -391,8 +391,143 @@ function splitFences(src) {
         if (re.test(l)) hits.push(path.basename(f) + ':' + (i + 1) + ' [' + nm + '] ' + l.trim().slice(0, 76));
     });
   }
+  // 구분자 문자열 안의 수치는 위 패턴이 보지 못한다.
+  // 'INVENTORY|7|4|15|1|7|6|2|1|5|0|19|2' 의 6번째 칸이 Foreign Key 수인데
+  // \bFK\s*6 은 그것을 FK 로 읽지 못한다 — plans/08 의 RBD-004·005 가 이 구멍으로 들어왔다.
+  // 패턴 대신 위치로 짚어 기준선 04 실측과 대조한다(V08 과 같은 방식이다).
+  // 유일한 가정은 "6번째 칸이 FK" 라는 위치다. 칸 수가 12 가 아니면 그 가정이 깨진 것이므로
+  // 조용히 넘기지 않고 형상 자체를 FAIL 로 낸다 — fail-open 을 남기지 않는다.
+  {
+    const fk = uniq(/\`FK_[^\`\n]+\`/g);
+    for (const f of targets) {
+      const buf = fs.readFileSync(f);
+      const src = buf.slice(buf[0] === 0xEF ? 3 : 0).toString('utf8');
+      src.split(/\r?\n/).forEach((l, i) => {
+        const m = l.match(/INVENTORY((?:\|\d+)+)/);
+        if (!m) return;
+        const cols = m[1].slice(1).split('|');
+        const at = path.basename(f) + ':' + (i + 1);
+        if (cols.length !== 12)
+          hits.push(at + ' [지문 형상] 칸 ' + cols.length + '개 — 12개가 아니면 FK 위치 가정이 깨진다');
+        else if (+cols[5] !== fk)
+          hits.push(at + ' [지문 FK] 선언=' + cols[5] + ' / 기준선 04 실측=' + fk + '  ' + l.trim().slice(0, 56));
+      });
+    }
+  }
+
   hits.length ? F('V15', 'R2 수치·식별자 사본 ' + hits.length + '건', hits.join('\n'))
               : P('V15', 'R2 수치·식별자 사본 0건 (' + targets.length + '개 파일)');
+}
+
+// V16 CP949 에 없는 문자를 담은 `N` 없는 리터럴 — 조용히 `?` 로 바뀐다.
+// varchar 리터럴은 DB 정렬(Korean_Wansung = CP949)로 해석된다. 한글은 살아남고
+// —(U+2014) 같은 기호만 사라지므로 exit code 에도 PASS 건수에도 드러나지 않는다(실측 확인).
+// 실행이 잡아주지 않는 부류라서 게이트가 유일한 방어선이다.
+//
+// 금지문자를 손으로 나열하면 실제로 틀린다 —
+// —(U+2014)·–(U+2013) 은 불가인데 ―(U+2015)··(U+00B7)·→(U+2192)·§·…·≥ 는 전부 가능이다.
+// 그래서 자모집합을 하드코딩하지 않고 역산한다.
+//
+//   CP949 = KS X 1001 ∪ 한글 음절 11172자
+//
+// KS X 1001 쪽은 Node 의 TextDecoder('euc-kr') 로 2바이트 조합을 전수 디코드해 뽑는다(≈130ms).
+// UHC 확장 영역이 더하는 것은 **한글 음절뿐**이라, 음절 범위를 합집합으로 얹으면 정확해진다.
+// (그 디코더만 쓰면 확장 음절 8822자가 전부 오탐이 된다 — 뷁·똠 이 디코드 실패한다.)
+// 이 등식은 저장소의 실제 리터럴 전건을 iconv 와 대조해 확인했다.
+{
+  // 주석을 걷어내고 리터럴만 남긴다. '' 는 리터럴 안의 이스케이프다.
+  const literals = (sql, base) => {
+    const out = []; let i = 0, line = base;
+    while (i < sql.length) {
+      const c = sql[i];
+      if (c === '\n') { line++; i++; continue; }
+      if (c === '-' && sql[i + 1] === '-') { while (i < sql.length && sql[i] !== '\n') i++; continue; }
+      if (c === '/' && sql[i + 1] === '*') {
+        i += 2;
+        while (i < sql.length && !(sql[i] === '*' && sql[i + 1] === '/')) { if (sql[i] === '\n') line++; i++; }
+        i += 2; continue;
+      }
+      if (c === "'") {
+        const nPrefix = i > 0 && /[Nn]/.test(sql[i - 1]) && (i < 2 || !/[A-Za-z0-9_@#$]/.test(sql[i - 2]));
+        const start = line; let body = ''; i++;
+        while (i < sql.length) {
+          if (sql[i] === "'" && sql[i + 1] === "'") { body += "'"; i += 2; continue; }
+          if (sql[i] === "'") { i++; break; }
+          if (sql[i] === '\n') line++;
+          body += sql[i]; i++;
+        }
+        if (!nPrefix) out.push({ body, line: start });
+        continue;
+      }
+      i++;
+    }
+    return out;
+  };
+
+  // 마크다운은 ```sql 코드펜스만, .sql 은 파일 전체가 대상이다.
+  const sqlBlocks = src => {
+    const out = []; let inF = false, lang = '', buf = [], start = 0;
+    src.split('\n').forEach((l, i) => {
+      const m = l.match(/^\s*```(\w*)/);
+      if (m) {
+        if (!inF) { inF = true; lang = m[1]; buf = []; start = i + 2; }
+        else { if (/^sql$/i.test(lang)) out.push({ body: buf.join('\n'), line: start }); inF = false; }
+        return;
+      }
+      if (inF) buf.push(l);
+    });
+    return out;
+  };
+
+  const found = new Map();                       // 문자 -> 발견 위치들
+  const note = (file, lits) => lits.forEach(L => {
+    for (const ch of L.body) if (ch.codePointAt(0) > 127) {
+      if (!found.has(ch)) found.set(ch, []);
+      found.get(ch).push(file + ':' + L.line + ': ' + L.body.trim().slice(0, 72));
+    }
+  });
+
+  for (const f of [SPEC, ...planFiles])
+    for (const b of sqlBlocks(read(f))) note(path.basename(f), literals(b.body, b.line));
+
+  const DB2 = path.resolve(__dirname, '..');
+  const sqlFiles = [path.join(DB2, 'Deploy.sql'), path.join(DB2, 'Rebuild.sql')];
+  for (const d of ['deploy', 'tests'])
+    for (const f of fs.readdirSync(path.join(DB2, d)).filter(f => f.endsWith('.sql')))
+      sqlFiles.push(path.join(DB2, d, f));
+  for (const f of sqlFiles) {
+    const buf = fs.readFileSync(f);
+    note(path.basename(f), literals(buf.slice(buf[0] === 0xEF ? 3 : 0).toString('utf8'), 1));
+  }
+
+  const chars = [...found.keys()];
+  if (!chars.length) { P('V16', 'N 없는 리터럴에 비-ASCII 문자 자체가 없다'); }
+  else {
+    let ksx;
+    try {
+      const dec = new TextDecoder('euc-kr', { fatal: true });
+      ksx = new Set(); const b = Buffer.alloc(2);
+      for (let hi = 0x81; hi <= 0xFE; hi++) for (let lo = 0x41; lo <= 0xFE; lo++) {
+        b[0] = hi; b[1] = lo;
+        try { const s = dec.decode(b); if (s.length === 1) ksx.add(s); } catch (e) { /* 그 조합은 CP949 에 없다 */ }
+      }
+    } catch (e) { ksx = null; }
+
+    if (!ksx || ksx.size < 8000) {
+      // 판정하지 못한 검사는 통과가 아니다 (database/CLAUDE.md §10).
+      F('V16', 'euc-kr 디코더를 쓸 수 없어 CP949 표현 가능성을 판정할 수 없다 — 미실행은 PASS 가 아니다');
+    } else {
+      const ok = ch => { const c = ch.codePointAt(0); return c < 0x80 || (c >= 0xAC00 && c <= 0xD7A3) || ksx.has(ch); };
+      const hits = [];
+      for (const ch of chars) {
+        if (ok(ch)) continue;
+        const cp = 'U+' + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+        for (const w of found.get(ch)) hits.push(cp + ' ' + ch + '  ' + w);
+      }
+      hits.length ? F('V16', 'CP949 에 없는 문자를 담은 N 없는 리터럴 ' + hits.length + '건 — N 접두사를 붙인다', hits.join('\n'))
+                  : P('V16', 'N 없는 리터럴에 CP949 밖 문자 0건 (' + chars.length + '종 검사)');
+    }
+  }
 }
 
 console.log('\n=== verify-docs: PASS ' + pass + ' / FAIL ' + fail + ' ===');

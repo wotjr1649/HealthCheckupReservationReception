@@ -125,7 +125,7 @@ DECLARE @Wc2 BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
                         JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
                        WHERE p.[ChartNo] = 'T010' AND w.[StatusCode] = 'RSV');
 IF @Wc2 IS NULL
-BEGIN PRINT 'FAIL CWR-005 사전조건 — CORRUPT-2 Work 가 없다'; SET @Fail += 1; END
+BEGIN PRINT N'FAIL CWR-005 사전조건 — CORRUPT-2 Work 가 없다'; SET @Fail += 1; END
 ELSE
 BEGIN
     DECLARE @Rc2 BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wc2);
@@ -140,7 +140,7 @@ DECLARE @Wc4 BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
                         JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
                        WHERE p.[ChartNo] = 'T009' AND w.[StatusCode] = 'RSV');
 IF @Wc4 IS NULL
-BEGIN PRINT 'FAIL CWR-011 사전조건 — CORRUPT-4 Work 가 없다'; SET @Fail += 1; END
+BEGIN PRINT N'FAIL CWR-011 사전조건 — CORRUPT-4 Work 가 없다'; SET @Fail += 1; END
 ELSE
 BEGIN
     DECLARE @Rc4 BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wc4);
@@ -155,7 +155,7 @@ DECLARE @Wt BIGINT = (SELECT TOP (1) [WorkId] FROM [dbo].[예약접수]
                        WHERE [StatusCode] = 'RSV' AND [ReservationDate] = CONVERT(DATE, SYSDATETIME())
                        ORDER BY [WorkId]);
 IF @Wt IS NULL
-    PRINT 'SKIP CWR-006/007/009 오늘 날짜 RSV Work 가 없다 — Fixture 는 고정날짜를 쓴다(§15.5)';
+    PRINT N'SKIP CWR-006/007/009 오늘 날짜 RSV Work 가 없다 — Fixture 는 고정날짜를 쓴다(§15.5)';
 ELSE
 BEGIN
     DECLARE @Rt   BINARY(8) = (SELECT [RowVersion]      FROM [dbo].[예약접수] WHERE [WorkId] = @Wt);
@@ -174,7 +174,7 @@ BEGIN
         AND (SELECT [ReservationDate] FROM [dbo].[예약접수] WHERE [WorkId] = @Wt) = @Dt
         AND (SELECT [TimeSlotCode]    FROM [dbo].[예약접수] WHERE [WorkId] = @Wt) = @St
         AND (SELECT COUNT(*) FROM [dbo].[검사항목] WHERE [WorkId] = @Wt) = @Dtl)
-        PRINT 'PASS CWR-006 접수 성공 — RCP 전이, Date/Slot/Detail 불변';
+        PRINT N'PASS CWR-006 접수 성공 — RCP 전이, Date/Slot/Detail 불변';
     ELSE BEGIN PRINT 'FAIL CWR-006'; SET @Fail += 1; END
 
     -- CWR-007  이미 RCP 인 Work 재접수 → 상태 그대로
@@ -194,7 +194,7 @@ END
 DECLARE @Now TIME(7) = CONVERT(TIME(7), SYSDATETIME());
 DECLARE @Dow INT = DATEDIFF(DAY, 0, CONVERT(DATE, SYSDATETIME())) % 7;
 IF @Dow = 6 OR @Now < '09:00' OR @Now >= '11:00'
-    PRINT 'SKIP CWR-006 접수 가능 시간대(월~토 09:00~11:00 AM)가 아님 — 통합시험 한계';
+    PRINT N'SKIP CWR-006 접수 가능 시간대(월~토 09:00~11:00 AM)가 아님 — 통합시험 한계';
 ELSE
 BEGIN
     -- 실제 접수 시나리오 실행 및 판정
@@ -324,7 +324,7 @@ DECLARE @Wr BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
                       WHERE p.[ChartNo] = 'T014' AND w.[StatusCode] = 'RCP'
                       ORDER BY w.[WorkId]);
 IF @Wr IS NULL
-BEGIN PRINT 'FAIL CWR-020 사전조건 — T014 의 RCP Work 가 없다 (tests/00b 를 먼저 실행했는가)'; SET @Fail += 1; END
+BEGIN PRINT N'FAIL CWR-020 사전조건 — T014 의 RCP Work 가 없다 (tests/00b 를 먼저 실행했는가)'; SET @Fail += 1; END
 ELSE
 BEGIN
     DECLARE @Rv  BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wr);
@@ -336,7 +336,7 @@ BEGIN
     EXEC [dbo].[USP_HC_UPDATE_접수추가검사] @Wr, @Rv, 1,0,0,0,0,0,0;
     IF ((SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wr) = @Rv
         AND (SELECT COUNT(*) FROM [dbo].[검사항목] WHERE [WorkId] = @Wr) = @Cnt)
-        PRINT 'PASS CWR-020 동일 AEX 집합 No-op — RowVersion·Detail 불변';
+        PRINT N'PASS CWR-020 동일 AEX 집합 No-op — RowVersion·Detail 불변';
     ELSE BEGIN PRINT 'FAIL CWR-020'; SET @Fail += 1; END
 
     -- CWR-021  실제 변경 → RowVersion 이 반드시 바뀐다
@@ -371,10 +371,10 @@ DECLARE @W11 BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
                         JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
                        WHERE p.[ChartNo] = 'T011' AND w.[StatusCode] = 'RCP' ORDER BY w.[WorkId]);
 IF @W11 IS NULL
-BEGIN PRINT 'FAIL CWR-024 사전조건 — T011 의 RCP Work 가 없다 (tests/00b)'; SET @Fail += 1; END
+BEGIN PRINT N'FAIL CWR-024 사전조건 — T011 의 RCP Work 가 없다 (tests/00b)'; SET @Fail += 1; END
 ELSE IF NOT EXISTS (SELECT 1 FROM [dbo].[검사항목]
                      WHERE [WorkId] = @W11 AND [ExamSourceCode] = 'NEX' AND [ExamItemCode] = 'EX012')
-BEGIN PRINT 'FAIL CWR-024 사전조건 — T011 저장 NEX 에 EX012 가 없다. 412 를 관측할 수 없다'; SET @Fail += 1; END
+BEGIN PRINT N'FAIL CWR-024 사전조건 — T011 저장 NEX 에 EX012 가 없다. 412 를 관측할 수 없다'; SET @Fail += 1; END
 ELSE
 BEGIN
     DECLARE @Rv11 BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @W11);

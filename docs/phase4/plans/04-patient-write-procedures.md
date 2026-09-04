@@ -403,7 +403,7 @@ DECLARE @NewSsn VARCHAR(13) = @P12 + CONVERT(CHAR(1),
 EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Pf, @Lf, N'F001', @Nf, @NewSsn, NULL,NULL,NULL,NULL,NULL,NULL,NULL;
 IF ((SELECT [SocialNumber] FROM [dbo].[수검자] WHERE [PatientId] = @Pf) = @Sf)
     PRINT 'PASS PWR-023 활성 Work 존재 시 주민번호가 바뀌지 않았다';
-ELSE BEGIN PRINT 'FAIL PWR-023 주민번호가 바뀌었다 — EP-08 위반'; SET @Fail += 1; END
+ELSE BEGIN PRINT N'FAIL PWR-023 주민번호가 바뀌었다 — EP-08 위반'; SET @Fail += 1; END
 
 -- PWR-024  차트번호 변경은 활성 Work 가 있어도 성공한다 (EP-08 은 주민번호만 막는다)
 SELECT @Lf = [LastEditDate] FROM [dbo].[수검자] WHERE [PatientId] = @Pf;
@@ -433,7 +433,7 @@ SET @NewSsn = @P12 + CONVERT(CHAR(1),
 
 IF NOT EXISTS (SELECT 1 FROM [dbo].[예약접수] WHERE [PatientId] = @Pr AND [StatusCode] = 'RCP')
 BEGIN
-    PRINT 'FAIL PWR-027 사전조건 미충족 — T014 의 RCP Work 가 없다 (tests/00b 를 먼저 실행했는가)';
+    PRINT N'FAIL PWR-027 사전조건 미충족 — T014 의 RCP Work 가 없다 (tests/00b 를 먼저 실행했는가)';
     SET @Fail += 1;
 END
 ELSE

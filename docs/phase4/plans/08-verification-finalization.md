@@ -374,7 +374,15 @@ IF ((SELECT COUNT(*) FROM [dbo].[검사코드]) = 19 AND (SELECT COUNT(*) FROM [
     PRINT 'PASS VER-007 Seed Exam 19 / Holiday 2';
 ELSE BEGIN PRINT 'FAIL VER-007 Seed'; SET @Fail += 1; END
 
-PRINT 'INFO CompatibilityLevel = ' + CONVERT(VARCHAR(10), (SELECT compatibility_level FROM sys.databases WHERE name = DB_NAME()));
+-- [X] 초안은 PRINT 인자에 (SELECT compatibility_level …) 를 직접 넣었다.
+--     PRINT 는 스칼라 식만 받으므로 Msg 1046 + Msg 102 로 **배치 전체가 컴파일 실패**하고
+--     VER-001~007 이 한 줄도 실행되지 않은 채 exit 1 이 난다.
+--     이 파일은 Deploy.sql 이 매 배포 끝마다 부르므로 모든 배포 검증이 깨진다.
+--     plans/01 §T04 가 Preflight 에서 같은 실수를 이미 실측으로 기록했는데 여기에 사본이 남아 있었다.
+--     하위 쿼리는 변수에 먼저 담는다. DATABASEPROPERTYEX 는 함수라 그대로 둔다.
+DECLARE @Compat VARCHAR(10);
+SELECT @Compat = CONVERT(VARCHAR(10), compatibility_level) FROM sys.databases WHERE name = DB_NAME();
+PRINT 'INFO CompatibilityLevel = ' + @Compat;
 PRINT 'INFO Collation          = ' + CONVERT(VARCHAR(80), DATABASEPROPERTYEX(DB_NAME(), 'Collation'));
 
 IF @Fail > 0 THROW 51000, N'배포 검증 실패', 1;
@@ -420,7 +428,7 @@ DECLARE @FP VARCHAR(200) = 'INVENTORY|'
      + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[검사코드]))            + '|'
      + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[휴무일]));
 
-IF @FP = 'INVENTORY|7|4|15|1|7|6|2|1|5|0|19|2'
+IF @FP = 'INVENTORY|7|4|15|1|7|4|2|1|5|0|19|2'
     PRINT 'PASS RBD-004 인벤토리 지문 일치  ' + @FP;
 ELSE BEGIN PRINT 'FAIL RBD-004 인벤토리 지문 불일치  ' + @FP; SET @Fail += 1; END
 
@@ -488,7 +496,7 @@ diff -u artifacts/reports/inventory_run1.txt artifacts/reports/inventory_run2.tx
 cp artifacts/reports/inventory_run2.txt artifacts/reports/object-inventory.txt
 ```
 
-Expected: `PASS RBD-005`, 지문 = `INVENTORY|7|4|15|1|7|6|2|1|5|0|19|2`
+Expected: `PASS RBD-005`, 지문 = `INVENTORY|7|4|15|1|7|4|2|1|5|0|19|2`
 
 - [ ] **Step 5: 안전가드 음성 검증 — `RBD-002` 만 (RBD-001 은 `NOT RUN`)**
 
@@ -749,7 +757,7 @@ IF NOT EXISTS (SELECT SpName, Ord, ParamName, TypeName FROM @ExpParam
     PRINT 'PASS Parameter 95개 이름·순서·타입 전건 일치';
 ELSE
 BEGIN
-    PRINT 'FAIL Parameter 계약 불일치 — 아래 차집합';
+    PRINT N'FAIL Parameter 계약 불일치 — 아래 차집합';
     SELECT '기대에만 있음' AS Side, * FROM (SELECT SpName, Ord, ParamName, TypeName FROM @ExpParam
                                              EXCEPT SELECT SpName, Ord, ParamName, TypeName FROM Act) a;
     SELECT '실측에만 있음' AS Side, * FROM (SELECT SpName, Ord, ParamName, TypeName FROM Act
@@ -798,8 +806,11 @@ INSERT INTO @Expected VALUES
  (5, N'ServerTime', N'datetime2(7)');
 
 -- (1) 총 행수 = 15 SP × 5컬럼 = 75
-IF ((SELECT COUNT(*) FROM @Rs0) = 75) PRINT 'PASS CTR-RS0-A 총 75행';
-ELSE BEGIN PRINT 'FAIL CTR-RS0-A 총 ' + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM @Rs0)) + '행'; SET @Fail += 1; END
+-- [X] ELSE 쪽 PRINT 인자에 (SELECT COUNT(*) FROM @Rs0) 이 들어 있었다. Msg 1046 은 컴파일 오류라
+--     ELSE 를 타지 않아도 이 배치가 통째로 죽는다. 개수를 변수에 먼저 담는다.
+DECLARE @Rs0Cnt INT = (SELECT COUNT(*) FROM @Rs0);
+IF (@Rs0Cnt = 75) PRINT 'PASS CTR-RS0-A 총 75행';
+ELSE BEGIN PRINT 'FAIL CTR-RS0-A 총 ' + CONVERT(VARCHAR(5), @Rs0Cnt) + '행'; SET @Fail += 1; END
 
 -- (2) DMV 가 결과셋을 결정하지 못한 SP 0건
 IF NOT EXISTS (SELECT 1 FROM @Rs0 WHERE ErrNo IS NOT NULL OR Ordinal IS NULL)

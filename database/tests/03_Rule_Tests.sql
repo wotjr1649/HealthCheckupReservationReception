@@ -213,7 +213,7 @@ ELSE BEGIN PRINT 'FAIL RUL-N04'; SET @Fail += 1; END
 -- RUL-N05  만 40세, HepatitisBExcluded=0(T007) → EX010 있음 / =1(T008) → EX010 없음
 IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T007'), @Ref) WHERE ExamCode='EX010')
    AND NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T008'), @Ref) WHERE ExamCode='EX010')
-    PRINT 'PASS RUL-N05 만 40세 HepatitisBExcluded=1 이 EX010 을 제거한다';
+    PRINT N'PASS RUL-N05 만 40세 — HepatitisBExcluded=1 이 EX010 을 제거한다';
 ELSE BEGIN PRINT 'FAIL RUL-N05'; SET @Fail += 1; END
 
 -- RUL-N06  만 55(T009) / 56(T010) → EX011 없음 / 있음
@@ -333,7 +333,7 @@ DECLARE @Pa BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] 
 DECLARE @Wa BIGINT = (SELECT TOP (1) [WorkId] FROM [dbo].[예약접수]
                        WHERE [PatientId] = @Pa AND [StatusCode] = 'RCP' ORDER BY [WorkId]);
 IF @Wa IS NULL
-BEGIN PRINT 'FAIL RUL-A09 사전조건 T011 의 RCP Work 가 없다 (tests/00b 를 먼저 실행했는가)'; SET @Fail += 1; END
+BEGIN PRINT N'FAIL RUL-A09 사전조건 — T011 의 RCP Work 가 없다 (tests/00b 를 먼저 실행했는가)'; SET @Fail += 1; END
 ELSE IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@Pa, @Ref, @Wa, 1, 0,0,0,1,0,0,0)
            WHERE OptionCode = 'OPT04') = 412)
     PRINT 'PASS RUL-A09 @UseSavedExams=1 은 저장 NEX 기준으로 중복 판정';

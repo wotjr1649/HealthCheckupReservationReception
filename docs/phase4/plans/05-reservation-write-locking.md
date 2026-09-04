@@ -123,7 +123,7 @@ DECLARE @Pf  BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]
 
 IF @Pt IS NULL OR @P19 IS NULL OR @P2 IS NULL OR @Pf IS NULL
 BEGIN
-    PRINT 'FAIL 사전조건 — T015/T017/T012/F020 중 없는 Fixture 가 있다 (tests/00 을 먼저 실행했는가)';
+    PRINT N'FAIL 사전조건 — T015/T017/T012/F020 중 없는 Fixture 가 있다 (tests/00 을 먼저 실행했는가)';
     SET @Fail += 1;
 END
 
@@ -189,7 +189,7 @@ IF ((SELECT COUNT(*) FROM [dbo].[예약접수]
       WHERE [ReservationDate] = '2026-11-16' AND [TimeSlotCode] = 'AM'
         AND [StatusCode] IN ('RSV', 'RCP')) = 20)
     PRINT 'PASS RWR-012 정원 20 초과 저장이 차단됐다 (RP-03)';
-ELSE BEGIN PRINT 'FAIL RWR-012 정원 21건 — RP-03 위반'; SET @Fail += 1; END
+ELSE BEGIN PRINT N'FAIL RWR-012 정원 21건 — RP-03 위반'; SET @Fail += 1; END
 
 UPDATE [dbo].[예약접수] SET [StatusCode] = 'CNR'
  WHERE [PatientId] = @Pf AND [ReservationDate] = '2026-11-16' AND [TimeSlotCode] = 'AM';
@@ -345,7 +345,7 @@ EXEC [dbo].[USP_HC_UPDATE_예약변경] @Ws, @Rv, '2026-11-17', 'PM', 1,0,0,0,0,
 
 IF ((SELECT [TimeSlotCode] FROM [dbo].[예약접수] WHERE [WorkId] = @Ws) = 'PM')
     PRINT 'PASS RWR-028 자기 Work 를 306 으로 오인하지 않고 변경했다';
-ELSE BEGIN PRINT 'FAIL RWR-028 자기 Work 오탐 — 변경이 반영되지 않았다'; SET @Fail += 1; END
+ELSE BEGIN PRINT N'FAIL RWR-028 자기 Work 오탐 — 변경이 반영되지 않았다'; SET @Fail += 1; END
 
 -- RWR-031  예약일 변경으로 만나이가 경계를 넘어 NEX 구성이 바뀐다 → OPT04 가 EX012 와 중복 → 412
 -- [X] 초안은 @Ws(T015, **남** 만 46세)를 썼다. NEX-05(EX012) 술어가 Gender='F' AND Age IN (54,60,66)
@@ -358,7 +358,7 @@ DECLARE @W20 BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
                         JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
                        WHERE p.[ChartNo] = 'T020' AND w.[StatusCode] = 'RSV');
 IF @W20 IS NULL
-BEGIN PRINT 'FAIL RWR-031 사전조건 — T020 의 RSV Work 가 없다'; SET @Fail += 1; END
+BEGIN PRINT N'FAIL RWR-031 사전조건 — T020 의 RSV Work 가 없다'; SET @Fail += 1; END
 ELSE
 BEGIN
     DECLARE @Rv20 BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @W20);
@@ -367,7 +367,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성](
                  (SELECT [PatientId] FROM [dbo].[예약접수] WHERE [WorkId] = @W20), @D20)
                 WHERE ExamCode = 'EX012')
-    BEGIN PRINT 'FAIL RWR-031 사전조건 — 변경 전에 이미 EX012 가 있다'; SET @Fail += 1; END
+    BEGIN PRINT N'FAIL RWR-031 사전조건 — 변경 전에 이미 EX012 가 있다'; SET @Fail += 1; END
     ELSE
     BEGIN
         EXEC [dbo].[USP_HC_UPDATE_예약변경] @W20, @Rv20, '2026-11-20', 'AM', 0,0,0,1,0,0,0;
@@ -385,7 +385,7 @@ DECLARE @Wx BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
                        JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
                       WHERE p.[ChartNo] = 'F002' AND w.[StatusCode] = 'RSV');
 IF @Wx IS NULL
-BEGIN PRINT 'FAIL RWR-034 사전조건 — CORRUPT-5 대상 Work(F002)가 없다'; SET @Fail += 1; END
+BEGIN PRINT N'FAIL RWR-034 사전조건 — CORRUPT-5 대상 Work(F002)가 없다'; SET @Fail += 1; END
 ELSE
 BEGIN
     DECLARE @Rvx BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wx);
