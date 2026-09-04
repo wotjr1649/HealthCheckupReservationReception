@@ -557,7 +557,9 @@ for f in 01_Schema 02_Seed 03_Functions 04_Procedures_Select \
          07_Procedures_Reception_Write 08_Security 09_Verify; do
   [ -f "deploy/${f}.sql" ] && continue
   printf '\xEF\xBB\xBF' > "deploy/${f}.sql"
-  printf "SET NOCOUNT ON;\nPRINT 'INFO %s placeholder — 아직 구현되지 않았습니다.';\nGO\n" "$f" >> "deploy/${f}.sql"
+  # [X] PRINT 리터럴에 N 접두사를 붙인다. 없으면 varchar 리터럴이 되어 Korean_Wansung(CP949) 에
+  #     없는 U+2014 EM DASH 가 '?' 로 깨진다(실측 확인). 한글은 살아남지만 특수문자는 아니다.
+  printf "SET NOCOUNT ON;\nPRINT N'INFO %s placeholder — 아직 구현되지 않았습니다.';\nGO\n" "$f" >> "deploy/${f}.sql"
 done
 ls -1 deploy/
 ```
@@ -604,7 +606,7 @@ BEGIN
 
     IF @Foreign > 0
         THROW 50022, N'Rebuild: 대상 DB 에 Phase 4 계약 밖 Table 이 있습니다. 동명 DB 를 삭제하려는 것일 수 있습니다.', 1;
-    PRINT 'INFO 50022 가드 통과 — 계약 밖 Table 0개';
+    PRINT N'INFO 50022 가드 통과 — 계약 밖 Table 0개';
 END
 
 -- 50023  KST
@@ -623,7 +625,7 @@ BEGIN
 END
 
 CREATE DATABASE [HealthCheckupReservationReceptionDb] COLLATE Korean_Wansung_CI_AS;
-PRINT 'PASS RBD-CREATE Database 생성 완료';
+PRINT N'PASS RBD-CREATE Database 생성 완료';
 GO
 ```
 
