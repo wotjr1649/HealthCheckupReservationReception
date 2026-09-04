@@ -26,7 +26,14 @@
 
 **선행 `DELETE` 를 넣지 않는다.** clean-create(`01_Schema.sql` 이 `DROP`→`CREATE`)이므로 테이블이 항상 비어 있어 효과가 없고, Fixture 배치 후 이 파일만 단독 재실행하면 `검사항목` 의 FK 때문에 **`Msg 547`** 로 실패한다. 멱등성은 **"clean-create 직후 한정"** 이다.
 
+`[X]` 첫 배치에 **`SET QUOTED_IDENTIFIER ON;` + `GO`** 를 둔다. `검사코드` 에는 필터형 인덱스
+`UX_검사코드_AEX_CODE` 가 있어 `INSERT` 가 `Msg 1934` 로 실패한다. sqlcmd `-I` 로도 켜지지만
+`01_Schema.sql` 과 같이 파일 자체가 보장한다(`database/CLAUDE.md` §6). `SET` 은 parse 시점에
+적용되므로 같은 배치 안에서는 소급되지 않아 반드시 `GO` 로 끊는다.
+
 ```sql
+SET QUOTED_IDENTIFIER ON;
+GO
 SET NOCOUNT ON;
 PRINT '--- 02_Seed 시작 ---';
 GO
@@ -126,11 +133,18 @@ git commit -m "feat(phase4): 검사 Master 19행 및 휴무일 2행 Seed 추가"
 - Create: `tests/02_Seed_Tests.sql`
 
 **Interfaces:**
-- Produces: `PASS SED-001` ~ `PASS SED-010`
+- Produces: 스펙 §45.2 의 `SED` 전건
 
-- [ ] **Step 1: RED — 기대값을 20으로 두고 실패를 확인**
+`[X]` 초안은 `SED-001`~`SED-010` 10건이라 적었으나 아래 SQL 은 `SED-011` 까지 만들고 §45.2 도 `001`~`011` 이다.
+건수 사본은 §45.2 가 명시적으로 금지한 드리프트 발생원이므로 이 절에서는 카탈로그를 참조만 한다.
 
-`SED-001`만 먼저 작성하되 `= 20` 으로 둔다.
+`[I]` `SSN-001`~`006` 도 §45.2 상 이 파일의 산출이지만 **`T10` 이 Fixture 를 만든 뒤 이 파일 끝에 덧붙인다.**
+`T09` 시점에는 `수검자` 가 0행이라 `COUNT(*) = 0` 으로 전건이 조용히 PASS 한다 — 무의미한 통과다.
+
+- [ ] **Step 1: RED — 기대표에 없는 행을 하나 넣어 실패를 확인**
+
+`SED-001`만 먼저 작성하되 `@ExpExam` 에 실재하지 않는 20번째 행 `('EX020', N'없는검사', 'NEX-01', NULL, NULL, 0)` 을 더한다.
+`EXCEPT` 가 양방향이므로 기대에만 있는 행 하나로 `FAIL SED-001` 이 확실히 난다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -240,17 +254,17 @@ echo "exit=$?"
 iconv -f UTF-16 -t UTF-8 artifacts/logs/test_02.log | grep -E '^(PASS|FAIL)'
 ```
 
-Expected: exit 0, `PASS SED-001` ~ `PASS SED-010` 10건.
+Expected: exit 0, `PASS SED-001` ~ `PASS SED-011` (스펙 §45.2 의 `SED` 전건). `SSN` 은 아직 없다.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
 git add database/tests/02_Seed_Tests.sql
-git commit -m "test(phase4): Master Seed 검증 10건 추가"
+git commit -m "test(phase4): Master Seed 검증 추가"
 ```
 
-**완료조건:** RED에서 exit 1 관측 + GREEN 10/10.
+**완료조건:** RED에서 exit 1 관측 + 스펙 §45.2 의 `SED` 전건 PASS.
 
 ---
 
@@ -264,9 +278,12 @@ git commit -m "test(phase4): Master Seed 검증 10건 추가"
 
 **Files:**
 - Create: `tests/00_Test_Harness.sql`
+- Modify: `tests/02_Seed_Tests.sql` (Step 6 의 `SSN` 블록을 이 파일 끝에 덧붙인다)
 
 **Interfaces:**
-- Produces: 테스트 수검자 (`ChartNo` `T001`~`T019`, 정원용 `F001`~`F020`), 완료이력, B형간염 제외여부, 기존 예약 19건 + `F020` 의 `CNR` 1건, 손상 데이터 **2종**(`CORRUPT-1`·`CORRUPT-2`)
+- Produces: 테스트 수검자 (`ChartNo` `T001`~`T020`, 정원용 `F001`~`F020`), 완료이력, B형간염 제외여부, 기존 예약 19건 + `F020` 의 `CNR` 1건 + `T020` 의 `RSV` 1건, 손상 데이터 **2종**(`CORRUPT-1`·`CORRUPT-2`), 스펙 §45.2 의 `SSN` 전건
+
+`[X]` 초안 Interfaces 는 `T001`~`T019` 였으나 아래 `VALUES` 는 `T020`(`RWR-031` 전용 경계 프로필)까지 만든다.
 
 **금지사항:** 실제 주민등록번호를 사용하지 않는다. `PatientId`·`WorkId` 를 하드코딩하지 않는다. Fixture를 Write SP로 만들지 않는다(업무시간 밖에 실패한다).
 
@@ -377,9 +394,10 @@ GO
 
 **고정 리터럴 `2007-11-18` 을 쓴다.** 유일한 소비처는 `RWR-006`(예약일 `2026-11-17`, `400 UnderAge` 기대)이고, 만나이는 그날 **18세**다(19세가 되는 날은 `2026-11-18`). 예약일을 옮기면 이 값도 함께 옮겨야 하며, `RWR-006` 이 `400` 대신 `200` 을 받으면 그 신호다.
 
-- [ ] **Step 3: 정원용 수검자 19명 + 기존 예약 19건**
+- [ ] **Step 3: 정원용 수검자 20명 + 기존 `RSV` 예약 19건 (+ `F020` 의 `CNR` 1건)**
 
-`RP-06` 때문에 한 수검자는 유효업무를 둘 이상 가질 수 없으므로 19명이 필요하다.
+`RP-06` 때문에 한 수검자는 유효업무를 둘 이상 가질 수 없으므로 슬롯을 19/20 으로 채우는 데만 19명이 필요하다.
+`F020` 은 `RWR-012`(`305 SlotFull`)가 `CNR`→`RSV` 로 뒤집어 20/20 을 만들 예비 1명이라 **총 20명**이다.
 
 `ROW_NUMBER() OVER (ORDER BY (SELECT 1)) FROM sys.all_objects` 를 쓰지 않는다 — `TOP (19)` 에 외부 `ORDER BY` 가 없어 `n` 이 `1..19` 라는 보장이 없고, `n >= 1000` 이 뽑히면 `CONVERT(VARCHAR(3), n)` 이 `'*'` 를 반환해 `ChartNo` 가 중복된다. **`VALUES` 로 고정한다.**
 
@@ -493,8 +511,12 @@ GO
 
 ```sql
 PRINT 'PASS FIX-DEPLOY Fixture 배치 완료';
+PRINT '=== 00_Test_Harness 완료 ===';
 GO
 ```
+
+`[I]` `SSN` 블록이 `tests/02` 로 옮겨가면서 이 파일에는 `THROW` 가 남지 않는다. Fixture 배치 실패는
+FK·CHECK 위반으로 sqlcmd `-b` 가 직접 exit 1 을 내므로 자체 집계가 필요 없다.
 
 `[X]` **RCP 상태 Work(`T29` 가 필요)는 이 파일에 넣지 않는다.** `UFN_HC_국가검사구성` 이 있어야 하므로 `T14` 이후여야 하고, 해당 블록에 `GO` 가 3개 있어 **`IF … BEGIN … END` 로 감쌀 수 없다**(`GO` 는 배치 구분자다). **`T14b` 가 별도 파일 `tests/00b_Test_Harness_RCP.sql` 로 만든다.**
 
@@ -548,13 +570,26 @@ DELETE x FROM [dbo].[검사항목] x
         (SELECT [ReservationDate] FROM [dbo].[예약접수] WHERE [WorkId] = @W5)));
 ```
 
-- [ ] **Step 6: 주민번호 무효 검수 (스펙 §16.2)**
+- [ ] **Step 6: 주민번호 무효 검수 (스펙 §16.2) — `tests/02_Seed_Tests.sql` 에 덧붙인다**
 
-같은 파일 끝에 붙인다.
+`[X]` 초안은 이 블록을 `tests/00_Test_Harness.sql` 끝에 두었으나 **스펙 §45.2 는 `SSN` 의 산출 파일을
+`tests/02_Seed_Tests.sql` 로 지정한다.** `06 CANDIDATE` 가 계획을 이기므로(`database/CLAUDE.md` §4)
+카탈로그를 따른다. `scripts/test.sh` 의 실행 순서가 `tests/00` → `tests/01` → `tests/02` 라
+검수 시점에 Fixture 가 이미 배치돼 있다.
+
+`T09` 가 만든 `tests/02_Seed_Tests.sql` 의 **`IF @Fail > 0 THROW` 바로 앞**에 넣는다.
+같은 배치에 `@Fail` 이 이미 선언돼 있으므로 **다시 선언하지 않는다.**
 
 ```sql
-DECLARE @Fail INT = 0;
 DECLARE @Bad INT;
+
+-- 사전조건 — 수검자가 0행이면 아래 COUNT 기반 검사가 전부 조용히 PASS 한다.
+--   그 통과는 "실제 주민등록번호를 쓰지 않았다"를 하나도 증명하지 않는다.
+--   tests/00 을 먼저 돌리지 않았다는 뜻이므로 여기서 실패시킨다.
+--   카탈로그에 없는 표식이므로 Test ID 를 쓰지 않는다 (FIX-DEPLOY·FIX-RCP-001 과 같은 부류).
+IF ((SELECT COUNT(*) FROM [dbo].[수검자]) > 0)
+    PRINT 'PASS FIX-SSN-PRE 사전조건 — 수검자 Fixture 존재';
+ELSE BEGIN PRINT 'FAIL FIX-SSN-PRE 수검자 0행 — tests/00_Test_Harness 를 먼저 실행하라'; SET @Fail += 1; END
 
 -- SSN-001 13자리 숫자
 SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
@@ -605,21 +640,29 @@ WHERE CAST(SUBSTRING(s.[SocialNumber], 13, 1) AS INT) = c.Valid;   -- 유효하�
 IF @Bad = 0 PRINT 'PASS SSN-006 전 행 체크디지트 무효 — 실제 주민등록번호 미사용 증명';
 ELSE BEGIN PRINT 'FAIL SSN-006 체크디지트가 유효한 행 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
-IF @Fail > 0 THROW 51000, N'Fixture 주민번호 검수 실패', 1;
-PRINT '=== 00_Test_Harness 완료 ===';
-GO
 ```
 
-- [ ] **Step 7: 실행 — `SSN-006` 이 반드시 PASS 여야 한다**
+블록은 여기서 끝난다. `T09` 가 이미 둔 `IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;`
+과 `PRINT '=== 02_Seed_Tests 완료 ===';` 가 뒤를 잇는다 — **THROW 를 새로 넣지 않는다.**
+
+- [ ] **Step 7: 실행 — `tests/00` → `tests/02` 순서로 돌린다**
+
+`tests/02` 를 단독으로 돌리면 `FIX-SSN-PRE` 가 FAIL 한다. 그것이 순서를 강제하는 장치다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
        -i tests/00_Test_Harness.sql -o artifacts/logs/test_00.log
-echo "exit=$?"
+echo "harness exit=$?"
 iconv -f UTF-16 -t UTF-8 artifacts/logs/test_00.log | grep -E '^(PASS|FAIL)'
+
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
+       -i tests/02_Seed_Tests.sql -o artifacts/logs/test_02.log
+echo "seed tests exit=$?"
+iconv -f UTF-16 -t UTF-8 artifacts/logs/test_02.log | grep -E '^(PASS|FAIL)'
 ```
 
-Expected: exit 0, `PASS SSN-001` ~ `PASS SSN-006` 6건 + `PASS FIX-DEPLOY`.
+Expected: 양쪽 exit 0. `test_00.log` 에 `PASS FIX-DEPLOY`,
+`test_02.log` 에 `PASS FIX-SSN-PRE` + 스펙 §45.2 의 `SED`·`SSN` 전건.
 
 `SSN-006` 이 FAIL이면 체크디지트 무효화 식이 틀린 것이다. **여기서 중단하고 식을 고친다.**
 
@@ -639,13 +682,13 @@ Expected: `dow=0` (월요일 — 업무일), `slot count=19`.
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
-git add database/tests/00_Test_Harness.sql
+git add database/tests/00_Test_Harness.sql database/tests/02_Seed_Tests.sql
 git commit -m "test(phase4): Test Fixture 및 주민번호 무효 검수 추가"
 ```
 
 **회귀시험:** 모든 테스트 실행이 이 파일로 시작한다.
 
-**로그 경로:** `artifacts/logs/test_00.log`
+**로그 경로:** `artifacts/logs/test_00.log` · `artifacts/logs/test_02.log`
 
 **Rollback/Cleanup:** `./scripts/rebuild.sh` — 개별 cleanup 로직을 만들지 않는다.
 
@@ -765,6 +808,8 @@ Expected: exit **1**, `Msg 4121` 또는 `Msg 208` — "UFN_HC_일정확인 개�
 - [ ] **Step 3: `deploy/03_Functions.sql` 에 구현 (UTF-8 with BOM)**
 
 ```sql
+SET QUOTED_IDENTIFIER ON;   -- 01_Schema.sql 과 같은 설정으로 객체를 만든다 (CLAUDE.md §6)
+GO
 SET NOCOUNT ON;
 GO
 CREATE OR ALTER FUNCTION [dbo].[UFN_HC_일정확인]
@@ -1292,12 +1337,15 @@ ELSE BEGIN PRINT 'FAIL RUL-A05'; SET @Fail += 1; END
 -- RUL-A06  AdditionalActive=0 인 항목 요청 → 410
 --   Seed 는 7종 전부 Active=1 이므로(SED-011) 이 시험만 잠시 하나를 끄고 즉시 되돌린다.
 --   되돌리지 않으면 SED-011 과 G07 이 뒤에서 FAIL 한다.
-UPDATE [dbo].[검사코드] SET [AdditionalActive] = 0 WHERE [ExamItemCode] = 'OPT06';
+-- [X] 초안은 `WHERE [ExamItemCode] = 'OPT06'` 이었다. OPT06 은 AdditionalExamCode 의 값이고
+--     PK 인 ExamItemCode 의 값은 EX018 이므로 UPDATE 가 0행이 되어 410 을 관측할 수 없다.
+--     RUL-A06 이 410 대신 0 을 받아 무조건 FAIL 한다. 술어를 AdditionalExamCode 로 고친다.
+UPDATE [dbo].[검사코드] SET [AdditionalActive] = 0 WHERE [AdditionalExamCode] = 'OPT06';
 IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,1,0)
       WHERE OptionCode = 'OPT06') = 410)
     PRINT 'PASS RUL-A06 비활성 항목 요청 410 ExamInactive';
 ELSE BEGIN PRINT 'FAIL RUL-A06'; SET @Fail += 1; END
-UPDATE [dbo].[검사코드] SET [AdditionalActive] = 1 WHERE [ExamItemCode] = 'OPT06';
+UPDATE [dbo].[검사코드] SET [AdditionalActive] = 1 WHERE [AdditionalExamCode] = 'OPT06';
 
 -- RUL-A08  TGT 비대상(T001) + @UseSavedExams=0 → 7행 전부 CanSelect=0, Selected=0
 SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T001';
@@ -1468,7 +1516,11 @@ git commit -m "feat(phase4): UFN_HC_추가검사확인 구현 및 AEX 경계 테
 
 **Interfaces:**
 - Consumes: `[dbo].[UFN_HC_국가검사구성]`
-- Produces: `ChartNo='T014'` 의 `RCP` Work 1건 (NEX 11행 + AEX `OPT01` 1행), `ChartNo='T011'` 의 `RCP` Work 1건 (NEX 11행 — **`EX012` 포함**)
+- Produces: `ChartNo='T014'` 의 `RCP` Work 1건 (NEX 11행 + AEX `OPT01` 1행), `ChartNo='T011'` 의 `RCP` Work 1건 (NEX **9행** — **`EX012` 포함**)
+
+`[X]` 초안은 `T011` 도 "NEX 11행" 이라 적었다. `T011`(여, 기준일 `2026-10-01` 에 만 54세)은
+`NEX-01` 8행 + `NEX-05`(`EX012`) 1행 = **9행**이다 — `NEX-02` 는 `(54-40)%4=2`, `NEX-04`·`NEX-06` 은 만 56세라 셋 다 성립하지 않는다.
+11행은 만 56세(`T010`·`T014`)의 값이다. `FIX-RCP-003` 이 `EX012` 존재만 단언해 실행은 통과하므로 서술만 어긋나 있었다.
 
 **금지사항:** SP 경로로 만들지 않는다 — `USP_HC_UPDATE_접수완료` 는 `308`/`309` 를 검증하므로 업무시간 밖에 실패한다. `T10` 파일에 합치지 않는다(`GO` 3개 때문에 `IF` 로 감쌀 수 없다).
 
