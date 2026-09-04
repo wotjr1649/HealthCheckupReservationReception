@@ -583,30 +583,34 @@ IF ISNULL(CONVERT(SYSNAME, SERVERPROPERTY('InstanceName')), N'') <> N'SQLEXPRESS
 IF DB_NAME() <> N'master'
     THROW 50021, N'Rebuild: master 컨텍스트에서 실행해야 합니다.', 1;
 
--- 50022  기존 대상 DB 에 04 §8 계약 밖 사용자 Table 이 있으면 중단
+-- 50022  기존 대상 DB 가 04 §8 계약 집합과 정확히 같은지 확인한다
 -- [X] 초안은 'database_id <= 4' 였다. 사용자 DB 는 database_id 가 항상 5 이상이므로(실측: Net461MvpSample = 5)
---     고정된 비시스템 DB 이름에 대해 이 조건은 항상 거짓이다 — 절대 발화하지 않는 죽은 코드였고,
---     초안이 50011 을 죽은 코드라고 지적하면서 같은 형태를 남긴 셈이다.
+--     고정된 비시스템 DB 이름에 대해 이 조건은 항상 거짓이다 — 절대 발화하지 않는 죽은 코드였다.
 --     DROP DATABASE 직전에 실제로 확인해야 하는 것은 "그 DB 가 정말 Phase 4 DB 인가" 다.
---     동명 DB 가 다른 내용을 담고 있으면 그대로 삭제된다.
+-- [R3] 정확 집합 판정이라 R3 이름과 R2 이름이 섞인 반쯤 마이그레이션된 DB 도 막는다 —
+--      기존 NOT IN 형태는 "목록 밖 0개" 만 봐서 그것을 통과시켰다.
+--      R2 → R3 전환에 쓴 이중 가드의 R2 집합 블록은 전환 완료(2026-09-04) 후 제거했다.
+--      t.name IN (리터럴) 은 컬럼 대 리터럴 비교라 서버 정렬이 달라도 Msg 468 이 나지 않는다.
 IF DB_ID(N'HealthCheckupReservationReceptionDb') IS NOT NULL
 BEGIN
-    DECLARE @Expect TABLE (N SYSNAME);
-    INSERT @Expect (N) VALUES
-     (N'수검자'), (N'예약접수'), (N'검사항목'),
-     (N'변경이력'), (N'완료이력'),
-     (N'검사코드'), (N'휴무일');
+    DECLARE @Total INT, @R3 INT;
 
-    DECLARE @Foreign INT;
     -- 동적 SQL 을 쓰지 않는다. 대상 DB 이름은 대괄호 하드코딩 3부 이름으로만 참조한다.
-    SELECT @Foreign = COUNT(*)
+    SELECT @Total = COUNT(*)
+    FROM [HealthCheckupReservationReceptionDb].[sys].[tables] t
+    WHERE t.is_ms_shipped = 0;
+
+    SELECT @R3 = COUNT(*)
     FROM [HealthCheckupReservationReceptionDb].[sys].[tables] t
     WHERE t.is_ms_shipped = 0
-      AND t.name NOT IN (SELECT N FROM @Expect);
+      AND t.name IN (N'수검자', N'예약접수', N'검사항목', N'검사코드',
+                     N'휴무일', N'완료이력', N'변경이력');
 
-    IF @Foreign > 0
-        THROW 50022, N'Rebuild: 대상 DB 에 Phase 4 계약 밖 Table 이 있습니다. 동명 DB 를 삭제하려는 것일 수 있습니다.', 1;
-    PRINT N'INFO 50022 가드 통과 — 계약 밖 Table 0개';
+    -- 빈 DB(배포 실패 잔해) 또는 정확한 R3 집합만 허용한다
+    IF NOT (@Total = 0 OR (@Total = 7 AND @R3 = 7))
+        THROW 50022, N'Rebuild: 대상 DB 가 Phase 4 계약 집합과 다릅니다. 동명 DB 를 삭제하려는 것일 수 있습니다.', 1;
+    PRINT N'INFO 50022 가드 통과 — Total=' + CONVERT(NVARCHAR(5), @Total)
+        + N' R3=' + CONVERT(NVARCHAR(5), @R3);
 END
 
 -- 50023  KST
@@ -1003,7 +1007,7 @@ CREATE SEQUENCE [dbo].[SEQ_HC_CHART_NO]
     AS BIGINT START WITH 1 INCREMENT BY 1
     MINVALUE 1 MAXVALUE 999999 NO CYCLE CACHE 50;
 GO
-PRINT 'PASS SCH-DEPLOY 스키마 배포 완료';
+PRINT N'PASS SCH-DEPLOY 스키마 배포 완료';
 GO
 ```
 
@@ -1355,7 +1359,7 @@ echo "exit=$?"
 iconv -f UTF-16 -t UTF-8 artifacts/logs/test_01.log | grep -E '^(PASS|FAIL)'
 ```
 
-Expected: exit **1**. `SCH-001`~`SCH-012`, `SCH-015`, `SCH-016` **14건 PASS**, `SCH-013`·`SCH-014` FAIL (TVF·SP 미구현이므로 정상).
+Expected: exit **1**. `SCH-001`~`SCH-012`, `SCH-015`~`SCH-018` **16건 PASS**, `SCH-013`·`SCH-014` FAIL (TVF·SP 미구현이므로 정상). 2026-09-04 R3 배포에서 실측 확인했다.
 
 다른 항목이 FAIL이면 스키마를 `04` §8 기준으로 바로잡는다.
 

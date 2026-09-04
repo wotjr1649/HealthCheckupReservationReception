@@ -6,176 +6,167 @@ GO
 SET NOCOUNT ON;
 PRINT N'--- 01_Schema 시작 ---';
 GO
-DROP TABLE IF EXISTS [dbo].[INFO_PATIENT_EXAM_EXCLUSIONS];
-DROP TABLE IF EXISTS [dbo].[HIS_GENERAL_CHECKUP_COMPLETIONS];
-DROP TABLE IF EXISTS [dbo].[INFO_CHECKUP_WORK_EXAMS];
-DROP TABLE IF EXISTS [dbo].[INFO_CHECKUP_WORKS];
-DROP TABLE IF EXISTS [dbo].[MST_HOLIDAYS];
-DROP TABLE IF EXISTS [dbo].[MST_EXAM_ITEMS];
-DROP TABLE IF EXISTS [dbo].[INFO_PATIENTS];
+DROP TABLE IF EXISTS [dbo].[변경이력];
+DROP TABLE IF EXISTS [dbo].[완료이력];
+DROP TABLE IF EXISTS [dbo].[검사항목];
+DROP TABLE IF EXISTS [dbo].[예약접수];
+DROP TABLE IF EXISTS [dbo].[휴무일];
+DROP TABLE IF EXISTS [dbo].[검사코드];
+DROP TABLE IF EXISTS [dbo].[수검자];
 DROP SEQUENCE IF EXISTS [dbo].[SEQ_HC_CHART_NO];
 GO
-CREATE TABLE [dbo].[INFO_PATIENTS]
+CREATE TABLE [dbo].[수검자]
 (
     [PatientId]          BIGINT          IDENTITY(1,1) NOT NULL,
     [ChartNo]            NVARCHAR(100)   NOT NULL,
     [Name]               NVARCHAR(100)   NOT NULL,
-    [PassportNumber]     VARCHAR(10)     NULL,
     [SocialNumber]       VARCHAR(13)     NOT NULL,
     [Birthday]           VARCHAR(8)      NOT NULL,
     [Gender]             CHAR(1)         NOT NULL,
-    [InsuranceNumber]    VARCHAR(100)    NULL,
     [EMail]              VARCHAR(200)    NULL,
     [CelNumberS]         VARCHAR(13)     NULL,
-    [TelNumberS]         VARCHAR(13)     NULL,
-    [TelNumber]          VARCHAR(13)     NULL,
     [CelNumber]          VARCHAR(13)     NULL,
+    [TelNumber]          VARCHAR(13)     NULL,
     [Zipcode]            VARCHAR(10)     NULL,
     [Address]            NVARCHAR(200)   NULL,
     [AddressDetail]      NVARCHAR(200)   NULL,
     [Memo]               NVARCHAR(MAX)   NULL,
-    [Active]             BIT             NOT NULL CONSTRAINT [DF_INFO_PATIENTS_ACTIVE]              DEFAULT (1),
-    [IsStudent]          BIT             NOT NULL CONSTRAINT [DF_INFO_PATIENTS_IS_STUDENT]          DEFAULT (0),
-    [IsVIP]              BIT             NOT NULL CONSTRAINT [DF_INFO_PATIENTS_IS_VIP]              DEFAULT (0),
-    [IsReceiveCall]      BIT             NOT NULL CONSTRAINT [DF_INFO_PATIENTS_RECEIVE_CALL]        DEFAULT (0),
-    [IsReceiveSMS]       BIT             NOT NULL CONSTRAINT [DF_INFO_PATIENTS_RECEIVE_SMS]         DEFAULT (0),
-    [IsReceiveEmail]     BIT             NOT NULL CONSTRAINT [DF_INFO_PATIENTS_RECEIVE_EMAIL]       DEFAULT (0),
-    [IsReceivePost]      BIT             NOT NULL CONSTRAINT [DF_INFO_PATIENTS_RECEIVE_POST]        DEFAULT (0),
-    [IsMarketingConsent] BIT             NOT NULL CONSTRAINT [DF_INFO_PATIENTS_MARKETING_CONSENT]   DEFAULT (0),
-    [MConsentDate]       DATETIME        NULL,
-    [MCancelDate]        DATETIME        NULL,
-    [CreationDate]       DATETIME        NOT NULL CONSTRAINT [DF_INFO_PATIENTS_CREATION_DATE]       DEFAULT (GETDATE()),
-    [LastEditDate]       DATETIME        NOT NULL CONSTRAINT [DF_INFO_PATIENTS_LAST_EDIT_DATE]      DEFAULT (GETDATE()),
+    [HepatitisBExcluded] BIT             NOT NULL CONSTRAINT [DF_수검자_HEPATITIS_B_EXCLUDED] DEFAULT (0),
+    [CreationDate]       DATETIME        NOT NULL CONSTRAINT [DF_수검자_CREATION_DATE]        DEFAULT (GETDATE()),
+    [LastEditDate]       DATETIME        NOT NULL CONSTRAINT [DF_수검자_LAST_EDIT_DATE]       DEFAULT (GETDATE()),
 
-    CONSTRAINT [PK_INFO_PATIENTS] PRIMARY KEY CLUSTERED ([PatientId]),
-    CONSTRAINT [UQ_INFO_PATIENTS_CHART_NO]       UNIQUE ([ChartNo]),
-    CONSTRAINT [UQ_INFO_PATIENTS_SOCIAL_NUMBER]  UNIQUE ([SocialNumber]),
+    CONSTRAINT [PK_수검자] PRIMARY KEY CLUSTERED ([PatientId]),
+    CONSTRAINT [UQ_수검자_CHART_NO]       UNIQUE ([ChartNo]),
+    CONSTRAINT [UQ_수검자_SOCIAL_NUMBER]  UNIQUE ([SocialNumber]),
 
-    CONSTRAINT [CK_INFO_PATIENTS_CHART_NO_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([ChartNo]))) > 0),
-    CONSTRAINT [CK_INFO_PATIENTS_NAME_NOT_BLANK]     CHECK (LEN(LTRIM(RTRIM([Name]))) > 0),
-    CONSTRAINT [CK_INFO_PATIENTS_SOCIAL_FORMAT]      CHECK (LEN([SocialNumber]) = 13 AND [SocialNumber] NOT LIKE '%[^0-9]%'),
-    CONSTRAINT [CK_INFO_PATIENTS_BIRTHDAY]           CHECK (LEN([Birthday]) = 8 AND [Birthday] NOT LIKE '%[^0-9]%' AND TRY_CONVERT(DATE, [Birthday], 112) IS NOT NULL),
-    CONSTRAINT [CK_INFO_PATIENTS_GENDER]             CHECK ([Gender] IN ('M','F')),
-    CONSTRAINT [CK_INFO_PATIENTS_CEL_NORMALIZED]     CHECK (([CelNumber] IS NULL AND [CelNumberS] IS NULL) OR ([CelNumber] IS NOT NULL AND [CelNumberS] = REPLACE([CelNumber], '-', ''))),
-    CONSTRAINT [CK_INFO_PATIENTS_TEL_NORMALIZED]     CHECK (([TelNumber] IS NULL AND [TelNumberS] IS NULL) OR ([TelNumber] IS NOT NULL AND [TelNumberS] = REPLACE([TelNumber], '-', ''))),
-    CONSTRAINT [CK_INFO_PATIENTS_CEL_DIGIT]          CHECK ([CelNumberS] IS NULL OR [CelNumberS] NOT LIKE '%[^0-9]%'),
-    CONSTRAINT [CK_INFO_PATIENTS_TEL_DIGIT]          CHECK ([TelNumberS] IS NULL OR [TelNumberS] NOT LIKE '%[^0-9]%'),
-    CONSTRAINT [CK_INFO_PATIENTS_EDIT_DATE]          CHECK ([LastEditDate] >= [CreationDate])
+    CONSTRAINT [CK_수검자_CHART_NO_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([ChartNo]))) > 0),
+    CONSTRAINT [CK_수검자_NAME_NOT_BLANK]     CHECK (LEN(LTRIM(RTRIM([Name]))) > 0),
+    CONSTRAINT [CK_수검자_SOCIAL_FORMAT]      CHECK (LEN([SocialNumber]) = 13 AND [SocialNumber] NOT LIKE '%[^0-9]%'),
+    CONSTRAINT [CK_수검자_BIRTHDAY]           CHECK (LEN([Birthday]) = 8 AND [Birthday] NOT LIKE '%[^0-9]%' AND TRY_CONVERT(DATE, [Birthday], 112) IS NOT NULL),
+    CONSTRAINT [CK_수검자_GENDER]             CHECK ([Gender] IN ('M','F')),
+    CONSTRAINT [CK_수검자_CEL_NORMALIZED]     CHECK (([CelNumber] IS NULL AND [CelNumberS] IS NULL) OR ([CelNumber] IS NOT NULL AND [CelNumberS] = REPLACE([CelNumber], '-', ''))),
+    CONSTRAINT [CK_수검자_CEL_DIGIT]          CHECK ([CelNumberS] IS NULL OR [CelNumberS] NOT LIKE '%[^0-9]%'),
+    CONSTRAINT [CK_수검자_EDIT_DATE]          CHECK ([LastEditDate] >= [CreationDate])
 );
 GO
-CREATE NONCLUSTERED INDEX [IX_INFO_PATIENTS_NAME_BIRTHDAY]
-    ON [dbo].[INFO_PATIENTS] ([Name], [Birthday])
+CREATE NONCLUSTERED INDEX [IX_수검자_NAME_BIRTHDAY]
+    ON [dbo].[수검자] ([Name], [Birthday])
     INCLUDE ([PatientId], [ChartNo], [Gender], [CelNumber]);
 GO
-CREATE NONCLUSTERED INDEX [IX_INFO_PATIENTS_BIRTHDAY]
-    ON [dbo].[INFO_PATIENTS] ([Birthday])
+CREATE NONCLUSTERED INDEX [IX_수검자_BIRTHDAY]
+    ON [dbo].[수검자] ([Birthday])
     INCLUDE ([PatientId], [ChartNo], [Name], [Gender], [CelNumber]);
 GO
-CREATE NONCLUSTERED INDEX [IX_INFO_PATIENTS_CEL_NUMBER_S]
-    ON [dbo].[INFO_PATIENTS] ([CelNumberS])
+CREATE NONCLUSTERED INDEX [IX_수검자_CEL_NUMBER_S]
+    ON [dbo].[수검자] ([CelNumberS])
     INCLUDE ([PatientId], [ChartNo], [Name], [Birthday], [Gender], [CelNumber])
     WHERE [CelNumberS] IS NOT NULL;
 GO
-CREATE TABLE [dbo].[MST_EXAM_ITEMS]
+CREATE TABLE [dbo].[검사코드]
 (
     [ExamItemCode]         VARCHAR(10)   NOT NULL,
     [ExamItemName]         NVARCHAR(100) NOT NULL,
     [NexRuleCode]          VARCHAR(10)   NULL,
     [AdditionalExamCode]   VARCHAR(10)   NULL,
     [AdditionalGenderCode] CHAR(1)       NULL,
-    [AdditionalActive]     BIT           NOT NULL CONSTRAINT [DF_MST_EXAM_ITEMS_AEX_ACTIVE] DEFAULT (0),
+    [AdditionalActive]     BIT           NOT NULL CONSTRAINT [DF_검사코드_AEX_ACTIVE] DEFAULT (0),
 
-    CONSTRAINT [PK_MST_EXAM_ITEMS] PRIMARY KEY CLUSTERED ([ExamItemCode]),
-    CONSTRAINT [CK_MST_EXAM_ITEMS_CODE_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([ExamItemCode]))) > 0),
-    CONSTRAINT [CK_MST_EXAM_ITEMS_NAME_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([ExamItemName]))) > 0),
-    CONSTRAINT [CK_MST_EXAM_ITEMS_ROLE_REQUIRED]  CHECK ([NexRuleCode] IS NOT NULL OR [AdditionalExamCode] IS NOT NULL),
-    CONSTRAINT [CK_MST_EXAM_ITEMS_NEX_RULE]       CHECK ([NexRuleCode] IS NULL OR [NexRuleCode] IN ('NEX-01','NEX-02','NEX-03','NEX-04','NEX-05','NEX-06')),
-    CONSTRAINT [CK_MST_EXAM_ITEMS_AEX_CODE]       CHECK ([AdditionalExamCode] IS NULL OR [AdditionalExamCode] IN ('OPT01','OPT02','OPT03','OPT04','OPT05','OPT06','OPT07')),
-    CONSTRAINT [CK_MST_EXAM_ITEMS_AEX_GENDER]     CHECK ([AdditionalGenderCode] IS NULL OR [AdditionalGenderCode] IN ('A','M','F')),
-    CONSTRAINT [CK_MST_EXAM_ITEMS_AEX_GROUP]      CHECK
+    CONSTRAINT [PK_검사코드] PRIMARY KEY CLUSTERED ([ExamItemCode]),
+    CONSTRAINT [CK_검사코드_CODE_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([ExamItemCode]))) > 0),
+    CONSTRAINT [CK_검사코드_NAME_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([ExamItemName]))) > 0),
+    CONSTRAINT [CK_검사코드_ROLE_REQUIRED]  CHECK ([NexRuleCode] IS NOT NULL OR [AdditionalExamCode] IS NOT NULL),
+    CONSTRAINT [CK_검사코드_NEX_RULE]       CHECK ([NexRuleCode] IS NULL OR [NexRuleCode] IN ('NEX-01','NEX-02','NEX-03','NEX-04','NEX-05','NEX-06')),
+    CONSTRAINT [CK_검사코드_AEX_CODE]       CHECK ([AdditionalExamCode] IS NULL OR [AdditionalExamCode] IN ('OPT01','OPT02','OPT03','OPT04','OPT05','OPT06','OPT07')),
+    CONSTRAINT [CK_검사코드_AEX_GENDER]     CHECK ([AdditionalGenderCode] IS NULL OR [AdditionalGenderCode] IN ('A','M','F')),
+    CONSTRAINT [CK_검사코드_AEX_GROUP]      CHECK
     (
         ([AdditionalExamCode] IS NULL     AND [AdditionalGenderCode] IS NULL     AND [AdditionalActive] = 0)
      OR ([AdditionalExamCode] IS NOT NULL AND [AdditionalGenderCode] IS NOT NULL)
     )
 );
 GO
-CREATE UNIQUE NONCLUSTERED INDEX [UX_MST_EXAM_ITEMS_AEX_CODE]
-    ON [dbo].[MST_EXAM_ITEMS] ([AdditionalExamCode])
+CREATE UNIQUE NONCLUSTERED INDEX [UX_검사코드_AEX_CODE]
+    ON [dbo].[검사코드] ([AdditionalExamCode])
     WHERE [AdditionalExamCode] IS NOT NULL;
 GO
-CREATE TABLE [dbo].[MST_HOLIDAYS]
+CREATE TABLE [dbo].[휴무일]
 (
     [HolidayDate] DATE          NOT NULL,
     [HolidayName] NVARCHAR(100) NOT NULL,
-    [Active]      BIT           NOT NULL CONSTRAINT [DF_MST_HOLIDAYS_ACTIVE] DEFAULT (1),
+    [Active]      BIT           NOT NULL CONSTRAINT [DF_휴무일_ACTIVE] DEFAULT (1),
     [Memo]        NVARCHAR(500) NULL,
 
-    CONSTRAINT [PK_MST_HOLIDAYS] PRIMARY KEY CLUSTERED ([HolidayDate]),
-    CONSTRAINT [CK_MST_HOLIDAYS_NAME_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([HolidayName]))) > 0)
+    CONSTRAINT [PK_휴무일] PRIMARY KEY CLUSTERED ([HolidayDate]),
+    CONSTRAINT [CK_휴무일_NAME_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([HolidayName]))) > 0)
 );
 GO
-CREATE TABLE [dbo].[INFO_CHECKUP_WORKS]
+CREATE TABLE [dbo].[예약접수]
 (
     [WorkId]          BIGINT       IDENTITY(1,1) NOT NULL,
     [PatientId]       BIGINT       NOT NULL,
     [ReservationDate] DATE         NOT NULL,
     [TimeSlotCode]    CHAR(2)      NOT NULL,
     [StatusCode]      CHAR(3)      NOT NULL,
-    [CreationDate]    DATETIME2(0) NOT NULL CONSTRAINT [DF_INFO_CHECKUP_WORKS_CREATION_DATE]  DEFAULT (SYSDATETIME()),
-    [LastEditDate]    DATETIME2(0) NOT NULL CONSTRAINT [DF_INFO_CHECKUP_WORKS_LAST_EDIT_DATE] DEFAULT (SYSDATETIME()),
+    [CreationDate]    DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_CREATION_DATE]  DEFAULT (SYSDATETIME()),
+    [LastEditDate]    DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_LAST_EDIT_DATE] DEFAULT (SYSDATETIME()),
     [RowVersion]      ROWVERSION   NOT NULL,
 
-    CONSTRAINT [PK_INFO_CHECKUP_WORKS] PRIMARY KEY CLUSTERED ([WorkId]),
-    CONSTRAINT [FK_INFO_CHECKUP_WORKS_PATIENT] FOREIGN KEY ([PatientId])
-        REFERENCES [dbo].[INFO_PATIENTS] ([PatientId]) ON DELETE NO ACTION ON UPDATE NO ACTION,
-    CONSTRAINT [CK_INFO_CHECKUP_WORKS_TIME_SLOT] CHECK ([TimeSlotCode] IN ('AM','PM')),
-    CONSTRAINT [CK_INFO_CHECKUP_WORKS_STATUS]    CHECK ([StatusCode] IN ('RSV','RCP','CNL')),
-    CONSTRAINT [CK_INFO_CHECKUP_WORKS_EDIT_DATE] CHECK ([LastEditDate] >= [CreationDate])
+    CONSTRAINT [PK_예약접수] PRIMARY KEY CLUSTERED ([WorkId]),
+    CONSTRAINT [FK_예약접수_수검자] FOREIGN KEY ([PatientId])
+        REFERENCES [dbo].[수검자] ([PatientId]) ON DELETE NO ACTION ON UPDATE NO ACTION,
+    CONSTRAINT [CK_예약접수_TIME_SLOT] CHECK ([TimeSlotCode] IN ('AM','PM')),
+    CONSTRAINT [CK_예약접수_STATUS]    CHECK ([StatusCode] IN ('RSV','RCP','CNR','CNC')),
+    CONSTRAINT [CK_예약접수_EDIT_DATE] CHECK ([LastEditDate] >= [CreationDate])
 );
 GO
-CREATE NONCLUSTERED INDEX [IX_INFO_CHECKUP_WORKS_SLOT]
-    ON [dbo].[INFO_CHECKUP_WORKS] ([ReservationDate], [TimeSlotCode], [StatusCode])
+CREATE NONCLUSTERED INDEX [IX_예약접수_SLOT]
+    ON [dbo].[예약접수] ([ReservationDate], [TimeSlotCode], [StatusCode])
     INCLUDE ([PatientId]);
 GO
-CREATE NONCLUSTERED INDEX [IX_INFO_CHECKUP_WORKS_PATIENT_STATE_DATE]
-    ON [dbo].[INFO_CHECKUP_WORKS] ([PatientId], [StatusCode], [ReservationDate])
+CREATE NONCLUSTERED INDEX [IX_예약접수_PATIENT_STATE_DATE]
+    ON [dbo].[예약접수] ([PatientId], [StatusCode], [ReservationDate])
     INCLUDE ([TimeSlotCode]);
 GO
-CREATE TABLE [dbo].[INFO_CHECKUP_WORK_EXAMS]
+CREATE TABLE [dbo].[검사항목]
 (
     [WorkId]         BIGINT      NOT NULL,
     [ExamItemCode]   VARCHAR(10) NOT NULL,
     [ExamSourceCode] CHAR(3)     NOT NULL,
 
-    CONSTRAINT [PK_INFO_CHECKUP_WORK_EXAMS] PRIMARY KEY CLUSTERED ([WorkId], [ExamItemCode]),
-    CONSTRAINT [FK_INFO_CHECKUP_WORK_EXAMS_WORK] FOREIGN KEY ([WorkId])
-        REFERENCES [dbo].[INFO_CHECKUP_WORKS] ([WorkId]) ON DELETE NO ACTION ON UPDATE NO ACTION,
-    CONSTRAINT [FK_INFO_CHECKUP_WORK_EXAMS_EXAM_ITEM] FOREIGN KEY ([ExamItemCode])
-        REFERENCES [dbo].[MST_EXAM_ITEMS] ([ExamItemCode]) ON DELETE NO ACTION ON UPDATE NO ACTION,
-    CONSTRAINT [CK_INFO_CHECKUP_WORK_EXAMS_SOURCE] CHECK ([ExamSourceCode] IN ('NEX','AEX'))
+    CONSTRAINT [PK_검사항목] PRIMARY KEY CLUSTERED ([WorkId], [ExamItemCode]),
+    CONSTRAINT [FK_검사항목_예약접수] FOREIGN KEY ([WorkId])
+        REFERENCES [dbo].[예약접수] ([WorkId]) ON DELETE NO ACTION ON UPDATE NO ACTION,
+    CONSTRAINT [FK_검사항목_검사코드] FOREIGN KEY ([ExamItemCode])
+        REFERENCES [dbo].[검사코드] ([ExamItemCode]) ON DELETE NO ACTION ON UPDATE NO ACTION,
+    CONSTRAINT [CK_검사항목_SOURCE] CHECK ([ExamSourceCode] IN ('NEX','AEX'))
 );
 GO
-CREATE TABLE [dbo].[HIS_GENERAL_CHECKUP_COMPLETIONS]
+CREATE TABLE [dbo].[완료이력]
 (
     [PatientId]      BIGINT NOT NULL,
     [CompletionDate] DATE   NOT NULL,
 
-    CONSTRAINT [PK_HIS_GENERAL_CHECKUP_COMPLETIONS] PRIMARY KEY CLUSTERED ([PatientId], [CompletionDate]),
-    CONSTRAINT [FK_HIS_GENERAL_CHECKUP_COMPLETIONS_PATIENT] FOREIGN KEY ([PatientId])
-        REFERENCES [dbo].[INFO_PATIENTS] ([PatientId]) ON DELETE NO ACTION ON UPDATE NO ACTION
+    CONSTRAINT [PK_완료이력] PRIMARY KEY CLUSTERED ([PatientId], [CompletionDate]),
+    CONSTRAINT [FK_완료이력_수검자] FOREIGN KEY ([PatientId])
+        REFERENCES [dbo].[수검자] ([PatientId]) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 GO
-CREATE TABLE [dbo].[INFO_PATIENT_EXAM_EXCLUSIONS]
+CREATE TABLE [dbo].[변경이력]
 (
-    [PatientId]    BIGINT        NOT NULL,
-    [ExamItemCode] VARCHAR(10)   NOT NULL,
-    [Memo]         NVARCHAR(500) NULL,
+    [HistoryId]     BIGINT        IDENTITY(1,1) NOT NULL,
+    [CreationDate]  DATETIME2(0)  NOT NULL CONSTRAINT [DF_변경이력_CREATION_DATE] DEFAULT (SYSDATETIME()),
+    [OperatorName]  NVARCHAR(50)  NULL,
+    [OperationCode] VARCHAR(20)   NOT NULL,
+    [TargetTable]   NVARCHAR(10)  NOT NULL,
+    [TargetKey]     BIGINT        NULL,
+    [ResultCode]    INT           NOT NULL,
 
-    CONSTRAINT [PK_INFO_PATIENT_EXAM_EXCLUSIONS] PRIMARY KEY CLUSTERED ([PatientId], [ExamItemCode]),
-    CONSTRAINT [FK_INFO_PATIENT_EXAM_EXCLUSIONS_PATIENT] FOREIGN KEY ([PatientId])
-        REFERENCES [dbo].[INFO_PATIENTS] ([PatientId]) ON DELETE NO ACTION ON UPDATE NO ACTION,
-    CONSTRAINT [FK_INFO_PATIENT_EXAM_EXCLUSIONS_EXAM_ITEM] FOREIGN KEY ([ExamItemCode])
-        REFERENCES [dbo].[MST_EXAM_ITEMS] ([ExamItemCode]) ON DELETE NO ACTION ON UPDATE NO ACTION
+    CONSTRAINT [PK_변경이력] PRIMARY KEY CLUSTERED ([HistoryId]),
+    CONSTRAINT [CK_변경이력_OPERATION] CHECK (
+        ([TargetTable] = N'수검자'   AND [OperationCode] IN ('PAT_INSERT','PAT_UPDATE'))
+     OR ([TargetTable] = N'예약접수' AND [OperationCode] IN ('RSV_INSERT','RSV_UPDATE','RSV_CANCEL','RCP_ACCEPT','RCP_AEX','RCP_CANCEL'))),
+    CONSTRAINT [CK_변경이력_RESULT_CODE] CHECK ([ResultCode] BETWEEN 0 AND 9 OR [ResultCode] BETWEEN 100 AND 799),
+    CONSTRAINT [CK_변경이력_TARGET_KEY]  CHECK ([ResultCode] >= 100 OR [TargetKey] IS NOT NULL)
 );
 GO
 CREATE SEQUENCE [dbo].[SEQ_HC_CHART_NO]

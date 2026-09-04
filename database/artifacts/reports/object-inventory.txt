@@ -1,6 +1,6 @@
 Table       = 7
 PK          = 7
-FK          = 6
+FK          = 4
 UQ          = 2
 FilteredUX  = 1
 Sequence    = 1
