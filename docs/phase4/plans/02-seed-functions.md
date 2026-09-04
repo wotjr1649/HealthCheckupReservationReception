@@ -313,8 +313,14 @@ CONVERT(CHAR(1),
         + CAST(SUBSTRING(p.Prefix12, 7,1) AS INT)*8 + CAST(SUBSTRING(p.Prefix12, 8,1) AS INT)*9
         + CAST(SUBSTRING(p.Prefix12, 9,1) AS INT)*2 + CAST(SUBSTRING(p.Prefix12,10,1) AS INT)*3
         + CAST(SUBSTRING(p.Prefix12,11,1) AS INT)*4 + CAST(SUBSTRING(p.Prefix12,12,1) AS INT)*5
-        ) % 11 ) ) % 10 + 1 ) % 10 )
+        ) % 11 ) ) % 10 + 1 ) % 10 ) )   -- 마지막 ) 가 CONVERT(CHAR(1), … 를 닫는다
 ```
+
+`[X]` **초안은 닫는 괄호가 하나 모자랐다.** `( ( ( 11 - ( ( 합 ) % 11 ) ) % 10 + 1 ) % 10 )` 의
+괄호 5쌍은 식 자체로 균형이 맞아, `CONVERT(CHAR(1),` 를 닫는 괄호가 없다.
+`CONVERT` 는 인자를 3개까지 받으므로 다음 줄 `, p.Birthday` 가 style 인자로 파싱되고
+그 다음 `, p.Gender` 에서 **`Msg 102 — ',' 근처의 구문이 잘못되었습니다`** 가 난다(실측 확인).
+에러 줄이 괄호와 무관한 곳을 가리키므로 원인을 찾기 어렵다. Step 2·Step 3 두 곳 모두 같다.
 
 - [ ] **Step 2: Rule 경계 수검자 15명 INSERT**
 
@@ -361,7 +367,7 @@ SELECT
               + CAST(SUBSTRING(p.Prefix12, 7,1) AS INT)*8 + CAST(SUBSTRING(p.Prefix12, 8,1) AS INT)*9
               + CAST(SUBSTRING(p.Prefix12, 9,1) AS INT)*2 + CAST(SUBSTRING(p.Prefix12,10,1) AS INT)*3
               + CAST(SUBSTRING(p.Prefix12,11,1) AS INT)*4 + CAST(SUBSTRING(p.Prefix12,12,1) AS INT)*5
-              ) % 11 ) ) % 10 + 1 ) % 10 )
+              ) % 11 ) ) % 10 + 1 ) % 10 ) )   -- 마지막 ) 가 CONVERT(CHAR(1), … 를 닫는다
     , p.Birthday
     , p.Gender
     , NULL, NULL
@@ -425,7 +431,7 @@ SELECT
               + CAST(SUBSTRING(x.Prefix12, 7,1) AS INT)*8 + CAST(SUBSTRING(x.Prefix12, 8,1) AS INT)*9
               + CAST(SUBSTRING(x.Prefix12, 9,1) AS INT)*2 + CAST(SUBSTRING(x.Prefix12,10,1) AS INT)*3
               + CAST(SUBSTRING(x.Prefix12,11,1) AS INT)*4 + CAST(SUBSTRING(x.Prefix12,12,1) AS INT)*5
-              ) % 11 ) ) % 10 + 1 ) % 10 )
+              ) % 11 ) ) % 10 + 1 ) % 10 ) )   -- 마지막 ) 가 CONVERT(CHAR(1), … 를 닫는다
     , '19800101'
     , 'M'
 FROM (VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),
@@ -589,6 +595,11 @@ DELETE x FROM [dbo].[검사항목] x
 `T09` 가 만든 `tests/02_Seed_Tests.sql` 의 **`IF @Fail > 0 THROW` 바로 앞**에 넣는다.
 같은 배치에 `@Fail` 이 이미 선언돼 있으므로 **다시 선언하지 않는다.**
 
+`[X]` **`—`(U+2014)를 담은 `PRINT` 리터럴 3개에는 `N` 접두사가 필요하다.** 없으면 varchar 리터럴이라
+`Korean_Wansung`(CP949)에 없는 `—` 만 `?` 로 조용히 바뀐다 — 한글은 살아남으므로 눈치채기 어렵다(실측 확인).
+같은 파일의 `·`(U+00B7)는 CP949 에 있어 `N` 없이도 온전하다. 이것이 `tests/01_Schema_Tests.sql` 이
+한글 `PRINT` 를 `N` 없이 쓰고도 통과한 이유이며, `—` 를 쓰는 순간 그 관행이 깨진다(`database/CLAUDE.md` §5).
+
 ```sql
 DECLARE @Bad INT;
 
@@ -597,8 +608,8 @@ DECLARE @Bad INT;
 --   tests/00 을 먼저 돌리지 않았다는 뜻이므로 여기서 실패시킨다.
 --   카탈로그에 없는 표식이므로 Test ID 를 쓰지 않는다 (FIX-DEPLOY·FIX-RCP-001 과 같은 부류).
 IF ((SELECT COUNT(*) FROM [dbo].[수검자]) > 0)
-    PRINT 'PASS FIX-SSN-PRE 사전조건 — 수검자 Fixture 존재';
-ELSE BEGIN PRINT 'FAIL FIX-SSN-PRE 수검자 0행 — tests/00_Test_Harness 를 먼저 실행하라'; SET @Fail += 1; END
+    PRINT N'PASS FIX-SSN-PRE 사전조건 — 수검자 Fixture 존재';
+ELSE BEGIN PRINT N'FAIL FIX-SSN-PRE 수검자 0행 — tests/00_Test_Harness 를 먼저 실행하라'; SET @Fail += 1; END
 
 -- SSN-001 13자리 숫자
 SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
@@ -646,7 +657,7 @@ CROSS APPLY (SELECT Valid =
         + CAST(SUBSTRING(s.[SocialNumber],11,1) AS INT)*4 + CAST(SUBSTRING(s.[SocialNumber],12,1) AS INT)*5
         ) % 11 ) ) % 10 ) c
 WHERE CAST(SUBSTRING(s.[SocialNumber], 13, 1) AS INT) = c.Valid;   -- 유효하면 위반
-IF @Bad = 0 PRINT 'PASS SSN-006 전 행 체크디지트 무효 — 실제 주민등록번호 미사용 증명';
+IF @Bad = 0 PRINT N'PASS SSN-006 전 행 체크디지트 무효 — 실제 주민등록번호 미사용 증명';
 ELSE BEGIN PRINT 'FAIL SSN-006 체크디지트가 유효한 행 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
 ```
