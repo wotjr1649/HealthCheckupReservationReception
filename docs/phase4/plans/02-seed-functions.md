@@ -1529,7 +1529,12 @@ git commit -m "feat(phase4): UFN_HC_추가검사확인 구현 및 AEX 경계 테
 
 **관련 Baseline 위치:** 스펙 §15.2 (Fixture 생성 방식), §33.2a.
 
-**선행조건:** `T14` 완료 — `UFN_HC_국가검사구성` 이 존재해야 한다.
+**선행조건:** `T13` 완료 — 이 파일이 소비하는 것은 `UFN_HC_국가검사구성` 하나뿐이다.
+
+`[X]` **초안은 선행조건을 `T14` 로 적었지만 `T14` 보다 **먼저** 해야 한다.** `T14` 의 `RUL-A09` 가
+`T011` 의 `RCP` Work(저장 NEX)를 읽으므로, 이 파일이 없으면 `RUL-A09` 가 사전조건 FAIL 을 내고
+`tests/03` 이 `exit 1` 로 끝난다 — `T14` Step 3 의 *"exit 0"* 을 달성할 수 없다.
+`scripts/test.sh` 도 `tests/00b` 를 `tests/03` 앞에서 돌린다. 실행 순서는 **`T13` → `T14b` → `T14`** 다.
 
 **Files:**
 - Create: `tests/00b_Test_Harness_RCP.sql`
@@ -1589,6 +1594,9 @@ IF ((SELECT COUNT(*) FROM [dbo].[검사항목] WHERE [WorkId]=@Wrcp AND [ExamSou
     PRINT 'PASS FIX-RCP-002 AEX 1행 (OPT01)';
 ELSE BEGIN PRINT 'FAIL FIX-RCP-002 AEX 행수 불일치'; SET @Fail += 1; END
 
+-- @Fail 은 이 배치에서만 산다. GO 뒤로 넘기면 Msg 137 이다.
+IF @Fail > 0 THROW 51000, N'RCP Fixture 배치 실패', 1;
+
 -- T011 (여, 기준일 2026-10-01 에 만 54세) 의 RCP Work
 -- [X] T014 는 남성이라 저장 NEX 에 EX012 가 없다. NEX-05 술어가 Gender='F' 를 요구하기 때문이다.
 --     412 ExamDuplicate 는 EX012 로만 발생하므로(스펙 §17.2a) RUL-A09·CWR-024 는 이 Work 를 쓴다.
@@ -1615,14 +1623,18 @@ DECLARE @F11 INT = 0;
 IF EXISTS (SELECT 1 FROM [dbo].[검사항목]
             WHERE [WorkId] = @W11 AND [ExamSourceCode] = 'NEX' AND [ExamItemCode] = 'EX012')
     PRINT 'PASS FIX-RCP-003 T011 저장 NEX 에 EX012 포함 (412 시험 사전조건)';
-ELSE BEGIN PRINT 'FAIL FIX-RCP-003 T011 저장 NEX 에 EX012 가 없다 — 412 를 관측할 수 없다'; SET @F11 += 1; END
+ELSE BEGIN PRINT N'FAIL FIX-RCP-003 T011 저장 NEX 에 EX012 가 없다 — 412 를 관측할 수 없다'; SET @F11 += 1; END
 IF @F11 > 0 THROW 51000, N'T011 RCP Fixture 사전조건 실패', 1;
 GO
-
-IF @Fail > 0 THROW 51000, N'RCP Fixture 배치 실패', 1;
 PRINT '=== 00b_Test_Harness_RCP 완료 ===';
 GO
 ```
+
+`[X]` **초안은 마지막 배치에 `IF @Fail > 0 THROW …` 를 두었다.** `@Fail` 은 두 배치 앞에서 선언됐고
+`GO` 는 배치 구분자라 변수는 그 경계를 넘지 못한다 — `Msg 137 스칼라 변수 "@Fail"을 선언해야 합니다` 가 난다.
+`@Fail` 을 쓰는 `THROW` 를 선언과 같은 배치(`FIX-RCP-002` 직후)로 옮긴다.
+
+`[X]` `FAIL FIX-RCP-003` 리터럴에 `—`(U+2014)가 있어 **`N` 접두사가 필요하다** (`database/CLAUDE.md` §5).
 
 - [ ] **Step 2: 실행**
 
