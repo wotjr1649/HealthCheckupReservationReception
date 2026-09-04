@@ -6,7 +6,7 @@ DB='HealthCheckupReservationReceptionDb'
 mkdir -p artifacts/logs
 
 RC=0
-sqlcmd -S "$SRV" -E -d "$DB" -b -u -i Deploy.sql -o artifacts/logs/deploy_full.log || RC=$?
+sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -i Deploy.sql -o artifacts/logs/deploy_full.log || RC=$?
 iconv -f UTF-16 -t UTF-8 artifacts/logs/deploy_full.log | tail -40
 echo "deploy exit=$RC"
 exit $RC

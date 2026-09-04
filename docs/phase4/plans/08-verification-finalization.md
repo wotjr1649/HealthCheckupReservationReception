@@ -109,7 +109,7 @@ DECLARE @Same BIT =
 - [ ] **Step 2: 실행**
 
 ```bash
-sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -u \
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
        -i tests/08_Rollback_Tests.sql -o artifacts/logs/test_08.log
 echo "exit=$?"
 iconv -f UTF-16 -t UTF-8 artifacts/logs/test_08.log | grep -E '^(PASS|FAIL)'
@@ -154,7 +154,7 @@ SCEN="${1:?시나리오 번호를 지정하십시오 (1~8)}"
 mkdir -p artifacts/logs
 
 # setup 을 **먼저** 끝낸 뒤 barrier 를 계산한다.
-sqlcmd -S "$SRV" -E -d "$DB" -b -u -v Scenario="$SCEN" \
+sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -v Scenario="$SCEN" \
        -i tests/09_Concurrency_Setup.sql -o artifacts/logs/conc_setup.log \
   || { echo "setup 실패"; iconv -f UTF-16 -t UTF-8 artifacts/logs/conc_setup.log; exit 1; }
 
@@ -163,10 +163,10 @@ NOWH=$(date +%H)
 BARRIER=$(date -d '+5 seconds' +%H:%M:%S)
 echo "barrier=$BARRIER scenario=$SCEN"
 
-sqlcmd -S "$SRV" -E -d "$DB" -b -u -v BarrierTime="$BARRIER" -v Scenario="$SCEN" \
+sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -v BarrierTime="$BARRIER" -v Scenario="$SCEN" \
        -i tests/10_Concurrency_Session_A.sql -o artifacts/logs/conc_A.log &
 PIDA=$!
-sqlcmd -S "$SRV" -E -d "$DB" -b -u -v BarrierTime="$BARRIER" -v Scenario="$SCEN" \
+sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -v BarrierTime="$BARRIER" -v Scenario="$SCEN" \
        -i tests/11_Concurrency_Session_B.sql -o artifacts/logs/conc_B.log &
 PIDB=$!
 
@@ -176,7 +176,7 @@ wait $PIDB || RCB=$?
 echo "session A exit=$RCA / session B exit=$RCB"
 
 RC=0
-sqlcmd -S "$SRV" -E -d "$DB" -b -u -v Scenario="$SCEN" \
+sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -v Scenario="$SCEN" \
        -i tests/12_Concurrency_Verify.sql -o artifacts/logs/conc_verify.log || RC=$?
 iconv -f UTF-16 -t UTF-8 artifacts/logs/conc_verify.log | grep -E '^(PASS|FAIL|INFO)' || true
 
@@ -294,7 +294,7 @@ END
 chmod +x scripts/concurrency-test.sh
 for s in 1 2 3 4 5 6 7 8; do
   ./scripts/rebuild.sh >/dev/null
-  sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -u -i tests/00_Test_Harness.sql >/dev/null
+  sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i tests/00_Test_Harness.sql >/dev/null
   ./scripts/concurrency-test.sh "$s" || { echo "시나리오 $s 실패"; exit 1; }
 done
 ```
@@ -475,11 +475,11 @@ GO
 
 ```bash
 ./scripts/rebuild.sh >/dev/null
-sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -h -1 -W \
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W \
        -i tests/14_Clean_Rebuild_Verify.sql > artifacts/reports/inventory_run1.txt
 
 ./scripts/rebuild.sh >/dev/null
-sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -h -1 -W \
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W \
        -i tests/14_Clean_Rebuild_Verify.sql > artifacts/reports/inventory_run2.txt
 
 diff -u artifacts/reports/inventory_run1.txt artifacts/reports/inventory_run2.txt \
@@ -494,7 +494,7 @@ Expected: `PASS RBD-005`, 지문 = `INVENTORY|7|4|15|1|7|6|2|1|5|0|19|2`
 
 ```bash
 RC=0
-sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -u -i Rebuild.sql \
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i Rebuild.sql \
   -o artifacts/logs/rebuild_red.log || RC=$?
 iconv -f UTF-16 -t UTF-8 artifacts/logs/rebuild_red.log | grep 'Msg 50021' \
   && echo "PASS RBD-002 master 컨텍스트 강제 (Msg 50021)" \
@@ -518,7 +518,7 @@ RC=0
                 || { echo "FAIL RBD-003 exit=$RC"; exit 1; }
 
 # RBD-006  2회 Rebuild 후 Seed 19행 전건 값 동일 (개수가 아니라 값이다)
-sqlcmd -S "$SRV" -E -d "$DB" -b -h-1 -W -o artifacts/logs/seed_now.txt \
+sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -o artifacts/logs/seed_now.txt \
   -Q "SET NOCOUNT ON; SELECT ExamItemCode+'|'+ExamName+'|'+ISNULL(NexRuleCode,'-')+'|'+CONVERT(VARCHAR(1),IsActive) FROM dbo.MST_EXAM_ITEMS ORDER BY ExamItemCode;
       SELECT CONVERT(VARCHAR(10),HolidayDate,120)+'|'+HolidayName FROM dbo.MST_HOLIDAYS ORDER BY HolidayDate;"
 diff artifacts/logs/seed_first.txt artifacts/logs/seed_now.txt \
@@ -527,7 +527,7 @@ diff artifacts/logs/seed_first.txt artifacts/logs/seed_now.txt \
 
 # RBD-007  Deploy.sql 단독 재실행 (DB 유지) → exit 0 + 덤프 동일
 ./scripts/deploy.sh > artifacts/logs/rbd007.log 2>&1; D7=$?
-sqlcmd -S "$SRV" -E -d "$DB" -b -h-1 -W -o artifacts/logs/dump_after7.txt -i tests/14_Clean_Rebuild_Verify.sql
+sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -o artifacts/logs/dump_after7.txt -i tests/14_Clean_Rebuild_Verify.sql
 if [ "$D7" -eq 0 ] && diff artifacts/logs/dump_second.txt artifacts/logs/dump_after7.txt > /dev/null; then
   echo "PASS RBD-007 Deploy 단독 재실행 exit 0 + 덤프 동일"
 else
@@ -536,9 +536,9 @@ fi
 
 # RBD-008  03~07 Procedure 파일만 단독 재실행 → exit 0 + GRANT 15건 유지
 for f in deploy/03_*.sql deploy/04_*.sql deploy/05_*.sql deploy/06_*.sql deploy/07_*.sql; do
-  sqlcmd -S "$SRV" -E -d "$DB" -b -i "$f" >> artifacts/logs/rbd008.log 2>&1 || RC=1
+  sqlcmd -S "$SRV" -E -d "$DB" -b -I -i "$f" >> artifacts/logs/rbd008.log 2>&1 || RC=1
 done
-G=$(sqlcmd -S "$SRV" -E -d "$DB" -b -h-1 -W -Q "SET NOCOUNT ON;
+G=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
      SELECT COUNT(*) FROM sys.database_permissions dp
      JOIN sys.objects o ON o.object_id = dp.major_id
      JOIN sys.database_principals u ON u.principal_id = dp.grantee_principal_id
@@ -564,7 +564,7 @@ exit $RC
 
 ```bash
 # rebuild 전에 한 번, 후에 한 번 찍어 diff 한다. 이름 존재 확인만으로는 증거가 되지 않는다.
-sqlcmd -S '.\SQLEXPRESS' -E -d master -b -h -1 -W -s"|" \
+sqlcmd -S '.\SQLEXPRESS' -E -d master -b -I -h -1 -W -s"|" \
   -Q "SET NOCOUNT ON; SELECT name, state_desc, user_access_desc, CONVERT(VARCHAR(1), CONVERT(INT, is_read_only)), CONVERT(VARCHAR(30), create_date, 126) FROM sys.databases WHERE name NOT IN (N'HealthCheckupReservationReceptionDb', N'tempdb') ORDER BY database_id;" \
   -o artifacts/reports/otherdb_after.txt
 diff -u artifacts/reports/otherdb_before.txt artifacts/reports/otherdb_after.txt \
@@ -821,7 +821,7 @@ ELSE BEGIN PRINT 'FAIL CTR-RS0-C RS0 스키마 불일치 SP 존재'; SET @Fail +
 : > artifacts/reports/contract-verify.txt
 for f in tests/contract/*.sql; do
   k=$(basename "$f" .sql)
-  sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -u -W -w 65535 -s"|" \
+  sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -W -w 65535 -s"|" \
          -i "$f" -o "artifacts/logs/rs_${k}.txt"
   # [X] 2>&1 이 없으면 verify-contract.js 가 console.error 로 내는 FAIL 이 증거파일에 안 남는다.
   #     T22 가 지적한 "증거파일에 구조적으로 PASS 만 기록된다" 와 같은 결함이다.

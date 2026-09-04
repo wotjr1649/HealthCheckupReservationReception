@@ -36,9 +36,15 @@ head -c 3 <파일> | od -An -tx1     # ef bb bf 가 나와야 한다
 한글은 살아남고 `—`(U+2014) 같은 기호만 조용히 사라지므로 눈치채기 어렵다(실측 확인).
 `master` 컨텍스트에서 도는 `Rebuild.sql` 은 데이터 정렬이 다를 수 있어 더욱 필수다.
 
-## 6. sqlcmd 는 항상 `-b -u`
+## 6. sqlcmd 는 항상 `-b -I -u`
 
 exit code 가 유일한 자동 판정 근거다. `-b` 없이 실행하지 않는다.
+
+`-I`(`SET QUOTED_IDENTIFIER ON`)도 필수다. sqlcmd 는 SSMS 와 달리 **OFF** 로 접속하는데,
+`INFO_PATIENTS` 와 `MST_EXAM_ITEMS` 에는 필터형 인덱스가 있어 **그 두 테이블의 `INSERT`/`UPDATE`/`DELETE` 가
+`Msg 1934` 로 실패한다**(실측 확인). 인덱스를 만들 때만이 아니라 데이터를 바꿀 때마다 요구된다.
+배포 `.sql` 은 자체적으로도 첫 배치에 `SET QUOTED_IDENTIFIER ON;` + `GO` 를 둔다 —
+`SET` 은 parse 시점에 적용되므로 같은 배치 안에서는 소급되지 않는다.
 오케스트레이터 스크립트는 `set -e` 를 쓰지 않는다 — 실패한 그 줄에서 셸이 끝나 RC 수집도 로그 출력도 안 된다.
 
 ## 7. 허용 T-SQL 목록 = 스펙 §9.2

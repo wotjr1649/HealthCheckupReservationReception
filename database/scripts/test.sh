@@ -11,7 +11,7 @@ FAILED=0
 run() {                       # run <파일> <로그번호>
   local f="$1" log="artifacts/logs/test_${2}.log" rc=0
   echo "--- $f"
-  sqlcmd -S "$SRV" -E -d "$DB" -b -u -i "$f" -o "$log" || rc=$?
+  sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -i "$f" -o "$log" || rc=$?
   iconv -f UTF-16 -t UTF-8 "$log" | grep -E '^(PASS|FAIL|SKIP|INFO|Msg )' || true
   [ "$rc" -ne 0 ] && { echo "!! $f exit=$rc"; FAILED=1; }
   return 0
@@ -39,7 +39,7 @@ for s in 1 2 3 4 5 6 7 8; do
   # [X] 시나리오마다 rebuild + fixture 재배치. T34 Step 4 가 "시나리오 간 오염이 없다"의 근거로 삼은 절차다.
   #     이것이 없으면 tests/01~14 가 이미 변형한 DB 위에서 CON-002(19/20) 가 첫 실행부터 FAIL 한다.
   ./scripts/rebuild.sh > /dev/null 2>&1 || { FAILED=1; continue; }
-  sqlcmd -S "$SRV" -E -d "$DB" -b -i tests/00_Test_Harness.sql > /dev/null 2>&1 || FAILED=1
+  sqlcmd -S "$SRV" -E -d "$DB" -b -I -i tests/00_Test_Harness.sql > /dev/null 2>&1 || FAILED=1
   ./scripts/concurrency-test.sh "$s" || FAILED=1
 done
 

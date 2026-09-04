@@ -309,7 +309,7 @@ git commit -m "chore(phase4): WinForms 불변 manifest 및 검증 스크립트 �
 3. 쓰기 허용 경계   database/**, ../docs/phase4/**
 4. Source of Truth  00 → 01 → 02 → 03 → 04 → 05 → 06 CANDIDATE → SQL
 5. 모든 .sql 은 UTF-8 with BOM. BOM 없으면 sqlcmd 가 한글 객체명을 깨뜨린다
-6. 모든 sqlcmd 는 -b -u 사용. exit code 가 유일한 자동 판정 근거
+6. 모든 sqlcmd 는 -b -I -u 사용. exit code 가 유일한 자동 판정 근거
 7. 허용 T-SQL 목록 = 스펙 §9.2. 그 밖의 기능을 쓰지 않는다
 8. Deploy.sql 은 실행할 때마다 스키마와 데이터를 초기화한다
 9. DROP DATABASE 는 Rebuild.sql 에만 존재한다
@@ -439,7 +439,7 @@ Expected: `ef bb bf`
 - [ ] **Step 4: RED 검증 — `master` 에서 실행하면 막히는가**
 
 ```bash
-sqlcmd -S '.\SQLEXPRESS' -E -d master -b -u -i deploy/00_Preflight.sql -o artifacts/logs/pre_red.log
+sqlcmd -S '.\SQLEXPRESS' -E -d master -b -I -u -i deploy/00_Preflight.sql -o artifacts/logs/pre_red.log
 echo "exit=$?"
 iconv -f UTF-16 -t UTF-8 artifacts/logs/pre_red.log
 ```
@@ -449,7 +449,7 @@ Expected: exit **1**, 로그에 `Msg 50011` (대상 Database 가 아님). `maste
 - [ ] **Step 5: 대상 DB 생성 (최초 1회)**
 
 ```bash
-sqlcmd -S '.\SQLEXPRESS' -E -d master -b -Q "IF DB_ID(N'HealthCheckupReservationReceptionDb') IS NULL CREATE DATABASE [HealthCheckupReservationReceptionDb] COLLATE Korean_Wansung_CI_AS;"
+sqlcmd -S '.\SQLEXPRESS' -E -d master -b -I -Q "IF DB_ID(N'HealthCheckupReservationReceptionDb') IS NULL CREATE DATABASE [HealthCheckupReservationReceptionDb] COLLATE Korean_Wansung_CI_AS;"
 echo "exit=$?"
 ```
 
@@ -458,7 +458,7 @@ Expected: exit 0.
 - [ ] **Step 6: GREEN — 대상 DB에서 실행**
 
 ```bash
-sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -u \
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
        -i deploy/00_Preflight.sql -o artifacts/logs/00_preflight.log
 echo "exit=$?"
 iconv -f UTF-16 -t UTF-8 artifacts/logs/00_preflight.log
@@ -480,7 +480,7 @@ Expected: exit **0**, `PASS PRE-001` ~ `PASS PRE-006` 6줄 + `INFO` 5줄.
 
 ```bash
 mkdir -p artifacts/reports
-sqlcmd -S '.\SQLEXPRESS' -E -d master -b -h -1 -W -s"|" \
+sqlcmd -S '.\SQLEXPRESS' -E -d master -b -I -h -1 -W -s"|" \
   -Q "SET NOCOUNT ON; SELECT name, state_desc, user_access_desc, CONVERT(VARCHAR(1), CONVERT(INT, is_read_only)), CONVERT(VARCHAR(30), create_date, 126) FROM sys.databases WHERE name NOT IN (N'HealthCheckupReservationReceptionDb', N'tempdb') ORDER BY database_id;" \
   -o artifacts/reports/otherdb_before.txt
 echo "exit=$?"
@@ -646,7 +646,7 @@ DB='HealthCheckupReservationReceptionDb'
 mkdir -p artifacts/logs
 
 RC=0
-sqlcmd -S "$SRV" -E -d "$DB" -b -u -i Deploy.sql -o artifacts/logs/deploy_full.log || RC=$?
+sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -i Deploy.sql -o artifacts/logs/deploy_full.log || RC=$?
 iconv -f UTF-16 -t UTF-8 artifacts/logs/deploy_full.log | tail -40
 echo "deploy exit=$RC"
 exit $RC
@@ -665,7 +665,7 @@ cd "$(dirname "$0")/.."
 SRV='.\SQLEXPRESS'
 mkdir -p artifacts/logs
 echo "!! 이 작업은 HealthCheckupReservationReceptionDb 를 삭제하고 다시 만듭니다."
-sqlcmd -S "$SRV" -E -d master -b -u -i Rebuild.sql -o artifacts/logs/rebuild.log
+sqlcmd -S "$SRV" -E -d master -b -I -u -i Rebuild.sql -o artifacts/logs/rebuild.log
 iconv -f UTF-16 -t UTF-8 artifacts/logs/rebuild.log
 ./scripts/deploy.sh
 ```
@@ -686,7 +686,7 @@ FAILED=0
 run() {                       # run <파일> <로그번호>
   local f="$1" log="artifacts/logs/test_${2}.log" rc=0
   echo "--- $f"
-  sqlcmd -S "$SRV" -E -d "$DB" -b -u -i "$f" -o "$log" || rc=$?
+  sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -i "$f" -o "$log" || rc=$?
   iconv -f UTF-16 -t UTF-8 "$log" | grep -E '^(PASS|FAIL|SKIP|INFO|Msg )' || true
   [ "$rc" -ne 0 ] && { echo "!! $f exit=$rc"; FAILED=1; }
   return 0
@@ -714,7 +714,7 @@ for s in 1 2 3 4 5 6 7 8; do
   # [X] 시나리오마다 rebuild + fixture 재배치. T34 Step 4 가 "시나리오 간 오염이 없다"의 근거로 삼은 절차다.
   #     이것이 없으면 tests/01~14 가 이미 변형한 DB 위에서 CON-002(19/20) 가 첫 실행부터 FAIL 한다.
   ./scripts/rebuild.sh > /dev/null 2>&1 || { FAILED=1; continue; }
-  sqlcmd -S "$SRV" -E -d "$DB" -b -i tests/00_Test_Harness.sql > /dev/null 2>&1 || FAILED=1
+  sqlcmd -S "$SRV" -E -d "$DB" -b -I -i tests/00_Test_Harness.sql > /dev/null 2>&1 || FAILED=1
   ./scripts/concurrency-test.sh "$s" || FAILED=1
 done
 
@@ -744,10 +744,10 @@ Expected: 둘 다 `ef bb bf`
 - [ ] **Step 7: `Rebuild.sql` 단독 검증 (DB만 재생성)**
 
 ```bash
-sqlcmd -S '.\SQLEXPRESS' -E -d master -b -u -i Rebuild.sql -o artifacts/logs/rebuild.log
+sqlcmd -S '.\SQLEXPRESS' -E -d master -b -I -u -i Rebuild.sql -o artifacts/logs/rebuild.log
 echo "exit=$?"
 iconv -f UTF-16 -t UTF-8 artifacts/logs/rebuild.log
-sqlcmd -S '.\SQLEXPRESS' -E -b -h -1 -W -Q "SELECT name FROM sys.databases ORDER BY database_id;"
+sqlcmd -S '.\SQLEXPRESS' -E -b -I -h -1 -W -Q "SELECT name FROM sys.databases ORDER BY database_id;"
 ```
 
 Expected: exit 0, `PASS RBD-CREATE`, DB 목록에 `Net461MvpSample` 이 **그대로 있고** `HealthCheckupReservationReceptionDb` 가 있다.
@@ -756,11 +756,11 @@ Expected: exit 0, `PASS RBD-CREATE`, DB 목록에 `Net461MvpSample` 이 **그대
 
 ```bash
 RC=0
-sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -u \
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
        -i Rebuild.sql -o artifacts/logs/rebuild_red.log || RC=$?
 echo "exit=$RC"
 iconv -f UTF-16 -t UTF-8 artifacts/logs/rebuild_red.log
-sqlcmd -S '.\SQLEXPRESS' -E -b -h -1 -W -Q "SELECT name FROM sys.databases ORDER BY database_id;"
+sqlcmd -S '.\SQLEXPRESS' -E -b -I -h -1 -W -Q "SELECT name FROM sys.databases ORDER BY database_id;"
 ```
 
 Expected: `exit=1`, `Msg 50021` (master 컨텍스트 필요). DB 목록에 `HealthCheckupReservationReceptionDb` 와 `Net461MvpSample` 이 **둘 다 그대로** 있다.
@@ -804,7 +804,7 @@ git commit -m "feat(phase4): Deploy/Rebuild 진입점 및 실행 스크립트 �
 - [ ] **Step 1: RED — 아직 아무 객체도 없음을 확인**
 
 ```bash
-sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -h -1 -W \
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W \
   -Q "SELECT 'tables=' + CONVERT(varchar(5), COUNT(*)) FROM sys.tables;"
 ```
 
@@ -1020,7 +1020,7 @@ GO
 
 ```bash
 head -c 3 deploy/01_Schema.sql | od -An -tx1
-sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -u \
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
        -i deploy/01_Schema.sql -o artifacts/logs/01_schema.log
 echo "exit=$?"
 iconv -f UTF-16 -t UTF-8 artifacts/logs/01_schema.log | tail -5
@@ -1031,7 +1031,7 @@ Expected: `ef bb bf`, exit 0, `PASS SCH-DEPLOY`.
 - [ ] **Step 8: 재실행 가능성 확인 (clean-create)**
 
 ```bash
-sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -u \
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
        -i deploy/01_Schema.sql -o artifacts/logs/01_schema_2nd.log
 echo "exit=$?"
 ```
@@ -1088,7 +1088,7 @@ GO
 ```
 
 ```bash
-sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -u \
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
        -i tests/01_Schema_Tests.sql -o artifacts/logs/test_01_red.log
 echo "exit=$?"
 ```
@@ -1368,7 +1368,7 @@ GO
 - [ ] **Step 3: 실행 — `SCH-013`·`SCH-014` 만 FAIL 이어야 한다**
 
 ```bash
-sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -u \
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
        -i tests/01_Schema_Tests.sql -o artifacts/logs/test_01.log
 echo "exit=$?"
 iconv -f UTF-16 -t UTF-8 artifacts/logs/test_01.log | grep -E '^(PASS|FAIL)'
@@ -1381,7 +1381,7 @@ Expected: exit **1**. `SCH-001`~`SCH-012`, `SCH-015`, `SCH-016` **14건 PASS**, 
 - [ ] **Step 4: 객체 인벤토리 보고서 생성**
 
 ```bash
-sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -h -1 -W -Q "
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W -Q "
 SET NOCOUNT ON;
 SELECT 'Table       = ' + CONVERT(varchar(5), COUNT(*)) FROM sys.tables WHERE is_ms_shipped=0;
 SELECT 'PK          = ' + CONVERT(varchar(5), COUNT(*)) FROM sys.key_constraints WHERE type='PK';
