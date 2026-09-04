@@ -266,5 +266,85 @@ IF NOT EXISTS (
     PRINT 'PASS RUL-N12 ExamCode ASC 정렬';
 ELSE BEGIN PRINT 'FAIL RUL-N12 정렬 위반'; SET @Fail += 1; END
 
+-- ── AEX 판정 RUL-A01~A10 (스펙 §35.5) ────────────────────────────────────────
+
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T015';   -- 남 만 46세, 대상
+IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,0,0)) = 7)
+    PRINT 'PASS RUL-A01 정확히 7행';
+ELSE BEGIN PRINT 'FAIL RUL-A01'; SET @Fail += 1; END
+
+-- RUL-A02  전부 미선택 → Selected·Requested 전부 0
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,0,0)
+                WHERE Selected = 1 OR Requested = 1)
+    PRINT 'PASS RUL-A02 전부 미선택 → Selected/Requested 전부 0';
+ELSE BEGIN PRINT 'FAIL RUL-A02'; SET @Fail += 1; END
+
+-- RUL-A03  남성(T015) + OPT03(유방초음파, 여성 전용) → 411
+IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,1,0,0,0,0)
+      WHERE OptionCode = 'OPT03') = 411)
+    PRINT 'PASS RUL-A03 남성 OPT03 411 WrongGender';
+ELSE BEGIN PRINT 'FAIL RUL-A03'; SET @Fail += 1; END
+
+-- RUL-A04  여성(T010) + OPT05(PSA, 남성 전용) → 411
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T010';
+IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,1,0,0)
+      WHERE OptionCode = 'OPT05') = 411)
+    PRINT 'PASS RUL-A04 여성 OPT05 411 WrongGender';
+ELSE BEGIN PRINT 'FAIL RUL-A04'; SET @Fail += 1; END
+
+-- RUL-A05  남성(T015) + OPT07(HPV, 여성 전용) → 411
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T015';
+IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,0,1)
+      WHERE OptionCode = 'OPT07') = 411)
+    PRINT 'PASS RUL-A05 남성 OPT07 411 WrongGender';
+ELSE BEGIN PRINT 'FAIL RUL-A05'; SET @Fail += 1; END
+
+-- RUL-A06  AdditionalActive=0 인 항목 요청 → 410  (CORRUPT-3)
+--   Seed 는 7종 전부 Active=1 이므로(SED-011) 이 시험만 잠시 하나를 끄고 즉시 되돌린다.
+--   되돌리지 않으면 SED-011 과 G07 이 뒤에서 FAIL 한다.
+--   OPT06 은 AdditionalExamCode 의 값이다. PK 인 ExamItemCode 로 찾으면 0행 UPDATE 가 되어
+--   410 을 관측할 수 없다 — 술어를 AdditionalExamCode 로 쓴다.
+UPDATE [dbo].[검사코드] SET [AdditionalActive] = 0 WHERE [AdditionalExamCode] = 'OPT06';
+IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,1,0)
+      WHERE OptionCode = 'OPT06') = 410)
+    PRINT 'PASS RUL-A06 비활성 항목 요청 410 ExamInactive';
+ELSE BEGIN PRINT 'FAIL RUL-A06'; SET @Fail += 1; END
+UPDATE [dbo].[검사코드] SET [AdditionalActive] = 1 WHERE [AdditionalExamCode] = 'OPT06';
+
+-- RUL-A07  NEX 에 EX012 가 있는 여 만 54세(T011)가 OPT04 요청 → 412
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T011';
+IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,1,0,0,0)
+      WHERE OptionCode = 'OPT04') = 412)
+    PRINT 'PASS RUL-A07 NEX EX012 중복 412 ExamDuplicate';
+ELSE BEGIN PRINT 'FAIL RUL-A07'; SET @Fail += 1; END
+
+-- RUL-A08  TGT 비대상(T001) + @UseSavedExams=0 → 7행 전부 CanSelect=0, Selected=0
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T001';
+IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 1,1,1,1,1,1,1)) = 7
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 1,1,1,1,1,1,1)
+                     WHERE CanSelect = 1 OR Selected = 1))
+    PRINT 'PASS RUL-A08 TGT 비대상 → 7행 전부 CanSelect=0, Selected=0';
+ELSE BEGIN PRINT 'FAIL RUL-A08'; SET @Fail += 1; END
+
+-- RUL-A09  @UseSavedExams=1 → 산출 NEX 가 아니라 저장 NEX 기준으로 중복 판정한다
+--   T011(여 만 54세)의 RCP Work 는 저장 NEX 에 EX012 를 갖는다(tests/00b). 그래서 OPT04 는 412 다.
+--   T014 는 남성이라 NEX-05 술어(Gender='F')가 성립하지 않아 저장 NEX 에 EX012 가 없다.
+DECLARE @Pa BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T011');
+DECLARE @Wa BIGINT = (SELECT TOP (1) [WorkId] FROM [dbo].[예약접수]
+                       WHERE [PatientId] = @Pa AND [StatusCode] = 'RCP' ORDER BY [WorkId]);
+IF @Wa IS NULL
+BEGIN PRINT 'FAIL RUL-A09 사전조건 T011 의 RCP Work 가 없다 (tests/00b 를 먼저 실행했는가)'; SET @Fail += 1; END
+ELSE IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@Pa, @Ref, @Wa, 1, 0,0,0,1,0,0,0)
+           WHERE OptionCode = 'OPT04') = 412)
+    PRINT 'PASS RUL-A09 @UseSavedExams=1 은 저장 NEX 기준으로 중복 판정';
+ELSE BEGIN PRINT 'FAIL RUL-A09'; SET @Fail += 1; END
+
+-- RUL-A10  선택하지 않은 무효 항목은 사유만 표시하고 저장을 막지 않는다
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T015';   -- 남 → OPT03 무효
+IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 1,0,0,0,0,0,0)
+            WHERE OptionCode = 'OPT03' AND CanSelect = 0 AND Requested = 0)
+    PRINT 'PASS RUL-A10 미선택 무효 항목은 사유만 표시된다';
+ELSE BEGIN PRINT 'FAIL RUL-A10'; SET @Fail += 1; END
+
 IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
 GO

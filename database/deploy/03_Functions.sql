@@ -169,3 +169,78 @@ RETURN
       )
 );
 GO
+-- 요청 값은 VALUES 행 생성자로만 받는다 (TVP·동적 SQL 은 허용 T-SQL 목록 밖이다).
+-- 선택하지 않은 무효 항목은 사유만 표시하고 저장을 막지 않는다 — Requested 와 Selected 를 분리한다.
+-- 정렬(OptionCode ASC)은 호출자가 붙인다.
+CREATE OR ALTER FUNCTION [dbo].[UFN_HC_추가검사확인]
+(
+    @PatientId        BIGINT,
+    @ReservationDate  DATE,
+    @WorkId           BIGINT,
+    @UseSavedExams    BIT,
+    @AexOpt01Selected BIT, @AexOpt02Selected BIT, @AexOpt03Selected BIT,
+    @AexOpt04Selected BIT, @AexOpt05Selected BIT, @AexOpt06Selected BIT,
+    @AexOpt07Selected BIT
+)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT
+          OptionCode    = CONVERT(VARCHAR(10),  b.[AdditionalExamCode])
+        , ExamCode      = CONVERT(VARCHAR(10),  b.[ExamItemCode])
+        , ExamName      = CONVERT(NVARCHAR(100), b.[ExamItemName])
+        , Requested     = CONVERT(BIT, b.Requested)
+        , Selected      = CONVERT(BIT, CASE WHEN b.Requested = 1 AND b.ReasonCode = 0 THEN 1 ELSE 0 END)
+        , CanSelect     = CONVERT(BIT, CASE WHEN b.ReasonCode = 0 THEN 1 ELSE 0 END)
+        , ReasonCode    = CONVERT(INT, b.ReasonCode)
+        , ReasonMessage = CONVERT(NVARCHAR(300),
+                            CASE b.ReasonCode
+                                WHEN 400 THEN N'예약일 기준 만 20세 미만으로 검진 대상이 아닙니다.'
+                                WHEN 401 THEN N'일반건강검진 2년 주기가 도래하지 않았습니다.'
+                                WHEN 410 THEN N'현재 사용할 수 없는 추가검사입니다.'
+                                WHEN 411 THEN N'성별 조건을 충족하지 않는 추가검사입니다.'
+                                WHEN 412 THEN N'일반건강검진에 포함된 검사입니다.'
+                                ELSE N'' END)
+    FROM
+    (
+        SELECT m.[AdditionalExamCode], m.[ExamItemCode], m.[ExamItemName], r.Requested
+             , ReasonCode =
+                 CASE
+                     WHEN @UseSavedExams = 0 AND t.Eligible = 0 THEN t.ReasonCode      -- 400 / 401
+                     WHEN m.[AdditionalActive] = 0                                THEN 410
+                     WHEN m.[AdditionalGenderCode] <> 'A'
+                      AND m.[AdditionalGenderCode] <> t.[Gender]                  THEN 411
+                     WHEN EXISTS
+                          (
+                              SELECT 1 FROM
+                              (
+                                  SELECT n.ExamCode FROM [dbo].[UFN_HC_국가검사구성](@PatientId, @ReservationDate) n
+                                   WHERE @UseSavedExams = 0
+                                  UNION ALL
+                                  SELECT d.[ExamItemCode] FROM [dbo].[검사항목] d
+                                   WHERE @UseSavedExams = 1 AND d.[WorkId] = @WorkId AND d.[ExamSourceCode] = 'NEX'
+                              ) nx WHERE nx.ExamCode = m.[ExamItemCode]
+                          )                                                       THEN 412
+                     ELSE 0
+                 END
+        FROM [dbo].[검사코드] m
+        CROSS JOIN
+        (
+            SELECT i.[Gender]
+                 , Eligible   = ISNULL(g.Eligible, CONVERT(BIT,0))
+                 , ReasonCode = ISNULL(g.ReasonCode, 400)
+            FROM [dbo].[수검자] i
+            OUTER APPLY [dbo].[UFN_HC_검진대상확인](i.[PatientId], @ReservationDate) g
+            WHERE i.[PatientId] = @PatientId
+        ) t
+        JOIN
+        (
+            VALUES ('OPT01', @AexOpt01Selected), ('OPT02', @AexOpt02Selected), ('OPT03', @AexOpt03Selected),
+                   ('OPT04', @AexOpt04Selected), ('OPT05', @AexOpt05Selected), ('OPT06', @AexOpt06Selected),
+                   ('OPT07', @AexOpt07Selected)
+        ) r (OptionCode, Requested) ON r.OptionCode = m.[AdditionalExamCode]
+        WHERE m.[AdditionalExamCode] IS NOT NULL
+    ) b
+);
+GO
