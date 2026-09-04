@@ -1,0 +1,16 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+.vs/
+TestResults/
+*.user
+
+# 다른 세션이 생성하는 문서 산출물. Phase 4 DB 작업의 대상이 아니고
+# 기준선 tag 에 진행중 파일이 섞이면 재현성이 깨진다.
+docs/baseline/output/
+*.suo
+
+# Phase 4 로그 (보고서는 커밋한다)
+database/artifacts/logs/
+integration/artifacts/logs/
+winforms/artifacts/logs/
