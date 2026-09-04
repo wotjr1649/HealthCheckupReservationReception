@@ -104,8 +104,10 @@ function splitFences(src) {
 // V05 금지 패턴 (코드펜스 안)
 {
   const bans = [
-    [/INSERT\s+(INTO\s+)?@\w+\s+EXEC/i, 'INSERT..EXEC — RS 2개 이상이면 Msg 213'],
-    [/\bDECLARE\s+\w+\s+CURSOR\b/i, 'CURSOR — 스펙 §9.2 허용목록 밖'],
+    // JS 의 \w 는 ASCII 전용이라 한글 식별자에서 fail-open 한다. @ 도 \w 에 없어
+    // `DECLARE @c CURSOR` 를 원래 놓치고 있었다(실측 확인). 둘 다 닫는다.
+    [/INSERT\s+(INTO\s+)?@[\w가-힣]+\s+EXEC/i, 'INSERT..EXEC — RS 2개 이상이면 Msg 213'],
+    [/\bDECLARE\s+@?[\w가-힣]+\s+CURSOR\b/i, 'CURSOR — 스펙 §9.2 허용목록 밖'],
     [/FOR\s+XML\s+PATH/i, 'FOR XML PATH — 스펙 §9.2 허용목록 밖'],
     [/\|\s*grep\s+[^|\n]*-\w*q/, 'grep -q 뒤 파이프 — SIGPIPE 로 pipefail fail-open'],
     [/\|\s*tee\b/, 'tee — 파이프라인 종료코드가 흐려진다'],
@@ -222,19 +224,22 @@ function splitFences(src) {
               : P('V10', '로그에 개인정보 자원명 출력 0건');
 }
 
-// V11 객체명 — 계획이 참조하는 SP/TVF/Table 은 스펙에 정의된 것이어야 한다.
+// V11 객체명 — 계획이 참조하는 SP/TVF/Sequence 는 스펙에, Table 은 기준선 04 에 정의된 것이어야 한다.
 // (이 검사는 실제로 필요했다: 계획이 존재하지 않는 `UFN_HC_마감시각` 을 참조한 적이 있다.)
 {
-  const RE = /\b(?:USP_HC_|UFN_HC_|SEQ_HC_)[가-힣A-Za-z_0-9]+/g;
-  const known = new Set(spec.match(RE) || []);
+  // Table 축은 주석이 약속만 하고 구현돼 있지 않았다. 그래서 R2 물리 테이블명이 남은
+  // 계획 파일을 한 건도 잡지 못했다(실측 확인). Table 의 출처는 스펙이 아니라 기준선 04 다.
+  const OBJ = /\b(?:USP_HC_|UFN_HC_|SEQ_HC_)[가-힣A-Za-z_0-9]+/g;
+  const TBL = /\b(?:INFO_|MST_|HIS_)[A-Z][A-Z_0-9]*/g;
+  const known = new Set([...(spec.match(OBJ) || []), ...(read(BASE04).match(TBL) || [])]);
   const hits = [];
   for (const [n, s] of Object.entries(plans))
     s.split('\n').forEach((l, i) => {
-      for (const o of l.match(RE) || [])
+      for (const o of [...(l.match(OBJ) || []), ...(l.match(TBL) || [])])
         if (!known.has(o)) hits.push(n + ':' + (i + 1) + ': ' + o);
     });
-  hits.length ? F('V11', '스펙에 없는 객체명 참조 ' + hits.length + '건', [...new Set(hits)].join('\n'))
-              : P('V11', '계획의 SP/TVF/Sequence 참조 ' + known.size + '종 전부 스펙에 정의됨');
+  hits.length ? F('V11', '스펙·기준선에 없는 객체명 참조 ' + hits.length + '건', [...new Set(hits)].join('\n'))
+              : P('V11', '계획의 SP/TVF/Sequence/Table 참조 ' + known.size + '종 전부 스펙·기준선에 정의됨');
 }
 
 // V12 완료조건이 Test 건수를 다시 적으면 안 된다 — 그것이 드리프트의 발생원이다.

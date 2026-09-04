@@ -50,7 +50,7 @@ IF NOT (DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
         AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
         AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
         AND NOT EXISTS (SELECT 1 FROM [dbo].[MST_HOLIDAYS]
-                         WHERE [HolidayDate] = CONVERT(DATE, SYSDATETIME()) AND [IsActive] = 1))
+                         WHERE [HolidayDate] = CONVERT(DATE, SYSDATETIME()) AND [Active] = 1))
 BEGIN
     PRINT 'SKIP 08_Rollback_Tests 업무시간(월~토 09:00~18:00, 비휴무일) 밖';
     RETURN;
@@ -519,7 +519,7 @@ RC=0
 
 # RBD-006  2회 Rebuild 후 Seed 19행 전건 값 동일 (개수가 아니라 값이다)
 sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -o artifacts/logs/seed_now.txt \
-  -Q "SET NOCOUNT ON; SELECT ExamItemCode+'|'+ExamName+'|'+ISNULL(NexRuleCode,'-')+'|'+CONVERT(VARCHAR(1),IsActive) FROM dbo.MST_EXAM_ITEMS ORDER BY ExamItemCode;
+  -Q "SET NOCOUNT ON; SELECT ExamItemCode+'|'+ExamItemName+'|'+ISNULL(NexRuleCode,'-')+'|'+CONVERT(VARCHAR(1),AdditionalActive) FROM dbo.MST_EXAM_ITEMS ORDER BY ExamItemCode;
       SELECT CONVERT(VARCHAR(10),HolidayDate,120)+'|'+HolidayName FROM dbo.MST_HOLIDAYS ORDER BY HolidayDate;"
 diff artifacts/logs/seed_first.txt artifacts/logs/seed_now.txt \
   && echo "PASS RBD-006 2회 Rebuild 후 Seed 19+2행 값까지 동일" \

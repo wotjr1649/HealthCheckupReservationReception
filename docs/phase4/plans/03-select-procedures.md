@@ -859,7 +859,7 @@ BIZ=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
               AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
               AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
               AND NOT EXISTS (SELECT 1 FROM dbo.MST_HOLIDAYS
-                               WHERE HolidayDate = CONVERT(DATE, SYSDATETIME()) AND IsActive = 1)
+                               WHERE HolidayDate = CONVERT(DATE, SYSDATETIME()) AND Active = 1)
          THEN 1 ELSE 0 END;" | tr -d ' \r')
 
 for f in tests/contract/*.sql; do

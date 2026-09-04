@@ -107,7 +107,7 @@ IF NOT (DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
         AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
         AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
         AND NOT EXISTS (SELECT 1 FROM [dbo].[MST_HOLIDAYS]
-                         WHERE [HolidayDate] = CONVERT(DATE, SYSDATETIME()) AND [IsActive] = 1))
+                         WHERE [HolidayDate] = CONVERT(DATE, SYSDATETIME()) AND [Active] = 1))
 BEGIN
     PRINT 'SKIP 05_Patient_Write_Tests 업무시간(월~토 09:00~18:00, 비휴무일) 밖';
     RETURN;
