@@ -7,12 +7,24 @@ C# 코드, 화면, 문서 본문은 이 디렉터리의 책임이 아니다.
 
 ## 2. 읽기 전용 경계
 
-`../docs/baseline/` 와 `../winforms/` 는 **읽기만** 한다.
-한 바이트라도 바뀌면 `./scripts/verify-baseline.sh` 와 `./scripts/verify-winforms-unchanged.sh` 가 exit 1 을 낸다.
+`../winforms/` 는 **예외 없이 읽기만** 한다. `./scripts/verify-winforms-unchanged.sh` 가 exit 1 을 낸다.
+
+`../docs/baseline/` 도 기본은 읽기 전용이다. 한 바이트라도 바뀌면 `./scripts/verify-baseline.sh` 가 exit 1 을 낸다.
+
+**단 하나의 예외 — R3 재봉인.** `docs/phase4/04_DB_Design_R3_DRAFT.md` §3 의 진행안 4·5·6단계는 기준선을 R2 에서 R3 로 교체하는 단계이며, 그 단계에 한해 **해당 단계가 지정한 기준선 파일과 `scripts/verify-baseline.sh` 의 SHA-256 을 같은 커밋에 묶어** 바꾼다.
+
+```text
+4단계  00_Project_Policy.md · 01_Process_Definition.md · 02_Function_Definition.xlsx  + 해시 3개
+5단계  03_Wireframe_Definition.md                                                      + 해시 1개
+6단계  04_DB_Design.md · 05_DB_Rule_SP_Contract.md                                     + 해시 2개
+```
+
+그 단계가 아니거나 목록 밖 파일이면 **여전히 쓰지 않는다.** 파일과 해시를 한 커밋 안에서 함께 끝내지 못하면 되돌린다 — 게이트가 red 인 커밋을 남기지 않는다.
 
 ## 3. 쓰기 허용 경계
 
-`database/**` 와 `../docs/phase4/` 만 쓴다. 그 밖의 경로에 쓰지 않는다.
+`database/**` 와 `../docs/phase4/` 를 쓴다. `../docs/baseline/` 은 §2 의 예외 조건에서만 쓴다.
+그 밖의 경로에 쓰지 않는다. 특히 ROOT `tools/` 와 `../docs/baseline/output/` 은 다른 세션의 산출물이므로 읽지도 쓰지도 커밋하지도 않는다(읽기는 조사 목적에 한한다).
 
 ## 4. Source of Truth 우선순위
 
