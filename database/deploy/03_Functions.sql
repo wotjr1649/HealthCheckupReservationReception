@@ -1,3 +1,84 @@
-﻿SET NOCOUNT ON;
-PRINT N'INFO 03_Functions placeholder — 아직 구현되지 않았습니다.';
+﻿SET QUOTED_IDENTIFIER ON;   -- 01_Schema.sql 과 같은 설정으로 객체를 만든다 (CLAUDE.md §6)
+GO
+SET NOCOUNT ON;
+GO
+-- Inline TVF 는 단일 SELECT 여야 하고 CASE 결과를 다음 단계에서 재사용해야 하므로 중첩 derived table 을 쓴다.
+-- SYSDATETIME() 을 함수 안에서 호출하지 않는다 — 호출 SP 가 캡처한 @ServerTime 만 쓴다.
+-- SET DATEFIRST 에 의존하지 않는다 — DATEDIFF(DAY,0,d)%7 은 0=월 … 6=일 로 세션 설정과 무관하다.
+CREATE OR ALTER FUNCTION [dbo].[UFN_HC_일정확인]
+(
+    @ServerTime      DATETIME2(7),
+    @ReservationDate DATE,
+    @TimeSlot        CHAR(2),
+    @CutoffType      VARCHAR(10)
+)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT
+          CanWorkNow    = CONVERT(BIT, CASE WHEN d.TodayBiz = 1 AND d.WithinHours = 1 THEN 1 ELSE 0 END)
+        , WorkCode      = CONVERT(INT, CASE WHEN d.TodayBiz = 0 THEN 308
+                                            WHEN d.WithinHours = 0 THEN 309 ELSE 0 END)
+        , WorkMessage   = CONVERT(NVARCHAR(300),
+                            CASE WHEN d.TodayBiz = 0    THEN N'오늘은 업무일이 아닙니다.'
+                                 WHEN d.WithinHours = 0 THEN N'현재는 업무 운영시간이 아닙니다.'
+                                 ELSE N'' END)
+        , IsBusinessDay = CONVERT(BIT, d.ReqBiz)
+        , HolidayName   = CONVERT(NVARCHAR(100), d.ReqHoliday)
+        , IsOpen        = CONVERT(BIT, CASE WHEN d.ReqBiz = 1 AND d.SlotOpen = 1 THEN 1 ELSE 0 END)
+        , CutoffTime    = CONVERT(TIME(0), CASE WHEN d.SlotOpen = 0 THEN NULL ELSE d.Cutoff END)
+        , CutoffPassed  = CONVERT(BIT, CASE WHEN d.Cutoff IS NOT NULL
+                                             AND d.NowTime >= CONVERT(TIME(7), d.Cutoff) THEN 1 ELSE 0 END)
+        , CanUse        = CONVERT(BIT, CASE WHEN d.ReasonCode = 0 THEN 1 ELSE 0 END)
+        , ReasonCode    = CONVERT(INT, d.ReasonCode)
+        , ReasonMessage = CONVERT(NVARCHAR(300),
+                            CASE d.ReasonCode
+                                WHEN 300 THEN N'과거 날짜는 예약할 수 없습니다.'
+                                WHEN 301 THEN N'일요일은 업무일이 아닙니다.'
+                                WHEN 302 THEN N'선택한 날짜는 휴무일입니다.'
+                                WHEN 303 THEN N'선택한 시간대는 운영하지 않습니다.'
+                                WHEN 304 THEN N'해당 시간대의 마감시간이 지났습니다.'
+                                ELSE N'' END)
+    FROM
+    (
+        SELECT c.*
+             , ReasonCode = CASE WHEN @ReservationDate < c.Today                                   THEN 300
+                                 WHEN c.ReqDow = 6                                                  THEN 301
+                                 WHEN c.ReqHoliday IS NOT NULL                                      THEN 302
+                                 WHEN c.SlotOpen = 0                                                THEN 303
+                                 WHEN c.Cutoff IS NOT NULL
+                                  AND c.NowTime >= CONVERT(TIME(7), c.Cutoff)                       THEN 304
+                                 ELSE 0 END
+        FROM
+        (
+            SELECT b.*
+                 , TodayBiz   = CASE WHEN b.TodayDow <> 6 AND b.TodayHoliday IS NULL THEN 1 ELSE 0 END
+                 , WithinHours= CASE WHEN b.NowTime >= CONVERT(TIME(7), '09:00:00')
+                                      AND b.NowTime <  CONVERT(TIME(7), '18:00:00') THEN 1 ELSE 0 END
+                 , ReqBiz     = CASE WHEN b.ReqDow <> 6 AND b.ReqHoliday IS NULL THEN 1 ELSE 0 END
+                 , SlotOpen   = CASE WHEN b.ReqDow = 5 AND @TimeSlot = 'PM' THEN 0 ELSE 1 END
+                 , Cutoff     = CASE WHEN @ReservationDate = b.Today THEN b.RawCutoff ELSE NULL END
+            FROM
+            (
+                SELECT
+                      Today        = CONVERT(DATE, @ServerTime)
+                    , NowTime      = CONVERT(TIME(7), @ServerTime)
+                    , TodayDow     = DATEDIFF(DAY, 0, CONVERT(DATE, @ServerTime)) % 7
+                    , ReqDow       = DATEDIFF(DAY, 0, @ReservationDate) % 7
+                    , TodayHoliday = (SELECT TOP (1) h.[HolidayName] FROM [dbo].[휴무일] h
+                                       WHERE h.[HolidayDate] = CONVERT(DATE, @ServerTime) AND h.[Active] = 1)
+                    , ReqHoliday   = (SELECT TOP (1) h.[HolidayName] FROM [dbo].[휴무일] h
+                                       WHERE h.[HolidayDate] = @ReservationDate AND h.[Active] = 1)
+                    -- 토요일 오후는 00 §3장이 마감을 "해당 없음" 으로 확정했다.
+                    -- RawCutoff 는 요일을 보지 않으므로 CutoffTime 을 SlotOpen=0 에서 NULL 로 덮는다.
+                    , RawCutoff    = CASE WHEN @CutoffType = 'NORMAL'    AND @TimeSlot = 'AM' THEN CONVERT(TIME(0), '10:00:00')
+                                          WHEN @CutoffType = 'NORMAL'    AND @TimeSlot = 'PM' THEN CONVERT(TIME(0), '15:00:00')
+                                          WHEN @CutoffType = 'RECEPTION' AND @TimeSlot = 'AM' THEN CONVERT(TIME(0), '11:00:00')
+                                          WHEN @CutoffType = 'RECEPTION' AND @TimeSlot = 'PM' THEN CONVERT(TIME(0), '16:00:00')
+                                          ELSE NULL END
+            ) b
+        ) c
+    ) d
+);
 GO
