@@ -181,5 +181,90 @@ IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_검진대상확인](-1, @Ref)) = 0)
     PRINT 'PASS RUL-G08 미존재 Patient 0행';
 ELSE BEGIN PRINT 'FAIL RUL-G08'; SET @Fail += 1; END
 
+-- ── NEX 구성 RUL-N01~N12 (스펙 §35.4) ────────────────────────────────────────
+--   NEX-02 EX009  남 Age>=24 AND (Age-24)%4=0  /  여 Age>=40 AND (Age-40)%4=0
+--   NEX-03 EX010  Age=40 AND HepatitisBExcluded=0   NEX-04 EX011  Age=56
+--   NEX-05 EX012  Gender='F' AND Age IN (54,60,66)  NEX-06 EX013  Age IN (56,66)
+
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T001';   -- 만 19세, 비대상
+IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](@P, @Ref)) = 0)
+    PRINT 'PASS RUL-N01 TGT 비대상 0행';
+ELSE BEGIN PRINT 'FAIL RUL-N01'; SET @Fail += 1; END
+
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T002';   -- 만 20세, 조건부 0종
+IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](@P, @Ref)) = 8)
+    PRINT 'PASS RUL-N02 기본 8행';
+ELSE BEGIN PRINT 'FAIL RUL-N02'; SET @Fail += 1; END
+
+-- RUL-N03  남 23(T003) / 24(T004) / 28(T005) → EX009 없음 / 있음 / 있음
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T003'), @Ref) WHERE ExamCode='EX009')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T004'), @Ref) WHERE ExamCode='EX009')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T005'), @Ref) WHERE ExamCode='EX009')
+    PRINT 'PASS RUL-N03 남 23/24/28 → EX009 없음/있음/있음';
+ELSE BEGIN PRINT 'FAIL RUL-N03'; SET @Fail += 1; END
+
+-- RUL-N04  여 39(T006) / 40(T007) / 44(T018) → EX009 없음 / 있음 / 있음
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T006'), @Ref) WHERE ExamCode='EX009')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T007'), @Ref) WHERE ExamCode='EX009')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T018'), @Ref) WHERE ExamCode='EX009')
+    PRINT 'PASS RUL-N04 여 39/40/44 → EX009 없음/있음/있음';
+ELSE BEGIN PRINT 'FAIL RUL-N04'; SET @Fail += 1; END
+
+-- RUL-N05  만 40세, HepatitisBExcluded=0(T007) → EX010 있음 / =1(T008) → EX010 없음
+IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T007'), @Ref) WHERE ExamCode='EX010')
+   AND NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T008'), @Ref) WHERE ExamCode='EX010')
+    PRINT 'PASS RUL-N05 만 40세 HepatitisBExcluded=1 이 EX010 을 제거한다';
+ELSE BEGIN PRINT 'FAIL RUL-N05'; SET @Fail += 1; END
+
+-- RUL-N06  만 55(T009) / 56(T010) → EX011 없음 / 있음
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T009'), @Ref) WHERE ExamCode='EX011')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T010'), @Ref) WHERE ExamCode='EX011')
+    PRINT 'PASS RUL-N06 만 55/56 → EX011 없음/있음';
+ELSE BEGIN PRINT 'FAIL RUL-N06'; SET @Fail += 1; END
+
+-- RUL-N07  여 54(T011) / 60(T012) / 66(T013) → EX012 전부 있음
+IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T011'), @Ref) WHERE ExamCode='EX012')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T012'), @Ref) WHERE ExamCode='EX012')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T013'), @Ref) WHERE ExamCode='EX012')
+    PRINT 'PASS RUL-N07 여 54/60/66 → EX012 있음';
+ELSE BEGIN PRINT 'FAIL RUL-N07'; SET @Fail += 1; END
+
+-- RUL-N08  남 54(T019) → EX012 없음 (NEX-05 는 여성 전용)
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T019'), @Ref) WHERE ExamCode='EX012')
+    PRINT 'PASS RUL-N08 남 54세는 EX012 비대상';
+ELSE BEGIN PRINT 'FAIL RUL-N08 남성에게 EX012 가 나왔다'; SET @Fail += 1; END
+
+-- RUL-N09  만 56(T010) / 66(T013) → EX013 있음
+IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T010'), @Ref) WHERE ExamCode='EX013')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='T013'), @Ref) WHERE ExamCode='EX013')
+    PRINT 'PASS RUL-N09 만 56/66 → EX013 있음';
+ELSE BEGIN PRINT 'FAIL RUL-N09'; SET @Fail += 1; END
+
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T010';   -- 여 만 56세
+IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](@P, @Ref)) = 11)
+    PRINT 'PASS RUL-N10 조건부 3종 동시 → 11행';
+ELSE BEGIN PRINT 'FAIL RUL-N10'; SET @Fail += 1; END
+
+-- RUL-N11 모든 TGT 대상 프로필의 행수가 8~11 범위인지 전수 확인
+IF NOT EXISTS (
+    SELECT 1 FROM [dbo].[수검자] p
+    CROSS APPLY (SELECT Cnt = COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](p.[PatientId], @Ref)) n
+    CROSS APPLY [dbo].[UFN_HC_검진대상확인](p.[PatientId], @Ref) g
+    WHERE g.Eligible = 1 AND (n.Cnt < 8 OR n.Cnt > 11))
+    PRINT 'PASS RUL-N11 전 대상자 NEX 행수 8~11 범위';
+ELSE BEGIN PRINT 'FAIL RUL-N11 범위 벗어난 대상자 존재'; SET @Fail += 1; END
+
+-- RUL-N12  정렬 = ExamCode ASC. 반환 순서와 정렬한 순서를 행번호로 맞대어 본다.
+SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T010';
+IF NOT EXISTS (
+    SELECT 1
+    FROM (SELECT ExamCode, rn = ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
+            FROM [dbo].[UFN_HC_국가검사구성](@P, @Ref)) a
+    JOIN (SELECT ExamCode, rn = ROW_NUMBER() OVER (ORDER BY ExamCode)
+            FROM [dbo].[UFN_HC_국가검사구성](@P, @Ref)) b
+      ON a.rn = b.rn AND a.ExamCode <> b.ExamCode)
+    PRINT 'PASS RUL-N12 ExamCode ASC 정렬';
+ELSE BEGIN PRINT 'FAIL RUL-N12 정렬 위반'; SET @Fail += 1; END
+
 IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
 GO

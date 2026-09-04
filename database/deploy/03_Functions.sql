@@ -128,3 +128,44 @@ RETURN
     ) x
 );
 GO
+-- TGT 비대상에게는 행을 반환하지 않는다 (t.Eligible = 1 조건).
+-- 조건부 술어는 00 §7.2.2 를 그대로 옮긴 것이다. 여기서 바꾸지 않는다.
+-- 정렬(ExamCode ASC)은 Inline TVF 에서 ORDER BY 를 쓸 수 없으므로 호출자가 붙인다.
+CREATE OR ALTER FUNCTION [dbo].[UFN_HC_국가검사구성]
+(
+    @PatientId       BIGINT,
+    @ReservationDate DATE
+)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT
+          ExamCode = CONVERT(VARCHAR(10),  m.[ExamItemCode])
+        , ExamName = CONVERT(NVARCHAR(100), m.[ExamItemName])
+        , ExamType = CONVERT(VARCHAR(12), CASE WHEN m.[NexRuleCode] = 'NEX-01' THEN 'BASIC' ELSE 'CONDITIONAL' END)
+        , RuleCode = CONVERT(VARCHAR(10),  m.[NexRuleCode])
+    FROM [dbo].[검사코드] m
+    CROSS JOIN
+    (
+        SELECT g.Eligible, g.Age, i.[Gender], i.[HepatitisBExcluded]
+        FROM [dbo].[수검자] i
+        CROSS APPLY [dbo].[UFN_HC_검진대상확인](i.[PatientId], @ReservationDate) g
+        WHERE i.[PatientId] = @PatientId
+    ) t
+    WHERE m.[NexRuleCode] IS NOT NULL
+      AND t.Eligible = 1
+      AND
+      (
+            m.[NexRuleCode] = 'NEX-01'
+        OR (m.[NexRuleCode] = 'NEX-02' AND
+            (  (t.[Gender] = 'M' AND t.Age >= 24 AND (t.Age - 24) % 4 = 0)
+            OR (t.[Gender] = 'F' AND t.Age >= 40 AND (t.Age - 40) % 4 = 0) ))
+        OR (m.[NexRuleCode] = 'NEX-03' AND t.Age = 40
+            AND t.[HepatitisBExcluded] = 0)
+        OR (m.[NexRuleCode] = 'NEX-04' AND t.Age = 56)
+        OR (m.[NexRuleCode] = 'NEX-05' AND t.[Gender] = 'F' AND t.Age IN (54, 60, 66))
+        OR (m.[NexRuleCode] = 'NEX-06' AND t.Age IN (56, 66))
+      )
+);
+GO
