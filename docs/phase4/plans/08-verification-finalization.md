@@ -361,10 +361,10 @@ ELSE BEGIN PRINT 'FAIL VER-003 SP'; SET @Fail += 1; END
 IF ((SELECT COUNT(*) FROM sys.sequences) = 1) PRINT 'PASS VER-004 Sequence 1';
 ELSE BEGIN PRINT 'FAIL VER-004 Sequence'; SET @Fail += 1; END
 IF ((SELECT COUNT(*) FROM sys.key_constraints WHERE type='PK') = 7
-    AND (SELECT COUNT(*) FROM sys.foreign_keys) = 6
+    AND (SELECT COUNT(*) FROM sys.foreign_keys) = 4
     AND (SELECT COUNT(*) FROM sys.key_constraints WHERE type='UQ') = 2
     AND (SELECT COUNT(*) FROM sys.indexes WHERE is_unique=1 AND has_filter=1) = 1)
-    PRINT 'PASS VER-005 PK7/FK6/UQ2/UX1';   -- 사용자 테이블 한정(is_ms_shipped=0). SCH-007·RBD-004 와 같은 기준을 쓴다.
+    PRINT 'PASS VER-005 PK7/FK4/UQ2/UX1';   -- 사용자 테이블 한정(is_ms_shipped=0). SCH-007·RBD-004 와 같은 기준을 쓴다.
 ELSE BEGIN PRINT 'FAIL VER-005 제약 수'; SET @Fail += 1; END
 IF ((SELECT COUNT(*) FROM sys.triggers WHERE is_ms_shipped=0) = 0
     AND (SELECT COUNT(*) FROM sys.table_types) = 0)
@@ -619,7 +619,7 @@ Write SP는 **성공 경로와 실패 경로를 각각** 호출한다. 실패 �
 --     완료조건 "Parameter 95개 일치" 를 근거 없이 주장할 수 있다. EXCEPT 양방향 + THROW 로 바꾼다.
 DECLARE @ExpParam TABLE (SpName SYSNAME, Ord INT, ParamName SYSNAME, TypeName VARCHAR(50), PRIMARY KEY (SpName, Ord));
 INSERT INTO @ExpParam (SpName, Ord, ParamName, TypeName) VALUES
- -- 87행 전건. 기준선 05 §7~§12 에서 기계 생성했다.
+ -- 95행 전건. 기준선 05 §7~§12 에서 기계 생성했다(Write SP 8개의 @OperatorName 포함).
  -- USP_HC_SELECT_공통업무상태 는 무인자라 이 표에 나타나지 않는다 (14 SP × 95 Parameter).
  -- USP_HC_SELECT_수검자목록 5개
  (N'USP_HC_SELECT_수검자목록',  1, N'@ChartNo',               'nvarchar(100)'),

@@ -345,5 +345,55 @@ function splitFences(src) {
               : P('V14', '계획 SQL 의 대괄호 식별자 전부 기준선에 실재');
 }
 
+// V15 R2 수치 사본 — 게이트가 보지 않던 부류다.
+// V08 은 `CHECK n개`·`DF n` 패턴만 보므로 `DEFAULT 14행`·`Parameter 87행`·`FK 6` 처럼
+// 산문에 흩어진 R2 값을 아무도 검사하지 않았고, 실제로 5건이 R3 재봉인을 통과했다
+// (그중 plans/08 의 VER-005 는 실행되는 조건문이라 배포 검증을 깨뜨렸을 것이다).
+// R2 값과 R3 값이 짝인 수치만 센다. 예외는 정확한 문자열로 고정한다 —
+// "같은 줄에 R2 가 있으면 통과" 같은 휴리스틱은 그 자체가 우회 통로다.
+{
+  const R2NUM = [
+    ['FK 6',          /\bFK\s*6(?![0-9])/],
+    ['컬럼 55',        /(?<![0-9])55\s*(?:개\s*)?(?:컬럼|행)|컬럼\s*55(?![0-9])/],
+    ['CHECK 22',      /CHECK[^0-9\n]{0,16}?(?<![0-9])22\s*(?:개|행)?(?![0-9])/],
+    ['DEFAULT 14',    /\bDF\s+14(?![0-9])|Default[^0-9\n]{0,18}?(?<![0-9])14\s*(?:개|행)|DEFAULT\s*\*{0,2}\s*14\s*행/],
+    ['Parameter 87',  /Parameter\s*\*{0,2}\s*87(?![0-9])|(?<![0-9])87\s*(?:개|행)/],
+    ['수검자 29',      /(?<![0-9])29\s*(?:개\s*)?컬럼|컬럼\s*29(?![0-9])|스키마\s*29(?![0-9])/],
+    ['Test 234',      /(?<![0-9])234\s*건|\(234\)/],
+    ['상태 3값',       /RSV\s*\/\s*RCP\s*\/\s*CNL|'RSV'\s*,\s*'RCP'\s*,\s*'CNL'/],
+    ['CNL',           /\bCNL\b/],
+    ['R2 테이블명',    /\b(?:INFO_|MST_|HIS_)[A-Z][A-Z_0-9]*/],
+    ['R2 기준선 ID',   /HC-RSV-RCP-20260903-R2/],
+  ];
+  // 정당한 예외 — R2 시점을 서술하는 역사 기록과, R2/R3 와 무관하게 "만들지 않는" 테이블 이름.
+  const ALLOW = [
+    'MST_NATIONAL_EXAMS', 'MST_ADDITIONAL_EXAMS',
+    'R2의 29개 컬럼에서',
+    '55개 컬럼 중 **2개**',
+  ];
+  const targets = [];
+  for (const f of fs.readdirSync(path.join(ROOT, 'baseline')).filter(f => /^0[0-5].*\.md$/.test(f)))
+    targets.push(path.join(ROOT, 'baseline', f));
+  targets.push(SPEC, ...planFiles);
+  const DB = path.resolve(__dirname, '..');
+  for (const f of ['Rebuild.sql', 'Deploy.sql']) targets.push(path.join(DB, f));
+  for (const d of ['deploy', 'tests'])
+    for (const f of fs.readdirSync(path.join(DB, d)).filter(f => f.endsWith('.sql')))
+      targets.push(path.join(DB, d, f));
+
+  const hits = [];
+  for (const f of targets) {
+    const buf = fs.readFileSync(f);
+    const src = buf.slice(buf[0] === 0xEF ? 3 : 0).toString('utf8');
+    src.split(/\r?\n/).forEach((l, i) => {
+      if (ALLOW.some(a => l.includes(a))) return;
+      for (const [nm, re] of R2NUM)
+        if (re.test(l)) hits.push(path.basename(f) + ':' + (i + 1) + ' [' + nm + '] ' + l.trim().slice(0, 76));
+    });
+  }
+  hits.length ? F('V15', 'R2 수치·식별자 사본 ' + hits.length + '건', hits.join('\n'))
+              : P('V15', 'R2 수치·식별자 사본 0건 (' + targets.length + '개 파일)');
+}
+
 console.log('\n=== verify-docs: PASS ' + pass + ' / FAIL ' + fail + ' ===');
 process.exit(fail ? 1 : 0);

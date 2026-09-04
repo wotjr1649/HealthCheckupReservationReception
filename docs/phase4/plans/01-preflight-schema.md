@@ -801,7 +801,7 @@ git commit -m "feat(phase4): Deploy/Rebuild 진입점 및 실행 스크립트 �
 - Create: `deploy/01_Schema.sql`
 
 **Interfaces:**
-- Produces: 7 Table / PK 7 / FK 6 / UQ 2 / UX 1 / NCI 5 / Sequence 1. Trigger 0 / TVP 0.
+- Produces: 7 Table / PK 7 / FK 4 / UQ 2 / UX 1 / NCI 5 / Sequence 1. Trigger 0 / TVP 0.
 
 **금지사항:** 컬럼 추가·삭제·이름변경·타입변경 금지. Trigger·FK Cascade·추가 Index 금지. `IF NOT EXISTS` 가드를 넣지 않는다 (clean-create).
 
