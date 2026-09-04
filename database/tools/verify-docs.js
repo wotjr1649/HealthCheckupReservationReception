@@ -377,6 +377,9 @@ function splitFences(src) {
   targets.push(SPEC, ...planFiles);
   const DB = path.resolve(__dirname, '..');
   for (const f of ['Rebuild.sql', 'Deploy.sql']) targets.push(path.join(DB, f));
+  // 세션이 가장 먼저 읽는 파일이므로 R2 이름이 남으면 가장 오래 오해를 만든다.
+  // 실제로 §6 이 필터형 인덱스를 R2 테이블명으로 설명한 채 R3 재봉인을 통과했다.
+  targets.push(path.join(DB, 'CLAUDE.md'));
   for (const d of ['deploy', 'tests'])
     for (const f of fs.readdirSync(path.join(DB, d)).filter(f => f.endsWith('.sql')))
       targets.push(path.join(DB, d, f));
