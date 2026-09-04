@@ -69,10 +69,19 @@ VALUES
     ('2026-12-25', N'성탄절',     1, N'평일(금) 휴무일 — HOL-05 테스트용'),
     ('2026-12-26', N'센터 휴진일', 1, N'토요일 휴무일 — HOL-05 테스트용');
 GO
-PRINT 'PASS SEED-DEPLOY Exam ' + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[검사코드]))
-    + ' / Holiday ' + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[휴무일]));
+-- PRINT 는 스칼라 식만 받는다. 하위 쿼리를 직접 넣으면 Msg 1046 + Msg 102 로 배치가 컴파일되지 않는다(실측).
+DECLARE @ExamCount INT = (SELECT COUNT(*) FROM [dbo].[검사코드]);
+DECLARE @HolidayCount INT = (SELECT COUNT(*) FROM [dbo].[휴무일]);
+PRINT 'PASS SEED-DEPLOY Exam ' + CONVERT(VARCHAR(5), @ExamCount)
+    + ' / Holiday ' + CONVERT(VARCHAR(5), @HolidayCount);
 GO
 ```
+
+`[X]` 초안 마지막 배치는 `PRINT … CONVERT(VARCHAR(5), (SELECT COUNT(*) …))` 였다.
+**`PRINT` 는 스칼라 식만 받는다** — 하위 쿼리를 직접 넣으면 `Msg 1046`(이 컨텍스트에는 하위 쿼리를
+사용할 수 없습니다) + `Msg 102` 로 배치가 컴파일되지 않고 `-b` 가 exit 1 을 낸다(실측 확인).
+앞 배치의 `INSERT` 는 이미 커밋된 뒤라 **Seed 는 들어갔는데 배포는 실패한 것처럼 보인다.**
+변수에 먼저 받는다.
 
 - [ ] **Step 2: 실행**
 
