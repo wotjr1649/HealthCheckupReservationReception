@@ -4,9 +4,9 @@ cd "$(dirname "$0")/.."
 node -e '
 const fs=require("fs"),c=require("crypto");
 const exp={
- "00_Project_Policy.md":"5adba8d4001e8f7aa27091614df33922a7d3d7cf27965f9ccc60874316beaefc",
- "01_Process_Definition.md":"1b0d1c23cb8dda15c6c0ba46a86a48a2586608b42079ed96a837386ae35f69e6",
- "02_Function_Definition.xlsx":"ac7b362ea79b062a889cd296bada304db4f66cb850a2ab04ca999c7530a1654a",
+ "00_Project_Policy.md":"0d10397d607823bb85f357c91ebd00d686b65b15e3d5ff13938d13c823c22a92",
+ "01_Process_Definition.md":"633bf096ae729674e70bf0a78209b68c9d068632fe68ba7f69e814d1f639325b",
+ "02_Function_Definition.xlsx":"7763aaae5e7a48c16b3751777be0787fdbf62a0f22d1d91fd5995eda7a3897eb",
  "03_Wireframe_Definition.md":"831b61f27e38d60e856e9309906af2df89c5632a732b8289fdb216b257c80024",
  "04_DB_Design.md":"8176d8a82ae360718f811d7f26481b6cb56778585aeebd3b38b42ec89950038f",
  "05_DB_Rule_SP_Contract.md":"b865c76fa5d041fa816e0d2380a7ca16306e80502652a9369201fdc956f71c24"};
