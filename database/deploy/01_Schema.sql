@@ -153,20 +153,20 @@ CREATE TABLE [dbo].[완료이력]
 GO
 CREATE TABLE [dbo].[변경이력]
 (
-    [HistoryId]     BIGINT        IDENTITY(1,1) NOT NULL,
-    [CreationDate]  DATETIME2(0)  NOT NULL CONSTRAINT [DF_변경이력_CREATION_DATE] DEFAULT (SYSDATETIME()),
-    [OperatorName]  NVARCHAR(50)  NULL,
-    [OperationCode] VARCHAR(20)   NOT NULL,
-    [TargetTable]   NVARCHAR(10)  NOT NULL,
-    [TargetKey]     BIGINT        NULL,
-    [ResultCode]    INT           NOT NULL,
+    [이력ID]     BIGINT        IDENTITY(1,1) NOT NULL,
+    [기록일시]   DATETIME2(0)  NOT NULL CONSTRAINT [DF_변경이력_CREATION_DATE] DEFAULT (SYSDATETIME()),
+    [조작자명]   NVARCHAR(50)  NULL,
+    [업무코드]   VARCHAR(20)   NOT NULL,
+    [대상테이블] NVARCHAR(10)  NOT NULL,
+    [대상키]     BIGINT        NULL,
+    [결과코드]   INT           NOT NULL,
 
-    CONSTRAINT [PK_변경이력] PRIMARY KEY CLUSTERED ([HistoryId]),
+    CONSTRAINT [PK_변경이력] PRIMARY KEY CLUSTERED ([이력ID]),
     CONSTRAINT [CK_변경이력_OPERATION] CHECK (
-        ([TargetTable] = N'수검자'   AND [OperationCode] IN ('PAT_INSERT','PAT_UPDATE'))
-     OR ([TargetTable] = N'예약접수' AND [OperationCode] IN ('RSV_INSERT','RSV_UPDATE','RSV_CANCEL','RCP_ACCEPT','RCP_AEX','RCP_CANCEL'))),
-    CONSTRAINT [CK_변경이력_RESULT_CODE] CHECK ([ResultCode] BETWEEN 0 AND 9 OR [ResultCode] BETWEEN 100 AND 799),
-    CONSTRAINT [CK_변경이력_TARGET_KEY]  CHECK ([ResultCode] >= 100 OR [TargetKey] IS NOT NULL)
+        ([대상테이블] = N'수검자'   AND [업무코드] IN ('PAT_INSERT','PAT_UPDATE'))
+     OR ([대상테이블] = N'예약접수' AND [업무코드] IN ('RSV_INSERT','RSV_UPDATE','RSV_CANCEL','RCP_ACCEPT','RCP_AEX','RCP_CANCEL'))),
+    CONSTRAINT [CK_변경이력_RESULT_CODE] CHECK ([결과코드] BETWEEN 0 AND 9 OR [결과코드] BETWEEN 100 AND 799),
+    CONSTRAINT [CK_변경이력_TARGET_KEY]  CHECK ([결과코드] >= 100 OR [대상키] IS NOT NULL)
 );
 GO
 CREATE SEQUENCE [dbo].[SEQ_HC_CHART_NO]

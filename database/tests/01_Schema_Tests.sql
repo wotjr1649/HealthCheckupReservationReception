@@ -136,13 +136,13 @@ INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
  (N'완료이력', N'PatientId',            N'bigint',    NULL,  0),
  (N'완료이력', N'CompletionDate',       N'date',      NULL,  0),
  -- 변경이력 7행
- (N'변경이력', N'HistoryId',            N'bigint',    NULL,  0),
- (N'변경이력', N'CreationDate',         N'datetime2', NULL,  0),
- (N'변경이력', N'OperatorName',         N'nvarchar',  50,    1),
- (N'변경이력', N'OperationCode',        N'varchar',   20,    0),
- (N'변경이력', N'TargetTable',          N'nvarchar',  10,    0),
- (N'변경이력', N'TargetKey',            N'bigint',    NULL,  1),
- (N'변경이력', N'ResultCode',           N'int',       NULL,  0);
+ (N'변경이력', N'이력ID',               N'bigint',    NULL,  0),
+ (N'변경이력', N'기록일시',             N'datetime2', NULL,  0),
+ (N'변경이력', N'조작자명',             N'nvarchar',  50,    1),
+ (N'변경이력', N'업무코드',             N'varchar',   20,    0),
+ (N'변경이력', N'대상테이블',           N'nvarchar',  10,    0),
+ (N'변경이력', N'대상키',               N'bigint',    NULL,  1),
+ (N'변경이력', N'결과코드',             N'int',       NULL,  0);
 
 DECLARE @ActCol TABLE (T SYSNAME, C SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, C));
 INSERT INTO @ActCol (T, C, Ty, Len, Nul)
