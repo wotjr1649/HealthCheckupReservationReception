@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# tests/contract/* 를 전건 실행하고 tools/verify-contract.js 로 계약을 판정한다 (G09).
+# set -e 를 쓰지 않는다 — 실패한 줄에서 셸이 끝나 RC 수집도 로그 출력도 안 된다.
+set -uo pipefail
+cd "$(dirname "$0")/.."
+SRV='.\SQLEXPRESS'; DB='HealthCheckupReservationReceptionDb'
+OUT=artifacts/reports/contract-verify.txt
+mkdir -p artifacts/logs artifacts/reports
+: > "$OUT"
+FAILED=0
+
+# Write SP 의 성공 시나리오는 업무시간(월~토 09:00~18:00, 비휴무일) 밖에서 RS0(308/309) 하나만
+# 반환한다. expected-contracts.json 이 RS 2개를 기대하므로 야간 회귀는 반드시 FAIL 한다.
+# Write SP 계약은 업무시간에만 판정하고, 밖이면 SKIP 을 남긴다. SKIP 은 PASS 가 아니다.
+BIZ=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
+  SELECT CASE WHEN DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
+              AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
+              AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
+              AND NOT EXISTS (SELECT 1 FROM dbo.휴무일
+                               WHERE HolidayDate = CONVERT(DATE, SYSDATETIME()) AND Active = 1)
+         THEN 1 ELSE 0 END;" | tr -d ' \r')
+
+for f in tests/contract/*.sql; do
+  k=$(basename "$f" .sql)
+  # SELECT SP 계약은 시간대와 무관하다. Write SP 계약만 가드한다 (T36 이 추가한다).
+  case "$k" in
+    PWR-*|RWR-*|CWR-*)
+      if [ "${BIZ:-0}" -ne 1 ]; then
+        echo "SKIP $k 업무시간 밖 — Write SP 는 308/309 를 업무 Rule 보다 먼저 판정한다" >> "$OUT"
+        continue
+      fi ;;
+  esac
+  # -W -w 65535 를 빼지 않는다. 기본 폭 80 에서 줄이 접히면 파서가 무너진다(실측 확인).
+  sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -W -w 65535 -s"|" \
+         -i "$f" -o "artifacts/logs/rs_${k}.txt" || FAILED=1
+  node tools/verify-contract.js "artifacts/logs/rs_${k}.txt" "$k" >> "$OUT" 2>&1 || FAILED=1
+done
+
+cat "$OUT"
+echo "contract-verify FAILED=$FAILED"
+exit $FAILED

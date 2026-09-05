@@ -1,0 +1,978 @@
+{
+  "01_공통업무상태": {
+    "sp": "USP_HC_SELECT_공통업무상태",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "Today",
+          "DayName",
+          "HolidayName",
+          "OpenTime",
+          "CloseTime",
+          "IsBusinessDay",
+          "WithinHours",
+          "CanWorkNow",
+          "BlockCode",
+          "BlockMessage"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "02_수검자목록_조건없음": {
+    "sp": "USP_HC_SELECT_수검자목록",
+    "rs0Success": 0,
+    "rs0Code": 103,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "03_수검자목록_ChartNo": {
+    "sp": "USP_HC_SELECT_수검자목록",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "PatientId",
+          "ChartNo",
+          "Name",
+          "SocialNumber",
+          "Birthday",
+          "Gender",
+          "MobilePhone",
+          "Phone",
+          "Email",
+          "Zipcode",
+          "Address"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "04_수검자목록_0건": {
+    "sp": "USP_HC_SELECT_수검자목록",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "PatientId",
+          "ChartNo",
+          "Name",
+          "SocialNumber",
+          "Birthday",
+          "Gender",
+          "MobilePhone",
+          "Phone",
+          "Email",
+          "Zipcode",
+          "Address"
+        ],
+        "rows": 0
+      }
+    ]
+  },
+  "05_수검자목록_주민번호형식": {
+    "sp": "USP_HC_SELECT_수검자목록",
+    "rs0Success": 0,
+    "rs0Code": 101,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "06_수검자상세_PatientId없음": {
+    "sp": "USP_HC_SELECT_수검자상세",
+    "rs0Success": 0,
+    "rs0Code": 100,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "07_수검자상세_미존재": {
+    "sp": "USP_HC_SELECT_수검자상세",
+    "rs0Success": 0,
+    "rs0Code": 200,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "08_수검자상세_정상": {
+    "sp": "USP_HC_SELECT_수검자상세",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "PatientId",
+          "ChartNo",
+          "Name",
+          "SocialNumber",
+          "Birthday",
+          "Gender",
+          "MobilePhone",
+          "Phone",
+          "Email",
+          "Zipcode",
+          "Address",
+          "AddressDetail",
+          "Memo",
+          "LastEditDate"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "09_수검자유효업무_0건": {
+    "sp": "USP_HC_SELECT_수검자유효업무",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "ReservationDate",
+          "TimeSlot",
+          "Status",
+          "StatusName",
+          "IsToday",
+          "RowVersion"
+        ],
+        "rows": 0
+      }
+    ]
+  },
+  "10_수검자유효업무_2건701": {
+    "sp": "USP_HC_SELECT_수검자유효업무",
+    "rs0Success": 0,
+    "rs0Code": 701,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "11_예약접수목록_날짜역전": {
+    "sp": "USP_HC_SELECT_예약접수목록",
+    "rs0Success": 0,
+    "rs0Code": 104,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "12_예약접수목록_조건없음": {
+    "sp": "USP_HC_SELECT_예약접수목록",
+    "rs0Success": 0,
+    "rs0Code": 103,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "13_예약접수목록_날짜범위": {
+    "sp": "USP_HC_SELECT_예약접수목록",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "PatientId",
+          "ReservationDate",
+          "TimeSlot",
+          "Status",
+          "StatusName",
+          "Name",
+          "ChartNo",
+          "Gender",
+          "Birthday",
+          "MobilePhone"
+        ],
+        "rows": 24
+      }
+    ]
+  },
+  "14_예약접수상세_미존재": {
+    "sp": "USP_HC_SELECT_예약접수상세",
+    "rs0Success": 0,
+    "rs0Code": 500,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "15_예약접수상세_NEX0행701": {
+    "sp": "USP_HC_SELECT_예약접수상세",
+    "rs0Success": 0,
+    "rs0Code": 701,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "16_예약접수상세_정상": {
+    "sp": "USP_HC_SELECT_예약접수상세",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "PatientId",
+          "ChartNo",
+          "Name",
+          "Birthday",
+          "Gender",
+          "MobilePhone",
+          "ReservationDate",
+          "TimeSlot",
+          "Status",
+          "StatusName",
+          "Capacity",
+          "CurrentCount",
+          "SeatsLeft",
+          "RowVersion"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "ExamCode",
+          "ExamName",
+          "ExamType",
+          "RuleCode"
+        ],
+        "rowsMin": 8,
+        "rowsMax": 11
+      },
+      {
+        "columns": [
+          "OptionCode",
+          "ExamCode",
+          "ExamName"
+        ],
+        "rowsMin": 0,
+        "rowsMax": 7
+      },
+      {
+        "columns": [
+          "ActionCode",
+          "Allowed",
+          "ReasonCode",
+          "ReasonMessage"
+        ],
+        "rows": 5
+      }
+    ]
+  },
+  "17_예약가능정보_RowVersion단독": {
+    "sp": "USP_HC_SELECT_예약가능정보",
+    "rs0Success": 0,
+    "rs0Code": 102,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "18_예약가능정보_AEX_NULL": {
+    "sp": "USP_HC_SELECT_예약가능정보",
+    "rs0Success": 0,
+    "rs0Code": 100,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "19_예약가능정보_WALKIN_날짜불일치": {
+    "sp": "USP_HC_SELECT_예약가능정보",
+    "rs0Success": 0,
+    "rs0Code": 102,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "20_예약가능정보_휴무일": {
+    "sp": "USP_HC_SELECT_예약가능정보",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "Scope",
+          "PatientId",
+          "WorkId",
+          "ReservationType",
+          "ReservationDate",
+          "TimeSlot",
+          "DateChanged",
+          "SlotChanged",
+          "ExtraChanged",
+          "CanWorkNow",
+          "OtherWorkId",
+          "CanSave",
+          "BlockCode",
+          "BlockMessage"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "TimeSlot",
+          "SlotName",
+          "Capacity",
+          "CurrentCount",
+          "AfterCount",
+          "SeatsLeft",
+          "IsOpen",
+          "CutoffTime",
+          "CutoffPassed",
+          "CanSelect",
+          "BlockCode",
+          "BlockMessage"
+        ],
+        "rows": 2
+      },
+      {
+        "columns": [
+          "Eligible",
+          "Age",
+          "LastCheckupDate",
+          "ReasonCode",
+          "ReasonMessage"
+        ],
+        "rows": 0
+      },
+      {
+        "columns": [
+          "ExamCode",
+          "ExamName",
+          "ExamType",
+          "RuleCode"
+        ],
+        "rows": 0
+      },
+      {
+        "columns": [
+          "OptionCode",
+          "ExamCode",
+          "ExamName",
+          "Requested",
+          "Selected",
+          "CanSelect",
+          "ReasonCode",
+          "ReasonMessage"
+        ],
+        "rows": 0
+      }
+    ]
+  },
+  "21_예약가능정보_Scope_ALL": {
+    "sp": "USP_HC_SELECT_예약가능정보",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "Scope",
+          "PatientId",
+          "WorkId",
+          "ReservationType",
+          "ReservationDate",
+          "TimeSlot",
+          "DateChanged",
+          "SlotChanged",
+          "ExtraChanged",
+          "CanWorkNow",
+          "OtherWorkId",
+          "CanSave",
+          "BlockCode",
+          "BlockMessage"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "TimeSlot",
+          "SlotName",
+          "Capacity",
+          "CurrentCount",
+          "AfterCount",
+          "SeatsLeft",
+          "IsOpen",
+          "CutoffTime",
+          "CutoffPassed",
+          "CanSelect",
+          "BlockCode",
+          "BlockMessage"
+        ],
+        "rows": 2
+      },
+      {
+        "columns": [
+          "Eligible",
+          "Age",
+          "LastCheckupDate",
+          "ReasonCode",
+          "ReasonMessage"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "ExamCode",
+          "ExamName",
+          "ExamType",
+          "RuleCode"
+        ],
+        "rowsMin": 8,
+        "rowsMax": 11
+      },
+      {
+        "columns": [
+          "OptionCode",
+          "ExamCode",
+          "ExamName",
+          "Requested",
+          "Selected",
+          "CanSelect",
+          "ReasonCode",
+          "ReasonMessage"
+        ],
+        "rows": 7
+      }
+    ]
+  },
+  "22_예약가능정보_Scope_SLOT": {
+    "sp": "USP_HC_SELECT_예약가능정보",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "Scope",
+          "PatientId",
+          "WorkId",
+          "ReservationType",
+          "ReservationDate",
+          "TimeSlot",
+          "DateChanged",
+          "SlotChanged",
+          "ExtraChanged",
+          "CanWorkNow",
+          "OtherWorkId",
+          "CanSave",
+          "BlockCode",
+          "BlockMessage"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "TimeSlot",
+          "SlotName",
+          "Capacity",
+          "CurrentCount",
+          "AfterCount",
+          "SeatsLeft",
+          "IsOpen",
+          "CutoffTime",
+          "CutoffPassed",
+          "CanSelect",
+          "BlockCode",
+          "BlockMessage"
+        ],
+        "rows": 2
+      },
+      {
+        "columns": [
+          "Eligible",
+          "Age",
+          "LastCheckupDate",
+          "ReasonCode",
+          "ReasonMessage"
+        ],
+        "rows": 0
+      },
+      {
+        "columns": [
+          "ExamCode",
+          "ExamName",
+          "ExamType",
+          "RuleCode"
+        ],
+        "rows": 0
+      },
+      {
+        "columns": [
+          "OptionCode",
+          "ExamCode",
+          "ExamName",
+          "Requested",
+          "Selected",
+          "CanSelect",
+          "ReasonCode",
+          "ReasonMessage"
+        ],
+        "rows": 0
+      }
+    ]
+  },
+  "23_예약가능정보_Scope_EXTRA": {
+    "sp": "USP_HC_SELECT_예약가능정보",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "Scope",
+          "PatientId",
+          "WorkId",
+          "ReservationType",
+          "ReservationDate",
+          "TimeSlot",
+          "DateChanged",
+          "SlotChanged",
+          "ExtraChanged",
+          "CanWorkNow",
+          "OtherWorkId",
+          "CanSave",
+          "BlockCode",
+          "BlockMessage"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "TimeSlot",
+          "SlotName",
+          "Capacity",
+          "CurrentCount",
+          "AfterCount",
+          "SeatsLeft",
+          "IsOpen",
+          "CutoffTime",
+          "CutoffPassed",
+          "CanSelect",
+          "BlockCode",
+          "BlockMessage"
+        ],
+        "rows": 0
+      },
+      {
+        "columns": [
+          "Eligible",
+          "Age",
+          "LastCheckupDate",
+          "ReasonCode",
+          "ReasonMessage"
+        ],
+        "rows": 0
+      },
+      {
+        "columns": [
+          "ExamCode",
+          "ExamName",
+          "ExamType",
+          "RuleCode"
+        ],
+        "rows": 0
+      },
+      {
+        "columns": [
+          "OptionCode",
+          "ExamCode",
+          "ExamName",
+          "Requested",
+          "Selected",
+          "CanSelect",
+          "ReasonCode",
+          "ReasonMessage"
+        ],
+        "rows": 7
+      }
+    ]
+  },
+  "24_예약가능정보_Scope_SLOT_EXTRA": {
+    "sp": "USP_HC_SELECT_예약가능정보",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "Scope",
+          "PatientId",
+          "WorkId",
+          "ReservationType",
+          "ReservationDate",
+          "TimeSlot",
+          "DateChanged",
+          "SlotChanged",
+          "ExtraChanged",
+          "CanWorkNow",
+          "OtherWorkId",
+          "CanSave",
+          "BlockCode",
+          "BlockMessage"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "TimeSlot",
+          "SlotName",
+          "Capacity",
+          "CurrentCount",
+          "AfterCount",
+          "SeatsLeft",
+          "IsOpen",
+          "CutoffTime",
+          "CutoffPassed",
+          "CanSelect",
+          "BlockCode",
+          "BlockMessage"
+        ],
+        "rows": 2
+      },
+      {
+        "columns": [
+          "Eligible",
+          "Age",
+          "LastCheckupDate",
+          "ReasonCode",
+          "ReasonMessage"
+        ],
+        "rows": 0
+      },
+      {
+        "columns": [
+          "ExamCode",
+          "ExamName",
+          "ExamType",
+          "RuleCode"
+        ],
+        "rows": 0
+      },
+      {
+        "columns": [
+          "OptionCode",
+          "ExamCode",
+          "ExamName",
+          "Requested",
+          "Selected",
+          "CanSelect",
+          "ReasonCode",
+          "ReasonMessage"
+        ],
+        "rows": 7
+      }
+    ]
+  },
+  "25_예약가능정보_Scope_NONE": {
+    "sp": "USP_HC_SELECT_예약가능정보",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "Scope",
+          "PatientId",
+          "WorkId",
+          "ReservationType",
+          "ReservationDate",
+          "TimeSlot",
+          "DateChanged",
+          "SlotChanged",
+          "ExtraChanged",
+          "CanWorkNow",
+          "OtherWorkId",
+          "CanSave",
+          "BlockCode",
+          "BlockMessage"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "TimeSlot",
+          "SlotName",
+          "Capacity",
+          "CurrentCount",
+          "AfterCount",
+          "SeatsLeft",
+          "IsOpen",
+          "CutoffTime",
+          "CutoffPassed",
+          "CanSelect",
+          "BlockCode",
+          "BlockMessage"
+        ],
+        "rows": 0
+      },
+      {
+        "columns": [
+          "Eligible",
+          "Age",
+          "LastCheckupDate",
+          "ReasonCode",
+          "ReasonMessage"
+        ],
+        "rows": 0
+      },
+      {
+        "columns": [
+          "ExamCode",
+          "ExamName",
+          "ExamType",
+          "RuleCode"
+        ],
+        "rows": 0
+      },
+      {
+        "columns": [
+          "OptionCode",
+          "ExamCode",
+          "ExamName",
+          "Requested",
+          "Selected",
+          "CanSelect",
+          "ReasonCode",
+          "ReasonMessage"
+        ],
+        "rows": 0
+      }
+    ]
+  }
+}
