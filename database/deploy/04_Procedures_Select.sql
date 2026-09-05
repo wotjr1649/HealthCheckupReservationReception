@@ -395,7 +395,7 @@ BEGIN
 
     -- 저장 NEX 0행은 검사구성 손상이다 (CORRUPT-2 가 이것을 만든다)
     IF NOT EXISTS (SELECT 1 FROM [dbo].[검사항목] d
-                    WHERE d.[WorkId] = @WorkId AND d.[ExamSourceCode] = 'NEX')
+                    WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'NEX')
     BEGIN
         SELECT
               CAST(0 AS BIT)                    AS Success
@@ -450,8 +450,8 @@ BEGIN
         , ExamType = CAST(CASE WHEN m.[NexRuleCode] = 'NEX-01' THEN 'BASIC' ELSE 'CONDITIONAL' END AS VARCHAR(12))
         , RuleCode = CAST(m.[NexRuleCode] AS VARCHAR(10))
     FROM [dbo].[검사항목] d
-    JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[ExamItemCode]
-    WHERE d.[WorkId] = @WorkId AND d.[ExamSourceCode] = 'NEX'
+    JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[검사항목코드]
+    WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'NEX'
     ORDER BY m.[ExamItemCode] ASC;
 
     -- RS3 추가검사항목 — 실제 저장된 AEX 만
@@ -460,8 +460,8 @@ BEGIN
         , ExamCode   = CAST(m.[ExamItemCode] AS VARCHAR(10))
         , ExamName   = CAST(m.[ExamItemName] AS NVARCHAR(100))
     FROM [dbo].[검사항목] d
-    JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[ExamItemCode]
-    WHERE d.[WorkId] = @WorkId AND d.[ExamSourceCode] = 'AEX'
+    JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[검사항목코드]
+    WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'AEX'
     ORDER BY m.[AdditionalExamCode] ASC;
 
     -- RS4 가능한업무 — 정확히 5행. 순서는 05 §8.2 의 고정 목록이므로 Ord 로 강제한다.
@@ -649,12 +649,12 @@ BEGIN
                 SELECT OptionCode FROM @Req
                 EXCEPT
                 SELECT m.[AdditionalExamCode] FROM [dbo].[검사항목] d
-                  JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[ExamItemCode]
-                 WHERE d.[WorkId] = @WorkId AND d.[ExamSourceCode] = 'AEX')
+                  JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[검사항목코드]
+                 WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'AEX')
             OR EXISTS (
                 SELECT m.[AdditionalExamCode] FROM [dbo].[검사항목] d
-                  JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[ExamItemCode]
-                 WHERE d.[WorkId] = @WorkId AND d.[ExamSourceCode] = 'AEX'
+                  JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[검사항목코드]
+                 WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'AEX'
                 EXCEPT
                 SELECT OptionCode FROM @Req)
             THEN 1 ELSE 0 END;
@@ -679,7 +679,7 @@ BEGIN
     END
     IF @Scope IN ('EXTRA','SLOT_EXTRA')
        AND NOT EXISTS (SELECT 1 FROM [dbo].[검사항목]
-                        WHERE [WorkId] = @WorkId AND [ExamSourceCode] = 'NEX')
+                        WHERE [업무ID] = @WorkId AND [검사출처코드] = 'NEX')
     BEGIN
         SELECT CAST(0 AS BIT) AS Success, CAST(701 AS INT) AS Code
              , CAST(N'예약·접수 업무의 검사구성 또는 유효업무 데이터가 올바르지 않습니다.' AS NVARCHAR(300)) AS Message

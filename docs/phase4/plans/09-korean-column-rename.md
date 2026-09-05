@@ -317,6 +317,8 @@ CK_수검자_CEL_DIGIT        유지 (계산열 대상)
           Result Set 목록에는 `Result Set 컬럼명 = [새이름]` 별칭을 붙인다 (§2.1)
 4  치환   그 테이블을 읽는 tests/00 · 00b · 01 · 02 · 03 · 04 · contract/**
 5  확인   @ 로 시작하는 이름 0건 변경 · Result Set 별칭 0건 변경 (§2.2)
+5b 확인   그 테이블 전용 토큰의 잔존 0건을 grep 으로 단언한다
+          (T43 에서 inspect.sql 20행의 별칭 없는 [WorkId] 를 이렇게 잡았다)
 6  실행   ./scripts/test.sh 전건
 7  실행   ./scripts/verify-contract-all.sh 25건
 8  실행   verify-baseline · verify-winforms · verify-docs · ./scripts/inspect.sh

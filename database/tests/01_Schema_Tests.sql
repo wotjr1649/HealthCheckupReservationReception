@@ -117,9 +117,9 @@ INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
  (N'예약접수', N'LastEditDate',         N'datetime2', NULL,  0),
  (N'예약접수', N'RowVersion',           N'timestamp', NULL,  0),
  -- 검사항목 3행
- (N'검사항목', N'WorkId',               N'bigint',    NULL,  0),
- (N'검사항목', N'ExamItemCode',         N'varchar',   10,    0),
- (N'검사항목', N'ExamSourceCode',       N'char',      3,     0),
+ (N'검사항목', N'업무ID',                N'bigint',    NULL,  0),
+ (N'검사항목', N'검사항목코드',          N'varchar',   10,    0),
+ (N'검사항목', N'검사출처코드',          N'char',      3,     0),
  -- 검사코드 6행
  (N'검사코드', N'ExamItemCode',         N'varchar',   10,    0),
  (N'검사코드', N'ExamItemName',         N'nvarchar',  100,   0),

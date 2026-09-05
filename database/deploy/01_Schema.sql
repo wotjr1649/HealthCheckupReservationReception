@@ -129,16 +129,16 @@ CREATE NONCLUSTERED INDEX [IX_예약접수_PATIENT_STATE_DATE]
 GO
 CREATE TABLE [dbo].[검사항목]
 (
-    [WorkId]         BIGINT      NOT NULL,
-    [ExamItemCode]   VARCHAR(10) NOT NULL,
-    [ExamSourceCode] CHAR(3)     NOT NULL,
+    [업무ID]       BIGINT      NOT NULL,
+    [검사항목코드] VARCHAR(10) NOT NULL,
+    [검사출처코드] CHAR(3)     NOT NULL,
 
-    CONSTRAINT [PK_검사항목] PRIMARY KEY CLUSTERED ([WorkId], [ExamItemCode]),
-    CONSTRAINT [FK_검사항목_예약접수] FOREIGN KEY ([WorkId])
+    CONSTRAINT [PK_검사항목] PRIMARY KEY CLUSTERED ([업무ID], [검사항목코드]),
+    CONSTRAINT [FK_검사항목_예약접수] FOREIGN KEY ([업무ID])
         REFERENCES [dbo].[예약접수] ([WorkId]) ON DELETE NO ACTION ON UPDATE NO ACTION,
-    CONSTRAINT [FK_검사항목_검사코드] FOREIGN KEY ([ExamItemCode])
+    CONSTRAINT [FK_검사항목_검사코드] FOREIGN KEY ([검사항목코드])
         REFERENCES [dbo].[검사코드] ([ExamItemCode]) ON DELETE NO ACTION ON UPDATE NO ACTION,
-    CONSTRAINT [CK_검사항목_SOURCE] CHECK ([ExamSourceCode] IN ('NEX','AEX'))
+    CONSTRAINT [CK_검사항목_SOURCE] CHECK ([검사출처코드] IN ('NEX','AEX'))
 );
 GO
 CREATE TABLE [dbo].[완료이력]

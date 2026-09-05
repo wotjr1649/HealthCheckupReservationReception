@@ -92,18 +92,18 @@ INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode]
 SELECT [PatientId], '2026-11-17', 'AM', 'RSV'
 FROM [dbo].[수검자] WHERE [ChartNo] = 'T020';
 GO
-INSERT INTO [dbo].[검사항목] ([WorkId], [ExamItemCode], [ExamSourceCode])
+INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
 SELECT w.[WorkId], e.[ExamItemCode], 'NEX'
 FROM [dbo].[예약접수] w
 JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] = 'T020'
 CROSS JOIN [dbo].[검사코드] e
 WHERE e.[NexRuleCode] = 'NEX-01';
-INSERT INTO [dbo].[검사항목] ([WorkId], [ExamItemCode], [ExamSourceCode])
+INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
 SELECT w.[WorkId], 'EX012', 'AEX'   -- OPT04 를 선택한 상태 (만 53세라 아직 중복이 아니다)
 FROM [dbo].[예약접수] w
 JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] = 'T020';
 GO
-INSERT INTO [dbo].[검사항목] ([WorkId], [ExamItemCode], [ExamSourceCode])
+INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
 SELECT w.[WorkId], e.[ExamItemCode], 'NEX'
 FROM [dbo].[예약접수] w
 JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] LIKE 'F0%'

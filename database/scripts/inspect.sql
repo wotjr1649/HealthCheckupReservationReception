@@ -17,8 +17,8 @@ DECLARE @WorkId  BIGINT        = NULL;   -- [3] 볼 업무. NULL 이면 검사�
 DECLARE @ChartNo NVARCHAR(100) = NULL;   -- [4] 볼 수검자. NULL 이면 업무가 가장 많은 수검자
 
 IF @WorkId IS NULL
-    SELECT TOP (1) @WorkId = [WorkId]
-      FROM [dbo].[검사항목] GROUP BY [WorkId] ORDER BY COUNT(*) DESC, [WorkId];
+    SELECT TOP (1) @WorkId = [업무ID]
+      FROM [dbo].[검사항목] GROUP BY [업무ID] ORDER BY COUNT(*) DESC, [업무ID];
 
 IF @ChartNo IS NULL
     SELECT TOP (1) @ChartNo = p.[ChartNo]
@@ -59,25 +59,25 @@ SELECT WorkId  = w.[WorkId]
   JOIN [dbo].[수검자]   p ON p.[PatientId] = w.[PatientId]
  WHERE w.[WorkId] = @WorkId;
 
-SELECT Src    = d.[ExamSourceCode]
-     , Code   = d.[ExamItemCode]
+SELECT Src    = d.[검사출처코드]
+     , Code   = d.[검사항목코드]
      , Nm     = CAST(m.[ExamItemName] AS NVARCHAR(14))
-     , RuleCd = CASE WHEN d.[ExamSourceCode] = 'AEX' THEN m.[AdditionalExamCode]
+     , RuleCd = CASE WHEN d.[검사출처코드] = 'AEX' THEN m.[AdditionalExamCode]
                      ELSE m.[NexRuleCode] END
   FROM [dbo].[검사항목] d
-  JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[ExamItemCode]
- WHERE d.[WorkId] = @WorkId
- ORDER BY d.[ExamSourceCode], d.[ExamItemCode];
+  JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[검사항목코드]
+ WHERE d.[업무ID] = @WorkId
+ ORDER BY d.[검사출처코드], d.[검사항목코드];
 
 PRINT N'==== [4] 수검자 1명의 업무 타임라인 ====';
 SELECT ChartNo = CAST(p.[ChartNo] AS NVARCHAR(8)), Nm = CAST(p.[Name] AS NVARCHAR(10))
      , WorkId  = w.[WorkId]
      , ResDate = w.[ReservationDate], Slot = w.[TimeSlotCode], Status = w.[StatusCode]
-     , NexCnt  = SUM(CASE WHEN d.[ExamSourceCode] = 'NEX' THEN 1 ELSE 0 END)
-     , AexCnt  = SUM(CASE WHEN d.[ExamSourceCode] = 'AEX' THEN 1 ELSE 0 END)
+     , NexCnt  = SUM(CASE WHEN d.[검사출처코드] = 'NEX' THEN 1 ELSE 0 END)
+     , AexCnt  = SUM(CASE WHEN d.[검사출처코드] = 'AEX' THEN 1 ELSE 0 END)
   FROM [dbo].[수검자]   p
   JOIN [dbo].[예약접수] w ON w.[PatientId] = p.[PatientId]
-  LEFT JOIN [dbo].[검사항목] d ON d.[WorkId] = w.[WorkId]
+  LEFT JOIN [dbo].[검사항목] d ON d.[업무ID] = w.[WorkId]
  WHERE p.[ChartNo] = @ChartNo
  GROUP BY p.[ChartNo], p.[Name], w.[WorkId], w.[ReservationDate], w.[TimeSlotCode], w.[StatusCode]
  ORDER BY w.[ReservationDate], w.[WorkId];
