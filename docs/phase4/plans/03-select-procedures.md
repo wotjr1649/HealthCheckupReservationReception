@@ -151,7 +151,10 @@ GO
 로 판정하는데 아무 출력이 없으면 **항상 조용히 통과한다** — `plans/08` 이 `tests/14` 에서 실제로 겪은 사고다.
 SELECT SP 가 읽기 전용이라는 것 자체가 판정할 수 있는 DB 상태 불변조건이다. 7테이블 행수 지문을
 호출 전후로 비교한다. 카탈로그에 없는 표식이므로 Test ID 를 쓰지 않는다(`FIX-DEPLOY`·`FIX-SSN-PRE` 와 같은 부류).
-`T16`~`T21` 은 자기 SP 를 이 패턴에 한 줄씩 더한다.
+
+**지문 식을 SP 마다 되풀이하지 않는다.** 전 SELECT SP 를 한 번에 호출하고 앞뒤로 한 번씩만 잰다 —
+`T16`~`T21` 은 `EXEC` 한 줄씩만 더한다. FAIL 이면 `EXEC` 목록을 반씩 잘라 다시 돌리면 범인이 나온다.
+실패 경로(`101`·`103` 등)도 함께 지나가게 한다 — 실패해도 아무것도 쓰지 않아야 하기 때문이다.
 
 ```sql
 SET NOCOUNT ON;
@@ -166,12 +169,13 @@ DECLARE @Before VARCHAR(100) =
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[검사코드])) + '|'
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[휴무일]));
 
+-- T16~T21 은 여기에 EXEC 한 줄씩만 더한다. 성공 경로와 실패 경로를 모두 지난다.
 EXEC [dbo].[USP_HC_SELECT_공통업무상태];
 
 DECLARE @After VARCHAR(100) = /* @Before 와 같은 식 */ NULL;
 
 IF @Before = @After
-    PRINT 'PASS FIX-RO-01 공통업무상태 호출이 DB 상태를 바꾸지 않았다  ' + @After;
+    PRINT 'PASS FIX-RO-01 SELECT SP 호출이 DB 상태를 바꾸지 않았다  ' + @After;
 ELSE BEGIN PRINT 'FAIL FIX-RO-01 읽기전용 위반  before=' + @Before + '  after=' + @After; SET @Fail += 1; END
 
 IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;

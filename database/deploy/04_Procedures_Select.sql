@@ -45,3 +45,92 @@ BEGIN
     FROM [dbo].[UFN_HC_일정확인](@ServerTime, @Today, 'AM', 'NONE') s;
 END
 GO
+-- 이름은 접두검색만 한다 (04 §11.3). '%검색어%' 포함검색과 조건 없는 전체조회는 금지다.
+CREATE OR ALTER PROCEDURE [dbo].[USP_HC_SELECT_수검자목록]
+    @ChartNo      NVARCHAR(100),
+    @Name         NVARCHAR(100),
+    @SocialNumber VARCHAR(13),
+    @Birthday     VARCHAR(8),
+    @MobilePhone  VARCHAR(13)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
+
+    -- 1. 정규화 — 공백 제거, 빈 문자열은 NULL, 전화·주민번호의 '-' 제거
+    SET @ChartNo      = NULLIF(LTRIM(RTRIM(@ChartNo)), N'');
+    SET @Name         = NULLIF(LTRIM(RTRIM(@Name)), N'');
+    SET @SocialNumber = NULLIF(REPLACE(LTRIM(RTRIM(@SocialNumber)), '-', ''), '');
+    SET @Birthday     = NULLIF(LTRIM(RTRIM(@Birthday)), '');
+    SET @MobilePhone  = NULLIF(REPLACE(LTRIM(RTRIM(@MobilePhone)), '-', ''), '');
+
+    -- 2. 형식 검증 (05 §5: 필수값 → 값 형식 순서. 이 SP 에 필수값은 없다)
+    IF @SocialNumber IS NOT NULL
+       AND (LEN(@SocialNumber) <> 13 OR @SocialNumber LIKE '%[^0-9]%')
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(101 AS INT)                  AS Code
+            , CAST(N'입력값이 올바르지 않습니다.' AS NVARCHAR(300)) AS Message
+            , CAST('SocialNumber' AS VARCHAR(50)) AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    IF @Birthday IS NOT NULL
+       AND (LEN(@Birthday) <> 8 OR @Birthday LIKE '%[^0-9]%'
+            OR TRY_CONVERT(DATE, @Birthday, 112) IS NULL)
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(101 AS INT)                  AS Code
+            , CAST(N'입력값이 올바르지 않습니다.' AS NVARCHAR(300)) AS Message
+            , CAST('Birthday' AS VARCHAR(50))   AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- 3. 조회조건 — 5개가 전부 NULL 이면 전체조회가 되므로 막는다
+    IF @ChartNo IS NULL AND @Name IS NULL AND @SocialNumber IS NULL
+       AND @Birthday IS NULL AND @MobilePhone IS NULL
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(103 AS INT)                  AS Code
+            , CAST(N'조회조건을 하나 이상 입력하십시오.' AS NVARCHAR(300)) AS Message
+            , CAST(NULL AS VARCHAR(50))         AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- RS0
+    SELECT
+          CAST(1 AS BIT)                    AS Success
+        , CAST(0 AS INT)                    AS Code
+        , CAST(N'정상 처리되었습니다.' AS NVARCHAR(300)) AS Message
+        , CAST(NULL AS VARCHAR(50))         AS Field
+        , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+
+    -- RS1 — 조회 0건은 실패가 아니다 (05 §3.4)
+    SELECT
+          PatientId    = CAST(p.[PatientId]    AS BIGINT)
+        , ChartNo      = CAST(p.[ChartNo]      AS NVARCHAR(100))
+        , Name         = CAST(p.[Name]         AS NVARCHAR(100))
+        , SocialNumber = CAST(p.[SocialNumber] AS VARCHAR(13))
+        , Birthday     = CAST(p.[Birthday]     AS VARCHAR(8))
+        , Gender       = CAST(p.[Gender]       AS CHAR(1))
+        , MobilePhone  = CAST(p.[CelNumber]    AS VARCHAR(13))
+        , Phone        = CAST(p.[TelNumber]    AS VARCHAR(13))
+        , Email        = CAST(p.[EMail]        AS VARCHAR(200))
+        , Zipcode      = CAST(p.[Zipcode]      AS VARCHAR(10))
+        , Address      = CAST(p.[Address]      AS NVARCHAR(200))
+    FROM [dbo].[수검자] p
+    WHERE (@ChartNo      IS NULL OR p.[ChartNo]      =  @ChartNo)
+      AND (@Name         IS NULL OR p.[Name]         LIKE @Name + N'%')
+      AND (@SocialNumber IS NULL OR p.[SocialNumber] =  @SocialNumber)
+      AND (@Birthday     IS NULL OR p.[Birthday]     =  @Birthday)
+      AND (@MobilePhone  IS NULL OR p.[CelNumberS]   =  @MobilePhone)
+    ORDER BY p.[Name] ASC, p.[Birthday] ASC, p.[ChartNo] ASC;
+END
+GO
