@@ -445,24 +445,24 @@ BEGIN
 
     -- RS2 국가검사항목 — 실제 저장된 NEX 만
     SELECT
-          ExamCode = CAST(m.[ExamItemCode] AS VARCHAR(10))
-        , ExamName = CAST(m.[ExamItemName] AS NVARCHAR(100))
-        , ExamType = CAST(CASE WHEN m.[NexRuleCode] = 'NEX-01' THEN 'BASIC' ELSE 'CONDITIONAL' END AS VARCHAR(12))
-        , RuleCode = CAST(m.[NexRuleCode] AS VARCHAR(10))
+          ExamCode = CAST(m.[검사항목코드] AS VARCHAR(10))
+        , ExamName = CAST(m.[검사항목명] AS NVARCHAR(100))
+        , ExamType = CAST(CASE WHEN m.[국가검사규칙코드] = 'NEX-01' THEN 'BASIC' ELSE 'CONDITIONAL' END AS VARCHAR(12))
+        , RuleCode = CAST(m.[국가검사규칙코드] AS VARCHAR(10))
     FROM [dbo].[검사항목] d
-    JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[검사항목코드]
+    JOIN [dbo].[검사코드] m ON m.[검사항목코드] = d.[검사항목코드]
     WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'NEX'
-    ORDER BY m.[ExamItemCode] ASC;
+    ORDER BY m.[검사항목코드] ASC;
 
     -- RS3 추가검사항목 — 실제 저장된 AEX 만
     SELECT
-          OptionCode = CAST(m.[AdditionalExamCode] AS VARCHAR(10))
-        , ExamCode   = CAST(m.[ExamItemCode] AS VARCHAR(10))
-        , ExamName   = CAST(m.[ExamItemName] AS NVARCHAR(100))
+          OptionCode = CAST(m.[추가검사코드] AS VARCHAR(10))
+        , ExamCode   = CAST(m.[검사항목코드] AS VARCHAR(10))
+        , ExamName   = CAST(m.[검사항목명] AS NVARCHAR(100))
     FROM [dbo].[검사항목] d
-    JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[검사항목코드]
+    JOIN [dbo].[검사코드] m ON m.[검사항목코드] = d.[검사항목코드]
     WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'AEX'
-    ORDER BY m.[AdditionalExamCode] ASC;
+    ORDER BY m.[추가검사코드] ASC;
 
     -- RS4 가능한업무 — 정확히 5행. 순서는 05 §8.2 의 고정 목록이므로 Ord 로 강제한다.
     --   상관 인자를 받는 TVF 는 CROSS APPLY 여야 한다. CROSS JOIN 으로 쓰면
@@ -648,12 +648,12 @@ BEGIN
         SET @ExtraChanged = CASE WHEN EXISTS (
                 SELECT OptionCode FROM @Req
                 EXCEPT
-                SELECT m.[AdditionalExamCode] FROM [dbo].[검사항목] d
-                  JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[검사항목코드]
+                SELECT m.[추가검사코드] FROM [dbo].[검사항목] d
+                  JOIN [dbo].[검사코드] m ON m.[검사항목코드] = d.[검사항목코드]
                  WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'AEX')
             OR EXISTS (
-                SELECT m.[AdditionalExamCode] FROM [dbo].[검사항목] d
-                  JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[검사항목코드]
+                SELECT m.[추가검사코드] FROM [dbo].[검사항목] d
+                  JOIN [dbo].[검사코드] m ON m.[검사항목코드] = d.[검사항목코드]
                  WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'AEX'
                 EXCEPT
                 SELECT OptionCode FROM @Req)
@@ -668,8 +668,8 @@ BEGIN
 
     -- 9/10. 검사 Master 무결성
     IF @Scope IN ('ALL','EXTRA','SLOT_EXTRA')
-       AND ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [NexRuleCode] IS NOT NULL) < 8
-            OR (SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [AdditionalExamCode] IS NOT NULL) <> 7)
+       AND ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [국가검사규칙코드] IS NOT NULL) < 8
+            OR (SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [추가검사코드] IS NOT NULL) <> 7)
     BEGIN
         SELECT CAST(0 AS BIT) AS Success, CAST(700 AS INT) AS Code
              , CAST(N'검사 Master 구성이 올바르지 않습니다.' AS NVARCHAR(300)) AS Message

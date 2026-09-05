@@ -121,12 +121,12 @@ INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
  (N'검사항목', N'검사항목코드',          N'varchar',   10,    0),
  (N'검사항목', N'검사출처코드',          N'char',      3,     0),
  -- 검사코드 6행
- (N'검사코드', N'ExamItemCode',         N'varchar',   10,    0),
- (N'검사코드', N'ExamItemName',         N'nvarchar',  100,   0),
- (N'검사코드', N'NexRuleCode',          N'varchar',   10,    1),
- (N'검사코드', N'AdditionalExamCode',   N'varchar',   10,    1),
- (N'검사코드', N'AdditionalGenderCode', N'char',      1,     1),
- (N'검사코드', N'AdditionalActive',     N'bit',       NULL,  0),
+ (N'검사코드', N'검사항목코드',           N'varchar',   10,    0),
+ (N'검사코드', N'검사항목명',             N'nvarchar',  100,   0),
+ (N'검사코드', N'국가검사규칙코드',       N'varchar',   10,    1),
+ (N'검사코드', N'추가검사코드',           N'varchar',   10,    1),
+ (N'검사코드', N'추가검사성별코드',       N'char',      1,     1),
+ (N'검사코드', N'추가검사사용여부',       N'bit',       NULL,  0),
  -- 휴무일 4행
  (N'휴무일', N'휴무일자',              N'date',      NULL,  0),
  (N'휴무일', N'휴무일명',              N'nvarchar',  100,   0),

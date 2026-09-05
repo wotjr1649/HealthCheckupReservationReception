@@ -11,7 +11,7 @@ IF EXISTS (SELECT 1 FROM [dbo].[검사코드]) OR EXISTS (SELECT 1 FROM [dbo].[�
     THROW 51002, N'02_Seed: Master 테이블이 비어 있지 않습니다. 01_Schema 를 먼저 실행하십시오.', 1;
 GO
 INSERT INTO [dbo].[검사코드]
-    ([ExamItemCode], [ExamItemName], [NexRuleCode], [AdditionalExamCode], [AdditionalGenderCode], [AdditionalActive])
+    ([검사항목코드], [검사항목명], [국가검사규칙코드], [추가검사코드], [추가검사성별코드], [추가검사사용여부])
 VALUES
     ('EX001', N'문진/진찰',     'NEX-01', NULL,    NULL, 0),
     ('EX002', N'신체계측',      'NEX-01', NULL,    NULL, 0),

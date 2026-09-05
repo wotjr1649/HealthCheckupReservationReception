@@ -18,46 +18,46 @@ INSERT INTO @ExpExam VALUES
  ('EX019', N'HPV 검사',     NULL,     'OPT07', 'F',  1);
 
 IF NOT EXISTS (SELECT Code,Nm,Nex,Aex,G,Act FROM @ExpExam
-               EXCEPT SELECT [ExamItemCode],[ExamItemName],[NexRuleCode],[AdditionalExamCode],
-                             [AdditionalGenderCode],[AdditionalActive] FROM [dbo].[검사코드])
-   AND NOT EXISTS (SELECT [ExamItemCode],[ExamItemName],[NexRuleCode],[AdditionalExamCode],
-                          [AdditionalGenderCode],[AdditionalActive] FROM [dbo].[검사코드]
+               EXCEPT SELECT [검사항목코드],[검사항목명],[국가검사규칙코드],[추가검사코드],
+                             [추가검사성별코드],[추가검사사용여부] FROM [dbo].[검사코드])
+   AND NOT EXISTS (SELECT [검사항목코드],[검사항목명],[국가검사규칙코드],[추가검사코드],
+                          [추가검사성별코드],[추가검사사용여부] FROM [dbo].[검사코드]
                    EXCEPT SELECT Code,Nm,Nex,Aex,G,Act FROM @ExpExam)
     PRINT 'PASS SED-001 Exam Master 전건 값 일치';
 ELSE
 BEGIN
     PRINT 'FAIL SED-001 Exam Master 불일치';
     SELECT '기대에만' AS Side, * FROM (SELECT Code,Nm,Nex,Aex,G,Act FROM @ExpExam
-        EXCEPT SELECT [ExamItemCode],[ExamItemName],[NexRuleCode],[AdditionalExamCode],
-                      [AdditionalGenderCode],[AdditionalActive] FROM [dbo].[검사코드]) a;
+        EXCEPT SELECT [검사항목코드],[검사항목명],[국가검사규칙코드],[추가검사코드],
+                      [추가검사성별코드],[추가검사사용여부] FROM [dbo].[검사코드]) a;
     SET @Fail += 1;
 END
 
-IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [NexRuleCode] IS NOT NULL) = 13)
+IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [국가검사규칙코드] IS NOT NULL) = 13)
     PRINT 'PASS SED-002 NEX 역할 13행';
 ELSE BEGIN PRINT 'FAIL SED-002 NEX 역할 행수 불일치'; SET @Fail += 1; END
 
-IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [AdditionalExamCode] IS NOT NULL) = 7)
+IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [추가검사코드] IS NOT NULL) = 7)
     PRINT 'PASS SED-003 AEX 역할 7행';
 ELSE BEGIN PRINT 'FAIL SED-003 AEX 역할 행수 불일치'; SET @Fail += 1; END
 
 IF EXISTS (SELECT 1 FROM [dbo].[검사코드]
-            WHERE [ExamItemCode] = 'EX012' AND [NexRuleCode] = 'NEX-05'
-              AND [AdditionalExamCode] = 'OPT04' AND [AdditionalGenderCode] = 'A' AND [AdditionalActive] = 1)
+            WHERE [검사항목코드] = 'EX012' AND [국가검사규칙코드] = 'NEX-05'
+              AND [추가검사코드] = 'OPT04' AND [추가검사성별코드] = 'A' AND [추가검사사용여부] = 1)
     PRINT 'PASS SED-004 EX012 가 NEX-05 와 OPT04 역할을 동시에 가짐';
 ELSE BEGIN PRINT 'FAIL SED-004 EX012 이중역할 불일치'; SET @Fail += 1; END
 
-IF ((SELECT COUNT(DISTINCT [AdditionalExamCode]) FROM [dbo].[검사코드] WHERE [AdditionalExamCode] IS NOT NULL) = 7
-    AND NOT EXISTS (SELECT [AdditionalExamCode] FROM [dbo].[검사코드] WHERE [AdditionalExamCode] IS NOT NULL
+IF ((SELECT COUNT(DISTINCT [추가검사코드]) FROM [dbo].[검사코드] WHERE [추가검사코드] IS NOT NULL) = 7
+    AND NOT EXISTS (SELECT [추가검사코드] FROM [dbo].[검사코드] WHERE [추가검사코드] IS NOT NULL
                     EXCEPT SELECT v.c FROM (VALUES ('OPT01'),('OPT02'),('OPT03'),('OPT04'),('OPT05'),('OPT06'),('OPT07')) v(c)))
     PRINT 'PASS SED-005 AEX 코드가 OPT01~OPT07 정확히 7개';
 ELSE BEGIN PRINT 'FAIL SED-005 AEX 코드 집합 불일치'; SET @Fail += 1; END
 
-IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [NexRuleCode] = 'NEX-01') = 8)
+IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [국가검사규칙코드] = 'NEX-01') = 8)
     PRINT 'PASS SED-006 NEX-01 기본검사 8행';
 ELSE BEGIN PRINT 'FAIL SED-006 NEX-01 행수 불일치'; SET @Fail += 1; END
 
-IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [NexRuleCode] IN ('NEX-02','NEX-03','NEX-04','NEX-05','NEX-06')) = 5)
+IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [국가검사규칙코드] IN ('NEX-02','NEX-03','NEX-04','NEX-05','NEX-06')) = 5)
     PRINT 'PASS SED-007 조건부 NEX 5행';
 ELSE BEGIN PRINT 'FAIL SED-007 조건부 NEX 행수 불일치'; SET @Fail += 1; END
 
@@ -73,12 +73,12 @@ IF EXISTS (SELECT 1 FROM [dbo].[휴무일] WHERE [휴무일자] = '2026-12-26' A
     PRINT 'PASS SED-010 토요일 휴무일 존재';
 ELSE BEGIN PRINT 'FAIL SED-010 토요일 휴무일 없음 또는 요일 불일치'; SET @Fail += 1; END
 
--- SED-011 AEX 7종이 전부 AdditionalActive=1 인가
+-- SED-011 AEX 7종이 전부 추가검사사용여부=1 인가
 --   CORRUPT-3 이 tests/03 에서 일시적으로 0 으로 바꾸고 되돌리므로,
 --   이 검사는 그 오염이 남지 않았음을 보증한다.
 IF ((SELECT COUNT(*) FROM [dbo].[검사코드]
-      WHERE [AdditionalExamCode] IS NOT NULL AND [AdditionalActive] = 1) = 7)
-    PRINT 'PASS SED-011 AEX 7종 전부 AdditionalActive=1';
+      WHERE [추가검사코드] IS NOT NULL AND [추가검사사용여부] = 1) = 7)
+    PRINT N'PASS SED-011 AEX 7종 전부 추가검사사용여부=1';
 ELSE BEGIN PRINT 'FAIL SED-011 AEX Active 오염'; SET @Fail += 1; END
 
 -- ── 주민번호 무효 검수 (스펙 §16.2) ──────────────────────────────────────────

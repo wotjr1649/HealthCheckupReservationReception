@@ -141,10 +141,10 @@ AS
 RETURN
 (
     SELECT
-          ExamCode = CONVERT(VARCHAR(10),  m.[ExamItemCode])
-        , ExamName = CONVERT(NVARCHAR(100), m.[ExamItemName])
-        , ExamType = CONVERT(VARCHAR(12), CASE WHEN m.[NexRuleCode] = 'NEX-01' THEN 'BASIC' ELSE 'CONDITIONAL' END)
-        , RuleCode = CONVERT(VARCHAR(10),  m.[NexRuleCode])
+          ExamCode = CONVERT(VARCHAR(10),  m.[검사항목코드])
+        , ExamName = CONVERT(NVARCHAR(100), m.[검사항목명])
+        , ExamType = CONVERT(VARCHAR(12), CASE WHEN m.[국가검사규칙코드] = 'NEX-01' THEN 'BASIC' ELSE 'CONDITIONAL' END)
+        , RuleCode = CONVERT(VARCHAR(10),  m.[국가검사규칙코드])
     FROM [dbo].[검사코드] m
     CROSS JOIN
     (
@@ -153,19 +153,19 @@ RETURN
         CROSS APPLY [dbo].[UFN_HC_검진대상확인](i.[PatientId], @ReservationDate) g
         WHERE i.[PatientId] = @PatientId
     ) t
-    WHERE m.[NexRuleCode] IS NOT NULL
+    WHERE m.[국가검사규칙코드] IS NOT NULL
       AND t.Eligible = 1
       AND
       (
-            m.[NexRuleCode] = 'NEX-01'
-        OR (m.[NexRuleCode] = 'NEX-02' AND
+            m.[국가검사규칙코드] = 'NEX-01'
+        OR (m.[국가검사규칙코드] = 'NEX-02' AND
             (  (t.[Gender] = 'M' AND t.Age >= 24 AND (t.Age - 24) % 4 = 0)
             OR (t.[Gender] = 'F' AND t.Age >= 40 AND (t.Age - 40) % 4 = 0) ))
-        OR (m.[NexRuleCode] = 'NEX-03' AND t.Age = 40
+        OR (m.[국가검사규칙코드] = 'NEX-03' AND t.Age = 40
             AND t.[HepatitisBExcluded] = 0)
-        OR (m.[NexRuleCode] = 'NEX-04' AND t.Age = 56)
-        OR (m.[NexRuleCode] = 'NEX-05' AND t.[Gender] = 'F' AND t.Age IN (54, 60, 66))
-        OR (m.[NexRuleCode] = 'NEX-06' AND t.Age IN (56, 66))
+        OR (m.[국가검사규칙코드] = 'NEX-04' AND t.Age = 56)
+        OR (m.[국가검사규칙코드] = 'NEX-05' AND t.[Gender] = 'F' AND t.Age IN (54, 60, 66))
+        OR (m.[국가검사규칙코드] = 'NEX-06' AND t.Age IN (56, 66))
       )
 );
 GO
@@ -187,9 +187,9 @@ AS
 RETURN
 (
     SELECT
-          OptionCode    = CONVERT(VARCHAR(10),  b.[AdditionalExamCode])
-        , ExamCode      = CONVERT(VARCHAR(10),  b.[ExamItemCode])
-        , ExamName      = CONVERT(NVARCHAR(100), b.[ExamItemName])
+          OptionCode    = CONVERT(VARCHAR(10),  b.[추가검사코드])
+        , ExamCode      = CONVERT(VARCHAR(10),  b.[검사항목코드])
+        , ExamName      = CONVERT(NVARCHAR(100), b.[검사항목명])
         , Requested     = CONVERT(BIT, b.Requested)
         , Selected      = CONVERT(BIT, CASE WHEN b.Requested = 1 AND b.ReasonCode = 0 THEN 1 ELSE 0 END)
         , CanSelect     = CONVERT(BIT, CASE WHEN b.ReasonCode = 0 THEN 1 ELSE 0 END)
@@ -204,13 +204,13 @@ RETURN
                                 ELSE N'' END)
     FROM
     (
-        SELECT m.[AdditionalExamCode], m.[ExamItemCode], m.[ExamItemName], r.Requested
+        SELECT m.[추가검사코드], m.[검사항목코드], m.[검사항목명], r.Requested
              , ReasonCode =
                  CASE
                      WHEN @UseSavedExams = 0 AND t.Eligible = 0 THEN t.ReasonCode      -- 400 / 401
-                     WHEN m.[AdditionalActive] = 0                                THEN 410
-                     WHEN m.[AdditionalGenderCode] <> 'A'
-                      AND m.[AdditionalGenderCode] <> t.[Gender]                  THEN 411
+                     WHEN m.[추가검사사용여부] = 0                                THEN 410
+                     WHEN m.[추가검사성별코드] <> 'A'
+                      AND m.[추가검사성별코드] <> t.[Gender]                  THEN 411
                      WHEN EXISTS
                           (
                               SELECT 1 FROM
@@ -220,7 +220,7 @@ RETURN
                                   UNION ALL
                                   SELECT d.[검사항목코드] FROM [dbo].[검사항목] d
                                    WHERE @UseSavedExams = 1 AND d.[업무ID] = @WorkId AND d.[검사출처코드] = 'NEX'
-                              ) nx WHERE nx.ExamCode = m.[ExamItemCode]
+                              ) nx WHERE nx.ExamCode = m.[검사항목코드]
                           )                                                       THEN 412
                      ELSE 0
                  END
@@ -239,8 +239,8 @@ RETURN
             VALUES ('OPT01', @AexOpt01Selected), ('OPT02', @AexOpt02Selected), ('OPT03', @AexOpt03Selected),
                    ('OPT04', @AexOpt04Selected), ('OPT05', @AexOpt05Selected), ('OPT06', @AexOpt06Selected),
                    ('OPT07', @AexOpt07Selected)
-        ) r (OptionCode, Requested) ON r.OptionCode = m.[AdditionalExamCode]
-        WHERE m.[AdditionalExamCode] IS NOT NULL
+        ) r (OptionCode, Requested) ON r.OptionCode = m.[추가검사코드]
+        WHERE m.[추가검사코드] IS NOT NULL
     ) b
 );
 GO

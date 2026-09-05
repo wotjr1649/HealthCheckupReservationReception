@@ -64,30 +64,30 @@ CREATE NONCLUSTERED INDEX [IX_수검자_CEL_NUMBER_S]
 GO
 CREATE TABLE [dbo].[검사코드]
 (
-    [ExamItemCode]         VARCHAR(10)   NOT NULL,
-    [ExamItemName]         NVARCHAR(100) NOT NULL,
-    [NexRuleCode]          VARCHAR(10)   NULL,
-    [AdditionalExamCode]   VARCHAR(10)   NULL,
-    [AdditionalGenderCode] CHAR(1)       NULL,
-    [AdditionalActive]     BIT           NOT NULL CONSTRAINT [DF_검사코드_AEX_ACTIVE] DEFAULT (0),
+    [검사항목코드]     VARCHAR(10)   NOT NULL,
+    [검사항목명]       NVARCHAR(100) NOT NULL,
+    [국가검사규칙코드] VARCHAR(10)   NULL,
+    [추가검사코드]     VARCHAR(10)   NULL,
+    [추가검사성별코드] CHAR(1)       NULL,
+    [추가검사사용여부] BIT           NOT NULL CONSTRAINT [DF_검사코드_AEX_ACTIVE] DEFAULT (0),
 
-    CONSTRAINT [PK_검사코드] PRIMARY KEY CLUSTERED ([ExamItemCode]),
-    CONSTRAINT [CK_검사코드_CODE_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([ExamItemCode]))) > 0),
-    CONSTRAINT [CK_검사코드_NAME_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([ExamItemName]))) > 0),
-    CONSTRAINT [CK_검사코드_ROLE_REQUIRED]  CHECK ([NexRuleCode] IS NOT NULL OR [AdditionalExamCode] IS NOT NULL),
-    CONSTRAINT [CK_검사코드_NEX_RULE]       CHECK ([NexRuleCode] IS NULL OR [NexRuleCode] IN ('NEX-01','NEX-02','NEX-03','NEX-04','NEX-05','NEX-06')),
-    CONSTRAINT [CK_검사코드_AEX_CODE]       CHECK ([AdditionalExamCode] IS NULL OR [AdditionalExamCode] IN ('OPT01','OPT02','OPT03','OPT04','OPT05','OPT06','OPT07')),
-    CONSTRAINT [CK_검사코드_AEX_GENDER]     CHECK ([AdditionalGenderCode] IS NULL OR [AdditionalGenderCode] IN ('A','M','F')),
+    CONSTRAINT [PK_검사코드] PRIMARY KEY CLUSTERED ([검사항목코드]),
+    CONSTRAINT [CK_검사코드_CODE_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([검사항목코드]))) > 0),
+    CONSTRAINT [CK_검사코드_NAME_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([검사항목명]))) > 0),
+    CONSTRAINT [CK_검사코드_ROLE_REQUIRED]  CHECK ([국가검사규칙코드] IS NOT NULL OR [추가검사코드] IS NOT NULL),
+    CONSTRAINT [CK_검사코드_NEX_RULE]       CHECK ([국가검사규칙코드] IS NULL OR [국가검사규칙코드] IN ('NEX-01','NEX-02','NEX-03','NEX-04','NEX-05','NEX-06')),
+    CONSTRAINT [CK_검사코드_AEX_CODE]       CHECK ([추가검사코드] IS NULL OR [추가검사코드] IN ('OPT01','OPT02','OPT03','OPT04','OPT05','OPT06','OPT07')),
+    CONSTRAINT [CK_검사코드_AEX_GENDER]     CHECK ([추가검사성별코드] IS NULL OR [추가검사성별코드] IN ('A','M','F')),
     CONSTRAINT [CK_검사코드_AEX_GROUP]      CHECK
     (
-        ([AdditionalExamCode] IS NULL     AND [AdditionalGenderCode] IS NULL     AND [AdditionalActive] = 0)
-     OR ([AdditionalExamCode] IS NOT NULL AND [AdditionalGenderCode] IS NOT NULL)
+        ([추가검사코드] IS NULL     AND [추가검사성별코드] IS NULL     AND [추가검사사용여부] = 0)
+     OR ([추가검사코드] IS NOT NULL AND [추가검사성별코드] IS NOT NULL)
     )
 );
 GO
 CREATE UNIQUE NONCLUSTERED INDEX [UX_검사코드_AEX_CODE]
-    ON [dbo].[검사코드] ([AdditionalExamCode])
-    WHERE [AdditionalExamCode] IS NOT NULL;
+    ON [dbo].[검사코드] ([추가검사코드])
+    WHERE [추가검사코드] IS NOT NULL;
 GO
 CREATE TABLE [dbo].[휴무일]
 (
@@ -137,7 +137,7 @@ CREATE TABLE [dbo].[검사항목]
     CONSTRAINT [FK_검사항목_예약접수] FOREIGN KEY ([업무ID])
         REFERENCES [dbo].[예약접수] ([WorkId]) ON DELETE NO ACTION ON UPDATE NO ACTION,
     CONSTRAINT [FK_검사항목_검사코드] FOREIGN KEY ([검사항목코드])
-        REFERENCES [dbo].[검사코드] ([ExamItemCode]) ON DELETE NO ACTION ON UPDATE NO ACTION,
+        REFERENCES [dbo].[검사코드] ([검사항목코드]) ON DELETE NO ACTION ON UPDATE NO ACTION,
     CONSTRAINT [CK_검사항목_SOURCE] CHECK ([검사출처코드] IN ('NEX','AEX'))
 );
 GO

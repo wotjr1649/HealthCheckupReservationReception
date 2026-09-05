@@ -93,22 +93,22 @@ SELECT [PatientId], '2026-11-17', 'AM', 'RSV'
 FROM [dbo].[수검자] WHERE [ChartNo] = 'T020';
 GO
 INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
-SELECT w.[WorkId], e.[ExamItemCode], 'NEX'
+SELECT w.[WorkId], e.[검사항목코드], 'NEX'
 FROM [dbo].[예약접수] w
 JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] = 'T020'
 CROSS JOIN [dbo].[검사코드] e
-WHERE e.[NexRuleCode] = 'NEX-01';
+WHERE e.[국가검사규칙코드] = 'NEX-01';
 INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
 SELECT w.[WorkId], 'EX012', 'AEX'   -- OPT04 를 선택한 상태 (만 53세라 아직 중복이 아니다)
 FROM [dbo].[예약접수] w
 JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] = 'T020';
 GO
 INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
-SELECT w.[WorkId], e.[ExamItemCode], 'NEX'
+SELECT w.[WorkId], e.[검사항목코드], 'NEX'
 FROM [dbo].[예약접수] w
 JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] LIKE 'F0%'
 CROSS JOIN [dbo].[검사코드] e
-WHERE e.[NexRuleCode] = 'NEX-01';
+WHERE e.[국가검사규칙코드] = 'NEX-01';
 GO
 -- T003 에 완료이력을 주면 안 된다. T003(만 23세 남)의 목적은 "NEX-02 남 미해당 → NEX 8행" 인데
 -- 1년차 완료이력을 붙이면 TGT 401 NotDue 비대상이 되어 NEX 0행이 나온다. 401 전담은 T016 이다.

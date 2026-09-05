@@ -299,17 +299,17 @@ IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0,
     PRINT 'PASS RUL-A05 남성 OPT07 411 WrongGender';
 ELSE BEGIN PRINT 'FAIL RUL-A05'; SET @Fail += 1; END
 
--- RUL-A06  AdditionalActive=0 인 항목 요청 → 410  (CORRUPT-3)
+-- RUL-A06  추가검사사용여부=0 인 항목 요청 → 410  (CORRUPT-3)
 --   Seed 는 7종 전부 Active=1 이므로(SED-011) 이 시험만 잠시 하나를 끄고 즉시 되돌린다.
 --   되돌리지 않으면 SED-011 과 G07 이 뒤에서 FAIL 한다.
---   OPT06 은 AdditionalExamCode 의 값이다. PK 인 ExamItemCode 로 찾으면 0행 UPDATE 가 되어
---   410 을 관측할 수 없다 — 술어를 AdditionalExamCode 로 쓴다.
-UPDATE [dbo].[검사코드] SET [AdditionalActive] = 0 WHERE [AdditionalExamCode] = 'OPT06';
+--   OPT06 은 추가검사코드 의 값이다. PK 인 검사항목코드 로 찾으면 0행 UPDATE 가 되어
+--   410 을 관측할 수 없다 — 술어를 추가검사코드 로 쓴다.
+UPDATE [dbo].[검사코드] SET [추가검사사용여부] = 0 WHERE [추가검사코드] = 'OPT06';
 IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,1,0)
       WHERE OptionCode = 'OPT06') = 410)
     PRINT 'PASS RUL-A06 비활성 항목 요청 410 ExamInactive';
 ELSE BEGIN PRINT 'FAIL RUL-A06'; SET @Fail += 1; END
-UPDATE [dbo].[검사코드] SET [AdditionalActive] = 1 WHERE [AdditionalExamCode] = 'OPT06';
+UPDATE [dbo].[검사코드] SET [추가검사사용여부] = 1 WHERE [추가검사코드] = 'OPT06';
 
 -- RUL-A07  NEX 에 EX012 가 있는 여 만 54세(T011)가 OPT04 요청 → 412
 SELECT @P = [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T011';

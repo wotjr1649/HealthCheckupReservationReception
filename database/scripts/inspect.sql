@@ -37,17 +37,17 @@ SELECT TableNm = CAST(t.[name] AS NVARCHAR(10))
  ORDER BY t.[name];
 
 PRINT N'==== [2] 검사코드 Master 19행 · 역할 ====';
-SELECT Code    = [ExamItemCode]
-     , Nm      = CAST([ExamItemName] AS NVARCHAR(14))
-     , Role    = CAST(CASE WHEN [NexRuleCode] IS NOT NULL AND [AdditionalExamCode] IS NOT NULL THEN 'NEX+AEX'
-                           WHEN [NexRuleCode] IS NOT NULL                                      THEN 'NEX'
+SELECT Code    = [검사항목코드]
+     , Nm      = CAST([검사항목명] AS NVARCHAR(14))
+     , Role    = CAST(CASE WHEN [국가검사규칙코드] IS NOT NULL AND [추가검사코드] IS NOT NULL THEN 'NEX+AEX'
+                           WHEN [국가검사규칙코드] IS NOT NULL                                      THEN 'NEX'
                            ELSE                                                                     'AEX' END AS CHAR(7))
-     , NexRule = ISNULL([NexRuleCode], '-')
-     , AexCode = ISNULL([AdditionalExamCode], '-')
-     , Sex     = ISNULL([AdditionalGenderCode], '-')
-     , AexOn   = [AdditionalActive]
+     , NexRule = ISNULL([국가검사규칙코드], '-')
+     , AexCode = ISNULL([추가검사코드], '-')
+     , Sex     = ISNULL([추가검사성별코드], '-')
+     , AexOn   = [추가검사사용여부]
   FROM [dbo].[검사코드]
- ORDER BY [ExamItemCode];
+ ORDER BY [검사항목코드];
 
 PRINT N'==== [3] 업무 1건 상세 ====';
 SELECT WorkId  = w.[WorkId]
@@ -61,11 +61,11 @@ SELECT WorkId  = w.[WorkId]
 
 SELECT Src    = d.[검사출처코드]
      , Code   = d.[검사항목코드]
-     , Nm     = CAST(m.[ExamItemName] AS NVARCHAR(14))
-     , RuleCd = CASE WHEN d.[검사출처코드] = 'AEX' THEN m.[AdditionalExamCode]
-                     ELSE m.[NexRuleCode] END
+     , Nm     = CAST(m.[검사항목명] AS NVARCHAR(14))
+     , RuleCd = CASE WHEN d.[검사출처코드] = 'AEX' THEN m.[추가검사코드]
+                     ELSE m.[국가검사규칙코드] END
   FROM [dbo].[검사항목] d
-  JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[검사항목코드]
+  JOIN [dbo].[검사코드] m ON m.[검사항목코드] = d.[검사항목코드]
  WHERE d.[업무ID] = @WorkId
  ORDER BY d.[검사출처코드], d.[검사항목코드];
 
