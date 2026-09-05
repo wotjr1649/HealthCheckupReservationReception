@@ -115,6 +115,8 @@ INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
  (N'예약접수', N'생성일시',              N'datetime2', NULL,  0),
  (N'예약접수', N'최종수정일시',          N'datetime2', NULL,  0),
  (N'예약접수', N'행버전',                N'timestamp', NULL,  0),
+ (N'예약접수', N'국가검사항목',          N'nvarchar',  100,   1),
+ (N'예약접수', N'추가검사항목',          N'nvarchar',  50,    1),
  -- 검사항목 3행
  (N'검사항목', N'업무ID',                N'bigint',    NULL,  0),
  (N'검사항목', N'검사항목코드',          N'varchar',   10,    0),

@@ -218,8 +218,12 @@ RETURN
                                   SELECT n.ExamCode FROM [dbo].[UFN_HC_국가검사구성](@PatientId, @ReservationDate) n
                                    WHERE @UseSavedExams = 0
                                   UNION ALL
-                                  SELECT d.[검사항목코드] FROM [dbo].[검사항목] d
-                                   WHERE @UseSavedExams = 1 AND d.[업무ID] = @WorkId AND d.[검사출처코드] = 'NEX'
+                                  SELECT s.[검사항목코드] FROM [dbo].[검사코드] s
+                                   WHERE @UseSavedExams = 1
+                                     AND EXISTS (SELECT 1 FROM [dbo].[예약접수] w
+                                                  WHERE w.[업무ID] = @WorkId
+                                                    AND N',' + ISNULL(w.[국가검사항목], N'') + N','
+                                                        LIKE N'%,' + s.[검사항목코드] + N',%')
                               ) nx WHERE nx.ExamCode = m.[검사항목코드]
                           )                                                       THEN 412
                      ELSE 0

@@ -393,9 +393,10 @@ BEGIN
         RETURN;
     END
 
-    -- 저장 NEX 0행은 검사구성 손상이다 (CORRUPT-2 가 이것을 만든다)
-    IF NOT EXISTS (SELECT 1 FROM [dbo].[검사항목] d
-                    WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'NEX')
+    -- 저장 NEX 가 비면 검사구성 손상이다 (CORRUPT-2 가 이것을 만든다).
+    -- 빈 문자열이 손상의 유일한 표현이다 (plans/10 §1).
+    IF EXISTS (SELECT 1 FROM [dbo].[예약접수] w
+                WHERE w.[업무ID] = @WorkId AND LEN(ISNULL(w.[국가검사항목], N'')) = 0)
     BEGIN
         SELECT
               CAST(0 AS BIT)                    AS Success
@@ -449,9 +450,10 @@ BEGIN
         , ExamName = CAST(m.[검사항목명] AS NVARCHAR(100))
         , ExamType = CAST(CASE WHEN m.[국가검사규칙코드] = 'NEX-01' THEN 'BASIC' ELSE 'CONDITIONAL' END AS VARCHAR(12))
         , RuleCode = CAST(m.[국가검사규칙코드] AS VARCHAR(10))
-    FROM [dbo].[검사항목] d
-    JOIN [dbo].[검사코드] m ON m.[검사항목코드] = d.[검사항목코드]
-    WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'NEX'
+    FROM [dbo].[예약접수] w
+    JOIN [dbo].[검사코드] m
+      ON N',' + ISNULL(w.[국가검사항목], N'') + N',' LIKE N'%,' + m.[검사항목코드] + N',%'
+    WHERE w.[업무ID] = @WorkId
     ORDER BY m.[검사항목코드] ASC;
 
     -- RS3 추가검사항목 — 실제 저장된 AEX 만
@@ -459,9 +461,10 @@ BEGIN
           OptionCode = CAST(m.[추가검사코드] AS VARCHAR(10))
         , ExamCode   = CAST(m.[검사항목코드] AS VARCHAR(10))
         , ExamName   = CAST(m.[검사항목명] AS NVARCHAR(100))
-    FROM [dbo].[검사항목] d
-    JOIN [dbo].[검사코드] m ON m.[검사항목코드] = d.[검사항목코드]
-    WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'AEX'
+    FROM [dbo].[예약접수] w
+    JOIN [dbo].[검사코드] m
+      ON N',' + ISNULL(w.[추가검사항목], N'') + N',' LIKE N'%,' + m.[검사항목코드] + N',%'
+    WHERE w.[업무ID] = @WorkId
     ORDER BY m.[추가검사코드] ASC;
 
     -- RS4 가능한업무 — 정확히 5행. 순서는 05 §8.2 의 고정 목록이므로 Ord 로 강제한다.
@@ -648,13 +651,15 @@ BEGIN
         SET @ExtraChanged = CASE WHEN EXISTS (
                 SELECT OptionCode FROM @Req
                 EXCEPT
-                SELECT m.[추가검사코드] FROM [dbo].[검사항목] d
-                  JOIN [dbo].[검사코드] m ON m.[검사항목코드] = d.[검사항목코드]
-                 WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'AEX')
+                SELECT m.[추가검사코드] FROM [dbo].[예약접수] w
+                  JOIN [dbo].[검사코드] m
+                    ON N',' + ISNULL(w.[추가검사항목], N'') + N',' LIKE N'%,' + m.[검사항목코드] + N',%'
+                 WHERE w.[업무ID] = @WorkId)
             OR EXISTS (
-                SELECT m.[추가검사코드] FROM [dbo].[검사항목] d
-                  JOIN [dbo].[검사코드] m ON m.[검사항목코드] = d.[검사항목코드]
-                 WHERE d.[업무ID] = @WorkId AND d.[검사출처코드] = 'AEX'
+                SELECT m.[추가검사코드] FROM [dbo].[예약접수] w
+                  JOIN [dbo].[검사코드] m
+                    ON N',' + ISNULL(w.[추가검사항목], N'') + N',' LIKE N'%,' + m.[검사항목코드] + N',%'
+                 WHERE w.[업무ID] = @WorkId
                 EXCEPT
                 SELECT OptionCode FROM @Req)
             THEN 1 ELSE 0 END;
@@ -678,8 +683,8 @@ BEGIN
         RETURN;
     END
     IF @Scope IN ('EXTRA','SLOT_EXTRA')
-       AND NOT EXISTS (SELECT 1 FROM [dbo].[검사항목]
-                        WHERE [업무ID] = @WorkId AND [검사출처코드] = 'NEX')
+       AND EXISTS (SELECT 1 FROM [dbo].[예약접수]
+                    WHERE [업무ID] = @WorkId AND LEN(ISNULL([국가검사항목], N'')) = 0)
     BEGIN
         SELECT CAST(0 AS BIT) AS Success, CAST(701 AS INT) AS Code
              , CAST(N'예약·접수 업무의 검사구성 또는 유효업무 데이터가 올바르지 않습니다.' AS NVARCHAR(300)) AS Message

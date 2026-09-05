@@ -105,6 +105,10 @@ CREATE TABLE [dbo].[예약접수]
     [생성일시]     DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_CREATION_DATE]  DEFAULT (SYSDATETIME()),
     [최종수정일시] DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_LAST_EDIT_DATE] DEFAULT (SYSDATETIME()),
     [행버전]       ROWVERSION   NOT NULL,
+    -- 검사구성. 검사항목코드를 오름차순으로 쉼표로 잇는다 (plans/10 §1).
+    -- T50 은 NULL 허용으로 만든다. T52 가 국가검사항목을 NOT NULL 로 승격한다.
+    [국가검사항목] NVARCHAR(100) NULL,
+    [추가검사항목] NVARCHAR(50)  NULL,
 
     CONSTRAINT [PK_예약접수] PRIMARY KEY CLUSTERED ([업무ID]),
     CONSTRAINT [FK_예약접수_수검자] FOREIGN KEY ([수검자ID])

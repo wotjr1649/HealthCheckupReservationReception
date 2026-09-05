@@ -1,0 +1,78 @@
+=== T020 RSV (NEX 8 + AEX 1) ===
+------- ---- ------- ----- ----------
+WorkId PatientId ChartNo Name Birthday Gender MobilePhone ReservationDate TimeSlot Status StatusName Capacity CurrentCount SeatsLeft RowVersion
+------ --------- ------- ---- -------- ------ ----------- --------------- -------- ------ ---------- -------- ------------ --------- ----------
+21 20 T020 테스트경계녀 19721120 F NULL 2026-11-17 AM RSV 예약 20 2 18 0x00000000000007E5
+ExamCode ExamName ExamType RuleCode
+-------- -------- -------- --------
+EX001 문진/진찰 BASIC NEX-01
+EX002 신체계측 BASIC NEX-01
+EX003 혈압 BASIC NEX-01
+EX004 시력·청력 BASIC NEX-01
+EX005 흉부 X-ray BASIC NEX-01
+EX006 요검사 BASIC NEX-01
+EX007 혈액검사 BASIC NEX-01
+EX008 구강검진 BASIC NEX-01
+OptionCode ExamCode ExamName
+---------- -------- --------
+OPT04 EX012 골밀도검사
+ActionCode Allowed ReasonCode ReasonMessage
+---------- ------- ---------- -------------
+EDIT_RESERVATION 0 308 오늘은 업무일이 아닙니다.
+CANCEL_RESERVATION 0 308 오늘은 업무일이 아닙니다.
+START_RECEPTION 0 308 오늘은 업무일이 아닙니다.
+EDIT_EXTRA 0 502 현재 상태에서는 요청한 업무를 처리할 수 없습니다.
+CANCEL_RECEPTION 0 502 현재 상태에서는 요청한 업무를 처리할 수 없습니다.
+=== T014 RCP (NEX 11 + AEX 1) ===
+------- ---- ------- ----- ----------
+WorkId PatientId ChartNo Name Birthday Gender MobilePhone ReservationDate TimeSlot Status StatusName Capacity CurrentCount SeatsLeft RowVersion
+------ --------- ------- ---- -------- ------ ----------- --------------- -------- ------ ---------- -------- ------------ --------- ----------
+25 14 T014 테스트오륙남 19701001 M NULL 2026-10-01 AM RCP 접수완료 20 2 18 0x0000000000019E11
+ExamCode ExamName ExamType RuleCode
+-------- -------- -------- --------
+EX001 문진/진찰 BASIC NEX-01
+EX002 신체계측 BASIC NEX-01
+EX003 혈압 BASIC NEX-01
+EX004 시력·청력 BASIC NEX-01
+EX005 흉부 X-ray BASIC NEX-01
+EX006 요검사 BASIC NEX-01
+EX007 혈액검사 BASIC NEX-01
+EX008 구강검진 BASIC NEX-01
+EX009 이상지질혈증 CONDITIONAL NEX-02
+EX011 C형간염 CONDITIONAL NEX-04
+EX013 폐기능 CONDITIONAL NEX-06
+OptionCode ExamCode ExamName
+---------- -------- --------
+OPT01 EX014 복부초음파
+ActionCode Allowed ReasonCode ReasonMessage
+---------- ------- ---------- -------------
+EDIT_RESERVATION 0 502 현재 상태에서는 요청한 업무를 처리할 수 없습니다.
+CANCEL_RESERVATION 0 502 현재 상태에서는 요청한 업무를 처리할 수 없습니다.
+START_RECEPTION 0 502 현재 상태에서는 요청한 업무를 처리할 수 없습니다.
+EDIT_EXTRA 0 308 오늘은 업무일이 아닙니다.
+CANCEL_RECEPTION 0 308 오늘은 업무일이 아닙니다.
+=== T011 RCP (EX012 포함) ===
+------- ---- ------- ----- ----------
+WorkId PatientId ChartNo Name Birthday Gender MobilePhone ReservationDate TimeSlot Status StatusName Capacity CurrentCount SeatsLeft RowVersion
+------ --------- ------- ---- -------- ------ ----------- --------------- -------- ------ ---------- -------- ------------ --------- ----------
+26 11 T011 테스트오사 19721001 F NULL 2026-10-01 AM RCP 접수완료 20 2 18 0x0000000000019E12
+ExamCode ExamName ExamType RuleCode
+-------- -------- -------- --------
+EX001 문진/진찰 BASIC NEX-01
+EX002 신체계측 BASIC NEX-01
+EX003 혈압 BASIC NEX-01
+EX004 시력·청력 BASIC NEX-01
+EX005 흉부 X-ray BASIC NEX-01
+EX006 요검사 BASIC NEX-01
+EX007 혈액검사 BASIC NEX-01
+EX008 구강검진 BASIC NEX-01
+EX012 골밀도검사 CONDITIONAL NEX-05
+OptionCode ExamCode ExamName
+---------- -------- --------
+ActionCode Allowed ReasonCode ReasonMessage
+---------- ------- ---------- -------------
+EDIT_RESERVATION 0 502 현재 상태에서는 요청한 업무를 처리할 수 없습니다.
+CANCEL_RESERVATION 0 502 현재 상태에서는 요청한 업무를 처리할 수 없습니다.
+START_RECEPTION 0 502 현재 상태에서는 요청한 업무를 처리할 수 없습니다.
+EDIT_EXTRA 0 308 오늘은 업무일이 아닙니다.
+CANCEL_RECEPTION 0 308 오늘은 업무일이 아닙니다.
