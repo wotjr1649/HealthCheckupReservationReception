@@ -143,11 +143,11 @@ CREATE TABLE [dbo].[검사항목]
 GO
 CREATE TABLE [dbo].[완료이력]
 (
-    [PatientId]      BIGINT NOT NULL,
-    [CompletionDate] DATE   NOT NULL,
+    [수검자ID]  BIGINT NOT NULL,
+    [완료일자]  DATE   NOT NULL,
 
-    CONSTRAINT [PK_완료이력] PRIMARY KEY CLUSTERED ([PatientId], [CompletionDate]),
-    CONSTRAINT [FK_완료이력_수검자] FOREIGN KEY ([PatientId])
+    CONSTRAINT [PK_완료이력] PRIMARY KEY CLUSTERED ([수검자ID], [완료일자]),
+    CONSTRAINT [FK_완료이력_수검자] FOREIGN KEY ([수검자ID])
         REFERENCES [dbo].[수검자] ([PatientId]) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 GO

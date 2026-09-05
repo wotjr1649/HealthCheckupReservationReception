@@ -112,13 +112,13 @@ WHERE e.[NexRuleCode] = 'NEX-01';
 GO
 -- T003 에 완료이력을 주면 안 된다. T003(만 23세 남)의 목적은 "NEX-02 남 미해당 → NEX 8행" 인데
 -- 1년차 완료이력을 붙이면 TGT 401 NotDue 비대상이 되어 NEX 0행이 나온다. 401 전담은 T016 이다.
-INSERT INTO [dbo].[완료이력] ([PatientId], [CompletionDate])
+INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자])
 SELECT p.[PatientId], '2025-05-01' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T016';  -- 1년차 → 401 NotDue
-INSERT INTO [dbo].[완료이력] ([PatientId], [CompletionDate])
+INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자])
 SELECT p.[PatientId], '2024-05-01' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T004';  -- 2년차 → 대상
-INSERT INTO [dbo].[완료이력] ([PatientId], [CompletionDate])
+INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자])
 SELECT p.[PatientId], '2026-10-01' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T005';  -- 예약일 당일 → 제외
-INSERT INTO [dbo].[완료이력] ([PatientId], [CompletionDate])
+INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자])
 SELECT p.[PatientId], '2026-11-01' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T006';  -- 예약일 이후 → 제외
 GO
 UPDATE [dbo].[수검자] SET [HepatitisBExcluded] = 1

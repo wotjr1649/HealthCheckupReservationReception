@@ -117,11 +117,11 @@ RETURN
                   Age = DATEDIFF(YEAR, p.[Birthday_D], @ReservationDate)
                         - CASE WHEN (MONTH(@ReservationDate) * 100 + DAY(@ReservationDate))
                                   < (MONTH(p.[Birthday_D])  * 100 + DAY(p.[Birthday_D])) THEN 1 ELSE 0 END
-                , LastCheckupDate = (SELECT TOP (1) h.[CompletionDate]
+                , LastCheckupDate = (SELECT TOP (1) h.[완료일자]
                                        FROM [dbo].[완료이력] h
-                                      WHERE h.[PatientId] = @PatientId
-                                        AND h.[CompletionDate] < @ReservationDate
-                                      ORDER BY h.[CompletionDate] DESC)
+                                      WHERE h.[수검자ID] = @PatientId
+                                        AND h.[완료일자] < @ReservationDate
+                                      ORDER BY h.[완료일자] DESC)
             FROM (SELECT [Birthday_D] = CONVERT(DATE, i.[Birthday], 112)
                     FROM [dbo].[수검자] i WHERE i.[PatientId] = @PatientId) p
         ) a

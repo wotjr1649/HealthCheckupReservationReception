@@ -133,8 +133,8 @@ INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
  (N'휴무일', N'Active',               N'bit',       NULL,  0),
  (N'휴무일', N'Memo',                 N'nvarchar',  500,   1),
  -- 완료이력 2행
- (N'완료이력', N'PatientId',            N'bigint',    NULL,  0),
- (N'완료이력', N'CompletionDate',       N'date',      NULL,  0),
+ (N'완료이력', N'수검자ID',             N'bigint',    NULL,  0),
+ (N'완료이력', N'완료일자',             N'date',      NULL,  0),
  -- 변경이력 7행
  (N'변경이력', N'이력ID',               N'bigint',    NULL,  0),
  (N'변경이력', N'기록일시',             N'datetime2', NULL,  0),
