@@ -151,7 +151,7 @@ Function은 다음 형식을 사용한다.
 | SP-RCP-02 | `[dbo].[USP_HC_UPDATE_접수추가검사]` | UPDATE | RCP 상태 AEX 변경 |
 | SP-RCP-03 | `[dbo].[USP_HC_UPDATE_접수취소]` | UPDATE | RCP → CNC |
 
-Write Stored Procedure 8개(`SP-PAT-03`·`SP-PAT-04`·`SP-RSV-02`~`04`·`SP-RCP-01`~`03`)는 업무 결과가 확정된 호출마다 `변경이력` 1행을 함께 기록한다. 기록은 트랜잭션 밖에서 자체 `TRY/CATCH`로 수행하며 실패해도 업무 호출 결과를 바꾸지 않는다 — `04_DB_Design.md` §8.7.4.
+Write Stored Procedure 8개(`SP-PAT-03`·`SP-PAT-04`·`SP-RSV-02`~`04`·`SP-RCP-01`~`03`)는 **실제로 바꾼 컬럼마다** `변경이력` 1행을 기록한다. 데이터를 바꾸지 않은 호출은 기록하지 않는다. 기록은 트랜잭션 밖에서 자체 `TRY/CATCH`로 수행하며 실패해도 업무 호출 결과를 바꾸지 않는다 — `04_DB_Design.md` §8.6.4.
 ## 1.4 내부 Inline TVF 4개
 
 | ID | 물리 객체명 | 책임 |
@@ -752,10 +752,13 @@ TGT 비대상
 저장된 NEX 기준:
 
 ```text
-AdditionalActive=0
+추가검사사용여부=0
 → 성별 불충족
 → 저장된 NEX 동일 ExamCode
 ```
+
+저장된 NEX는 `예약접수.국가검사항목` 문자열이다. 동일 `ExamCode` 포함 여부는
+양끝을 쉼표로 감싼 문자열 비교로 판정하므로 인라인 TVF의 단일 SELECT 안에서 성립한다.
 
 예:
 
@@ -1706,11 +1709,13 @@ RS1 Work결과
 
 | 실제 변경 | 일정·마감·정원·중복 | TGT | NEX | AEX | 저장 |
 |---|:---:|:---:|:---:|:---:|---|
-| 예약일 포함 | O | O | O | O | Work + NEX/AEX Detail |
-| 시간대만 | O | X | X | X | Work만 |
-| AEX만 | X | X | X | O | AEX Detail + Work 갱신 |
-| 시간대+AEX | O | X | X | O | Work + AEX Detail |
+| 예약일 포함 | O | O | O | O | Work 1행 (일정 + 검사구성 2컬럼) |
+| 시간대만 | O | X | X | X | Work 1행 (시간대코드) |
+| AEX만 | X | X | X | O | Work 1행 (추가검사항목) |
+| 시간대+AEX | O | X | X | O | Work 1행 (시간대코드 + 추가검사항목) |
 | 없음 | X | X | X | X | No-op |
+
+저장이 언제나 `예약접수` 한 행의 UPDATE다. Master/Detail 두 문장을 같은 Transaction으로 묶는 단계가 없다.
 
 ### 시간대만 변경
 
@@ -1721,19 +1726,22 @@ RS1 Work결과
 ### AEX 실제 변경
 
 ```text
-AEX Detail 변경
-+ 예약접수.LastEditDate 갱신
+예약접수.추가검사항목 UPDATE
+→ 같은 행이라 RowVersion 이 자동 변경된다
 → 새 RowVersion 반환
 ```
+
+검사구성이 Work 행의 컬럼이므로 Detail 변경 뒤 Master `최종수정일시`를 따로 갱신하는 단계가 없다.
 
 ### AEX 동일집합
 
 ```text
-Detail DELETE/INSERT 없음
-Work UPDATE 없음
+UPDATE 없음
 기존 RowVersion 유지
 Code=1
 ```
+
+검사구성은 검사항목코드 오름차순으로 조립되므로 집합 동일 판정이 문자열 비교다.
 
 예약일 변경 후 TGT 비대상 또는 AEX 충돌이면 기존 예약을 변경하지 않는다.
 

@@ -128,7 +128,7 @@ SELECT ChartNo = p.[차트번호]        ← 이 형식
 
 | 네임스페이스 | 예 | 이 계획에서 |
 |---|---|:---:|
-| **DB 컬럼명** | `[dbo].[수검자].[ChartNo]` | **바뀐다** |
+| **DB 컬럼명** | `[dbo].[수검자].[차트번호]` | **바뀐다** |
 | SP Parameter | `@PatientId` · `@MobilePhone` (`05` §1.6) | 안 바뀐다 |
 | Result Set 컬럼 | `RS0.Code` · `RS1.ChartNo` (`05` §3.1 등) | 안 바뀐다 |
 
@@ -140,7 +140,7 @@ SELECT ChartNo = p.[차트번호]        ← 이 형식
 치환은 **대괄호가 붙은 형태만** 노린다.
 
 ```text
-바꾼다     [ChartNo]        [p].[ChartNo]     p.[ChartNo]
+바꾼다     [차트번호]        [p].[차트번호]     p.[차트번호]
 안 바꾼다  @ChartNo         ChartNo =         'ChartNo'        N'ChartNo'
 ```
 
@@ -318,7 +318,7 @@ CK_수검자_CEL_DIGIT        유지 (계산열 대상)
 4  치환   그 테이블을 읽는 tests/00 · 00b · 01 · 02 · 03 · 04 · contract/**
 5  확인   @ 로 시작하는 이름 0건 변경 · Result Set 별칭 0건 변경 (§2.2)
 5b 확인   그 테이블 전용 토큰의 잔존 0건을 grep 으로 단언한다
-          (T43 에서 inspect.sql 20행의 별칭 없는 [WorkId] 를 이렇게 잡았다)
+          (T43 에서 inspect.sql 20행의 별칭 없는 [업무ID] 를 이렇게 잡았다)
 6  실행   ./scripts/test.sh 전건
 7  실행   ./scripts/verify-contract-all.sh 25건
 8  실행   verify-baseline · verify-winforms · verify-docs · ./scripts/inspect.sh

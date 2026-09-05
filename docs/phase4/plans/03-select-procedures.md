@@ -1,3 +1,6 @@
+`[!]` **이 계획서의 스키마 참조는 `plans/09`·`plans/10` 이 교체했다** ― 컬럼명 한글화,
+검사구성의 `예약접수`·`완료이력` 흡수, `검사항목` 삭제, `변경이력` EAV 전환. 당시 구조는 git 이력에 있다.
+
 # Stage 5 — SELECT Stored Procedure 7개 · Result Set 계약 검증기
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
@@ -166,7 +169,6 @@ DECLARE @Fail INT = 0;
 DECLARE @Before VARCHAR(100) =
       CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[수검자]))   + '|'
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[예약접수])) + '|'
-    + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[검사항목])) + '|'
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[완료이력])) + '|'
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[변경이력])) + '|'
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[검사코드])) + '|'
@@ -360,12 +362,12 @@ EXEC [dbo].[USP_HC_SELECT_수검자목록] NULL, NULL, NULL, NULL, NULL;
 RS1 `WHERE` 절 (전부 `AND` 결합, NULL 조건은 무시):
 
 ```sql
-WHERE (@ChartNo      IS NULL OR p.[ChartNo]      =  @ChartNo)
+WHERE (@ChartNo      IS NULL OR p.[차트번호]      =  @ChartNo)
   AND (@Name         IS NULL OR p.[Name]         LIKE @Name + N'%')
-  AND (@SocialNumber IS NULL OR p.[SocialNumber] =  @SocialNumber)
-  AND (@Birthday     IS NULL OR p.[Birthday]     =  @Birthday)
+  AND (@SocialNumber IS NULL OR p.[주민번호] =  @SocialNumber)
+  AND (@Birthday     IS NULL OR p.[생년월일]     =  @Birthday)
   AND (@MobilePhone  IS NULL OR p.[CelNumberS]   =  @MobilePhone)
-ORDER BY p.[Name] ASC, p.[Birthday] ASC, p.[ChartNo] ASC;
+ORDER BY p.[Name] ASC, p.[생년월일] ASC, p.[차트번호] ASC;
 ```
 
 RS1 컬럼 매핑 (`05` §7.2):
@@ -484,9 +486,9 @@ EXEC [dbo].[USP_HC_SELECT_수검자유효업무] @P0;
 
 ```sql
 -- 조회범위
-WHERE w.[PatientId] = @PatientId
-  AND w.[ReservationDate] >= @Today
-  AND w.[StatusCode] IN ('RSV','RCP')
+WHERE w.[수검자ID] = @PatientId
+  AND w.[예약일] >= @Today
+  AND w.[상태코드] IN ('RSV','RCP')
 ```
 
 ```text
@@ -555,12 +557,12 @@ EXEC [dbo].[USP_HC_SELECT_예약접수목록] '2026-12-01', '2026-11-01', NULL, 
 ```
 
 ```sql
-WHERE (@FromDate IS NULL OR w.[ReservationDate] >= @FromDate)
-  AND (@ToDate   IS NULL OR w.[ReservationDate] <= @ToDate)
-  AND (@Status   IS NULL OR w.[StatusCode]      =  @Status)
-  AND (@ChartNo  IS NULL OR p.[ChartNo]         =  @ChartNo)
-  AND (@Name     IS NULL OR p.[Name]            LIKE @Name + N'%')
-ORDER BY w.[ReservationDate], w.[TimeSlotCode], p.[Name], w.[WorkId];
+WHERE (@FromDate IS NULL OR w.[예약일] >= @FromDate)
+  AND (@ToDate   IS NULL OR w.[예약일] <= @ToDate)
+  AND (@Status   IS NULL OR w.[상태코드]      =  @Status)
+  AND (@ChartNo  IS NULL OR p.[차트번호]         =  @ChartNo)
+  AND (@Name     IS NULL OR p.[성명]            LIKE @Name + N'%')
+ORDER BY w.[예약일], w.[시간대코드], p.[성명], w.[업무ID];
 ```
 
 - [ ] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_SELECT_예약접수목록 구현`
@@ -642,8 +644,8 @@ SELECT
 FROM [dbo].[예약접수] w
 CROSS JOIN (VALUES ('EDIT_RESERVATION'),('CANCEL_RESERVATION'),('START_RECEPTION'),
                    ('EDIT_EXTRA'),('CANCEL_RECEPTION')) a(Code)
-CROSS APPLY [dbo].[UFN_HC_일정확인](@ServerTime, w.[ReservationDate], w.[TimeSlotCode], 'RECEPTION') s
-WHERE w.[WorkId] = @WorkId
+CROSS APPLY [dbo].[UFN_HC_일정확인](@ServerTime, w.[예약일], w.[시간대코드], 'RECEPTION') s
+WHERE w.[업무ID] = @WorkId
 ...
 ```
 

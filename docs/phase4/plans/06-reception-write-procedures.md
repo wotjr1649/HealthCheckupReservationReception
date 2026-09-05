@@ -1,3 +1,6 @@
+`[!]` **이 계획서의 스키마 참조는 `plans/09`·`plans/10` 이 교체했다** ― 컬럼명 한글화,
+검사구성의 `예약접수`·`완료이력` 흡수, `검사항목` 삭제, `변경이력` EAV 전환. 당시 구조는 git 이력에 있다.
+
 # Stage 8 — 접수 Write Stored Procedure 3개
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
@@ -74,7 +77,7 @@ IF NOT (DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
         AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
         AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
         AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
-                         WHERE [HolidayDate] = CONVERT(DATE, SYSDATETIME()) AND [Active] = 1))
+                         WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [Active] = 1))
 BEGIN
     PRINT 'SKIP 07_Reception_Write_Tests 업무시간(월~토 09:00~18:00, 비휴무일) 밖';
     RETURN;
@@ -88,99 +91,99 @@ IF ((SELECT COUNT(*) FROM [dbo].[예약접수]) = @W0)
 ELSE BEGIN PRINT 'FAIL CWR-001'; SET @Fail += 1; END
 
 -- CWR-002 / CWR-008  미래·과거 예약일은 접수되지 않는다 (StatusCode 불변)
-DECLARE @Wf BIGINT = (SELECT TOP (1) [WorkId] FROM [dbo].[예약접수]
-                       WHERE [StatusCode] = 'RSV' AND [ReservationDate] > CONVERT(DATE, SYSDATETIME())
-                       ORDER BY [WorkId]);
-DECLARE @Rf BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wf);
+DECLARE @Wf BIGINT = (SELECT TOP (1) [업무ID] FROM [dbo].[예약접수]
+                       WHERE [상태코드] = 'RSV' AND [예약일] > CONVERT(DATE, SYSDATETIME())
+                       ORDER BY [업무ID]);
+DECLARE @Rf BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wf);
 EXEC [dbo].[USP_HC_UPDATE_접수완료] @Wf, @Rf;
-IF ((SELECT [StatusCode] FROM [dbo].[예약접수] WHERE [WorkId] = @Wf) = 'RSV')
+IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @Wf) = 'RSV')
     PRINT 'PASS CWR-002 미래 예약일이 RCP 로 전이되지 않았다';
 ELSE BEGIN PRINT 'FAIL CWR-002 미래 예약이 접수됐다'; SET @Fail += 1; END
 
-DECLARE @Wpast BIGINT = (SELECT TOP (1) [WorkId] FROM [dbo].[예약접수]
-                          WHERE [StatusCode] = 'RSV' AND [ReservationDate] < CONVERT(DATE, SYSDATETIME())
-                          ORDER BY [WorkId]);
+DECLARE @Wpast BIGINT = (SELECT TOP (1) [업무ID] FROM [dbo].[예약접수]
+                          WHERE [상태코드] = 'RSV' AND [예약일] < CONVERT(DATE, SYSDATETIME())
+                          ORDER BY [업무ID]);
 IF @Wpast IS NULL
     PRINT 'SKIP CWR-008 과거 예약일 RSV Work 가 Fixture 에 없다';
 ELSE
 BEGIN
-    DECLARE @Rpast BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wpast);
+    DECLARE @Rpast BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wpast);
     EXEC [dbo].[USP_HC_UPDATE_접수완료] @Wpast, @Rpast;
-    IF ((SELECT [StatusCode] FROM [dbo].[예약접수] WHERE [WorkId] = @Wpast) = 'RSV')
+    IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @Wpast) = 'RSV')
         PRINT 'PASS CWR-008 과거 예약일이 RCP 로 전이되지 않았다';
     ELSE BEGIN PRINT 'FAIL CWR-008 과거 예약이 접수됐다'; SET @Fail += 1; END
 END
 
 -- CWR-004 / CWR-010  CNR Work 는 접수되지 않는다
-DECLARE @Wcnl BIGINT = (SELECT TOP (1) [WorkId] FROM [dbo].[예약접수]
-                         WHERE [StatusCode] = 'CNR' ORDER BY [WorkId]);
-DECLARE @Rcnl BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wcnl);
+DECLARE @Wcnl BIGINT = (SELECT TOP (1) [업무ID] FROM [dbo].[예약접수]
+                         WHERE [상태코드] = 'CNR' ORDER BY [업무ID]);
+DECLARE @Rcnl BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wcnl);
 EXEC [dbo].[USP_HC_UPDATE_접수완료] @Wcnl, @Rcnl;
-IF ((SELECT [StatusCode] FROM [dbo].[예약접수] WHERE [WorkId] = @Wcnl) = 'CNR')
+IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @Wcnl) = 'CNR')
     PRINT 'PASS CWR-004/010 CNR Work 가 접수되지 않았다';
 ELSE BEGIN PRINT 'FAIL CWR-004/010 CNR 이 RCP 로 전이됐다'; SET @Fail += 1; END
 
 -- CWR-005  CORRUPT-2 (NEX 0행) 는 701 로 막히고 상태가 바뀌지 않는다
-DECLARE @Wc2 BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
-                        JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
-                       WHERE p.[ChartNo] = 'T010' AND w.[StatusCode] = 'RSV');
+DECLARE @Wc2 BIGINT = (SELECT TOP (1) w.[업무ID] FROM [dbo].[예약접수] w
+                        JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
+                       WHERE p.[차트번호] = 'T010' AND w.[상태코드] = 'RSV');
 IF @Wc2 IS NULL
 BEGIN PRINT N'FAIL CWR-005 사전조건 — CORRUPT-2 Work 가 없다'; SET @Fail += 1; END
 ELSE
 BEGIN
-    DECLARE @Rc2 BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wc2);
+    DECLARE @Rc2 BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wc2);
     EXEC [dbo].[USP_HC_UPDATE_접수완료] @Wc2, @Rc2;
-    IF ((SELECT [StatusCode] FROM [dbo].[예약접수] WHERE [WorkId] = @Wc2) = 'RSV')
+    IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @Wc2) = 'RSV')
         PRINT 'PASS CWR-005 NEX 0행 손상 Work 가 접수되지 않았다';
     ELSE BEGIN PRINT 'FAIL CWR-005 손상 Work 가 접수됐다'; SET @Fail += 1; END
 END
 
 -- CWR-011  CORRUPT-4 (ExamSourceCode ↔ Master 역할 불일치) → 701
-DECLARE @Wc4 BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
-                        JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
-                       WHERE p.[ChartNo] = 'T009' AND w.[StatusCode] = 'RSV');
+DECLARE @Wc4 BIGINT = (SELECT TOP (1) w.[업무ID] FROM [dbo].[예약접수] w
+                        JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
+                       WHERE p.[차트번호] = 'T009' AND w.[상태코드] = 'RSV');
 IF @Wc4 IS NULL
 BEGIN PRINT N'FAIL CWR-011 사전조건 — CORRUPT-4 Work 가 없다'; SET @Fail += 1; END
 ELSE
 BEGIN
-    DECLARE @Rc4 BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wc4);
+    DECLARE @Rc4 BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wc4);
     EXEC [dbo].[USP_HC_UPDATE_접수완료] @Wc4, @Rc4;
-    IF ((SELECT [StatusCode] FROM [dbo].[예약접수] WHERE [WorkId] = @Wc4) = 'RSV')
+    IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @Wc4) = 'RSV')
         PRINT 'PASS CWR-011 역할 불일치 Work 가 접수되지 않았다';
     ELSE BEGIN PRINT 'FAIL CWR-011 역할 불일치 Work 가 접수됐다'; SET @Fail += 1; END
 END
 
 -- CWR-006 / CWR-007  오늘 RSV 접수 성공 → RCP 전이, Date/Slot/Detail 불변. 재접수는 502.
-DECLARE @Wt BIGINT = (SELECT TOP (1) [WorkId] FROM [dbo].[예약접수]
-                       WHERE [StatusCode] = 'RSV' AND [ReservationDate] = CONVERT(DATE, SYSDATETIME())
-                       ORDER BY [WorkId]);
+DECLARE @Wt BIGINT = (SELECT TOP (1) [업무ID] FROM [dbo].[예약접수]
+                       WHERE [상태코드] = 'RSV' AND [예약일] = CONVERT(DATE, SYSDATETIME())
+                       ORDER BY [업무ID]);
 IF @Wt IS NULL
     PRINT N'SKIP CWR-006/007/009 오늘 날짜 RSV Work 가 없다 — Fixture 는 고정날짜를 쓴다(§15.5)';
 ELSE
 BEGIN
-    DECLARE @Rt   BINARY(8) = (SELECT [RowVersion]      FROM [dbo].[예약접수] WHERE [WorkId] = @Wt);
-    DECLARE @Dt   DATE      = (SELECT [ReservationDate] FROM [dbo].[예약접수] WHERE [WorkId] = @Wt);
-    DECLARE @St   CHAR(2)   = (SELECT [TimeSlotCode]    FROM [dbo].[예약접수] WHERE [WorkId] = @Wt);
-    DECLARE @Dtl  INT = (SELECT COUNT(*) FROM [dbo].[검사항목] WHERE [WorkId] = @Wt);
+    DECLARE @Rt   BINARY(8) = (SELECT [행버전]      FROM [dbo].[예약접수] WHERE [업무ID] = @Wt);
+    DECLARE @Dt   DATE      = (SELECT [예약일] FROM [dbo].[예약접수] WHERE [업무ID] = @Wt);
+    DECLARE @St   CHAR(2)   = (SELECT [시간대코드]    FROM [dbo].[예약접수] WHERE [업무ID] = @Wt);
+    DECLARE @Dtl  NVARCHAR(160) = (SELECT ISNULL([국가검사항목],N'') + N'|' + ISNULL([추가검사항목],N'') FROM [dbo].[예약접수] WHERE [업무ID] = @Wt);
 
     -- CWR-003  stale RowVersion 은 전이시키지 않는다
     EXEC [dbo].[USP_HC_UPDATE_접수완료] @Wt, 0x0000000000000001;
-    IF ((SELECT [StatusCode] FROM [dbo].[예약접수] WHERE [WorkId] = @Wt) = 'RSV')
+    IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @Wt) = 'RSV')
         PRINT 'PASS CWR-003 stale RowVersion 이 접수를 막았다';
     ELSE BEGIN PRINT 'FAIL CWR-003'; SET @Fail += 1; END
 
     EXEC [dbo].[USP_HC_UPDATE_접수완료] @Wt, @Rt;
-    IF ((SELECT [StatusCode]       FROM [dbo].[예약접수] WHERE [WorkId] = @Wt) = 'RCP'
-        AND (SELECT [ReservationDate] FROM [dbo].[예약접수] WHERE [WorkId] = @Wt) = @Dt
-        AND (SELECT [TimeSlotCode]    FROM [dbo].[예약접수] WHERE [WorkId] = @Wt) = @St
-        AND (SELECT COUNT(*) FROM [dbo].[검사항목] WHERE [WorkId] = @Wt) = @Dtl)
+    IF ((SELECT [상태코드]       FROM [dbo].[예약접수] WHERE [업무ID] = @Wt) = 'RCP'
+        AND (SELECT [예약일] FROM [dbo].[예약접수] WHERE [업무ID] = @Wt) = @Dt
+        AND (SELECT [시간대코드]    FROM [dbo].[예약접수] WHERE [업무ID] = @Wt) = @St
+        AND (SELECT ISNULL([국가검사항목],N'') + N'|' + ISNULL([추가검사항목],N'') FROM [dbo].[예약접수] WHERE [업무ID] = @Wt) = @Dtl)
         PRINT N'PASS CWR-006 접수 성공 — RCP 전이, Date/Slot/Detail 불변';
     ELSE BEGIN PRINT 'FAIL CWR-006'; SET @Fail += 1; END
 
     -- CWR-007  이미 RCP 인 Work 재접수 → 상태 그대로
-    DECLARE @Rt2 BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wt);
+    DECLARE @Rt2 BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wt);
     EXEC [dbo].[USP_HC_UPDATE_접수완료] @Wt, @Rt2;
-    IF ((SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wt) = @Rt2)
+    IF ((SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wt) = @Rt2)
         PRINT 'PASS CWR-007 이미 RCP 인 Work 재접수가 아무것도 바꾸지 않았다';
     ELSE BEGIN PRINT 'FAIL CWR-007'; SET @Fail += 1; END
 END
@@ -319,44 +322,43 @@ RCP 상태 Work 는 **`T14b` 가 만든 `tests/00b_Test_Harness_RCP.sql`** 의 �
 
 ```sql
 -- CWR-020  동일 AEX 집합 → RowVersion·Detail 불변
-DECLARE @Wr BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
-                       JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
-                      WHERE p.[ChartNo] = 'T014' AND w.[StatusCode] = 'RCP'
-                      ORDER BY w.[WorkId]);
+DECLARE @Wr BIGINT = (SELECT TOP (1) w.[업무ID] FROM [dbo].[예약접수] w
+                       JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
+                      WHERE p.[차트번호] = 'T014' AND w.[상태코드] = 'RCP'
+                      ORDER BY w.[업무ID]);
 IF @Wr IS NULL
 BEGIN PRINT N'FAIL CWR-020 사전조건 — T014 의 RCP Work 가 없다 (tests/00b 를 먼저 실행했는가)'; SET @Fail += 1; END
 ELSE
 BEGIN
-    DECLARE @Rv  BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wr);
-    DECLARE @Cnt INT = (SELECT COUNT(*) FROM [dbo].[검사항목] WHERE [WorkId] = @Wr);
-    DECLARE @Nex INT = (SELECT COUNT(*) FROM [dbo].[검사항목]
-                         WHERE [WorkId] = @Wr AND [ExamSourceCode] = 'NEX');
+    DECLARE @Rv  BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wr);
+    DECLARE @Cnt NVARCHAR(60)  = (SELECT ISNULL([추가검사항목],N'') FROM [dbo].[예약접수] WHERE [업무ID] = @Wr);
+    DECLARE @Nex NVARCHAR(110) = (SELECT [국가검사항목] FROM [dbo].[예약접수] WHERE [업무ID] = @Wr);
 
     -- Fixture 는 OPT01 만 선택된 상태이므로 동일 집합 = (1,0,0,0,0,0,0)
     EXEC [dbo].[USP_HC_UPDATE_접수추가검사] @Wr, @Rv, 1,0,0,0,0,0,0;
-    IF ((SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wr) = @Rv
-        AND (SELECT COUNT(*) FROM [dbo].[검사항목] WHERE [WorkId] = @Wr) = @Cnt)
+    IF ((SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wr) = @Rv
+        AND (SELECT ISNULL([추가검사항목],N'') FROM [dbo].[예약접수] WHERE [업무ID] = @Wr) = @Cnt)
         PRINT N'PASS CWR-020 동일 AEX 집합 No-op — RowVersion·Detail 불변';
     ELSE BEGIN PRINT 'FAIL CWR-020'; SET @Fail += 1; END
 
     -- CWR-021  실제 변경 → RowVersion 이 반드시 바뀐다
     EXEC [dbo].[USP_HC_UPDATE_접수추가검사] @Wr, @Rv, 1,1,0,0,0,0,0;
-    DECLARE @Rv2 BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wr);
+    DECLARE @Rv2 BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wr);
     IF (@Rv2 <> @Rv)
         PRINT 'PASS CWR-021 AEX 실제변경 시 Work RowVersion 갱신';
     ELSE BEGIN PRINT 'FAIL CWR-021'; SET @Fail += 1; END
 
     -- CWR-022  실제 변경 시 NEX Detail 은 불변 — AEX 만 바뀌어야 한다
-    IF ((SELECT COUNT(*) FROM [dbo].[검사항목]
-          WHERE [WorkId] = @Wr AND [ExamSourceCode] = 'NEX') = @Nex)
+    IF ((SELECT [국가검사항목] FROM [dbo].[예약접수] WHERE [업무ID] = @Wr) = @Nex)
         PRINT 'PASS CWR-022 AEX 변경이 NEX Detail 을 건드리지 않았다';
     ELSE BEGIN PRINT 'FAIL CWR-022 NEX 가 재계산됐다'; SET @Fail += 1; END
 
     -- CWR-023  성별 위반 AEX → Detail 완전 보존
-    DECLARE @Snap INT = (SELECT COUNT(*) FROM [dbo].[검사항목] WHERE [WorkId] = @Wr);
+    DECLARE @Snap NVARCHAR(160) = (SELECT ISNULL([국가검사항목],N'') + N'|' + ISNULL([추가검사항목],N'')
+                                     FROM [dbo].[예약접수] WHERE [업무ID] = @Wr);
     EXEC [dbo].[USP_HC_UPDATE_접수추가검사] @Wr, @Rv2, 0,0,1,0,0,0,0;
-    IF ((SELECT COUNT(*) FROM [dbo].[검사항목] WHERE [WorkId] = @Wr) = @Snap
-        AND (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wr) = @Rv2)
+    IF ((SELECT ISNULL([국가검사항목],N'') + N'|' + ISNULL([추가검사항목],N'') FROM [dbo].[예약접수] WHERE [업무ID] = @Wr) = @Snap
+        AND (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wr) = @Rv2)
         PRINT 'PASS CWR-023 성별 위반 AEX 요청이 Detail 을 보존했다';
     ELSE BEGIN PRINT 'FAIL CWR-023 부분저장 발생'; SET @Fail += 1; END
 
@@ -367,21 +369,22 @@ END
 -- [X] T014 는 **남성** 이라 저장 NEX 에 EX012 가 없다. NEX-05 술어가 Gender='F' 를 요구하기 때문이다.
 --     412 는 EX012 로만 발생하므로(스펙 §17.2a) T014 로 시험하면 412 가 아니라 0 이 나오고
 --     "중복 판정이 동작한다" 를 아무것도 증명하지 못한 채 조용히 통과한다.
-DECLARE @W11 BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
-                        JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
-                       WHERE p.[ChartNo] = 'T011' AND w.[StatusCode] = 'RCP' ORDER BY w.[WorkId]);
+DECLARE @W11 BIGINT = (SELECT TOP (1) w.[업무ID] FROM [dbo].[예약접수] w
+                        JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
+                       WHERE p.[차트번호] = 'T011' AND w.[상태코드] = 'RCP' ORDER BY w.[업무ID]);
 IF @W11 IS NULL
 BEGIN PRINT N'FAIL CWR-024 사전조건 — T011 의 RCP Work 가 없다 (tests/00b)'; SET @Fail += 1; END
-ELSE IF NOT EXISTS (SELECT 1 FROM [dbo].[검사항목]
-                     WHERE [WorkId] = @W11 AND [ExamSourceCode] = 'NEX' AND [ExamItemCode] = 'EX012')
+ELSE IF NOT EXISTS (SELECT 1 FROM [dbo].[예약접수]
+                     WHERE [업무ID] = @W11 AND [ExamSourceCode] = 'NEX' AND [검사항목코드] = 'EX012')
 BEGIN PRINT N'FAIL CWR-024 사전조건 — T011 저장 NEX 에 EX012 가 없다. 412 를 관측할 수 없다'; SET @Fail += 1; END
 ELSE
 BEGIN
-    DECLARE @Rv11 BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @W11);
-    DECLARE @Sn11 INT = (SELECT COUNT(*) FROM [dbo].[검사항목] WHERE [WorkId] = @W11);
+    DECLARE @Rv11 BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @W11);
+    DECLARE @Sn11 NVARCHAR(160) = (SELECT ISNULL([국가검사항목],N'') + N'|' + ISNULL([추가검사항목],N'')
+                                     FROM [dbo].[예약접수] WHERE [업무ID] = @W11);
     EXEC [dbo].[USP_HC_UPDATE_접수추가검사] @W11, @Rv11, 0,0,0,1,0,0,0;   -- OPT04 = EX012 중복
-    IF ((SELECT COUNT(*) FROM [dbo].[검사항목] WHERE [WorkId] = @W11) = @Sn11
-        AND (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @W11) = @Rv11)
+    IF ((SELECT ISNULL([국가검사항목],N'') + N'|' + ISNULL([추가검사항목],N'') FROM [dbo].[예약접수] WHERE [업무ID] = @W11) = @Sn11
+        AND (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @W11) = @Rv11)
         PRINT 'PASS CWR-024 NEX 중복 AEX 요청이 Detail 을 보존했다';
     ELSE BEGIN PRINT 'FAIL CWR-024 중복 AEX 가 저장됐다'; SET @Fail += 1; END
 END
@@ -389,21 +392,21 @@ END
 -- CWR-026  stale RowVersion 은 아무것도 바꾸지 않는다. T014 Work 를 다시 읽어 자립적으로 판정한다.
 IF @Wr IS NOT NULL
 BEGIN
-    DECLARE @Rv3 BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wr);
+    DECLARE @Rv3 BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wr);
 
     EXEC [dbo].[USP_HC_UPDATE_접수추가검사] @Wr, 0x0000000000000001, 1,1,1,0,0,0,0;
-    IF ((SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wr) = @Rv3)
+    IF ((SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wr) = @Rv3)
         PRINT 'PASS CWR-026 stale RowVersion 이 변경을 막았다';
     ELSE BEGIN PRINT 'FAIL CWR-026 낙관적 동시성 위반'; SET @Fail += 1; END
 END
 
 -- CWR-025  RSV 상태 Work 에 접수추가검사 호출 → 상태·Detail 불변
-DECLARE @Wrsv BIGINT = (SELECT TOP (1) [WorkId] FROM [dbo].[예약접수]
-                         WHERE [StatusCode] = 'RSV' ORDER BY [WorkId]);
-DECLARE @Rvsv BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wrsv);
+DECLARE @Wrsv BIGINT = (SELECT TOP (1) [업무ID] FROM [dbo].[예약접수]
+                         WHERE [상태코드] = 'RSV' ORDER BY [업무ID]);
+DECLARE @Rvsv BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wrsv);
 EXEC [dbo].[USP_HC_UPDATE_접수추가검사] @Wrsv, @Rvsv, 1,0,0,0,0,0,0;
-IF ((SELECT [StatusCode] FROM [dbo].[예약접수] WHERE [WorkId] = @Wrsv) = 'RSV'
-    AND (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId] = @Wrsv) = @Rvsv)
+IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @Wrsv) = 'RSV'
+    AND (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wrsv) = @Rvsv)
     PRINT 'PASS CWR-025 RSV 상태에서는 접수추가검사가 아무것도 바꾸지 않는다';
 ELSE BEGIN PRINT 'FAIL CWR-025'; SET @Fail += 1; END
 

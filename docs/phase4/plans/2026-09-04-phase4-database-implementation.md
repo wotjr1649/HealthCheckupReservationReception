@@ -241,7 +241,7 @@ DECLARE @Biz  BIT     = CASE WHEN @Dow <> 6
                               AND @NowT >= CONVERT(TIME(7),'09:00:00')
                               AND @NowT <  CONVERT(TIME(7),'18:00:00')
                               AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
-                                               WHERE [HolidayDate] = CONVERT(DATE, SYSDATETIME())
+                                               WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME())
                                                  AND [Active] = 1)
                              THEN 1 ELSE 0 END;
 PRINT 'INFO 실행시각 ' + CONVERT(VARCHAR(30), SYSDATETIME(), 121) + ' 업무가능=' + CONVERT(VARCHAR(1), @Biz);
@@ -385,7 +385,7 @@ UPDATE [dbo].[예약접수]
    SET StatusCode = '<새 상태>', LastEditDate = @StoredNow
  WHERE WorkId       = @WorkId
    AND StatusCode   = '<기대 상태>'
-   AND [RowVersion] = @RowVersion;
+   AND [행버전] = @RowVersion;
 
 IF @@ROWCOUNT = 0
 BEGIN

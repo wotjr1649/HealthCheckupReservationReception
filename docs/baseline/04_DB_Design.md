@@ -6,7 +6,7 @@
 - **기준일:** 2026-09-04
 - **기준선 ID:** `HC-RSV-RCP-20260904-R3`
 - **대상 환경:** C# WinForms / .NET Framework 4.6.1 / DevExpress Components 20.2 / Microsoft SQL Server / Stored Procedure
-- **최종 확정 범위:** 7개 테이블 논리·물리구조, 전체 컬럼·타입·NULL, PK/FK/UQ/CK/DF, 최소 Index, Sequence, 비-TVP AEX 7개 BIT 입력경계, 계산값·영속값·Aggregate·동시성 기준
+- **최종 확정 범위:** 6개 테이블 논리·물리구조, 전체 컬럼·타입·NULL, PK/FK/UQ/CK/DF, 최소 Index, Sequence, 비-TVP AEX 7개 BIT 입력경계, 계산값·영속값·Aggregate·동시성 기준
 - **후속 문서:** `05_DB_Rule_SP_Contract.md` → `06_DB_Transaction_Security_Seed.md` → `07_UI_DB_Matrix_Final_Validation.md`
 - **기준문서:**
   - `00_Project_Policy.md` — FINAL / GO / READ-ONLY
@@ -43,7 +43,7 @@ DB는 다음 업무 흐름을 지원해야 한다.
 | Phase | 범위 | 본 문서에서의 상태 |
 |---|---|:---:|
 | Phase 1 | 최초 10개 테이블 후보 검토 | **과거 검토안 / 구현 금지** |
-| Phase 1.1 | 검사 Master 통합, 테스트 식별값 저장 단순화, 7개 테이블 논리모델, 정·역방향 검수 | **완료 / 최종 기준** |
+| Phase 1.1 | 검사 Master 통합, 테스트 식별값 저장 단순화, 6개 테이블 논리모델, 정·역방향 검수 | **완료 / 최종 기준** |
 | Phase 2 | 전체 컬럼·타입·NULL, PK/FK/UQ/CK/DF, 최소 Index, Sequence, 물리 ERD, 비-TVP AEX 입력경계 | **FINAL / GO / READ-ONLY** |
 | Phase 3 | Rule·Stored Procedure 입출력·Result Set·ResultCode 계약 | **`05_DB_Rule_SP_Contract.md` 완료** |
 | Phase 4 | Transaction·잠금·동시성·권한·Seed/Test Data | **`06_DB_Transaction_Security_Seed.md`에서 진행** |
@@ -58,7 +58,7 @@ DB는 다음 업무 흐름을 지원해야 한다.
 주민등록번호는 임의 테스트값 13자리를 수검자에 직접 저장
 주민등록번호 고유성·정확검색을 수검자의 Unique Constraint로 일원화
 수검자 저장 SP가 주민등록번호 형식·날짜·세기/성별·파생값을 최종검증
-물리 테이블을 7개로 단순화
+물리 테이블을 6개로 단순화
 예약변경 중복판정에서 현재 WorkId 제외
 NEX 실제 반환 Cardinality를 8~11행으로 확정
 시간대만 변경 시 TGT/NEX/AEX 재검증 금지
@@ -101,7 +101,7 @@ R3 재봉인에서 다음 세 가지를 개정했다.
 - 정확한 UDF/SP 이름·시그니처·Result Set·ResultCode·검증 우선순위는 `05_DB_Rule_SP_Contract.md`를 따른다.
 - 잠금 SQL·Transaction 격리·Seed/Test Data·권한은 `06_DB_Transaction_Security_Seed.md`에서 확정한다.
 - 와이어프레임의 `PatientId`, `WorkId` 호출계약은 본 문서의 물리 PK로 구현한다.
-- `SEQUENCE`, UDF, Stored Procedure는 DB 객체이지만 물리 테이블 수 7개에는 포함하지 않는다.
+- `SEQUENCE`, UDF, Stored Procedure는 DB 객체이지만 물리 테이블 수 6개에는 포함하지 않는다.
 
 ## 0.4 기준선 고정 및 후속 변경 통제
 
@@ -117,11 +117,11 @@ IDENTITY / ROWVERSION
 PK / FK / UQ / CK / DF
 FK 방향과 NO ACTION 원칙
 SEQ_HC_CHART_NO의 역할과 표현범위
-검사항목의 Composite PK
+예약접수·완료이력의 검사구성 문자열 형식
 수검자.SocialNumber의 숫자 13자리 테스트값 저장구조
 AEX OPT01~OPT07의 7개 BIT 외부 입력경계
 예약·접수 동일 예약접수 행 구조
-변경이력의 업무 단위 1행 기록 원칙과 7개 컬럼
+변경이력의 컬럼 단위 1행 기록 원칙과 8개 컬럼
 ```
 
 ### 0.4.2 후속 문서에서 구체화할 수 있는 항목
@@ -200,10 +200,12 @@ UI의 Enabled/Disabled 상태와 조회값은 사전검증이다. 데이터 변�
 
 `예약접수.RowVersion`은 Work Master 행뿐 아니라 Work Aggregate 전체의 동시성값으로 사용한다.
 
-- `검사항목`의 AEX 집합이 실제로 변경되면 같은 Transaction에서 `예약접수.LastEditDate`도 갱신한다.
-- 위 Master UPDATE로 `RowVersion`이 자동 변경되며 성공 결과는 새 `RowVersion`을 반환한다.
-- AEX 요청집합이 현재집합과 완전히 같으면 Detail DELETE/INSERT와 Work UPDATE를 모두 수행하지 않는 No-op으로 처리한다.
-- 예약일 변경으로 NEX/AEX Detail이 재작성되는 경우에도 Work Master 변경과 Detail 저장은 같은 Transaction에서 완료한다.
+- 검사구성이 `예약접수` 행의 컬럼이므로 검사가 바뀌면 그 UPDATE로 `RowVersion`이 자동 변경된다.
+  Detail 변경 시 Master `최종수정일시`를 따로 갱신하는 규칙이 필요 없다.
+- 성공 결과는 새 `RowVersion`을 반환한다.
+- AEX 요청집합이 현재집합과 완전히 같으면 UPDATE를 수행하지 않는 No-op으로 처리한다.
+  검사구성이 정규 순서(코드 오름차순)로 조립되므로 집합 동일 판정이 문자열 비교다.
+- 예약일 변경으로 검사구성이 재조립되는 경우에도 한 행의 UPDATE 하나로 끝난다.
 - C#은 Detail별 동시성값을 별도로 관리하지 않고 Work의 `RowVersion` 하나를 전달한다.
 
 ## 1.3 Stored Procedure 중심
@@ -224,9 +226,9 @@ UI의 Enabled/Disabled 상태와 조회값은 사전검증이다. 데이터 변�
 | 검사/HOL Master | 관리자 CRUD 없음. Seed Script로 제공 |
 | 검진완료 이력 | 테스트 및 Rule 입력자료. 사용자 CRUD 없음 |
 | 컬럼 단위 변경상세·상태전이 이력 | 별도 History 테이블 생성하지 않음 |
-| 업무 단위 조작기록 | `변경이력` 1개. Write SP가 업무 결과 확정마다 1행 기록 (`00` CP-06) |
+| 데이터 변경 기록 | `변경이력` 1개. Write SP가 성공한 변경의 컬럼마다 1행 기록 (`00` CP-06) |
 
-`검사항목`의 재작성은 일반 변경상세 이력 미관리 정책과 일치하며 `예약접수`의 물리삭제를 의미하지 않는다.
+검사구성의 재조립은 `예약접수` 한 행의 UPDATE이며 물리삭제를 의미하지 않는다.
 
 ## 1.5 `수검자` 구조 유지와 테스트 식별값
 
@@ -282,11 +284,11 @@ UI의 Enabled/Disabled 상태와 조회값은 사전검증이다. 데이터 변�
 테이블 수를 줄이는 것만을 단순화로 보지 않고, 역할 중복과 불필요한 컬럼·Index·DB 객체를 제거한다.
 
 ```text
-핵심 업무 데이터 : 수검자, 예약접수, 검사항목
+핵심 업무 데이터 : 수검자, 예약접수(검사구성 포함)
 기준 Master      : 검사코드, 휴무일
-Rule 입력자료    : 완료이력
-감사 기록        : 변경이력
-총 7개
+Rule 입력자료    : 완료이력(검사구성 포함)
+변경 기록        : 변경이력
+총 6개
 ```
 
 - NEX/AEX Master를 다시 분리하지 않는다.
@@ -409,9 +411,9 @@ AND
 
 | No | 결정항목 | 확정안 |
 |---:|---|---|
-| 1 | 물리 테이블 수 | **7개** |
+| 1 | 물리 테이블 수 | **6개** |
 | 2 | 예약·접수 Master | `예약접수` 1개 |
-| 3 | 검사 Detail | `검사항목` 1개 |
+| 3 | 검사 구성 | `예약접수`·`완료이력`의 문자열 컬럼 2개 |
 | 4 | 검사 Master | `검사코드`에 NEX/AEX 역할 통합 |
 | 5 | NEX/AEX 하위 Master | 생성하지 않음 |
 | 6 | 검사 표시순서 | `ExamItemCode`, `AdditionalExamCode` 코드순 |
@@ -427,10 +429,10 @@ AND
 | 16 | Rule 재사용 | 소수의 명시적인 UDF/평가 SP만 사용 |
 | 17 | Trigger/Cascade | 업무 Trigger 없음, FK Cascade 없음 |
 
-## 3.2 7개 테이블과 비테이블 객체의 경계
+## 3.2 6개 테이블과 비테이블 객체의 경계
 
 ```text
-물리 테이블 7개
+물리 테이블 6개
 
 + SEQ_HC_CHART_NO : Sequence
 + UFN_HC_*        : Rule Function
@@ -444,7 +446,7 @@ AND
 | 객체 | 규칙 | 예시 |
 |---|---|---|
 | 물리 테이블 | 한글. 접두사 없음 | `예약접수` |
-| 컬럼 | 영문 PascalCase | `ReservationDate` |
+| 컬럼 | 한글. 접두사 없음 | `예약일` |
 | Stored Procedure | `USP_HC_` | `USP_HC_INSERT_예약` |
 | Function | `UFN_HC_` | `UFN_HC_검진대상확인` |
 | Sequence | `SEQ_HC_` | `SEQ_HC_CHART_NO` |
@@ -463,12 +465,12 @@ AND
 ```
 
 - 접두사는 영문 대문자다.
-- 테이블명 자리는 한글이며 이름 안에서 한글이 오는 유일한 자리다.
+- 제약·인덱스 이름의 테이블명 자리는 한글이다. 본체는 컬럼명의 기계적 전개가 아니므로 컬럼명이 한글이 되어도 본체는 영문 대문자 `SNAKE_CASE`를 유지한다.
 - 본체는 술어의 의미 태그이며 컬럼명의 기계적 전개가 아니다 — `SOCIAL_FORMAT`, `EDIT_DATE`, `TIME_SLOT`, `SOURCE`, `ROLE_REQUIRED`. 영문 대문자 `SNAKE_CASE`로 적는다.
 - Foreign Key의 본체는 **부모 테이블명**이다. FK는 컬럼이 아니라 관계를 가리키므로 컬럼명 규칙을 적용하지 않는다.
 - Primary Key는 본체를 두지 않는다.
 - Stored Procedure·Function·Sequence 이름은 한글화하지 않는다. `05_DB_Rule_SP_Contract.md`의 SP 15개·TVF 4개 이름과 `SEQ_HC_` 접두사 규칙이 그대로 유지된다.
-- 컬럼명은 영문 PascalCase를 유지한다. `05_DB_Rule_SP_Contract.md`의 Result Set 컬럼명과 1:1이므로 SP 본문에 별칭이 붙지 않는다.
+- 컬럼명은 한글이다. `05_DB_Rule_SP_Contract.md`의 Result Set 컬럼명과 Parameter 이름은 영문을 유지하므로 SP의 SELECT 목록에는 `ChartNo = p.[차트번호]` 형태의 별칭이 붙는다.
 
 ## 3.4 공통 데이터 타입 및 현재시각 계약
 
@@ -662,20 +664,18 @@ WHERE V.IsSelected = 1;
 | No | 테이블 | 구분 | 책임 |
 |---:|---|---|---|
 | 1 | `수검자` | 수검자 Master | 17개 컬럼. PatientId/ChartNo/기본정보/주민번호 테스트값/B형간염 제외여부 |
-| 2 | `예약접수` | 업무 Master | 예약·접수 동일 행, 일정·상태·동시성 |
-| 3 | `검사항목` | 업무 Detail | Work별 NEX/AEX 실제 구성 스냅샷 |
+| 2 | `예약접수` | 업무 Master | 예약·접수 동일 행, 일정·상태·동시성, NEX/AEX 검사구성 |
 | 4 | `검사코드` | 통합 검사 Master | 공통 ExamItemCode + NEX/AEX 역할 속성 |
 | 5 | `휴무일` | HOL Master | 공휴일·센터 휴진일 |
-| 6 | `완료이력` | TGT 입력이력 | 일반건강검진 완료일 |
-| 7 | `변경이력` | 업무 감사기록 | Write SP 8개의 업무 단위 조작기록 |
+| 6 | `완료이력` | TGT 입력이력 | 일반건강검진 완료일과 그때의 검사구성 |
+| 7 | `변경이력` | 데이터 변경기록 | Write SP 8개가 남기는 컬럼 단위 변경기록 |
 
 ## 4.2 테이블별 독립 유지 근거
 
 | 테이블 | 다른 테이블에 합치지 않는 이유 |
 |---|---|
 | `수검자` | 수검자 Master이며 Work와 1:N 관계 |
-| `예약접수` | 일정·상태·정원 산정의 1건 단위 |
-| `검사항목` | 한 Work에 NEX 8~11행과 AEX 0~6행이 존재하므로 Master와 분리 필요 |
+| `예약접수` | 일정·상태·정원 산정의 1건 단위. 검사구성은 이 행의 컬럼이다 |
 | `검사코드` | 검사코드와 NEX/AEX 역할의 단일 Seed 원천 |
 | `휴무일` | 날짜별 독립 Master이며 정책상 Seed 필수 |
 | `완료이력` | 한 Patient의 복수 완료이력과 예약일 이전 최근연도 판정 필요 |
@@ -694,8 +694,7 @@ WHERE V.IsSelected = 1;
 ### Checkup Work Aggregate
 
 ```text
-예약접수
-└─ 검사항목
+예약접수 (검사구성 컬럼 포함)
 ```
 
 신규예약, 예약일 변경, AEX 변경은 Master와 Detail을 필요한 범위에서 같은 Transaction으로 처리한다. 취소는 Work 상태만 변경하고 Detail은 보존한다.
@@ -717,8 +716,6 @@ WHERE V.IsSelected = 1;
 | 부모 | 자식 | 관계 | 의미 |
 |---|---|---|---|
 | `수검자` | `예약접수` | 1 : N | 수검자의 과거·현재 Work |
-| `예약접수` | `검사항목` | 1 : N | Work의 검사 스냅샷 |
-| `검사코드` | `검사항목` | 1 : N | 공통 검사코드 참조 |
 | `수검자` | `완료이력` | 1 : N | 일반검진 완료이력 |
 
 ## 4.5 논리 ERD
@@ -728,11 +725,9 @@ erDiagram
     수검자 ||--o{ 예약접수 : "has works"
     수검자 ||--o{ 완료이력 : "has completions"
 
-    예약접수 ||--|{ 검사항목 : "contains exams"
-    검사코드 ||--o{ 검사항목 : "defines exam"
 ```
 
-`휴무일`은 날짜로만 조회되는 독립 Master이고 `변경이력`은 Foreign Key를 갖지 않으므로 관계선이 없다.
+`검사코드`는 검사구성 문자열이 코드로 참조하므로 FK 관계선이 없다. `휴무일`은 날짜로만 조회되는 독립 Master이고 `변경이력`도 Foreign Key를 갖지 않는다.
 
 ## 4.6 공통 검사코드 19종
 
@@ -773,16 +768,16 @@ NEX 13개 + AEX 7개 - 공통 골밀도 1개 = 19개 Master 행
 | F-PAT-001 | `수검자` |
 | F-PAT-002 | `수검자`, `SEQ_HC_CHART_NO` |
 | F-PAT-003 | `수검자`, `예약접수` |
-| F-RSV-001 | `예약접수`, `검사항목`, TGT/NEX/AEX/HOL |
-| F-RSV-002 | `예약접수`, `검사항목`, TGT/NEX/AEX/HOL |
+| F-RSV-001 | `예약접수`(검사구성), TGT/NEX/AEX/HOL |
+| F-RSV-002 | `예약접수`(검사구성), TGT/NEX/AEX/HOL |
 | F-RSV-003 | `예약접수` |
-| F-RCP-001 | `예약접수`, `검사항목`, HOL/마감 |
-| F-RCP-002 | `예약접수`, `검사항목`, AEX |
+| F-RCP-001 | `예약접수`(검사구성), HOL/마감 |
+| F-RCP-002 | `예약접수`(검사구성), AEX |
 | F-RCP-003 | `예약접수` |
-| F-COM-001 | `예약접수`, `검사항목`, `수검자`, `검사코드` |
+| F-COM-001 | `예약접수`(검사구성), `수검자`, `검사코드` |
 | F-COM-002 | `수검자`, `예약접수` |
 | F-COM-003 | `수검자`, `완료이력`, TGT |
-| F-COM-004 | `검사코드`, `수검자.HepatitisBExcluded`, `검사항목`, NEX/AEX |
+| F-COM-004 | `검사코드`, `수검자.B형간염제외여부`, `예약접수`(검사구성), NEX/AEX |
 | F-COM-005 | `예약접수`, `휴무일`, 일정/정원/중복 |
 | F-COM-006 | `예약접수`, `휴무일`, 접수조건 |
 | F-COM-007 | `휴무일`, 업무일/업무시간 Rule |
@@ -816,7 +811,6 @@ NEX 13개 + AEX 7개 - 공통 골밀도 1개 = 19개 Master 행
 |---|---|:---:|
 | 수검자 | EP / P01 / F-PAT | PASS |
 | 예약접수 | RP/RCP / P02/P03 | PASS |
-| 검사항목 | RP-08/09, RCP-05, NEX/AEX | PASS |
 | 검사코드 | NEX-01~07, AEX-01~05 | PASS |
 | 휴무일 | HOL-01~05 | PASS |
 | 완료이력 | TGT-02~05 | PASS |
@@ -885,13 +879,12 @@ Rule/UDF/SP 입출력 계약은 `05_DB_Rule_SP_Contract.md`, 잠금 SQL·Seed/Te
 
 | No | 테이블 | PK | 주요 FK | 핵심 고유성/역할 |
 |---:|---|---|---|---|
-| 1 | `수검자` | `PatientId` | - | `ChartNo`, `SocialNumber` 고유 |
-| 2 | `예약접수` | `WorkId` | Patient | 예약·접수 상태행 |
-| 3 | `검사항목` | `WorkId + ExamItemCode` | Work, ExamItem | Work 내 동일검사 중복차단 |
-| 4 | `검사코드` | `ExamItemCode` | - | NEX/AEX 통합 Master |
-| 5 | `휴무일` | `HolidayDate` | - | 동일 휴무일 중복차단 |
-| 6 | `완료이력` | `PatientId + CompletionDate` | Patient | 완료이력 자연키 |
-| 7 | `변경이력` | `HistoryId` | - | Write SP 업무 단위 조작기록 |
+| 1 | `수검자` | `수검자ID` | - | `차트번호`, `주민번호` 고유 |
+| 2 | `예약접수` | `업무ID` | 수검자 | 예약·접수 상태행 + 검사구성 |
+| 3 | `검사코드` | `검사항목코드` | - | NEX/AEX 통합 Master |
+| 4 | `휴무일` | `휴무일자` | - | 동일 휴무일 중복차단 |
+| 5 | `완료이력` | `수검자ID + 완료일자` | 수검자 | 완료이력 자연키 + 검사구성 |
+| 6 | `변경이력` | `이력ID` | - | 성공한 데이터 변경의 컬럼 단위 기록 |
 
 ---
 
@@ -905,49 +898,51 @@ Rule/UDF/SP 입출력 계약은 `05_DB_Rule_SP_Contract.md`, 잠금 SQL·Seed/Te
 
 수검자 Master다. 내부 식별자·차트번호·주민등록번호 테스트값의 고유성과 조회를 지원하며, NEX-03 판정 입력(`HepatitisBExcluded`)을 함께 보관한다.
 
-### 8.1.2 컬럼 (17)
+### 8.1.2 컬럼 (16)
 
 | No | 컬럼 | 타입 | NULL | Default / 생성 | 설명 |
 |---:|---|---|:---:|---|---|
-| 1 | `PatientId` | `BIGINT IDENTITY(1,1)` | X | DB 자동생성 | PK, 불변 내부 식별자 |
-| 2 | `ChartNo` | `NVARCHAR(100)` | X | SP 수동값 또는 Sequence 변환값 | 차트번호 |
-| 3 | `Name` | `NVARCHAR(100)` | X | 사용자 입력 | 이름 |
-| 4 | `SocialNumber` | `VARCHAR(13)` | X | 정규화한 임의 테스트값 | 주민번호 테스트값, 고유 식별 |
-| 5 | `Birthday` | `VARCHAR(8)` | X | `SocialNumber`에서 SP 산출 | `yyyyMMdd` |
-| 6 | `Gender` | `CHAR(1)` | X | `SocialNumber`에서 SP 산출 | `M` / `F` |
-| 7 | `EMail` | `VARCHAR(200)` | O | 사용자 입력 | E-mail |
-| 8 | `CelNumberS` | `VARCHAR(13)` | O | `CelNumber` 정규화 | 휴대전화 검색값 |
-| 9 | `CelNumber` | `VARCHAR(13)` | O | 사용자 입력 | 휴대전화번호 |
-| 10 | `TelNumber` | `VARCHAR(13)` | O | 사용자 입력 | 전화번호 |
-| 11 | `Zipcode` | `VARCHAR(10)` | O | 사용자 입력 | 우편번호 |
-| 12 | `Address` | `NVARCHAR(200)` | O | 사용자 입력 | 주소 |
-| 13 | `AddressDetail` | `NVARCHAR(200)` | O | 사용자 입력 | 상세주소 |
-| 14 | `Memo` | `NVARCHAR(MAX)` | O | 사용자 입력 | 메모 |
-| 15 | `HepatitisBExcluded` | `BIT` | X | `0` | B형간염(`EX010`) 검사 제외 여부. `1`이 제외 |
-| 16 | `CreationDate` | `DATETIME` | X | `GETDATE()` | 생성시각 |
-| 17 | `LastEditDate` | `DATETIME` | X | `GETDATE()` | 마지막 수정시각 및 수정 동시성 기준값 |
+| 1 | `수검자ID` | `BIGINT IDENTITY(1,1)` | X | DB 자동생성 | PK, 불변 내부 식별자 |
+| 2 | `차트번호` | `NVARCHAR(100)` | X | SP 수동값 또는 Sequence 변환값 | 차트번호 |
+| 3 | `성명` | `NVARCHAR(100)` | X | 사용자 입력 | 이름 |
+| 4 | `주민번호` | `VARCHAR(13)` | X | 정규화한 임의 테스트값 | 주민번호 테스트값, 고유 식별 |
+| 5 | `생년월일` | `VARCHAR(8)` | X | `주민번호`에서 SP 산출 | `yyyyMMdd` |
+| 6 | `성별` | `CHAR(1)` | X | `주민번호`에서 SP 산출 | `M` / `F` |
+| 7 | `이메일` | `VARCHAR(200)` | O | 사용자 입력 | E-mail |
+| 8 | `휴대전화` | `VARCHAR(13)` | O | 사용자 입력 | 휴대전화번호 |
+| 9 | `전화번호` | `VARCHAR(13)` | O | 사용자 입력 | 전화번호 |
+| 10 | `우편번호` | `VARCHAR(10)` | O | 사용자 입력 | 우편번호 |
+| 11 | `주소` | `NVARCHAR(200)` | O | 사용자 입력 | 주소 |
+| 12 | `상세주소` | `NVARCHAR(200)` | O | 사용자 입력 | 상세주소 |
+| 13 | `비고` | `NVARCHAR(MAX)` | O | 사용자 입력 | 메모 |
+| 14 | `B형간염제외여부` | `BIT` | X | `0` | B형간염(`EX010`) 검사 제외 여부. `1`이 제외 |
+| 15 | `생성일시` | `DATETIME` | X | `GETDATE()` | 생성시각 |
+| 16 | `최종수정일시` | `DATETIME` | X | `GETDATE()` | 마지막 수정시각 및 수정 동시성 기준값 |
 
-`CreationDate`·`LastEditDate`는 `DATETIME`을 유지한다. §1.2의 Patient 동시성 계약이 이 타입 위에 서 있다.
+`생성일시`·`최종수정일시`는 `DATETIME`을 유지한다. §1.2의 Patient 동시성 계약이 이 타입 위에 서 있다.
 
-최근 검진 완료일을 이 테이블의 컬럼으로 두지 않는다. TGT는 예약일 이전 필터를 적용한 뒤 최신 1건을 취하므로 집합이 필요하며, 그 집합은 §8.6 `완료이력`이 보관한다.
+휴대전화 검색값 컬럼을 별도로 두지 않는다. `@MobilePhone` 검색은 `REPLACE([휴대전화], '-', '')`로
+비교하며, 중복 저장값이 사라진 대신 filtered index seek를 잃고 스캔이 된다. 수검자 규모가 커져
+비용이 문제가 되면 `PERSISTED` 계산열로 되돌린다.
+
+최근 검진 완료일을 이 테이블의 컬럼으로 두지 않는다. TGT는 예약일 이전 필터를 적용한 뒤 최신 1건을 취하므로 집합이 필요하며, 그 집합은 §8.5 `완료이력`이 보관한다.
 
 ### 8.1.3 Key / Constraint
 
 | 구분 | 이름 | 컬럼/조건 |
 |---|---|---|
-| PK | `PK_수검자` | `PatientId` Clustered |
-| UQ | `UQ_수검자_CHART_NO` | `ChartNo` |
-| UQ | `UQ_수검자_SOCIAL_NUMBER` | `SocialNumber` |
-| CK | `CK_수검자_CHART_NO_NOT_BLANK` | `LEN(LTRIM(RTRIM(ChartNo))) > 0` |
-| CK | `CK_수검자_NAME_NOT_BLANK` | `LEN(LTRIM(RTRIM(Name))) > 0` |
-| CK | `CK_수검자_SOCIAL_FORMAT` | `LEN(SocialNumber)=13 AND SocialNumber NOT LIKE '%[^0-9]%'` |
-| CK | `CK_수검자_BIRTHDAY` | 숫자 8자리이며 `TRY_CONVERT(DATE, Birthday, 112)` 가능 |
-| CK | `CK_수검자_GENDER` | `Gender IN ('M','F')` |
-| CK | `CK_수검자_CEL_NORMALIZED` | 원번호가 NULL이면 `CelNumberS`도 NULL, 아니면 `CelNumberS = REPLACE(CelNumber,'-','')` |
-| CK | `CK_수검자_CEL_DIGIT` | `CelNumberS`가 NULL이거나 숫자만 포함 |
-| CK | `CK_수검자_EDIT_DATE` | `LastEditDate >= CreationDate` |
+| PK | `PK_수검자` | `수검자ID` Clustered |
+| UQ | `UQ_수검자_CHART_NO` | `차트번호` |
+| UQ | `UQ_수검자_SOCIAL_NUMBER` | `주민번호` |
+| CK | `CK_수검자_CHART_NO_NOT_BLANK` | `LEN(LTRIM(RTRIM(차트번호))) > 0` |
+| CK | `CK_수검자_NAME_NOT_BLANK` | `LEN(LTRIM(RTRIM(성명))) > 0` |
+| CK | `CK_수검자_SOCIAL_FORMAT` | `LEN(주민번호)=13 AND 주민번호 NOT LIKE '%[^0-9]%'` |
+| CK | `CK_수검자_BIRTHDAY` | 숫자 8자리이며 `TRY_CONVERT(DATE, 생년월일, 112)` 가능 |
+| CK | `CK_수검자_GENDER` | `성별 IN ('M','F')` |
+| CK | `CK_수검자_CEL_DIGIT` | `휴대전화`가 NULL이거나 `-`를 뺀 결과가 숫자만 포함 |
+| CK | `CK_수검자_EDIT_DATE` | `최종수정일시 >= 생성일시` |
 
-CHECK 8개다. `TelNumber`에는 형식 제약을 두지 않는다 — 정규화 짝이 없고 읽는 계약이 표시 하나뿐이다.
+`전화번호`에는 형식 제약을 두지 않는다 — 읽는 계약이 표시 하나뿐이다.
 
 ### 8.1.4 Default Constraint
 
@@ -975,30 +970,54 @@ CHECK 8개다. `TelNumber`에는 형식 제약을 두지 않는다 — 정규화
 
 예약과 접수를 동일 행으로 관리하는 업무 Master다. §1.1의 예약·접수 동일 업무 행 원칙을 구현한다.
 
-### 8.2.2 컬럼 (8)
+### 8.2.2 컬럼 (10)
 
 | No | 컬럼 | 타입 | NULL | Default / 생성 | 설명 |
 |---:|---|---|:---:|---|---|
-| 1 | `WorkId` | `BIGINT IDENTITY(1,1)` | X | DB 자동생성 | PK, 화면 간 Target Key |
-| 2 | `PatientId` | `BIGINT` | X | 수검자 확정값 | 수검자 FK |
-| 3 | `ReservationDate` | `DATE` | X | 사용자 선택 / WalkIn 오늘 | 예약일 및 접수 기준일 |
-| 4 | `TimeSlotCode` | `CHAR(2)` | X | 명시 입력 | `AM` / `PM` |
-| 5 | `StatusCode` | `CHAR(3)` | X | 저장 SP 명시 | `RSV` / `RCP` / `CNR` / `CNC` |
-| 6 | `CreationDate` | `DATETIME2(0)` | X | `SYSDATETIME()` | 업무행 생성시각 |
-| 7 | `LastEditDate` | `DATETIME2(0)` | X | `SYSDATETIME()` | 최근 변경·접수·취소·AEX 변경시각 |
-| 8 | `RowVersion` | `ROWVERSION` | X | SQL Server 자동생성 | 낙관적 동시성 토큰 |
+| 1 | `업무ID` | `BIGINT IDENTITY(1,1)` | X | DB 자동생성 | PK, 화면 간 Target Key |
+| 2 | `수검자ID` | `BIGINT` | X | 수검자 확정값 | 수검자 FK |
+| 3 | `예약일` | `DATE` | X | 사용자 선택 / WalkIn 오늘 | 예약일 및 접수 기준일 |
+| 4 | `시간대코드` | `CHAR(2)` | X | 명시 입력 | `AM` / `PM` |
+| 5 | `상태코드` | `CHAR(3)` | X | 저장 SP 명시 | `RSV` / `RCP` / `CNR` / `CNC` |
+| 6 | `생성일시` | `DATETIME2(0)` | X | `SYSDATETIME()` | 업무행 생성시각 |
+| 7 | `최종수정일시` | `DATETIME2(0)` | X | `SYSDATETIME()` | 최근 변경·접수·취소·AEX 변경시각 |
+| 8 | `행버전` | `ROWVERSION` | X | SQL Server 자동생성 | 낙관적 동시성 토큰 |
+| 9 | `국가검사항목` | `NVARCHAR(100)` | X | 저장 SP 조립 | NEX 검사항목코드를 오름차순 쉼표 연결 |
+| 10 | `추가검사항목` | `NVARCHAR(50)` | O | 저장 SP 조립 | AEX 검사항목코드를 오름차순 쉼표 연결 |
+
+검사구성은 이 행의 컬럼이다. 별도 Detail 테이블을 두지 않는다.
+
+```text
+국가검사항목  'EX001,EX002,EX003,EX004,EX005,EX006,EX007,EX008,EX009,EX011,EX013'
+추가검사항목  'EX014,EX016'
+              공백 없음. 검사항목코드 오름차순
+              추가검사 0개  -> NULL
+              국가검사 0개  -> 빈 문자열  (검사구성 손상의 유일한 표현)
+```
+
+`국가검사항목`의 `NOT NULL`은 "국가검사가 반드시 있다"를 보증하지 않는다. 저장 NEX가 0인
+손상 상태를 표현할 수 있어야 하므로 빈 문자열이 통과한다. 손상 판정식은 `LEN([국가검사항목]) = 0`이며,
+`NULL`과 빈 문자열이 둘 다 손상을 뜻하는 상태를 만들지 않기 위해 `NOT NULL`을 건다.
+
+검사구성이 Work 행의 컬럼이므로 검사를 바꾸면 `RowVersion`이 자동으로 변한다.
+Detail 변경 시 Master `LastEditDate`를 따로 갱신하는 규칙이 필요 없다. 동일집합 No-op도
+문자열 비교로 판정한다.
 
 ### 8.2.3 Key / Constraint
 
 | 구분 | 이름 | 정의 |
 |---|---|---|
-| PK | `PK_예약접수` | `WorkId` Clustered |
-| FK | `FK_예약접수_수검자` | `PatientId` → `수검자.PatientId`, NO ACTION |
-| CK | `CK_예약접수_TIME_SLOT` | `TimeSlotCode IN ('AM','PM')` |
-| CK | `CK_예약접수_STATUS` | `StatusCode IN ('RSV','RCP','CNR','CNC')` |
-| CK | `CK_예약접수_EDIT_DATE` | `LastEditDate >= CreationDate` |
-| DF | `DF_예약접수_CREATION_DATE` | `CreationDate = SYSDATETIME()` |
-| DF | `DF_예약접수_LAST_EDIT_DATE` | `LastEditDate = SYSDATETIME()` |
+| PK | `PK_예약접수` | `업무ID` Clustered |
+| FK | `FK_예약접수_수검자` | `수검자ID` → `수검자.수검자ID`, NO ACTION |
+| CK | `CK_예약접수_TIME_SLOT` | `시간대코드 IN ('AM','PM')` |
+| CK | `CK_예약접수_STATUS` | `상태코드 IN ('RSV','RCP','CNR','CNC')` |
+| CK | `CK_예약접수_EDIT_DATE` | `최종수정일시 >= 생성일시` |
+| CK | `CK_예약접수_EXAM_FORMAT` | 검사구성 두 컬럼이 `A-Z0-9,` 밖의 문자를 담지 않는다 |
+| DF | `DF_예약접수_CREATION_DATE` | `생성일시 = SYSDATETIME()` |
+| DF | `DF_예약접수_LAST_EDIT_DATE` | `최종수정일시 = SYSDATETIME()` |
+
+`CK_예약접수_EXAM_FORMAT`은 형식만 본다. 코드가 `검사코드`에 실재하는지는 보증하지 못한다 —
+검사구성을 컬럼으로 옮기면서 잃은 것이고, 저장 SP가 `검사코드`에서만 코드를 뽑아 조립하여 보증한다.
 
 다음은 현재일·요일·정원·타행 상태에 의존하므로 CHECK가 아니라 Write SP/Transaction에서 검증한다.
 
@@ -1014,191 +1033,155 @@ CHECK 8개다. `TelNumber`에는 형식 제약을 두지 않는다 — 정규화
 
 | 이름 | Key | INCLUDE | 목적 |
 |---|---|---|---|
-| `IX_예약접수_SLOT` | `ReservationDate, TimeSlotCode, StatusCode` | `PatientId` | 정원 COUNT, 날짜범위 Workbench 조회 |
-| `IX_예약접수_PATIENT_STATE_DATE` | `PatientId, StatusCode, ReservationDate` | `TimeSlotCode` | RP-06 중복예약, EP-08 활성업무, 당일 대상조회 |
+| `IX_예약접수_SLOT` | `예약일, 시간대코드, 상태코드` | `수검자ID` | 정원 COUNT, 날짜범위 Workbench 조회 |
+| `IX_예약접수_PATIENT_STATE_DATE` | `수검자ID, 상태코드, 예약일` | `시간대코드` | RP-06 중복예약, EP-08 활성업무, 당일 대상조회 |
 
-두 Index 모두 `StatusCode`가 선두가 아니고 상태값이 4종이 되어도 선두 컬럼 순서가 바뀌지 않는다. 정원·중복 조회의 술어는 `StatusCode IN ('RSV','RCP')`이다.
+두 Index 모두 `상태코드`가 선두가 아니고 상태값이 4종이 되어도 선두 컬럼 순서가 바뀌지 않는다. 정원·중복 조회의 술어는 `상태코드 IN ('RSV','RCP')`이다.
 
-## 8.3 `검사항목`
+두 Index는 비클러스터라 검사구성 컬럼이 늘어도 Key/INCLUDE가 바뀌지 않는다. 정원 COUNT의 비용은 그대로다.
+
+## 8.3 `검사코드`
 
 ### 8.3.1 역할
 
-각 `예약접수` 행에 실제로 구성된 NEX와 AEX 검사 스냅샷이다.
+공통 검사코드와 NEX/AEX 역할을 한 행에 통합한 19행 Seed Master다.
 
-### 8.3.2 컬럼 (3)
+### 8.3.2 컬럼 (6)
 
-| No | 컬럼 | 타입 | NULL | 생성 | 설명 |
+| No | 컬럼 | 타입 | NULL | Default / 생성 | 설명 |
 |---:|---|---|:---:|---|---|
-| 1 | `WorkId` | `BIGINT` | X | 업무 PK | `예약접수` FK |
-| 2 | `ExamItemCode` | `VARCHAR(10)` | X | NEX Rule / AEX Master 변환 | `검사코드` FK |
-| 3 | `ExamSourceCode` | `CHAR(3)` | X | 저장 SP | `NEX` / `AEX` |
+| 1 | `검사항목코드` | `VARCHAR(10)` | X | Seed | 공통 PK, `EX001`~`EX019` |
+| 2 | `검사항목명` | `NVARCHAR(100)` | X | Seed | 화면 검사명 |
+| 3 | `국가검사규칙코드` | `VARCHAR(10)` | O | Seed | `NEX-01`~`NEX-06`, NEX가 아니면 NULL |
+| 4 | `추가검사코드` | `VARCHAR(10)` | O | Seed | `OPT01`~`OPT07`, AEX가 아니면 NULL |
+| 5 | `추가검사성별코드` | `CHAR(1)` | O | Seed | `A` / `M` / `F` |
+| 6 | `추가검사사용여부` | `BIT` | X | `0` | AEX 사용여부. AEX Seed는 1 |
 
 ### 8.3.3 Key / Constraint / Index
 
 | 구분 | 이름 | 정의 |
 |---|---|---|
-| PK | `PK_검사항목` | `(WorkId, ExamItemCode)` Clustered |
-| FK | `FK_검사항목_예약접수` | `WorkId` → `예약접수.WorkId`, NO ACTION |
-| FK | `FK_검사항목_검사코드` | `ExamItemCode` → `검사코드.ExamItemCode`, NO ACTION |
-| CK | `CK_검사항목_SOURCE` | `ExamSourceCode IN ('NEX','AEX')` |
-
-Composite PK 하나가 세 가지를 동시에 보장한다 — 한 Work 내 동일 코드 중복 불가, NEX 골밀도와 AEX `OPT04` 동시 저장 불가, Work별 Detail 조회 최적화.
-
-FK 이름의 본체가 부모 테이블명 두 개로 갈린다. §3.3의 FK 규칙이 적용된 결과다.
-
-## 8.4 `검사코드`
-
-### 8.4.1 역할
-
-공통 검사코드와 NEX/AEX 역할을 한 행에 통합한 19행 Seed Master다.
-
-### 8.4.2 컬럼 (6)
-
-| No | 컬럼 | 타입 | NULL | Default / 생성 | 설명 |
-|---:|---|---|:---:|---|---|
-| 1 | `ExamItemCode` | `VARCHAR(10)` | X | Seed | 공통 PK, `EX001`~`EX019` |
-| 2 | `ExamItemName` | `NVARCHAR(100)` | X | Seed | 화면 검사명 |
-| 3 | `NexRuleCode` | `VARCHAR(10)` | O | Seed | `NEX-01`~`NEX-06`, NEX가 아니면 NULL |
-| 4 | `AdditionalExamCode` | `VARCHAR(10)` | O | Seed | `OPT01`~`OPT07`, AEX가 아니면 NULL |
-| 5 | `AdditionalGenderCode` | `CHAR(1)` | O | Seed | `A` / `M` / `F` |
-| 6 | `AdditionalActive` | `BIT` | X | `0` | AEX 사용여부. AEX Seed는 1 |
-
-### 8.4.3 Key / Constraint / Index
-
-| 구분 | 이름 | 정의 |
-|---|---|---|
-| PK | `PK_검사코드` | `ExamItemCode` Clustered |
-| CK | `CK_검사코드_CODE_NOT_BLANK` | `ExamItemCode` 공백 불가 |
-| CK | `CK_검사코드_NAME_NOT_BLANK` | `ExamItemName` 공백 불가 |
-| CK | `CK_검사코드_ROLE_REQUIRED` | `NexRuleCode` 또는 `AdditionalExamCode` 중 하나 이상 존재 |
+| PK | `PK_검사코드` | `검사항목코드` Clustered |
+| CK | `CK_검사코드_CODE_NOT_BLANK` | `검사항목코드` 공백 불가 |
+| CK | `CK_검사코드_NAME_NOT_BLANK` | `검사항목명` 공백 불가 |
+| CK | `CK_검사코드_ROLE_REQUIRED` | `국가검사규칙코드` 또는 `추가검사코드` 중 하나 이상 존재 |
 | CK | `CK_검사코드_NEX_RULE` | NULL 또는 `NEX-01`~`NEX-06` |
 | CK | `CK_검사코드_AEX_CODE` | NULL 또는 `OPT01`~`OPT07` |
 | CK | `CK_검사코드_AEX_GENDER` | NULL 또는 `A`/`M`/`F` |
-| CK | `CK_검사코드_AEX_GROUP` | AEX 역할 없음이면 Code/Gender NULL 및 `Active=0`, 역할 있음이면 Code/Gender NOT NULL |
-| DF | `DF_검사코드_AEX_ACTIVE` | `AdditionalActive = 0` |
-| UX | `UX_검사코드_AEX_CODE` | `AdditionalExamCode`, `WHERE AdditionalExamCode IS NOT NULL` |
+| CK | `CK_검사코드_AEX_GROUP` | AEX 역할 없음이면 코드/성별 NULL 및 `추가검사사용여부=0`, 역할 있음이면 코드/성별 NOT NULL |
+| DF | `DF_검사코드_AEX_ACTIVE` | `추가검사사용여부 = 0` |
+| UX | `UX_검사코드_AEX_CODE` | `추가검사코드`, `WHERE 추가검사코드 IS NOT NULL` |
 
 `UX_검사코드_AEX_CODE`는 필터형 인덱스다. 생성 시점뿐 아니라 이 테이블의 모든 `INSERT`/`UPDATE`/`DELETE` 시점에도 `SET QUOTED_IDENTIFIER ON`을 요구한다.
 
 19행 Seed 내용은 §4.6과 동일하다. `EX010`의 존재는 이 19행 Seed 검수가 보증한다.
 
-## 8.5 `휴무일`
+## 8.4 `휴무일`
 
-### 8.5.1 컬럼 (4)
+### 8.4.1 컬럼 (4)
 
 | No | 컬럼 | 타입 | NULL | Default / 생성 | 설명 |
 |---:|---|---|:---:|---|---|
-| 1 | `HolidayDate` | `DATE` | X | Seed | PK, 휴무일 |
-| 2 | `HolidayName` | `NVARCHAR(100)` | X | Seed | 휴무일명 |
-| 3 | `Active` | `BIT` | X | `1` | 활성 휴무일 여부 |
-| 4 | `Memo` | `NVARCHAR(500)` | O | Seed | 비고 |
+| 1 | `휴무일자` | `DATE` | X | Seed | PK, 휴무일 |
+| 2 | `휴무일명` | `NVARCHAR(100)` | X | Seed | 휴무일명 |
+| 3 | `사용여부` | `BIT` | X | `1` | 활성 휴무일 여부 |
+| 4 | `비고` | `NVARCHAR(500)` | O | Seed | 비고 |
 
-`Active`는 HOL 판정식(§2.3)이 실제로 읽으므로 유지한다.
+`사용여부`는 HOL 판정식(§2.3)이 실제로 읽으므로 유지한다.
 
-### 8.5.2 Key / Constraint / Index
+### 8.4.2 Key / Constraint / Index
 
 | 구분 | 이름 | 정의 |
 |---|---|---|
-| PK | `PK_휴무일` | `HolidayDate` Clustered |
-| CK | `CK_휴무일_NAME_NOT_BLANK` | `HolidayName` 공백 불가 |
-| DF | `DF_휴무일_ACTIVE` | `Active = 1` |
+| PK | `PK_휴무일` | `휴무일자` Clustered |
+| CK | `CK_휴무일_NAME_NOT_BLANK` | `휴무일명` 공백 불가 |
+| DF | `DF_휴무일_ACTIVE` | `사용여부 = 1` |
 
 정확 날짜 PK 조회만 수행하므로 추가 Index와 생성·수정시각을 두지 않는다. 일요일은 Seed하지 않고 요일 Rule로 차단한다.
 
-## 8.6 `완료이력`
+## 8.5 `완료이력`
 
-### 8.6.1 역할
+### 8.5.1 역할
 
-TGT 판정에 사용할 일반건강검진 완료이력이다. 모든 행이 `일반건강검진 + 검진완료` 의미이므로 별도 검진종류·상태 컬럼을 두지 않는다.
+TGT 판정에 사용할 일반건강검진 완료이력이며, 그때 실제로 받은 검사구성을 함께 담는다.
+모든 행이 `일반건강검진 + 검진완료` 의미이므로 별도 검진종류·상태 컬럼을 두지 않는다.
 
-### 8.6.2 컬럼 (2)
+### 8.5.2 컬럼 (4)
 
 | No | 컬럼 | 타입 | NULL | 생성 | 설명 |
 |---:|---|---|:---:|---|---|
-| 1 | `PatientId` | `BIGINT` | X | Seed/Test | 수검자 FK |
-| 2 | `CompletionDate` | `DATE` | X | Seed/Test | 일반검진 완료일 |
+| 1 | `수검자ID` | `BIGINT` | X | Seed/Test/복사 | 수검자 FK |
+| 2 | `완료일자` | `DATE` | X | Seed/Test/복사 | 일반검진 완료일 |
+| 3 | `국가검사항목` | `NVARCHAR(100)` | O | Seed/Test/복사 | `예약접수`와 같은 형식 |
+| 4 | `추가검사항목` | `NVARCHAR(50)` | O | Seed/Test/복사 | `예약접수`와 같은 형식 |
+
+검사구성 두 컬럼은 NULL을 허용한다. 외부 기관에서 받은 검진은 완료 사실만 알고 검사 내용을 모를 수 있다.
+
+### 8.5.3 Key / Constraint / Index
+
+| 구분 | 이름 | 정의 |
+|---|---|---|
+| PK | `PK_완료이력` | `(수검자ID, 완료일자)` Clustered |
+| FK | `FK_완료이력_수검자` | `수검자ID` → `수검자.수검자ID`, NO ACTION |
+| CK | `CK_완료이력_EXAM_FORMAT` | 검사구성 두 컬럼이 `A-Z0-9,` 밖의 문자를 담지 않는다 |
+
+한 수검자의 같은 완료일 중복을 Composite PK로 차단하며, `수검자ID=@PatientId AND 완료일자<@ReservationDate ORDER BY 완료일자 DESC` 최신 1건 조회도 같은 PK를 사용한다.
+
+TGT 판정은 `완료일자`만 사용한다. 검사구성 두 컬럼을 읽는 Rule은 없다.
+
+Seed/Test 전용 관계이므로 별도 대리키, Unique Index, 생성시각을 두지 않는다. 미래 완료이력 제외 동작을 시험할 수 있어야 하므로 동적 현재일 CHECK도 만들지 않는다.
+
+검진완료 분류의 유일한 원천이다. `예약접수`에 완료 상태값을 두지 않으므로 완료 여부는 항상 이 테이블과의 조인으로 판정하며, 원천이 하나라 두 곳이 어긋나는 상태가 존재할 수 없다.
+접수완료(RCP) 업무를 이 테이블로 옮기는 것은 `scripts/copy-completion.sql`을 사람이 실행하는 행위이며,
+`TGT-02`에 따라 접수 상태 자체를 완료로 간주하지 않는다.
+
+
+## 8.6 `변경이력`
+
+### 8.6.1 역할
+
+Write Stored Procedure 8개가 남기는 **데이터 변경 기록**이다. 상위 근거는 `00_Project_Policy.md` CP-06이다.
+성공한 호출이 실제로 바꾼 컬럼 1개당 1행을 남긴다. 실패한 호출은 데이터를 바꾸지 않으므로 남기지 않는다.
+
+### 8.6.2 컬럼 (8)
+
+| No | 컬럼 | 타입 | NULL | Default / 생성 | 설명 |
+|---:|---|---|:---:|---|---|
+| 1 | `이력ID` | `BIGINT IDENTITY(1,1)` | X | DB 자동생성 | PK. 기록 순서 |
+| 2 | `기록일시` | `DATETIME2(0)` | X | SP의 `@StoredNow` | 기록시각 |
+| 3 | `조작자명` | `NVARCHAR(50)` | O | `@OperatorName` | 조작자 자기신고 문자열 |
+| 4 | `대상테이블` | `NVARCHAR(10)` | X | SP 고정값 | `수검자` / `예약접수` / `완료이력` |
+| 5 | `대상키` | `BIGINT` | O | `수검자ID` 또는 `업무ID` | 바뀐 행의 키 |
+| 6 | `컬럼명` | `NVARCHAR(30)` | X | SP 고정값 | 바뀐 컬럼 하나 |
+| 7 | `변경전` | `NVARCHAR(4000)` | O | SP가 Transaction 안에서 읽은 값 | NULL이면 값이 없던 상태 |
+| 8 | `변경후` | `NVARCHAR(4000)` | O | SP가 저장한 값 | NULL이면 값을 지운 상태 |
+
+`기록일시`는 DEFAULT에 맡기지 않고 SP가 진입 시점에 캡처한 `@StoredNow`를 명시로 넘긴다. 감사행과 데이터행이 같은 초를 갖도록 하기 위해서다. DEFAULT 제약은 값 누락이 `Msg 515`라는 엉뚱한 오류로 나타나지 않도록 함께 둔다.
+
+`조작자명`은 인증되지 않은 자기신고 문자열이며 감사 주체의 증거가 아니다(§14 L4).
+
+`변경전`·`변경후`는 `NVARCHAR(4000)`에서 자른다. 감사 기록은 복원의 근거가 아니라 열람용이므로
+`수검자.비고`처럼 더 긴 값은 잘린 채 기록된다.
+
+**후값만 따로 저장하지 않는다.** 변경 N의 후값은 변경 N+1의 전값이고, 마지막 후값은 현재 행 그 자체다.
+
+값이 실제로 바뀐 컬럼만 남긴다. 같은 값으로 덮어쓴 것은 기록하지 않는다.
 
 ### 8.6.3 Key / Constraint / Index
 
 | 구분 | 이름 | 정의 |
 |---|---|---|
-| PK | `PK_완료이력` | `(PatientId, CompletionDate)` Clustered |
-| FK | `FK_완료이력_수검자` | `PatientId` → `수검자.PatientId`, NO ACTION |
-
-한 수검자의 같은 완료일 중복을 Composite PK로 차단하며, `PatientId=@PatientId AND CompletionDate<@ReservationDate ORDER BY CompletionDate DESC` 최신 1건 조회도 같은 PK를 사용한다.
-
-Seed/Test 전용 관계이므로 `CompletionId`, 별도 Unique Index, 생성시각을 두지 않는다. 미래 완료이력 제외 동작을 시험할 수 있어야 하므로 동적 현재일 CHECK도 만들지 않는다.
-
-검진완료 분류의 유일한 원천이다. `예약접수`에 완료 상태값을 두지 않으므로 완료 여부는 항상 이 테이블과의 조인으로 판정하며, 원천이 하나라 두 곳이 어긋나는 상태가 존재할 수 없다.
-
-## 8.7 `변경이력`
-
-### 8.7.1 역할
-
-Write Stored Procedure 8개가 남기는 업무 단위 감사 로그다. 상위 근거는 `00_Project_Policy.md` CP-06이다. 컬럼 단위 변경상세나 상태전이 이력이 아니며 업무 데이터의 이전값·이후값을 담지 않는다.
-
-### 8.7.2 컬럼 (7)
-
-| No | 컬럼 | 타입 | NULL | Default / 생성 | 설명 |
-|---:|---|---|:---:|---|---|
-| 1 | `HistoryId` | `BIGINT IDENTITY(1,1)` | X | DB 자동생성 | PK. 기록 순서 |
-| 2 | `CreationDate` | `DATETIME2(0)` | X | SP의 `@StoredNow` | 기록시각 |
-| 3 | `OperatorName` | `NVARCHAR(50)` | O | `@OperatorName` | 조작자 자기신고 문자열 |
-| 4 | `OperationCode` | `VARCHAR(20)` | X | SP 고정값 | 업무 코드 8종 |
-| 5 | `TargetTable` | `NVARCHAR(10)` | X | SP 고정값 | `수검자` / `예약접수` |
-| 6 | `TargetKey` | `BIGINT` | O | `PatientId` 또는 `WorkId` | 대상 키. 업무실패로 키가 없을 때만 NULL |
-| 7 | `ResultCode` | `INT` | X | SP 계산값 | `05_DB_Rule_SP_Contract.md` §4.2 ResultCode |
-
-`CreationDate`는 DEFAULT에 맡기지 않고 SP가 진입 시점에 캡처한 `@StoredNow`를 명시로 넘긴다. 감사행과 데이터행이 같은 초를 갖도록 하기 위해서다. DEFAULT 제약은 값 누락이 `Msg 515`라는 엉뚱한 오류로 나타나지 않도록 함께 둔다.
-
-`OperatorName`은 인증되지 않은 자기신고 문자열이며 감사 주체의 증거가 아니다(§14 L4). NULL을 허용한다 — `@OperatorName` 누락으로 SP가 거절하는 경우 그 거절을 기록하는 행의 조작자도 NULL이기 때문이다.
-
-`OperationCode` 8종은 Write SP 8개와 1:1이다.
-
-| `OperationCode` | Stored Procedure | `TargetTable` |
-|---|---|---|
-| `PAT_INSERT` | `USP_HC_INSERT_수검자` | `수검자` |
-| `PAT_UPDATE` | `USP_HC_UPDATE_수검자정보` | `수검자` |
-| `RSV_INSERT` | `USP_HC_INSERT_예약` | `예약접수` |
-| `RSV_UPDATE` | `USP_HC_UPDATE_예약변경` | `예약접수` |
-| `RSV_CANCEL` | `USP_HC_UPDATE_예약취소` | `예약접수` |
-| `RCP_ACCEPT` | `USP_HC_UPDATE_접수완료` | `예약접수` |
-| `RCP_AEX` | `USP_HC_UPDATE_접수추가검사` | `예약접수` |
-| `RCP_CANCEL` | `USP_HC_UPDATE_접수취소` | `예약접수` |
-
-### 8.7.3 Key / Constraint / Index
-
-| 구분 | 이름 | 정의 |
-|---|---|---|
-| PK | `PK_변경이력` | `HistoryId` Clustered |
-| CK | `CK_변경이력_OPERATION` | 허용목록과 `TargetTable`↔`OperationCode` 짝 일치 |
-| CK | `CK_변경이력_RESULT_CODE` | `ResultCode BETWEEN 0 AND 9 OR ResultCode BETWEEN 100 AND 799` |
-| CK | `CK_변경이력_TARGET_KEY` | `ResultCode >= 100 OR TargetKey IS NOT NULL` |
-| DF | `DF_변경이력_CREATION_DATE` | `CreationDate = SYSDATETIME()` |
-
-`CK_변경이력_OPERATION`의 논리는 다음과 같다.
-
-```text
-(TargetTable = N'수검자'
- AND OperationCode IN ('PAT_INSERT','PAT_UPDATE'))
-OR
-(TargetTable = N'예약접수'
- AND OperationCode IN ('RSV_INSERT','RSV_UPDATE','RSV_CANCEL',
-                       'RCP_ACCEPT','RCP_AEX','RCP_CANCEL'))
-```
-
-`TargetTable`은 `OperationCode`가 1:1로 결정하므로 중복이지만, `TargetKey`의 의미(`PatientId`인가 `WorkId`인가)가 이 컬럼으로만 드러난다. 허용목록과 짝 일치를 하나의 CHECK로 함께 걸어 중복을 위험이 아니라 선언적 보증으로 바꾼다.
-
-`CK_변경이력_RESULT_CODE`는 `05_DB_Rule_SP_Contract.md` §4.1이 선언한 영역의 합집합이다. `10~99`는 선언된 값이 없고 `900` 이상은 사용하지 않으므로 초집합을 쓰지 않는다.
-
-`CK_변경이력_TARGET_KEY`는 `TargetKey`의 NULL을 업무실패에만 허용한다. 성공은 항상 대상 키를 확정한 뒤에만 도달하므로, 실패라서 키가 없는 경우와 SP가 키를 넘기지 않은 경우를 DB가 구분한다.
+| PK | `PK_변경이력` | `이력ID` Clustered |
+| CK | `CK_변경이력_TARGET_TABLE` | `대상테이블 IN (N'수검자', N'예약접수', N'완료이력')` |
+| CK | `CK_변경이력_COLUMN_NOT_BLANK` | `컬럼명`이 공백만으로 이루어지지 않는다 |
+| DF | `DF_변경이력_CREATION_DATE` | `기록일시 = SYSDATETIME()` |
 
 Foreign Key 0개, Index 0개다.
 
-- `TargetKey`는 대상이 두 테이블이라 컬럼 하나에 FK 두 개를 걸 수 없고, 실패 기록은 존재하지 않는 키를 가리키며, 감사 로그는 대상 행보다 오래 살아야 한다.
+- `대상키`는 대상이 여러 테이블이라 컬럼 하나에 FK를 걸 수 없고, 감사 기록은 대상 행보다 오래 살아야 한다.
 - 이 테이블을 읽는 Stored Procedure가 없고 매 배포에 비워지므로 Clustered PK 하나만 둔다.
 
-### 8.7.4 기록 규칙
+### 8.6.4 기록 규칙
 
 기록의 상세 제어흐름은 `06_DB_Transaction_Security_Seed.md` §21이 확정한다. 본 문서는 스키마가 전제하는 다음 규칙을 고정한다.
 
@@ -1210,12 +1193,13 @@ Foreign Key 0개, Index 0개다.
 한다.
 ```
 
-- 기록이 업무 호출을 실패시키는 경로를 만들지 않는다. 이 원칙이 성공 기록의 원자성보다 앞선다(§14 L1).
-- 업무 INSERT 직후 키를 변수로 확정한 뒤 감사 INSERT를 한다. `변경이력.HistoryId`도 `IDENTITY`이므로 감사 INSERT 뒤의 `SCOPE_IDENTITY()`는 업무 키가 아니라 `HistoryId`를 돌려준다.
-- Trigger를 사용하지 않는다. Trigger가 쓴 로그 행은 `ROLLBACK`과 함께 사라지므로 실패한 시도를 기록하는 것이 구조적으로 불가능하다.
-- `ResultCode`가 없는 호출(applock 실패, 예상하지 못한 오류의 `THROW`)은 기록하지 않는다(§14 L2·L3).
+- 기록이 업무 호출을 실패시키는 경로를 만들지 않는다. 이 원칙이 기록의 원자성보다 앞선다(§14 L1).
+- `변경전`은 SP가 Transaction 안의 재검증 단계에서 이미 읽은 값을 변수에 담아 재사용한다. 추가 조회를 하지 않는다.
+- Trigger를 사용하지 않는다. Write SP 8개가 컬럼별 비교를 직접 수행하며, 이것이 이 설계의 구현 비용이다.
+- 업무 INSERT 직후 키를 변수로 확정한 뒤 감사 INSERT를 한다. `변경이력.이력ID`도 `IDENTITY`이므로 감사 INSERT 뒤의 `SCOPE_IDENTITY()`는 업무 키가 아니라 `이력ID`를 돌려준다.
 
 ---
+
 
 # 9. Foreign Key 설계
 
@@ -1223,12 +1207,13 @@ Foreign Key 0개, Index 0개다.
 
 | No | FK 이름 | 자식 컬럼 | 부모 컬럼 | Delete / Update |
 |---:|---|---|---|---|
-| 1 | `FK_예약접수_수검자` | 예약접수.PatientId | 수검자.PatientId | NO ACTION |
-| 2 | `FK_검사항목_예약접수` | 검사항목.WorkId | 예약접수.WorkId | NO ACTION |
-| 3 | `FK_검사항목_검사코드` | 검사항목.ExamItemCode | 검사코드.ExamItemCode | NO ACTION |
-| 4 | `FK_완료이력_수검자` | 완료이력.PatientId | 수검자.PatientId | NO ACTION |
+| 1 | `FK_예약접수_수검자` | 예약접수.수검자ID | 수검자.수검자ID | NO ACTION |
+| 2 | `FK_완료이력_수검자` | 완료이력.수검자ID | 수검자.수검자ID | NO ACTION |
 
-`변경이력`은 Foreign Key를 갖지 않는다(§8.7.3).
+검사구성이 `예약접수`·`완료이력`의 컬럼이 되면서 `검사코드`를 가리키던 FK가 사라졌다.
+검사항목코드가 Master에 실재하는지는 저장 SP가 `검사코드`에서만 코드를 뽑아 조립하여 보증한다.
+
+`변경이력`은 Foreign Key를 갖지 않는다(§8.6.3).
 
 ## 9.2 생성 순서
 
@@ -1237,9 +1222,8 @@ Foreign Key 0개, Index 0개다.
 2. 검사코드
 3. 휴무일
 4. 예약접수
-5. 검사항목
-6. 완료이력
-7. 변경이력
+5. 완료이력
+6. 변경이력
 ```
 
 Drop Script는 역순으로 수행한다. 수검자, Work, Master를 Cascade Delete하지 않는다.
@@ -1252,21 +1236,21 @@ Drop Script는 역순으로 수행한다. 수검자, Work, Master를 Cascade Del
 
 ## 10.1 Key / Index 수
 
-| 구분 | 수검자 | 예약접수 | 검사항목 | 검사코드 | 휴무일 | 완료이력 | 변경이력 | 합계 |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| 컬럼 | 17 | 8 | 3 | 6 | 4 | 2 | 7 | **47** |
-| Primary Key | 1 | 1 | 1 | 1 | 1 | 1 | 1 | **7** |
-| Foreign Key | 0 | 1 | 2 | 0 | 0 | 1 | 0 | **4** |
-| Unique Constraint | 2 | 0 | 0 | 0 | 0 | 0 | 0 | **2** |
-| Filtered Unique Index | 0 | 0 | 0 | 1 | 0 | 0 | 0 | **1** |
-| Nonclustered Index | 3 | 2 | 0 | 0 | 0 | 0 | 0 | **5** |
-| CHECK | 8 | 3 | 1 | 7 | 1 | 0 | 3 | **23** |
-| DEFAULT | 3 | 2 | 0 | 1 | 1 | 0 | 1 | **8** |
-| Trigger | 0 | 0 | 0 | 0 | 0 | 0 | 0 | **0** |
+| 구분 | 수검자 | 예약접수 | 검사코드 | 휴무일 | 완료이력 | 변경이력 | 합계 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 컬럼 | 16 | 10 | 6 | 4 | 4 | 8 | **48** |
+| Primary Key | 1 | 1 | 1 | 1 | 1 | 1 | **6** |
+| Foreign Key | 0 | 1 | 0 | 0 | 1 | 0 | **2** |
+| Unique Constraint | 2 | 0 | 0 | 0 | 0 | 0 | **2** |
+| Filtered Unique Index | 0 | 0 | 1 | 0 | 0 | 0 | **1** |
+| Nonclustered Index | 2 | 2 | 0 | 0 | 0 | 0 | **4** |
+| CHECK | 7 | 4 | 7 | 1 | 1 | 2 | **22** |
+| DEFAULT | 3 | 2 | 1 | 1 | 0 | 1 | **8** |
+| Trigger | 0 | 0 | 0 | 0 | 0 | 0 | **0** |
 
 | 구분 | 수량 | 비고 |
 |---|---:|---|
-| 물리 테이블 | 7 | 확정 |
+| 물리 테이블 | 6 | 확정 |
 | Sequence | 1 | `SEQ_HC_CHART_NO` |
 | 사용자 정의 Table Type | 0 | §3.8 |
 
@@ -1309,7 +1293,7 @@ UI 또는 C# 검증만으로 다음을 보장하지 않는다.
 | 예약변경 다른 유효예약 | PatientId+Status+ReservationDate, WorkId 제외 | `IX_예약접수_PATIENT_STATE_DATE` + PK |
 | 주민번호 변경 활성업무 | PatientId+Status | `IX_예약접수_PATIENT_STATE_DATE` |
 | 당일 접수대상 | PatientId+Status+ReservationDate | `IX_예약접수_PATIENT_STATE_DATE` |
-| Work 검사상세 | WorkId | `PK_검사항목` |
+| Work 검사상세 | 업무ID | `PK_예약접수` — 검사구성이 같은 행에 있다 |
 | NEX Master 조회 | NexRuleCode IS NOT NULL | `PK_검사코드` 소형 Master Scan |
 | AEX Master/가용성 | AdditionalExamCode | `UX_검사코드_AEX_CODE` |
 | HOL 판정 | HolidayDate | `PK_휴무일` |
@@ -1322,7 +1306,7 @@ UI 또는 C# 검증만으로 다음을 보장하지 않는다.
 
 다음 Index는 만들지 않는다.
 
-- `검사항목.ExamSourceCode` 단독 Index: Work당 17행 이하이므로 불필요
+- 검사구성 문자열 Index: 특정 검사로 업무를 찾는 소비처가 없다. 선행 와일드카드라 seek도 불가능하다
 - `휴무일.Active` Index: 날짜 PK 조회 후 단일행 판정
 - `검사코드.NexRuleCode` Index: 19행 고정 Master이므로 Scan이 더 단순
 - NEX/AEX 순서 Index: 확정 코드순 사용
@@ -1390,76 +1374,74 @@ erDiagram
     수검자 ||--o{ 예약접수 : "PatientId"
     수검자 ||--o{ 완료이력 : "PatientId"
 
-    예약접수 ||--|{ 검사항목 : "WorkId"
-    검사코드 ||--o{ 검사항목 : "ExamItemCode"
 
     수검자 {
-        BIGINT PatientId PK
-        NVARCHAR ChartNo UK
-        NVARCHAR Name
-        VARCHAR SocialNumber UK
-        VARCHAR Birthday
-        CHAR Gender
-        VARCHAR CelNumberS
-        VARCHAR CelNumber
-        VARCHAR TelNumber
-        BIT HepatitisBExcluded
-        DATETIME CreationDate
-        DATETIME LastEditDate
+        BIGINT 수검자ID PK
+        NVARCHAR 차트번호 UK
+        NVARCHAR 성명
+        VARCHAR 주민번호 UK
+        VARCHAR 생년월일
+        CHAR 성별
+        VARCHAR 휴대전화
+        VARCHAR 전화번호
+        BIT B형간염제외여부
+        DATETIME 생성일시
+        DATETIME 최종수정일시
     }
 
     예약접수 {
-        BIGINT WorkId PK
-        BIGINT PatientId FK
-        DATE ReservationDate
-        CHAR TimeSlotCode
-        CHAR StatusCode
-        DATETIME2 CreationDate
-        DATETIME2 LastEditDate
-        ROWVERSION RowVersion
-    }
-
-    검사항목 {
-        BIGINT WorkId PK,FK
-        VARCHAR ExamItemCode PK,FK
-        CHAR ExamSourceCode
+        BIGINT 업무ID PK
+        BIGINT 수검자ID FK
+        DATE 예약일
+        CHAR 시간대코드
+        CHAR 상태코드
+        DATETIME2 생성일시
+        DATETIME2 최종수정일시
+        ROWVERSION 행버전
+        NVARCHAR 국가검사항목
+        NVARCHAR 추가검사항목
     }
 
     검사코드 {
-        VARCHAR ExamItemCode PK
-        NVARCHAR ExamItemName
-        VARCHAR NexRuleCode
-        VARCHAR AdditionalExamCode UK
-        CHAR AdditionalGenderCode
-        BIT AdditionalActive
+        VARCHAR 검사항목코드 PK
+        NVARCHAR 검사항목명
+        VARCHAR 국가검사규칙코드
+        VARCHAR 추가검사코드 UK
+        CHAR 추가검사성별코드
+        BIT 추가검사사용여부
     }
 
     휴무일 {
-        DATE HolidayDate PK
-        NVARCHAR HolidayName
-        BIT Active
-        NVARCHAR Memo
+        DATE 휴무일자 PK
+        NVARCHAR 휴무일명
+        BIT 사용여부
+        NVARCHAR 비고
     }
 
     완료이력 {
-        BIGINT PatientId PK,FK
-        DATE CompletionDate PK
+        BIGINT 수검자ID PK,FK
+        DATE 완료일자 PK
+        NVARCHAR 국가검사항목
+        NVARCHAR 추가검사항목
     }
 
     변경이력 {
-        BIGINT HistoryId PK
-        DATETIME2 CreationDate
-        NVARCHAR OperatorName
-        VARCHAR OperationCode
-        NVARCHAR TargetTable
-        BIGINT TargetKey
-        INT ResultCode
+        BIGINT 이력ID PK
+        DATETIME2 기록일시
+        NVARCHAR 조작자명
+        NVARCHAR 대상테이블
+        BIGINT 대상키
+        NVARCHAR 컬럼명
+        NVARCHAR 변경전
+        NVARCHAR 변경후
     }
 ```
 
 `휴무일`과 `변경이력`은 관계선이 없다. `휴무일`은 날짜로만 조회되는 독립 Master이고 `변경이력`은 Foreign Key를 갖지 않는다.
 
-`예약접수`와 `완료이력` 사이에도 관계선이 없다. 검진완료 분류의 조인은 `(PatientId, ReservationDate = CompletionDate)` 라는 값 일치이지 선언된 참조가 아니며, 두 테이블은 각각 `수검자`를 통해서만 연결된다.
+`예약접수`와 `완료이력` 사이에도 관계선이 없다. 검진완료 분류의 조인은 `(수검자ID, 예약일 = 완료일자)` 라는 값 일치이지 선언된 참조가 아니며, 두 테이블은 각각 `수검자`를 통해서만 연결된다.
+
+`검사코드`도 관계선이 없다. 검사구성이 코드 문자열로 참조하므로 선언된 FK가 아니다.
 
 Mermaid는 핵심 컬럼만 요약한다. 정확한 타입 길이·NULL·제약명은 8장 정의를 기준으로 한다.
 
@@ -1498,7 +1480,7 @@ Mermaid는 핵심 컬럼만 요약한다. 정확한 타입 길이·NULL·제약�
 
 | # | 한계 | 근거 |
 |---:|---|---|
-| L1 | 성공 기록이 데이터 변경과 원자적이지 않다. `COMMIT` 뒤 감사 INSERT 도달 전에 세션이 끊기면 데이터는 남고 로그는 없다 | 감사 기록이 업무를 실패시키는 경로를 만들지 않기 위한 대가다. 둘 다 가질 수 없다 — §8.7.4 |
+| L1 | 성공 기록이 데이터 변경과 원자적이지 않다. `COMMIT` 뒤 감사 INSERT 도달 전에 세션이 끊기면 데이터는 남고 로그는 없다 | 감사 기록이 업무를 실패시키는 경로를 만들지 않기 위한 대가다. 둘 다 가질 수 없다 — §8.6.4 |
 | L2 | applock 실패는 기록되지 않는다. 감사 로그가 경합이 없었던 호출만 담는 편향 표본이 된다 | `THROW`는 `05_DB_Rule_SP_Contract.md` §4.2 코드가 없어 `ResultCode NOT NULL`을 채울 값이 구조적으로 없다 |
 | L3 | 예상하지 못한 오류(`CATCH`)도 같은 이유로 기록되지 않는다 | 위와 동일 |
 | L4 | `OperatorName`은 인증되지 않은 위조 가능 문자열이다. 감사 주체의 증거가 아니라 설치 설정의 자기신고이며 해상도가 사람이 아니라 단말·부서다 | 로그인·인증이 `00_Project_Policy.md` §8.2 범위 밖이라 DB가 실제 주체와 대조할 정보를 가질 수 없다 |
@@ -1572,7 +1554,7 @@ Mermaid는 핵심 컬럼만 요약한다. 정확한 타입 길이·NULL·제약�
 - 별도 접수행 및 접수 Master
 - NEX/AEX 하위 Master
 - 주민번호 전용 보조 테이블
-- `검사항목` 생성시각
+- 검사구성 Detail 테이블과 그 생성시각
 - 검사 Master의 NEX/AEX 순서 컬럼 및 순서 Index
 - 검사/HOL Master의 생성·수정시각
 - 완료이력 `CompletionId`, 생성시각, 별도 Unique Index

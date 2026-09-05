@@ -52,7 +52,7 @@
 ## 2.2 Phase 4 범위 (IN SCOPE)
 
 ```text
-물리 스키마 DDL   7 Table + PK 7 / FK 4 / UQ 2 / UX 1 / NCI 5 / Sequence 1
+물리 스키마 DDL   6 Table + PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 / Sequence 1
 Master Seed       검사코드 19행 + 휴무일 2행
 Inline TVF 4개 구현
 Stored Procedure 15개 구현
@@ -140,7 +140,7 @@ Function ID 16개          F-PAT 3 / F-RSV 3 / F-RCP 3 / F-COM 7
 기능행 36행               행 4~39
 TGT 5 / NEX 7 / AEX 5 / HOL 5
 AEX Master OPT01~OPT07 7종
-DB추적 7 Table + SEQ_HC_CHART_NO
+DB추적 6 Table + SEQ_HC_CHART_NO
 "NEX 실제 8~11행"          DB추적 F-COM-004 비고에 명시
 "예약변경 현재 Work 제외"   DB추적 F-COM-005 비고에 명시
 ```
@@ -257,7 +257,7 @@ database/
 │
 ├─ deploy/
 │  ├─ 00_Preflight.sql                서버·DB·KST·버전·안전가드 검증
-│  ├─ 01_Schema.sql                   FK 역순 DROP IF EXISTS → 7 Table + 제약 + Index + Sequence
+│  ├─ 01_Schema.sql                   FK 역순 DROP IF EXISTS → 6 Table + 제약 + Index + Sequence
 │  ├─ 02_Seed.sql                     검사코드 19행 + 휴무일 2행
 │  ├─ 03_Functions.sql                Inline TVF 4개 (CREATE OR ALTER)
 │  ├─ 04_Procedures_Select.sql        SELECT SP 7개
@@ -440,7 +440,8 @@ shell script는 역할에 따라 두 가지를 쓴다.
 | `VALUES` 행 생성자 | 7개 BIT → 행집합 변환, 기대값 인라인 테이블 |
 | Table Variable, CTE, `OUTER APPLY`, `CROSS APPLY` | Rule 구현. **상관 인자를 받는 TVF 는 반드시 `APPLY`** (`JOIN` 은 `Msg 4104`) |
 | `TOP (n)` + `ORDER BY` | 스칼라 서브쿼리·최신 1건 조회. **`TOP` 없는 스칼라 서브쿼리 금지** (`Msg 512` 위험) |
-| `WHILE` 루프 | ChartNo 발급, Slot 자원 정렬 획득 |
+| `WHILE` 루프 | ChartNo 발급, Slot 자원 정렬 획득, 검사구성 문자열 조립 |
+| 쉼표 구분 문자열 + 양끝 패딩 `LIKE` | 검사구성 저장·전개. `검사코드`를 `JOIN` 하면 단일 `SELECT` 로 편다. 파서가 필요 없어 인라인 TVF 안에서도 성립한다 (`plans/10` §2.1 실측) |
 | `OFFSET … FETCH`, `IIF`, `CONCAT`, `FORMAT` | 필요 시 |
 
 `[I]` **`CURSOR` 와 `FOR XML PATH` 는 허용목록에 없다.**
@@ -456,7 +457,7 @@ shell script는 역할에 따라 두 가지를 쓴다.
 |---|
 | `STRING_SPLIT`, XML 파싱, JSON 함수/타입, `OPENJSON`, `FOR JSON` — `04` §3.8·§15.5 |
 | 사용자 정의 Table Type(TVP) — `04` §3.8 |
-| CSV·구분자 문자열·비트마스크 — `04` §15.5 |
+| 비트마스크 — `04` §15.5 |
 | 업무 Trigger, FK Cascade — `04` §3.1-17 |
 | `SESSION_CONTEXT`, `AT TIME ZONE`, `STRING_AGG`, `TRIM()`, `CONCAT_WS`, `TRANSLATE`, `DATEDIFF_BIG`, `COMPRESS`, `GREATEST`/`LEAST`, `GENERATE_SERIES`, 정규식 함수, 벡터 타입 — 2012 이후 기능 |
 | `sa` 사용, `sysadmin` 부여, `TRUSTWORTHY ON`, `xp_cmdshell`, Ad Hoc Distributed Queries, CLR, Linked Server |
@@ -1696,7 +1697,7 @@ END
 | `SCH-013` | Inline TVF 수 (`type='IF'`) | **4** |
 | `SCH-014` | Stored Procedure 수 (`USP_HC_%`) | **15** |
 | `SCH-015` | **47개 컬럼 전부**의 `(테이블, 컬럼, 타입, 길이, NULL 허용)` 을 `04` §8 기대 `VALUES` 와 **`EXCEPT` 양방향** 대조 | 차집합 0 |
-| `SCH-016` | **CHECK 제약 이름 23개** 를 `04` §8 기대 `VALUES` 와 **`EXCEPT` 양방향** 대조 | 차집합 0 |
+| `SCH-016` | **제약 이름 22종** 을 `04` §8 기대 `VALUES` 와 **`EXCEPT` 양방향** 대조 | 차집합 0 |
 | `SCH-017` | Default 제약 이름 8개 `EXCEPT` 양방향 | 차집합 0 |
 | `SCH-018` | 5개 Nonclustered Index 이름 + Key 컬럼 순서 `EXCEPT` 양방향 | 차집합 0 |
 
@@ -2035,7 +2036,7 @@ END CATCH
 | `RBD-001` | 잘못된 서버명에서 `Rebuild.sql` | **`NOT RUN`** — 인스턴스가 1개뿐이라 음성 시험 불가 |
 | `RBD-002` | 대상 DB 컨텍스트에서 `Rebuild.sql` 실행 (master 아님) | `THROW 50021` 로 중단, DB 변경 0 |
 | `RBD-003` | 빈 DB에서 `Deploy.sql` 전체 실행 | exit code 0 |
-| `RBD-004` | 배포 직후 객체 인벤토리 | Table 7 / TVF 4 / SP 15 / Sequence 1 / PK 7 / FK 4 / UQ 2 / UX 1 / NCI 5 / Trigger 0 |
+| `RBD-004` | 배포 직후 객체 인벤토리 | Table 6 / TVF 4 / SP 15 / Sequence 1 / PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 / Trigger 0 |
 | `RBD-005` | **연속 2회 Rebuild** 후 **정렬된 객체·Seed 덤프를 `diff`** | 차이 0줄 |
 | `RBD-006` | 2회 Rebuild 후 Seed 행수 + **19행 전건 값** | Exam 19 / Holiday 2, 값까지 동일 |
 | `RBD-007` | `Deploy.sql` 단독 재실행 (DB 유지) | exit 0, 덤프 동일 |
@@ -2107,7 +2108,7 @@ artifacts/
 | G02 | Preflight | `00_Preflight.sql` 가드 6종(`50010~50015`) 통과 · KST 540 · Version >= 11. `Rebuild.sql` 가드는 `50020~50024` 별도 | `PLANNED` |
 | G03 | Clean Deploy | 빈 DB 전체 배포 성공 (exit 0) | `PLANNED` |
 | G04 | Object Inventory | Table 7 / TVF 4 / SP 15 / Sequence 1 | `PLANNED` |
-| G05 | Schema | PK 7 / FK 4 / UQ 2 / UX 1 / NCI 5 **+ 47컬럼·CHECK 23·DF 8·NCI Key 를 `EXCEPT` 양방향 차집합 0** | `PLANNED` |
+| G05 | Schema | PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 **+ 48컬럼·제약 22·Default 8·NCI Key 를 `EXCEPT` 양방향 차집합 0** | `PLANNED` |
 | G06 | 금지 객체 | Trigger 0 / TVP 0 / DELETE SP 0 / 추가 Table 0 | `PLANNED` |
 | G07 | Seed | Exam **19행 전건 값 일치**(`EXCEPT` 양방향) / NEX 역할 13 / AEX 역할 7 / `AdditionalActive` 7건 모두 1 / Holiday 2 | `PLANNED` |
 | G08 | Rule | TGT/NEX/AEX/HOL 경계 전건 통과 + `CORRUPT-3` 재검증금지 확인 | `PLANNED` |
@@ -2274,7 +2275,7 @@ ROOT·하위 어디에도 `.git`이 없었다. 인계문서 §7.3.C·§10.5(Task
 | 필수 grilling 결정 | **13건 전부 확정** (`D4-001`~`D4-013`) |
 | 미승인 가정 `[A]` | **0건** |
 | Implementation Blocker | **0건** |
-| 7 Table 추적 | **7/7** (§11) |
+| 6 Table 추적 | **6/6** (§11) |
 | 4 TVF 추적 | **4/4** (§17) |
 | 15 SP 추적 | **15/15** (§18) |
 | 8 Write SP Transaction 추적 | **8/8** (§21.2) |
@@ -2378,7 +2379,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | Prefix | 범위 | 건수 | 산출 파일 | 검증 대상 | Gate |
 |---|---|---:|---|---|---|
 | `PRE` | `001`~`006` | 6 | `deploy/00_Preflight.sql` | 배포 안전가드 `50010`~`50015` (§8.3) | G03 |
-| `SCH` | `001`~`018` | 18 | `tests/01_Schema_Tests.sql` | 7 Table · PK/FK/UQ/UX/NCI · 47컬럼 · CHECK 23 · DF 8 · NCI Key (§34) | G05 |
+| `SCH` | `001`~`018` | 18 | `tests/01_Schema_Tests.sql` | 6 Table · PK/FK/UQ/UX/NCI · 48컬럼 · 제약 22 · Default 8 · NCI Key (§34) | G05 |
 | `SED` | `001`~`011` | 11 | `tests/02_Seed_Tests.sql` | `검사코드` 19행 · `휴무일` 2행 · AEX 7건 Active (§13·§14) | G07 |
 | `SSN` | `001`~`006` | 6 | `tests/02_Seed_Tests.sql` | 실제 주민등록번호 미사용 — 체크디지트 전건 무효 (§16.2) | G12 |
 | `RUL` | `T01`~`T12` `N01`~`N12` `A01`~`A10` `G01`~`G08` `D01`~`D09` | 51 | `tests/03_Rule_Tests.sql` | 4개 TVF 결정적 경계 — 마감시각 · NEX 술어 · AEX 판정순서 · 휴무일 · `DATEFIRST` 불변 (§35) | G08 |

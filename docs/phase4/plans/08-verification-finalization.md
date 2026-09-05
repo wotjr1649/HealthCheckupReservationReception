@@ -1,3 +1,6 @@
+`[!]` **이 계획서의 스키마 참조는 `plans/09`·`plans/10` 이 교체했다** ― 컬럼명 한글화,
+검사구성의 `예약접수`·`완료이력` 흡수, `검사항목` 삭제, `변경이력` EAV 전환. 당시 구조는 git 이력에 있다.
+
 # Stage 10~12 — Rollback · Concurrency · Clean Rebuild · 문서 최종화
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
@@ -50,21 +53,21 @@ IF NOT (DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
         AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
         AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
         AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
-                         WHERE [HolidayDate] = CONVERT(DATE, SYSDATETIME()) AND [Active] = 1))
+                         WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [Active] = 1))
 BEGIN
     PRINT 'SKIP 08_Rollback_Tests 업무시간(월~토 09:00~18:00, 비휴무일) 밖';
     RETURN;
 END
 
 -- RBK-001 INSERT_예약 이 AEX 성별 위반(411)으로 실패 → Work·Detail 신규 0건
-DECLARE @P  BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T009');
+DECLARE @P  BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T009');
 DECLARE @W0 INT = (SELECT COUNT(*) FROM [dbo].[예약접수]);
-DECLARE @D0 INT = (SELECT COUNT(*) FROM [dbo].[검사항목]);
+DECLARE @D0 NVARCHAR(160) = (SELECT ISNULL([국가검사항목],N'') FROM [dbo].[예약접수] WHERE [업무ID] = (SELECT MIN([업무ID]) FROM [dbo].[예약접수]));
 
 EXEC [dbo].[USP_HC_INSERT_예약] @P, 'NORMAL', '2026-11-17', 'AM', 0,0,1,0,0,0,0;  -- 남성 + OPT03
 
 IF ((SELECT COUNT(*) FROM [dbo].[예약접수])      = @W0
-    AND (SELECT COUNT(*) FROM [dbo].[검사항목]) = @D0)
+    AND (SELECT ISNULL([국가검사항목],N'') FROM [dbo].[예약접수] WHERE [업무ID] = (SELECT MIN([업무ID]) FROM [dbo].[예약접수])) = @D0)
     PRINT 'PASS RBK-001 AEX 실패 시 Work·Detail 신규 0건';
 ELSE BEGIN PRINT 'FAIL RBK-001 부분저장 발생'; SET @Fail += 1; END
 ```
@@ -86,19 +89,19 @@ ELSE BEGIN PRINT 'FAIL RBK-001 부분저장 발생'; SET @Fail += 1; END
 ```sql
 -- Detail 스냅샷을 테이블 변수에 담고 EXCEPT 양방향으로 비교한다.
 --   FOR XML PATH 는 쓰지 않는다 — 스펙 §9.2 허용목록에 없고 index 금지 목록에 XML 이 있다.
-DECLARE @RvBefore BINARY(8) = (SELECT [RowVersion] FROM [dbo].[예약접수] WHERE [WorkId]=@W);
+DECLARE @RvBefore BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID]=@W);
 DECLARE @Before TABLE (ExamItemCode VARCHAR(10) PRIMARY KEY, ExamSourceCode CHAR(3));
-INSERT INTO @Before SELECT [ExamItemCode], [ExamSourceCode]
-  FROM [dbo].[검사항목] WHERE [WorkId] = @W;
+INSERT INTO @Before SELECT [검사항목코드], [ExamSourceCode]
+  FROM [dbo].[예약접수] WHERE [업무ID] = @W;
 
 -- … 실패 유도 …
 
 DECLARE @Same BIT =
     CASE WHEN NOT EXISTS (SELECT ExamItemCode, ExamSourceCode FROM @Before
-                          EXCEPT SELECT [ExamItemCode], [ExamSourceCode]
-                                   FROM [dbo].[검사항목] WHERE [WorkId] = @W)
-          AND NOT EXISTS (SELECT [ExamItemCode], [ExamSourceCode]
-                            FROM [dbo].[검사항목] WHERE [WorkId] = @W
+                          EXCEPT SELECT [검사항목코드], [ExamSourceCode]
+                                   FROM [dbo].[예약접수] WHERE [업무ID] = @W)
+          AND NOT EXISTS (SELECT [검사항목코드], [ExamSourceCode]
+                            FROM [dbo].[예약접수] WHERE [업무ID] = @W
                           EXCEPT SELECT ExamItemCode, ExamSourceCode FROM @Before)
          THEN 1 ELSE 0 END;
 -- @Same = 1 이고 RowVersion 이 @RvBefore 와 같아야 한다
@@ -222,7 +225,7 @@ BEGIN
 END
 ELSE IF @Scen = 2
 BEGIN
-    DECLARE @P BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]='CONC1');   -- 09_Concurrency_Setup.sql 이 심는 전용 수검자
+    DECLARE @P BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='CONC1');   -- 09_Concurrency_Setup.sql 이 심는 전용 수검자
     EXEC [dbo].[USP_HC_INSERT_예약] @P, 'NORMAL', '2026-11-16', 'AM', 0,0,0,0,0,0,0;
 END
 -- … 시나리오 3~7
@@ -281,8 +284,8 @@ EXEC [dbo].[USP_HC_INSERT_예약] ...;
 IF @Scen = 2
 BEGIN
     DECLARE @Cnt INT = (SELECT COUNT(*) FROM [dbo].[예약접수]
-                         WHERE [ReservationDate]='2026-11-16' AND [TimeSlotCode]='AM'
-                           AND [StatusCode] IN ('RSV','RCP'));
+                         WHERE [예약일]='2026-11-16' AND [시간대코드]='AM'
+                           AND [상태코드] IN ('RSV','RCP'));
     IF @Cnt = 20 PRINT 'PASS CON-002 19/20 동시예약 2건 → 정확히 1건 성공 (최종 20)';
     ELSE BEGIN PRINT 'FAIL CON-002 최종 인원 ' + CONVERT(VARCHAR(5), @Cnt); SET @Fail += 1; END
 END
@@ -428,7 +431,7 @@ DECLARE @FP VARCHAR(200) = 'INVENTORY|'
      + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[검사코드]))            + '|'
      + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[휴무일]));
 
-IF @FP = 'INVENTORY|7|4|15|1|7|4|2|1|5|0|19|2'
+IF @FP = 'INVENTORY|6|4|15|1|6|2|2|1|4|0|19|2'
     PRINT 'PASS RBD-004 인벤토리 지문 일치  ' + @FP;
 ELSE BEGIN PRINT 'FAIL RBD-004 인벤토리 지문 불일치  ' + @FP; SET @Fail += 1; END
 
@@ -466,13 +469,13 @@ JOIN sys.database_principals pr ON pr.principal_id = dp.grantee_principal_id
 WHERE dp.state = 'G' AND dp.major_id > 0 ORDER BY pr.name, OBJECT_NAME(dp.major_id);
 
 PRINT '--- SEED ---';
-SELECT 'SEED|EXAM|' + [ExamItemCode] + '|' + [ExamItemName] + '|' + ISNULL([NexRuleCode],'-')
-     + '|' + ISNULL([AdditionalExamCode],'-') + '|' + ISNULL([AdditionalGenderCode],'-')
-     + '|' + CONVERT(VARCHAR(1), [AdditionalActive])
-FROM [dbo].[검사코드] ORDER BY [ExamItemCode];
-SELECT 'SEED|HOL|' + CONVERT(VARCHAR(10), [HolidayDate], 23) + '|' + [HolidayName]
+SELECT 'SEED|EXAM|' + [검사항목코드] + '|' + [검사항목명] + '|' + ISNULL([국가검사규칙코드],'-')
+     + '|' + ISNULL([추가검사코드],'-') + '|' + ISNULL([추가검사성별코드],'-')
+     + '|' + CONVERT(VARCHAR(1), [추가검사사용여부])
+FROM [dbo].[검사코드] ORDER BY [검사항목코드];
+SELECT 'SEED|HOL|' + CONVERT(VARCHAR(10), [휴무일자], 23) + '|' + [휴무일명]
      + '|' + CONVERT(VARCHAR(1), [Active])
-FROM [dbo].[휴무일] ORDER BY [HolidayDate];
+FROM [dbo].[휴무일] ORDER BY [휴무일자];
 
 IF @Fail > 0 THROW 51000, N'Clean Rebuild 검증 실패', 1;
 PRINT '=== 14_Clean_Rebuild_Verify 완료 ===';
@@ -496,7 +499,7 @@ diff -u artifacts/reports/inventory_run1.txt artifacts/reports/inventory_run2.tx
 cp artifacts/reports/inventory_run2.txt artifacts/reports/object-inventory.txt
 ```
 
-Expected: `PASS RBD-005`, 지문 = `INVENTORY|7|4|15|1|7|4|2|1|5|0|19|2`
+Expected: `PASS RBD-005`, 지문 = `INVENTORY|6|4|15|1|6|2|2|1|4|0|19|2`
 
 - [ ] **Step 5: 안전가드 음성 검증 — `RBD-002` 만 (RBD-001 은 `NOT RUN`)**
 
