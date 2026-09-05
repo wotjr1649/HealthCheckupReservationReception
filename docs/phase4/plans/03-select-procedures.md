@@ -13,6 +13,65 @@
 - 생성 파일은 모두 `deploy/04_Procedures_Select.sql` 하나이며, 테스트는 `tests/04_Select_SP_Tests.sql` 하나다. 각 Task가 이어서 추가한다.
 - 모든 파일은 **UTF-8 with BOM**.
 
+### 계약 시나리오 규약 — 한 곳에만 적는다
+
+`[X]` **초안은 `T15`~`T21` 각각에서 `tests/contract/<Test ID>.sql` 이라 하고 `T22` 와 스펙은
+`tests/contract/<NN>_<시나리오>.sql` 이라 해 명명이 두 갈래였다.** 스펙 §7 트리와 §36.3 이 후자이고
+`06 CANDIDATE` 가 계획을 이기므로(`database/CLAUDE.md` §4) **후자로 통일한다.**
+
+`[X]` **`T22` 는 시나리오를 *"SELECT SP 11개"* 로 셌다.** §45.2 는 `SEL` **전건**의 RS0 Code 판정을
+`contract/` 에 맡긴다. SP 단위 11개로는 `SEL` 20건 중 9건이 기계 판정 없이 남아 §45.2 를 어긴다.
+**시나리오는 `SEL` 1건당 파일 하나(20개) + `05` §9.11 Scope Cardinality 를 덮는 5개 = 25개다.**
+
+```text
+파일명   tests/contract/<NN>_<시나리오>.sql      NN 은 01~20 이 SEL-001~SEL-020 과 1:1, 21~25 가 Scope
+키       expected-contracts.json 의 키 = 파일명(확장자 제외). verify-contract-all.sh 가 basename 을 그대로 쓴다
+본문     SET NOCOUNT ON; → (필요하면) DECLARE 로 인자 확보 → EXEC 한 번 → GO
+소유     시나리오 .sql 은 그 SP 를 만드는 Task 가 함께 만든다 — RED 를 그 파일로 관측하기 때문이다.
+         T22 는 검증기·기대값·러너를 만들고 Scope 전용 21~25 를 더한다.
+```
+
+`[X]` **계약 파일은 단독 실행된다.** 초안 예시는 `@Pid`·`@P0`·`@P2`·`@Wc`·`@Wn`·`@Pn` 을 선언 없이 썼는데
+`verify-contract-all.sh` 가 파일 하나씩 `sqlcmd -i` 로 돌리므로 `Msg 137` 이 난다.
+인자는 파일 안에서 Fixture(`tests/00`·`00b`)로부터 `DECLARE` 로 뽑는다.
+
+`[X]` **`T15`~`T21` 의 완료조건은 계약 PASS 를 요구할 수 없다.** 검증기가 `T22` 라서 그 시점에는 존재하지 않는다
+(`T12` 가 `T13` 산출물을, `T14b` 가 `T14` 를 요구했던 것과 같은 순서 함정이다).
+`T15`~`T21` 은 **SP 배포 + RS0 메타데이터 관측**까지가 완료조건이고, §45.2 의 `SEL` 전건 판정은 `T22` 의 완료조건이다.
+
+**시나리오 25개 — 이 표가 파일명과 키의 단일 출처다.** `T22` 가 이대로 만든다.
+
+| NN_시나리오 | Test ID | SP | 인자 출처 |
+|---|---|---|---|
+| `01_공통업무상태` | `SEL-001` | `공통업무상태` | 없음 |
+| `02_수검자목록_조건없음` | `SEL-002` | `수검자목록` | 리터럴 |
+| `03_수검자목록_ChartNo` | `SEL-003` | `수검자목록` | 리터럴 |
+| `04_수검자목록_0건` | `SEL-004` | `수검자목록` | 리터럴 |
+| `05_수검자목록_주민번호형식` | `SEL-005` | `수검자목록` | 리터럴 |
+| `06_수검자상세_PatientId없음` | `SEL-006` | `수검자상세` | 리터럴 |
+| `07_수검자상세_미존재` | `SEL-007` | `수검자상세` | 리터럴 |
+| `08_수검자상세_정상` | `SEL-008` | `수검자상세` | `T015` |
+| `09_수검자유효업무_0건` | `SEL-009` | `수검자유효업무` | `T015` |
+| `10_수검자유효업무_2건701` | `SEL-010` | `수검자유효업무` | `T012` (CORRUPT-1) |
+| `11_예약접수목록_날짜역전` | `SEL-011` | `예약접수목록` | 리터럴 |
+| `12_예약접수목록_조건없음` | `SEL-012` | `예약접수목록` | 리터럴 |
+| `13_예약접수목록_날짜범위` | `SEL-013` | `예약접수목록` | 리터럴 |
+| `14_예약접수상세_미존재` | `SEL-014` | `예약접수상세` | 리터럴 |
+| `15_예약접수상세_NEX0행701` | `SEL-015` | `예약접수상세` | `T013` (CORRUPT-2) |
+| `16_예약접수상세_정상` | `SEL-016` | `예약접수상세` | `T020` |
+| `17_예약가능정보_RowVersion단독` | `SEL-017` | `예약가능정보` | `T015` |
+| `18_예약가능정보_AEX_NULL` | `SEL-018` | `예약가능정보` | `T015` |
+| `19_예약가능정보_WALKIN_날짜불일치` | `SEL-019` | `예약가능정보` | `T015` |
+| `20_예약가능정보_휴무일` | `SEL-020` | `예약가능정보` | `T015` |
+| `21_예약가능정보_Scope_ALL` | — | `예약가능정보` | `T015` |
+| `22_예약가능정보_Scope_SLOT` | — | `예약가능정보` | `T020` |
+| `23_예약가능정보_Scope_EXTRA` | — | `예약가능정보` | `T014` (`tests/00b` RCP) |
+| `24_예약가능정보_Scope_SLOT_EXTRA` | — | `예약가능정보` | `T014` |
+| `25_예약가능정보_Scope_NONE` | — | `예약가능정보` | `T020` |
+
+`21`~`25` 는 Test ID 가 없다 — `05` §9.11 Scope Cardinality 를 덮는 형상 전용 시나리오이고,
+카탈로그에 없는 키이므로 §45.2 건수에 넣지 않는다.
+
 ---
 
 > ## ⚠ 테스트 패턴 — `INSERT … EXEC` 금지 (스펙 §33.1a, index 문서 "테스트 작성 규칙")
@@ -41,6 +100,7 @@
 **Files:**
 - Create: `deploy/04_Procedures_Select.sql`
 - Create: `tests/04_Select_SP_Tests.sql`
+- Create: `tests/contract/01_공통업무상태.sql`
 
 **Interfaces:**
 - Consumes: `[dbo].[UFN_HC_일정확인]`
@@ -54,22 +114,15 @@
 |---|---|---:|---|
 | `SEL-001` | `(인자 없음)` | `0` | 공통업무상태 RS0 정확히 1행 성공 |
 
-각 행은 `tests/contract/<Test ID>.sql` 한 파일(`EXEC` 한 번, 단언 없음)과 `tools/expected-contracts.json` 의 한 항목이 된다.
+각 행은 계약 시나리오 파일 하나와 `tools/expected-contracts.json` 의 한 항목이 된다.
+파일명·키·본문 규약은 위 **계약 시나리오 규약**에 있다. 시나리오 `.sql` 은 이 Task 가 만들고, 기대값·검증기는 `T22` 가 만든다.
 
-```sql
--- tests/contract/SEL-001.sql — 위 표의 Test ID 마다 파일 하나. 본문은 아래 두 줄이고 인자는 표에서 가져온다.
-SET NOCOUNT ON;
-EXEC [dbo].[USP_HC_SELECT_공통업무상태] (인자 없음);
-```
+`[X]` **초안의 이 자리에는 *"`INSERT … EXEC` 는 첫 번째 Result Set만 받는다"* 라고 적혀 있었다. 틀렸다.**
+SQL Server는 SP가 반환하는 **모든** Result Set을 대상 테이블에 넣으려 하고, 구조가 다르면 `Msg 213` 으로
+배치가 죽는다(실측 확인). 그래서 계약 판정은 `INSERT … EXEC` 가 아니라 `EXEC` 한 번 + 출력 파싱이다.
 
-```json
-// tools/expected-contracts.json 발췌. rs0Code 는 확정값이다. resultSets 는 05 §7~§12 가 정의한 RS 형상을 옮겨 적는다.
-"SEL-001": { "sp": "USP_HC_SELECT_공통업무상태", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-```
-
-`[X]` **초안의 이 자리에는 *"`INSERT … EXEC` 는 첫 번째 Result Set만 받는다"* 라고 적혀 있었다. 틀렸다.** SQL Server는 SP가 반환하는 **모든** Result Set을 대상 테이블에 넣으려 하고, 구조가 다르면 `Msg 213` 으로 배치가 죽는다(실측 확인). `USP_HC_SELECT_공통업무상태` 는 RS0(5컬럼) + RS1(10컬럼)을 항상 반환하므로 위 `SEL-001` 은 **첫 실행부터 실패한다.**
-
-따라서 이 RED 단계는 다음으로 바꾼다.
+`[X]` 초안의 예시 본문은 `EXEC [dbo].[USP_HC_SELECT_공통업무상태] (인자 없음);` 이었다 —
+`(인자 없음)` 은 설명이지 SQL 이 아니라 그대로 실행하면 구문오류다. Parameter 가 0개면 인자를 쓰지 않는다.
 
 ```sql
 -- tests/contract/01_공통업무상태.sql
@@ -94,10 +147,16 @@ GO
 
 `tests/04_Select_SP_Tests.sql` 에는 **DB 상태 단언만** 남긴다(이 SP 는 읽기 전용이라 남는 단언이 없다 — 파일에 `SEL-001` 을 두지 않는다).
 
+`[X]` **초안은 `tests/04_Select_SP_Tests.sql` 을 돌려 `Msg 2812` 를 기대했다.** 그 파일에는 이 SP 를
+참조하는 문장이 하나도 없으므로 `Msg 2812` 가 날 수 없다. RED 는 시나리오 파일로 관측한다.
+SP 이름이 한글이므로 `-Q` 로 넘기지 않고 BOM 이 있는 파일로 넘긴다(`database/CLAUDE.md` §5).
+
 ```bash
+RC=0
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
-       -i tests/04_Select_SP_Tests.sql -o artifacts/logs/test_04_red.log
-echo "exit=$?"
+       -i tests/contract/01_공통업무상태.sql -o artifacts/logs/rs_01_red.txt || RC=$?
+echo "exit=$RC"
+iconv -f UTF-16 -t UTF-8 artifacts/logs/rs_01_red.txt | head -3
 ```
 
 Expected: exit **1**, `Msg 2812` — "USP_HC_SELECT_공통업무상태 저장 프로시저를 찾을 수 없습니다".
@@ -156,11 +215,14 @@ sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
        -i deploy/04_Procedures_Select.sql -o artifacts/logs/04_select.log
 echo "exit=$?"
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
-       -i tests/04_Select_SP_Tests.sql -o artifacts/logs/test_04.log
+       -i tests/contract/01_공통업무상태.sql -o artifacts/logs/rs_01.txt
 echo "exit=$?"
 ```
 
-Expected: 둘 다 exit 0, `PASS SEL-001`.
+`[X]` 초안 Expected 는 `PASS SEL-001` 이었는데 바로 위에서 *"파일에 `SEL-001` 을 두지 않는다"* 고 정했다 —
+`tests/04` 는 이 SP 에 대해 아무것도 출력하지 않는다. 계약 판정은 `T22` 의 검증기가 한다.
+
+Expected: 배포·시나리오 둘 다 exit 0. `rs_01.txt` 에 RS 2개(5컬럼 + 10컬럼)가 보인다.
 
 - [ ] **Step 4: RS0 메타데이터 확인**
 
@@ -202,7 +264,7 @@ git commit -m "feat(phase4): USP_HC_SELECT_공통업무상태 구현 및 RS0 패
 
 **선행조건:** `T15` 완료.
 
-**Files:** Modify `deploy/04_Procedures_Select.sql`, `tests/04_Select_SP_Tests.sql`
+**Files:** Modify `deploy/04_Procedures_Select.sql` · Create `tests/contract/02_수검자목록_조건없음.sql`, `tests/contract/03_수검자목록_ChartNo.sql`, `tests/contract/04_수검자목록_0건.sql`, `tests/contract/05_수검자목록_주민번호형식.sql`
 
 **Interfaces:**
 - Produces: RS0 + RS1 11컬럼 `(PatientId, ChartNo, Name, SocialNumber, Birthday, Gender, MobilePhone, Phone, Email, Zipcode, Address)`, 정렬 `Name ASC, Birthday ASC, ChartNo ASC`
@@ -220,20 +282,20 @@ git commit -m "feat(phase4): USP_HC_SELECT_공통업무상태 구현 및 RS0 패
 | `SEL-004` | `N'ZZZZ9999', NULL, NULL, NULL, NULL` | `0` | 조회 0건은 성공 |
 | `SEL-005` | `NULL, NULL, '12345', NULL, NULL` | `101` | SocialNumber 형식 101 |
 
-각 행은 `tests/contract/<Test ID>.sql` 한 파일(`EXEC` 한 번, 단언 없음)과 `tools/expected-contracts.json` 의 한 항목이 된다.
+각 행은 계약 시나리오 파일 하나와 `tools/expected-contracts.json` 의 한 항목이 된다 — 파일명·키는 위 **계약 시나리오 규약**의 표가 정한다. 시나리오 `.sql` 은 이 Task 가 만들고, 기대값·검증기는 `T22` 가 만든다.
 
 ```sql
--- tests/contract/SEL-002.sql — 위 표의 Test ID 마다 파일 하나. 본문은 아래 두 줄이고 인자는 표에서 가져온다.
+-- tests/contract/02_수검자목록_조건없음.sql
 SET NOCOUNT ON;
 EXEC [dbo].[USP_HC_SELECT_수검자목록] NULL, NULL, NULL, NULL, NULL;
 ```
 
 ```json
 // tools/expected-contracts.json 발췌. rs0Code 는 확정값이다. resultSets 는 05 §7~§12 가 정의한 RS 형상을 옮겨 적는다.
-"SEL-002": { "sp": "USP_HC_SELECT_수검자목록", "rs0Success": 0, "rs0Code": 103 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-"SEL-003": { "sp": "USP_HC_SELECT_수검자목록", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-"SEL-004": { "sp": "USP_HC_SELECT_수검자목록", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-"SEL-005": { "sp": "USP_HC_SELECT_수검자목록", "rs0Success": 0, "rs0Code": 101 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"02_수검자목록_조건없음": { "sp": "USP_HC_SELECT_수검자목록", "rs0Success": 0, "rs0Code": 103 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"03_수검자목록_ChartNo": { "sp": "USP_HC_SELECT_수검자목록", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"04_수검자목록_0건": { "sp": "USP_HC_SELECT_수검자목록", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"05_수검자목록_주민번호형식": { "sp": "USP_HC_SELECT_수검자목록", "rs0Success": 0, "rs0Code": 101 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
 ```
 
 - [ ] **Step 2: 구현 명세**
@@ -280,7 +342,7 @@ echo "exit=$?"
 
 - [ ] **Step 4: Commit** — `feat(phase4): USP_HC_SELECT_수검자목록 구현`
 
-**완료조건:** `SEL-002`~`SEL-005` 의 계약 시나리오가 전부 PASS (스펙 §45.2).
+**완료조건:** SP 배포 exit 0 + 시나리오 4개 단독 실행 exit 0. 계약 판정은 `T22` 다.
 
 ---
 
@@ -291,6 +353,8 @@ echo "exit=$?"
 **관련 Baseline 위치:** `05` §7.3.
 
 **선행조건:** `T16` 완료.
+
+**Files:** Modify `deploy/04_Procedures_Select.sql` · Create `tests/contract/06_수검자상세_PatientId없음.sql`, `tests/contract/07_수검자상세_미존재.sql`, `tests/contract/08_수검자상세_정상.sql`
 
 **Interfaces:** Produces RS0 + RS1 14컬럼 `(… , Memo NVARCHAR(MAX), LastEditDate DATETIME)`, 정확히 1행.
 
@@ -304,19 +368,19 @@ echo "exit=$?"
 | `SEL-007` | `-1` | `200` | 미존재 Patient 200 |
 | `SEL-008` | `@Pid` | `0` | 수검자상세 정상 |
 
-각 행은 `tests/contract/<Test ID>.sql` 한 파일(`EXEC` 한 번, 단언 없음)과 `tools/expected-contracts.json` 의 한 항목이 된다.
+각 행은 계약 시나리오 파일 하나와 `tools/expected-contracts.json` 의 한 항목이 된다 — 파일명·키는 위 **계약 시나리오 규약**의 표가 정한다. 시나리오 `.sql` 은 이 Task 가 만들고, 기대값·검증기는 `T22` 가 만든다.
 
 ```sql
--- tests/contract/SEL-006.sql — 위 표의 Test ID 마다 파일 하나. 본문은 아래 두 줄이고 인자는 표에서 가져온다.
+-- tests/contract/06_수검자상세_PatientId없음.sql
 SET NOCOUNT ON;
 EXEC [dbo].[USP_HC_SELECT_수검자상세] NULL;
 ```
 
 ```json
 // tools/expected-contracts.json 발췌. rs0Code 는 확정값이다. resultSets 는 05 §7~§12 가 정의한 RS 형상을 옮겨 적는다.
-"SEL-006": { "sp": "USP_HC_SELECT_수검자상세", "rs0Success": 0, "rs0Code": 100 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-"SEL-007": { "sp": "USP_HC_SELECT_수검자상세", "rs0Success": 0, "rs0Code": 200 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-"SEL-008": { "sp": "USP_HC_SELECT_수검자상세", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"06_수검자상세_PatientId없음": { "sp": "USP_HC_SELECT_수검자상세", "rs0Success": 0, "rs0Code": 100 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"07_수검자상세_미존재": { "sp": "USP_HC_SELECT_수검자상세", "rs0Success": 0, "rs0Code": 200 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"08_수검자상세_정상": { "sp": "USP_HC_SELECT_수검자상세", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
 ```
 
 - [ ] **Step 2: 구현 명세**
@@ -331,7 +395,7 @@ RS1 컬럼: `PatientId, ChartNo, Name, SocialNumber, Birthday, Gender, MobilePho
 
 - [ ] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_SELECT_수검자상세 구현`
 
-**완료조건:** `SEL-006`~`SEL-008` 의 계약 시나리오가 전부 PASS (스펙 §45.2).
+**완료조건:** SP 배포 exit 0 + 시나리오 3개 단독 실행 exit 0. 계약 판정은 `T22` 다.
 
 ---
 
@@ -342,6 +406,8 @@ RS1 컬럼: `PatientId, ChartNo, Name, SocialNumber, Birthday, Gender, MobilePho
 **관련 Baseline 위치:** `05` §7.4, `00` RP-06.
 
 **선행조건:** `T17` 완료.
+
+**Files:** Modify `deploy/04_Procedures_Select.sql` · Create `tests/contract/09_수검자유효업무_0건.sql`, `tests/contract/10_수검자유효업무_2건701.sql`
 
 **Interfaces:** Produces RS0 + RS1 7컬럼 `(WorkId, ReservationDate, TimeSlot, Status, StatusName, IsToday, RowVersion BINARY(8))`
 
@@ -354,18 +420,18 @@ RS1 컬럼: `PatientId, ChartNo, Name, SocialNumber, Birthday, Gender, MobilePho
 | `SEL-009` | `@P0` | `0` | 유효업무 0건 정상 |
 | `SEL-010` | `@P2` | `701` | 유효업무 2건 → 701 WorkDataError |
 
-각 행은 `tests/contract/<Test ID>.sql` 한 파일(`EXEC` 한 번, 단언 없음)과 `tools/expected-contracts.json` 의 한 항목이 된다.
+각 행은 계약 시나리오 파일 하나와 `tools/expected-contracts.json` 의 한 항목이 된다 — 파일명·키는 위 **계약 시나리오 규약**의 표가 정한다. 시나리오 `.sql` 은 이 Task 가 만들고, 기대값·검증기는 `T22` 가 만든다.
 
 ```sql
--- tests/contract/SEL-009.sql — 위 표의 Test ID 마다 파일 하나. 본문은 아래 두 줄이고 인자는 표에서 가져온다.
+-- tests/contract/09_수검자유효업무_0건.sql
 SET NOCOUNT ON;
 EXEC [dbo].[USP_HC_SELECT_수검자유효업무] @P0;
 ```
 
 ```json
 // tools/expected-contracts.json 발췌. rs0Code 는 확정값이다. resultSets 는 05 §7~§12 가 정의한 RS 형상을 옮겨 적는다.
-"SEL-009": { "sp": "USP_HC_SELECT_수검자유효업무", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-"SEL-010": { "sp": "USP_HC_SELECT_수검자유효업무", "rs0Success": 0, "rs0Code": 701 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"09_수검자유효업무_0건": { "sp": "USP_HC_SELECT_수검자유효업무", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"10_수검자유효업무_2건701": { "sp": "USP_HC_SELECT_수검자유효업무", "rs0Success": 0, "rs0Code": 701 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
 ```
 
 - [ ] **Step 2: 구현 명세**
@@ -388,7 +454,7 @@ IsToday     CASE WHEN ReservationDate = @Today THEN 1 ELSE 0 END
 
 - [ ] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_SELECT_수검자유효업무 구현`
 
-**완료조건:** `SEL-009`·`SEL-010` PASS. 특히 `701` 이 실제로 반환되어야 한다.
+**완료조건:** SP 배포 exit 0 + 시나리오 2개 단독 실행 exit 0. `10_수검자유효업무_2건701` 의 RS0 에 `701` 이 실제로 보여야 한다. 계약 판정은 `T22` 다.
 
 ---
 
@@ -399,6 +465,8 @@ IsToday     CASE WHEN ReservationDate = @Today THEN 1 ELSE 0 END
 **관련 Baseline 위치:** `05` §8.1, `04` §11.3.
 
 **선행조건:** `T18` 완료.
+
+**Files:** Modify `deploy/04_Procedures_Select.sql` · Create `tests/contract/11_예약접수목록_날짜역전.sql`, `tests/contract/12_예약접수목록_조건없음.sql`, `tests/contract/13_예약접수목록_날짜범위.sql`
 
 **Interfaces:** Produces RS0 + RS1 11컬럼, 정렬 `ReservationDate ASC, TimeSlot ASC, Name ASC, WorkId ASC`
 
@@ -412,19 +480,19 @@ IsToday     CASE WHEN ReservationDate = @Today THEN 1 ELSE 0 END
 | `SEL-012` | `NULL, NULL, NULL, NULL, NULL` | `103` | 조회조건 없음 103 |
 | `SEL-013` | `'2026-11-01', '2026-11-30', NULL, NULL, NULL` | `0` | 날짜범위 조회 |
 
-각 행은 `tests/contract/<Test ID>.sql` 한 파일(`EXEC` 한 번, 단언 없음)과 `tools/expected-contracts.json` 의 한 항목이 된다.
+각 행은 계약 시나리오 파일 하나와 `tools/expected-contracts.json` 의 한 항목이 된다 — 파일명·키는 위 **계약 시나리오 규약**의 표가 정한다. 시나리오 `.sql` 은 이 Task 가 만들고, 기대값·검증기는 `T22` 가 만든다.
 
 ```sql
--- tests/contract/SEL-011.sql — 위 표의 Test ID 마다 파일 하나. 본문은 아래 두 줄이고 인자는 표에서 가져온다.
+-- tests/contract/11_예약접수목록_날짜역전.sql
 SET NOCOUNT ON;
 EXEC [dbo].[USP_HC_SELECT_예약접수목록] '2026-12-01', '2026-11-01', NULL, NULL, NULL;
 ```
 
 ```json
 // tools/expected-contracts.json 발췌. rs0Code 는 확정값이다. resultSets 는 05 §7~§12 가 정의한 RS 형상을 옮겨 적는다.
-"SEL-011": { "sp": "USP_HC_SELECT_예약접수목록", "rs0Success": 0, "rs0Code": 104 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-"SEL-012": { "sp": "USP_HC_SELECT_예약접수목록", "rs0Success": 0, "rs0Code": 103 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-"SEL-013": { "sp": "USP_HC_SELECT_예약접수목록", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"11_예약접수목록_날짜역전": { "sp": "USP_HC_SELECT_예약접수목록", "rs0Success": 0, "rs0Code": 104 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"12_예약접수목록_조건없음": { "sp": "USP_HC_SELECT_예약접수목록", "rs0Success": 0, "rs0Code": 103 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"13_예약접수목록_날짜범위": { "sp": "USP_HC_SELECT_예약접수목록", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
 ```
 
 - [ ] **Step 2: 구현 명세**
@@ -451,7 +519,7 @@ ORDER BY w.[ReservationDate], w.[TimeSlotCode], p.[Name], w.[WorkId];
 
 - [ ] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_SELECT_예약접수목록 구현`
 
-**완료조건:** `SEL-011`~`SEL-013` PASS.
+**완료조건:** SP 배포 exit 0 + 시나리오 3개 단독 실행 exit 0. 계약 판정은 `T22` 다.
 
 ---
 
@@ -462,6 +530,8 @@ ORDER BY w.[ReservationDate], w.[TimeSlotCode], p.[Name], w.[WorkId];
 **관련 Baseline 위치:** `05` §8.2.
 
 **선행조건:** `T19` 완료.
+
+**Files:** Modify `deploy/04_Procedures_Select.sql` · Create `tests/contract/14_예약접수상세_미존재.sql`, `tests/contract/15_예약접수상세_NEX0행701.sql`, `tests/contract/16_예약접수상세_정상.sql`
 
 **Interfaces:** Produces `RS0` + `RS1 업무상세(15컬럼)` + `RS2 국가검사항목(4컬럼)` + `RS3 추가검사항목(3컬럼)` + `RS4 가능한업무(4컬럼, 정확히 5행)`
 
@@ -477,19 +547,19 @@ ORDER BY w.[ReservationDate], w.[TimeSlotCode], p.[Name], w.[WorkId];
 | `SEL-015` | `@Wc` | `701` | NEX 0행 Work → 701 |
 | `SEL-016` | `@Wn` | `0` | 정상 Work 상세 |
 
-각 행은 `tests/contract/<Test ID>.sql` 한 파일(`EXEC` 한 번, 단언 없음)과 `tools/expected-contracts.json` 의 한 항목이 된다.
+각 행은 계약 시나리오 파일 하나와 `tools/expected-contracts.json` 의 한 항목이 된다 — 파일명·키는 위 **계약 시나리오 규약**의 표가 정한다. 시나리오 `.sql` 은 이 Task 가 만들고, 기대값·검증기는 `T22` 가 만든다.
 
 ```sql
--- tests/contract/SEL-014.sql — 위 표의 Test ID 마다 파일 하나. 본문은 아래 두 줄이고 인자는 표에서 가져온다.
+-- tests/contract/14_예약접수상세_미존재.sql
 SET NOCOUNT ON;
 EXEC [dbo].[USP_HC_SELECT_예약접수상세] -1;
 ```
 
 ```json
 // tools/expected-contracts.json 발췌. rs0Code 는 확정값이다. resultSets 는 05 §7~§12 가 정의한 RS 형상을 옮겨 적는다.
-"SEL-014": { "sp": "USP_HC_SELECT_예약접수상세", "rs0Success": 0, "rs0Code": 500 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-"SEL-015": { "sp": "USP_HC_SELECT_예약접수상세", "rs0Success": 0, "rs0Code": 701 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-"SEL-016": { "sp": "USP_HC_SELECT_예약접수상세", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"14_예약접수상세_미존재": { "sp": "USP_HC_SELECT_예약접수상세", "rs0Success": 0, "rs0Code": 500 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"15_예약접수상세_NEX0행701": { "sp": "USP_HC_SELECT_예약접수상세", "rs0Success": 0, "rs0Code": 701 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"16_예약접수상세_정상": { "sp": "USP_HC_SELECT_예약접수상세", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
 ```
 
 - [ ] **Step 2: 구현 명세**
@@ -545,7 +615,7 @@ WHERE w.[WorkId] = @WorkId
 
 - [ ] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_SELECT_예약접수상세 구현 (RS0~RS4)`
 
-**완료조건:** `SEL-014`~`SEL-016` PASS. `RS4` 5행은 `T22` 파서가 검증한다.
+**완료조건:** SP 배포 exit 0 + 시나리오 3개 단독 실행 exit 0. `RS4` 5행은 `T22` 파서가 검증한다.
 
 ---
 
@@ -556,6 +626,8 @@ WHERE w.[WorkId] = @WorkId
 **관련 Baseline 위치:** `05` §9 전체 (§9.2 signature, §9.3 NULL 조합, §9.4 Scope, §9.5 RS 순서, §9.6~§9.11 각 RS, §9.12 CanSave, §9.13 평가순서).
 
 **선행조건:** `T20` 완료.
+
+**Files:** Modify `deploy/04_Procedures_Select.sql` · Create `tests/contract/17_예약가능정보_RowVersion단독.sql`, `tests/contract/18_예약가능정보_AEX_NULL.sql`, `tests/contract/19_예약가능정보_WALKIN_날짜불일치.sql`, `tests/contract/20_예약가능정보_휴무일.sql`
 
 **Interfaces:**
 - Consumes: 4개 TVF 전부
@@ -574,20 +646,20 @@ WHERE w.[WorkId] = @WorkId
 | `SEL-019` | `@Pn, NULL, NULL, 'WALKIN', '2026-11-16', 'AM', 0,0,0,0,0,0,0` | `102` | WALKIN 날짜 불일치 102 |
 | `SEL-020` | `@Pn, NULL, NULL, 'NORMAL', '2026-12-25', 'AM', 0,0,0,0,0,0,0` | `0` | 휴무일은 SP 실패가 아님 |
 
-각 행은 `tests/contract/<Test ID>.sql` 한 파일(`EXEC` 한 번, 단언 없음)과 `tools/expected-contracts.json` 의 한 항목이 된다.
+각 행은 계약 시나리오 파일 하나와 `tools/expected-contracts.json` 의 한 항목이 된다 — 파일명·키는 위 **계약 시나리오 규약**의 표가 정한다. 시나리오 `.sql` 은 이 Task 가 만들고, 기대값·검증기는 `T22` 가 만든다.
 
 ```sql
--- tests/contract/SEL-017.sql — 위 표의 Test ID 마다 파일 하나. 본문은 아래 두 줄이고 인자는 표에서 가져온다.
+-- tests/contract/17_예약가능정보_RowVersion단독.sql
 SET NOCOUNT ON;
 EXEC [dbo].[USP_HC_SELECT_예약가능정보] @Pn, NULL, 0x0000000000000001, 'NORMAL', '2026-11-16', 'AM', 0,0,0,0,0,0,0;
 ```
 
 ```json
 // tools/expected-contracts.json 발췌. rs0Code 는 확정값이다. resultSets 는 05 §7~§12 가 정의한 RS 형상을 옮겨 적는다.
-"SEL-017": { "sp": "USP_HC_SELECT_예약가능정보", "rs0Success": 0, "rs0Code": 102 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-"SEL-018": { "sp": "USP_HC_SELECT_예약가능정보", "rs0Success": 0, "rs0Code": 100 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-"SEL-019": { "sp": "USP_HC_SELECT_예약가능정보", "rs0Success": 0, "rs0Code": 102 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
-"SEL-020": { "sp": "USP_HC_SELECT_예약가능정보", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"17_예약가능정보_RowVersion단독": { "sp": "USP_HC_SELECT_예약가능정보", "rs0Success": 0, "rs0Code": 102 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"18_예약가능정보_AEX_NULL": { "sp": "USP_HC_SELECT_예약가능정보", "rs0Success": 0, "rs0Code": 100 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"19_예약가능정보_WALKIN_날짜불일치": { "sp": "USP_HC_SELECT_예약가능정보", "rs0Success": 0, "rs0Code": 102 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
+"20_예약가능정보_휴무일": { "sp": "USP_HC_SELECT_예약가능정보", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
 ```
 
 - [ ] **Step 2: 구현 — `05` §9.13 평가순서를 그대로 따른다**
@@ -678,13 +750,18 @@ Scope별 RS Cardinality (`05` §9.11) — 반드시 지킨다:
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i deploy/04_Procedures_Select.sql
-sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
-       -i tests/04_Select_SP_Tests.sql -o artifacts/logs/test_04.log
-echo "exit=$?"
-iconv -f UTF-16 -t UTF-8 artifacts/logs/test_04.log | grep -cE '^PASS'
+for f in tests/contract/1[789]_*.sql tests/contract/20_*.sql; do
+  RC=0
+  sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
+         -i "$f" -o "artifacts/logs/rs_$(basename "$f" .sql).txt" || RC=$?
+  echo "$f exit=$RC"
+done
 ```
 
-Expected: exit 0, PASS **20건** (`SEL-001`~`SEL-020`).
+`[X]` 초안 Expected 는 `tests/04_Select_SP_Tests.sql` 에서 `PASS 20건` 을 셌다. 계약 판정은 그 파일이 아니라
+`contract/` + `T22` 검증기가 한다. 건수를 다시 적지도 않는다 — §45.2 가 단일 출처다.
+
+Expected: 배포 exit 0, 시나리오 4개 전부 exit 0.
 
 - [ ] **Step 4: 회귀 — `SCH-014` 는 아직 FAIL (SP 7개)**
 
@@ -697,7 +774,7 @@ Expected: `SP=7`
 
 - [ ] **Step 5: Commit** — `feat(phase4): USP_HC_SELECT_예약가능정보 구현 (RS0~RS5)`
 
-**완료조건:** SELECT SP 7개 배포 완료 + 스펙 §45.2 의 `SEL` 전건이 계약 판정으로 PASS.
+**완료조건:** SELECT SP 7개 배포 완료 + 시나리오 4개 단독 실행 exit 0. 스펙 §45.2 의 `SEL` 전건 계약 판정은 `T22` 의 완료조건이다.
 
 ---
 
@@ -712,7 +789,8 @@ Expected: `SP=7`
 **Files:**
 - Create: `tools/verify-contract.js`
 - Create: `tools/expected-contracts.json`
-- Create: `tests/contract/01_공통업무상태.sql` … `tests/contract/07_예약가능정보_ALL.sql` 등 시나리오
+- Create: `tests/contract/21_예약가능정보_Scope_ALL.sql` ~ `tests/contract/25_예약가능정보_Scope_NONE.sql` (Scope 전용 5개. `01`~`20` 은 `T15`~`T21` 이 이미 만들었다)
+- Create: `scripts/verify-contract-all.sh`
 
 **Interfaces:**
 - Produces: `node tools/verify-contract.js <출력파일> <SP키>` → exit 0 = 일치, exit 1 = 불일치
@@ -721,7 +799,7 @@ Expected: `SP=7`
 
 - [ ] **Step 1: 시나리오 SQL 작성**
 
-각 파일은 SP를 한 번 호출하기만 한다. 예: `tests/contract/01_공통업무상태.sql`
+각 파일은 SP를 한 번 호출하기만 한다. `01`~`20` 은 `T15`~`T21` 이 이미 만들었으므로 여기서는 Scope 전용 `21`~`25` 만 만든다. 예: `tests/contract/01_공통업무상태.sql`
 
 ```sql
 SET NOCOUNT ON;
@@ -729,7 +807,7 @@ EXEC [dbo].[USP_HC_SELECT_공통업무상태];
 GO
 ```
 
-`SELECT_예약가능정보` 는 Scope별로 5개 파일을 만든다 (`ALL` / `SLOT` / `EXTRA` / `SLOT_EXTRA` / `NONE`).
+`SELECT_예약가능정보` 는 Scope별로 5개 파일을 더 만든다 (`ALL` / `SLOT` / `EXTRA` / `SLOT_EXTRA` / `NONE`) — `05` §9.11 Cardinality 전용이라 Test ID 가 없다.
 
 - [ ] **Step 2: `tools/expected-contracts.json` 작성**
 
@@ -771,6 +849,12 @@ const fs = require('fs');
 const [, , outPath, key] = process.argv;
 if (!outPath || !key) { console.error('usage: node verify-contract.js <sqlcmd출력파일> <SP키>'); process.exit(2); }
 
+// [X] FAIL 을 stdout 으로 낸다. 초안은 console.error 만 써서 증거파일에 구조적으로 PASS 만 남았다.
+//     stdout·stderr 양쪽에 쓰면 러너의 >> "$OUT" 2>&1 때문에 같은 FAIL 이 두 번 찍힌다(실측).
+//     한 곳으로만 낸다. 판정은 exit code 가 한다.
+const say = (m) => console.log(m);
+const bad = (m) => console.log(m);
+
 // sqlcmd -u 출력은 UTF-16LE + BOM
 const buf = fs.readFileSync(outPath);
 const text = buf.slice(0, 2).equals(Buffer.from([0xff, 0xfe]))
@@ -782,44 +866,75 @@ const isSep = (s) => /^-+( +-+)*\s*$/.test(s) || /^-+(\|-+)*\s*$/.test(s);
 
 // 구분선을 마커로 Result Set 을 분리한다.
 // 구분선 바로 위 줄이 헤더, 다음 구분선(또는 EOF)까지가 데이터행.
+// RS0 의 첫 데이터행은 따로 보관한다 — 스펙 §36.4 는 형상이 아니라 Code 값 일치를 요구한다.
 const sets = [];
 for (let i = 0; i < lines.length; i++) {
   if (!isSep(lines[i]) || i === 0) continue;
   const columns = lines[i - 1].split('|').map((s) => s.trim()).filter((s) => s.length);
-  let rows = 0;
+  let rows = 0, firstRow = null;
   for (let j = i + 1; j < lines.length; j++) {
     if (j + 1 < lines.length && isSep(lines[j + 1])) break;   // 다음 RS 의 헤더
     if (!lines[j].trim()) continue;
     if (/^\(\d+ /.test(lines[j].trim())) continue;             // "(N rows affected)"
+    if (rows === 0) firstRow = lines[j].split('|').map((s) => s.trim());
     rows++;
   }
-  sets.push({ columns, rows });
-  }
+  sets.push({ columns, rows, firstRow });
+}
 
 const expected = JSON.parse(fs.readFileSync(`${__dirname}/expected-contracts.json`, 'utf8'))[key];
-if (!expected) { console.error(`FAIL 기대 계약 없음: ${key}`); process.exit(1); }
+if (!expected) { bad(`FAIL 기대 계약 없음: ${key}`); process.exit(1); }
 
 let fail = 0;
+
+// (1) RS0 의 Success·Code 값
+const rs0 = sets[0];
+const pick = (name) => {
+  if (!rs0 || !rs0.firstRow) return undefined;
+  const k = rs0.columns.indexOf(name);
+  return k < 0 ? undefined : rs0.firstRow[k];
+};
+const obsSuccess = pick('Success'), obsCode = pick('Code');
+if (expected.rs0Success !== undefined && Number(obsSuccess) !== expected.rs0Success) {
+  bad(`FAIL ${key} RS0.Success 관측 ${obsSuccess} != 기대 ${expected.rs0Success}`); fail++;
+}
+if (expected.rs0Code !== undefined && Number(obsCode) !== expected.rs0Code) {
+  bad(`FAIL ${key} RS0.Code 관측 ${obsCode} != 기대 ${expected.rs0Code}`); fail++;
+}
+
+// (2) 허용집합 대조는 tools/allowed-codes.json 이 있을 때만 한다 (T36 Step 5 가 만든다).
+//     없으면 조용히 통과시키지 않고 NOT RUN 으로 남긴다 — 미실행은 PASS 가 아니다 (CLAUDE.md §10).
+const allowedPath = `${__dirname}/allowed-codes.json`;
+if (fs.existsSync(allowedPath)) {
+  const allowed = JSON.parse(fs.readFileSync(allowedPath, 'utf8'))[expected.sp];
+  if (Array.isArray(allowed) && !allowed.includes(Number(obsCode))) {
+    bad(`FAIL ${key} RS0.Code ${obsCode} 가 ${expected.sp} 의 허용집합 밖`); fail++;
+  }
+} else {
+  say(`NOT RUN ${key} 허용집합 대조 — tools/allowed-codes.json 이 아직 없다 (T36)`);
+}
+
+// (3) RS 개수·컬럼·행수
 if (sets.length !== expected.resultSets.length) {
-  console.error(`FAIL ${key} Result Set 개수 ${sets.length} != 기대 ${expected.resultSets.length}`);
+  bad(`FAIL ${key} Result Set 개수 ${sets.length} != 기대 ${expected.resultSets.length}`);
   fail++;
 }
 expected.resultSets.forEach((e, i) => {
   const a = sets[i];
-  if (!a) { console.error(`FAIL ${key} RS${i} 누락`); fail++; return; }
+  if (!a) { bad(`FAIL ${key} RS${i} 누락`); fail++; return; }
   if (a.columns.join(',') !== e.columns.join(',')) {
-    console.error(`FAIL ${key} RS${i} 컬럼 불일치\n  실측: ${a.columns.join(',')}\n  기대: ${e.columns.join(',')}`);
+    bad(`FAIL ${key} RS${i} 컬럼 불일치\n  실측: ${a.columns.join(',')}\n  기대: ${e.columns.join(',')}`);
     fail++;
   }
   const lo = e.rows !== undefined ? e.rows : e.rowsMin;
   const hi = e.rows !== undefined ? e.rows : e.rowsMax;
   if (a.rows < lo || a.rows > hi) {
-    console.error(`FAIL ${key} RS${i} 행수 ${a.rows} 가 기대 ${lo}~${hi} 밖`);
+    bad(`FAIL ${key} RS${i} 행수 ${a.rows} 가 기대 ${lo}~${hi} 밖`);
     fail++;
   }
 });
 
-if (fail === 0) console.log(`PASS ${key} Result Set 계약 일치 (${sets.length}개 RS)`);
+if (fail === 0) say(`PASS ${key} Result Set 계약 일치 (${sets.length}개 RS · RS0 Code=${obsCode})`);
 process.exit(fail === 0 ? 0 : 1);
 ```
 
@@ -887,7 +1002,8 @@ exit $FAILED
 2. `$?` 는 `tee` 의 것(항상 0)이라 실패해도 `exit=0` 으로 보인다.
 3. `verify-contract.js` 가 FAIL 을 `console.error`(stderr)로 내는데 `tee` 는 stdout만 잡는다 → **G09 증거파일에 구조적으로 PASS 만 기록된다.**
 
-`>> "$OUT" 2>&1` 로 양쪽을 누적하고 플래그로 집계한다. `verify-contract.js` 도 FAIL 을 stdout 에 함께 쓰도록 고친다.
+`>> "$OUT" 2>&1` 로 양쪽을 누적하고 플래그로 집계한다. `verify-contract.js` 는 FAIL 을 **stdout 으로만** 낸다 —
+Step 3 의 `[X]` 대로다. 양쪽에 쓰면 `2>&1` 때문에 증거파일에 같은 FAIL 이 두 번 찍힌다(실측 확인).
 
 `-W -w 65535` 를 빼지 않는다 — 기본 폭 80에서 줄이 접히면 파서가 무너진다(실측 확인).
 
@@ -897,7 +1013,7 @@ chmod +x scripts/verify-contract-all.sh
 echo "exit=$?"
 ```
 
-Expected: 전부 `PASS`, `exit=0`. 특히 `07_예약가능정보_ALL` 은 **RS 6개**, `06_예약접수상세` 는 **RS 5개 + RS4 정확히 5행**이어야 한다.
+Expected: 전부 `PASS`, `exit=0`. 특히 `21_예약가능정보_Scope_ALL` 은 **RS 6개**, `16_예약접수상세_정상` 은 **RS 5개 + RS4 정확히 5행**이어야 한다.
 
 - [ ] **Step 6: Commit**
 
@@ -913,4 +1029,6 @@ git commit -m "test(phase4): 후속 Result Set 계약 검증기 도입 (node, �
 
 **Rollback/Cleanup:** 검증기는 읽기 전용이다.
 
-**완료조건:** RED에서 실제 FAIL 관측, GREEN에서 SELECT SP 11개 시나리오 전부 PASS.
+**완료조건:** RED에서 실제 FAIL 관측 + 스펙 §45.2 의 `SEL` 전건이 계약 판정으로 PASS + Scope 5개 시나리오 PASS.
+
+`[X]` 초안은 시나리오를 SP 단위 11개로 셌다. 그렇게 세면 `SEL` 20건 중 9건이 판정되지 않는다 — 위 **계약 시나리오 규약** 표가 단일 출처다.
