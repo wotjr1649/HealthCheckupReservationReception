@@ -66,10 +66,10 @@ RETURN
                     , NowTime      = CONVERT(TIME(7), @ServerTime)
                     , TodayDow     = DATEDIFF(DAY, 0, CONVERT(DATE, @ServerTime)) % 7
                     , ReqDow       = DATEDIFF(DAY, 0, @ReservationDate) % 7
-                    , TodayHoliday = (SELECT TOP (1) h.[HolidayName] FROM [dbo].[휴무일] h
-                                       WHERE h.[HolidayDate] = CONVERT(DATE, @ServerTime) AND h.[Active] = 1)
-                    , ReqHoliday   = (SELECT TOP (1) h.[HolidayName] FROM [dbo].[휴무일] h
-                                       WHERE h.[HolidayDate] = @ReservationDate AND h.[Active] = 1)
+                    , TodayHoliday = (SELECT TOP (1) h.[휴무일명] FROM [dbo].[휴무일] h
+                                       WHERE h.[휴무일자] = CONVERT(DATE, @ServerTime) AND h.[사용여부] = 1)
+                    , ReqHoliday   = (SELECT TOP (1) h.[휴무일명] FROM [dbo].[휴무일] h
+                                       WHERE h.[휴무일자] = @ReservationDate AND h.[사용여부] = 1)
                     -- 토요일 오후는 00 §3장이 마감을 "해당 없음" 으로 확정했다.
                     -- RawCutoff 는 요일을 보지 않으므로 CutoffTime 을 SlotOpen=0 에서 NULL 로 덮는다.
                     , RawCutoff    = CASE WHEN @CutoffType = 'NORMAL'    AND @TimeSlot = 'AM' THEN CONVERT(TIME(0), '10:00:00')

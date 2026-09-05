@@ -17,7 +17,7 @@ BIZ=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
               AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
               AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
               AND NOT EXISTS (SELECT 1 FROM dbo.휴무일
-                               WHERE HolidayDate = CONVERT(DATE, SYSDATETIME()) AND Active = 1)
+                               WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [사용여부] = 1)
          THEN 1 ELSE 0 END;" | tr -d ' \r')
 
 for f in tests/contract/*.sql; do

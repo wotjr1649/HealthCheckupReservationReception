@@ -307,6 +307,9 @@ CK_수검자_CEL_DIGIT        유지 (계산열 대상)
 
 ### 공통 절차 (`T40`~`T46` 전부)
 
+`[X]` **`scripts/inspect.sql` 을 열거 범위에 반드시 넣는다.** 어느 게이트도 이 파일을 돌리지 않아
+`T41` 이 여기의 `완료이력` 참조를 놓쳤고 `T42` 에서야 드러났다. 8단계에 `inspect.sh` 를 넣는다.
+
 ```text
 1  RED    해당 테이블의 컬럼 하나를 새 이름으로 참조하는 배포를 시도해 Msg 207 을 관측한다
 2  치환   01_Schema.sql 의 그 테이블 정의 ― 대괄호 형태만
@@ -316,7 +319,7 @@ CK_수검자_CEL_DIGIT        유지 (계산열 대상)
 5  확인   @ 로 시작하는 이름 0건 변경 · Result Set 별칭 0건 변경 (§2.2)
 6  실행   ./scripts/test.sh 전건
 7  실행   ./scripts/verify-contract-all.sh 25건
-8  실행   verify-baseline · verify-winforms · verify-docs
+8  실행   verify-baseline · verify-winforms · verify-docs · ./scripts/inspect.sh
 9  커밋   한 커밋. 게이트 red 를 남기지 않는다
 ```
 

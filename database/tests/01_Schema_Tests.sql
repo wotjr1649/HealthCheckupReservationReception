@@ -128,10 +128,10 @@ INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
  (N'검사코드', N'AdditionalGenderCode', N'char',      1,     1),
  (N'검사코드', N'AdditionalActive',     N'bit',       NULL,  0),
  -- 휴무일 4행
- (N'휴무일', N'HolidayDate',          N'date',      NULL,  0),
- (N'휴무일', N'HolidayName',          N'nvarchar',  100,   0),
- (N'휴무일', N'Active',               N'bit',       NULL,  0),
- (N'휴무일', N'Memo',                 N'nvarchar',  500,   1),
+ (N'휴무일', N'휴무일자',              N'date',      NULL,  0),
+ (N'휴무일', N'휴무일명',              N'nvarchar',  100,   0),
+ (N'휴무일', N'사용여부',              N'bit',       NULL,  0),
+ (N'휴무일', N'비고',                  N'nvarchar',  500,   1),
  -- 완료이력 2행
  (N'완료이력', N'수검자ID',             N'bigint',    NULL,  0),
  (N'완료이력', N'완료일자',             N'date',      NULL,  0),

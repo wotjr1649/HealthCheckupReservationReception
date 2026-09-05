@@ -61,15 +61,15 @@ IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [NexRuleCode] IN ('NEX-02',
     PRINT 'PASS SED-007 조건부 NEX 5행';
 ELSE BEGIN PRINT 'FAIL SED-007 조건부 NEX 행수 불일치'; SET @Fail += 1; END
 
-IF ((SELECT COUNT(*) FROM [dbo].[휴무일] WHERE [Active] = 1) = 2)
+IF ((SELECT COUNT(*) FROM [dbo].[휴무일] WHERE [사용여부] = 1) = 2)
     PRINT 'PASS SED-008 활성 휴무일 2행';
 ELSE BEGIN PRINT 'FAIL SED-008 휴무일 행수 불일치'; SET @Fail += 1; END
 
-IF EXISTS (SELECT 1 FROM [dbo].[휴무일] WHERE [HolidayDate] = '2026-12-25' AND DATEDIFF(DAY,0,[HolidayDate])%7 = 4)
+IF EXISTS (SELECT 1 FROM [dbo].[휴무일] WHERE [휴무일자] = '2026-12-25' AND DATEDIFF(DAY,0,[휴무일자])%7 = 4)
     PRINT 'PASS SED-009 평일(금) 휴무일 존재';
 ELSE BEGIN PRINT 'FAIL SED-009 평일 휴무일 없음 또는 요일 불일치'; SET @Fail += 1; END
 
-IF EXISTS (SELECT 1 FROM [dbo].[휴무일] WHERE [HolidayDate] = '2026-12-26' AND DATEDIFF(DAY,0,[HolidayDate])%7 = 5)
+IF EXISTS (SELECT 1 FROM [dbo].[휴무일] WHERE [휴무일자] = '2026-12-26' AND DATEDIFF(DAY,0,[휴무일자])%7 = 5)
     PRINT 'PASS SED-010 토요일 휴무일 존재';
 ELSE BEGIN PRINT 'FAIL SED-010 토요일 휴무일 없음 또는 요일 불일치'; SET @Fail += 1; END
 

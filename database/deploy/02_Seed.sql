@@ -33,7 +33,7 @@ VALUES
     ('EX018', N'HbA1c',         NULL,     'OPT06', 'A',  1),
     ('EX019', N'HPV 검사',      NULL,     'OPT07', 'F',  1);
 GO
-INSERT INTO [dbo].[휴무일] ([HolidayDate], [HolidayName], [Active], [Memo])
+INSERT INTO [dbo].[휴무일] ([휴무일자], [휴무일명], [사용여부], [비고])
 VALUES
     ('2026-12-25', N'성탄절',     1, N'평일(금) 휴무일 — HOL-05 테스트용'),
     ('2026-12-26', N'센터 휴진일', 1, N'토요일 휴무일 — HOL-05 테스트용');

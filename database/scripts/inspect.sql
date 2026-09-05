@@ -62,7 +62,8 @@ SELECT WorkId  = w.[WorkId]
 SELECT Src    = d.[ExamSourceCode]
      , Code   = d.[ExamItemCode]
      , Nm     = CAST(m.[ExamItemName] AS NVARCHAR(14))
-     , RuleCd = ISNULL(m.[NexRuleCode], m.[AdditionalExamCode])
+     , RuleCd = CASE WHEN d.[ExamSourceCode] = 'AEX' THEN m.[AdditionalExamCode]
+                     ELSE m.[NexRuleCode] END
   FROM [dbo].[검사항목] d
   JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[ExamItemCode]
  WHERE d.[WorkId] = @WorkId
@@ -81,20 +82,20 @@ SELECT ChartNo = CAST(p.[ChartNo] AS NVARCHAR(8)), Nm = CAST(p.[Name] AS NVARCHA
  GROUP BY p.[ChartNo], p.[Name], w.[WorkId], w.[ReservationDate], w.[TimeSlotCode], w.[StatusCode]
  ORDER BY w.[ReservationDate], w.[WorkId];
 
-SELECT ChartNo = CAST(p.[ChartNo] AS NVARCHAR(8)), LastCheckup = h.[CompletionDate]
+SELECT ChartNo = CAST(p.[ChartNo] AS NVARCHAR(8)), LastCheckup = h.[완료일자]
   FROM [dbo].[수검자] p
-  JOIN [dbo].[완료이력] h ON h.[PatientId] = p.[PatientId]
+  JOIN [dbo].[완료이력] h ON h.[수검자ID] = p.[PatientId]
  WHERE p.[ChartNo] = @ChartNo
- ORDER BY h.[CompletionDate] DESC;
+ ORDER BY h.[완료일자] DESC;
 
 PRINT N'==== [5] 슬롯별 정원 현황 (RSV+RCP 만 산정 · 정원 20) ====';
 SELECT ResDate   = w.[ReservationDate]
      , Slot      = w.[TimeSlotCode]
      , Used      = COUNT(*)
      , SeatsLeft = CASE WHEN 20 - COUNT(*) < 0 THEN 0 ELSE 20 - COUNT(*) END
-     , Holiday   = CAST(ISNULL(h.[HolidayName], N'') AS NVARCHAR(12))
+     , Holiday   = CAST(ISNULL(h.[휴무일명], N'') AS NVARCHAR(12))
   FROM [dbo].[예약접수] w
-  LEFT JOIN [dbo].[휴무일] h ON h.[HolidayDate] = w.[ReservationDate] AND h.[Active] = 1
+  LEFT JOIN [dbo].[휴무일] h ON h.[휴무일자] = w.[ReservationDate] AND h.[사용여부] = 1
  WHERE w.[StatusCode] IN ('RSV','RCP')
- GROUP BY w.[ReservationDate], w.[TimeSlotCode], h.[HolidayName]
+ GROUP BY w.[ReservationDate], w.[TimeSlotCode], h.[휴무일명]
  ORDER BY w.[ReservationDate], w.[TimeSlotCode];
