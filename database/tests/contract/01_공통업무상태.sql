@@ -1,0 +1,3 @@
+﻿SET NOCOUNT ON;
+EXEC [dbo].[USP_HC_SELECT_공통업무상태];
+GO

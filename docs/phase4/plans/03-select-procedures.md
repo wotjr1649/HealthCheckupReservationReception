@@ -145,7 +145,42 @@ GO
 }
 ```
 
-`tests/04_Select_SP_Tests.sql` 에는 **DB 상태 단언만** 남긴다(이 SP 는 읽기 전용이라 남는 단언이 없다 — 파일에 `SEL-001` 을 두지 않는다).
+`tests/04_Select_SP_Tests.sql` 에는 **DB 상태 단언만** 남긴다 — 파일에 `SEL-001` 을 두지 않는다.
+
+`[X]` **그렇다고 단언이 하나도 없는 파일을 두지 않는다.** `test.sh` 가 이 파일을 돌리고 `grep '^(PASS|FAIL)'`
+로 판정하는데 아무 출력이 없으면 **항상 조용히 통과한다** — `plans/08` 이 `tests/14` 에서 실제로 겪은 사고다.
+SELECT SP 가 읽기 전용이라는 것 자체가 판정할 수 있는 DB 상태 불변조건이다. 7테이블 행수 지문을
+호출 전후로 비교한다. 카탈로그에 없는 표식이므로 Test ID 를 쓰지 않는다(`FIX-DEPLOY`·`FIX-SSN-PRE` 와 같은 부류).
+`T16`~`T21` 은 자기 SP 를 이 패턴에 한 줄씩 더한다.
+
+```sql
+SET NOCOUNT ON;
+DECLARE @Fail INT = 0;
+
+DECLARE @Before VARCHAR(100) =
+      CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[수검자]))   + '|'
+    + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[예약접수])) + '|'
+    + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[검사항목])) + '|'
+    + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[완료이력])) + '|'
+    + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[변경이력])) + '|'
+    + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[검사코드])) + '|'
+    + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[휴무일]));
+
+EXEC [dbo].[USP_HC_SELECT_공통업무상태];
+
+DECLARE @After VARCHAR(100) = /* @Before 와 같은 식 */ NULL;
+
+IF @Before = @After
+    PRINT 'PASS FIX-RO-01 공통업무상태 호출이 DB 상태를 바꾸지 않았다  ' + @After;
+ELSE BEGIN PRINT 'FAIL FIX-RO-01 읽기전용 위반  before=' + @Before + '  after=' + @After; SET @Fail += 1; END
+
+IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
+PRINT '=== 04_Select_SP_Tests 완료 ===';
+GO
+```
+
+`@After` 는 `@Before` 와 **같은 식을 그대로 한 번 더 쓴다.** 헬퍼 함수로 묶지 않는다 — 스칼라 UDF 는
+계약(TVF 4 / SP 15) 밖이고 `SCH-013`·`SCH-014` 의 개수 단언을 깨뜨린다.
 
 `[X]` **초안은 `tests/04_Select_SP_Tests.sql` 을 돌려 `Msg 2812` 를 기대했다.** 그 파일에는 이 SP 를
 참조하는 문장이 하나도 없으므로 `Msg 2812` 가 날 수 없다. RED 는 시나리오 파일로 관측한다.
