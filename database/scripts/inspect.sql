@@ -18,14 +18,14 @@ DECLARE @ChartNo NVARCHAR(100) = NULL;   -- [4] 볼 수검자. NULL 이면 업�
 
 IF @WorkId IS NULL
     SELECT TOP (1) @WorkId = [업무ID]
-      FROM [dbo].[검사항목] GROUP BY [업무ID] ORDER BY COUNT(*) DESC, [업무ID];
+      FROM [dbo].[예약접수] ORDER BY LEN([국가검사항목]) DESC, [업무ID];
 
 IF @ChartNo IS NULL
     SELECT TOP (1) @ChartNo = p.[차트번호]
       FROM [dbo].[예약접수] w JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
      GROUP BY p.[차트번호] ORDER BY COUNT(*) DESC, p.[차트번호];
 
-PRINT N'==== [1] 7개 테이블 ====';
+PRINT N'==== [1] 6개 테이블 ====';
 SELECT TableNm = CAST(t.[name] AS NVARCHAR(10))
      , Rws     = SUM(CASE WHEN i.[index_id] IN (0,1) THEN p.[rows] ELSE 0 END)
      , UsedKB  = SUM(a.[used_pages]) * 8
@@ -59,30 +59,30 @@ SELECT WorkId  = w.[업무ID]
   JOIN [dbo].[수검자]   p ON p.[수검자ID] = w.[수검자ID]
  WHERE w.[업무ID] = @WorkId;
 
-SELECT Src    = d.[검사출처코드]
-     , Code   = d.[검사항목코드]
+SELECT Src    = V.Src
+     , Code   = m.[검사항목코드]
      , Nm     = CAST(m.[검사항목명] AS NVARCHAR(14))
-     , RuleCd = CASE WHEN d.[검사출처코드] = 'AEX' THEN m.[추가검사코드]
-                     ELSE m.[국가검사규칙코드] END
-  FROM [dbo].[검사항목] d
-  JOIN [dbo].[검사코드] m ON m.[검사항목코드] = d.[검사항목코드]
- WHERE d.[업무ID] = @WorkId
- ORDER BY d.[검사출처코드], d.[검사항목코드];
+     , RuleCd = CASE WHEN V.Src = 'AEX' THEN m.[추가검사코드] ELSE m.[국가검사규칙코드] END
+  FROM [dbo].[예약접수] w
+ CROSS APPLY (VALUES ('NEX', w.[국가검사항목]), ('AEX', w.[추가검사항목])) V(Src, Lst)
+  JOIN [dbo].[검사코드] m
+    ON N',' + ISNULL(V.Lst, N'') + N',' LIKE N'%,' + m.[검사항목코드] + N',%'
+ WHERE w.[업무ID] = @WorkId
+ ORDER BY V.Src, m.[검사항목코드];
 
 PRINT N'==== [4] 수검자 1명의 업무 타임라인 ====';
 SELECT ChartNo = CAST(p.[차트번호] AS NVARCHAR(8)), Nm = CAST(p.[성명] AS NVARCHAR(10))
      , WorkId  = w.[업무ID]
      , ResDate = w.[예약일], Slot = w.[시간대코드], Status = w.[상태코드]
-     , NexCnt  = SUM(CASE WHEN d.[검사출처코드] = 'NEX' THEN 1 ELSE 0 END)
-     , AexCnt  = SUM(CASE WHEN d.[검사출처코드] = 'AEX' THEN 1 ELSE 0 END)
+     , NEX     = CAST(w.[국가검사항목] AS NVARCHAR(40))
+     , AEX     = CAST(w.[추가검사항목] AS NVARCHAR(20))
   FROM [dbo].[수검자]   p
   JOIN [dbo].[예약접수] w ON w.[수검자ID] = p.[수검자ID]
-  LEFT JOIN [dbo].[검사항목] d ON d.[업무ID] = w.[업무ID]
  WHERE p.[차트번호] = @ChartNo
- GROUP BY p.[차트번호], p.[성명], w.[업무ID], w.[예약일], w.[시간대코드], w.[상태코드]
  ORDER BY w.[예약일], w.[업무ID];
 
 SELECT ChartNo = CAST(p.[차트번호] AS NVARCHAR(8)), LastCheckup = h.[완료일자]
+     , NEX = CAST(h.[국가검사항목] AS NVARCHAR(40)), AEX = CAST(h.[추가검사항목] AS NVARCHAR(20))
   FROM [dbo].[수검자] p
   JOIN [dbo].[완료이력] h ON h.[수검자ID] = p.[수검자ID]
  WHERE p.[차트번호] = @ChartNo

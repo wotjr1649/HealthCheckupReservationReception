@@ -3,13 +3,13 @@ DECLARE @Fail INT = 0;
 
 DECLARE @Expected TABLE (Name SYSNAME PRIMARY KEY);
 INSERT INTO @Expected (Name) VALUES
- ('수검자'),('예약접수'),('검사항목'),
+ ('수검자'),('예약접수'),
  ('검사코드'),('휴무일'),
  ('완료이력'),('변경이력');
 
 -- SCH-001 테이블 수
-IF ((SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0) = 7)
-    PRINT 'PASS SCH-001 사용자 테이블 7개';
+IF ((SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0) = 6)
+    PRINT 'PASS SCH-001 사용자 테이블 6개';
 ELSE BEGIN PRINT 'FAIL SCH-001 사용자 테이블 수 불일치'; SET @Fail += 1; END
 
 -- SCH-002 테이블 이름 집합 정확 일치
@@ -23,15 +23,15 @@ IF ((SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[수�
     PRINT 'PASS SCH-003 수검자 16컬럼';
 ELSE BEGIN PRINT 'FAIL SCH-003 수검자 컬럼 수 불일치'; SET @Fail += 1; END
 
--- SCH-004 PK 7
-IF ((SELECT COUNT(*) FROM sys.key_constraints WHERE type = 'PK') = 7)
-    PRINT 'PASS SCH-004 PK 7개';
+-- SCH-004 PK 6
+IF ((SELECT COUNT(*) FROM sys.key_constraints WHERE type = 'PK') = 6)
+    PRINT 'PASS SCH-004 PK 6개';
 ELSE BEGIN PRINT 'FAIL SCH-004 PK 수 불일치'; SET @Fail += 1; END
 
--- SCH-005 FK 4 + 전부 NO ACTION
-IF ((SELECT COUNT(*) FROM sys.foreign_keys) = 4
+-- SCH-005 FK 2 + 전부 NO ACTION. 검사항목이 사라져 FK 2개도 함께 사라졌다 (plans/10 §3)
+IF ((SELECT COUNT(*) FROM sys.foreign_keys) = 2
     AND NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE delete_referential_action <> 0 OR update_referential_action <> 0))
-    PRINT 'PASS SCH-005 FK 4개 / 전부 NO ACTION';
+    PRINT 'PASS SCH-005 FK 2개 / 전부 NO ACTION';
 ELSE BEGIN PRINT 'FAIL SCH-005 FK 수 또는 Cascade 설정 불일치'; SET @Fail += 1; END
 
 -- SCH-006 일반 UQ 2
@@ -115,12 +115,10 @@ INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
  (N'예약접수', N'생성일시',              N'datetime2', NULL,  0),
  (N'예약접수', N'최종수정일시',          N'datetime2', NULL,  0),
  (N'예약접수', N'행버전',                N'timestamp', NULL,  0),
- (N'예약접수', N'국가검사항목',          N'nvarchar',  100,   1),
+ (N'예약접수', N'국가검사항목',          N'nvarchar',  100,   0),
  (N'예약접수', N'추가검사항목',          N'nvarchar',  50,    1),
  -- 검사항목 3행
- (N'검사항목', N'업무ID',                N'bigint',    NULL,  0),
- (N'검사항목', N'검사항목코드',          N'varchar',   10,    0),
- (N'검사항목', N'검사출처코드',          N'char',      3,     0),
+
  -- 검사코드 6행
  (N'검사코드', N'검사항목코드',           N'varchar',   10,    0),
  (N'검사코드', N'검사항목명',             N'nvarchar',  100,   0),
@@ -178,7 +176,8 @@ INSERT INTO @ExpCk (N) VALUES
  (N'CK_수검자_GENDER'),             (N'CK_수검자_CEL_DIGIT'),
  (N'CK_수검자_EDIT_DATE'),
  (N'CK_예약접수_TIME_SLOT'),        (N'CK_예약접수_STATUS'),
- (N'CK_예약접수_EDIT_DATE'),        (N'CK_검사항목_SOURCE'),
+ (N'CK_예약접수_EDIT_DATE'),        (N'CK_예약접수_EXAM_FORMAT'),
+ (N'CK_완료이력_EXAM_FORMAT'),
  (N'CK_검사코드_CODE_NOT_BLANK'),   (N'CK_검사코드_NAME_NOT_BLANK'),
  (N'CK_검사코드_ROLE_REQUIRED'),    (N'CK_검사코드_NEX_RULE'),
  (N'CK_검사코드_AEX_CODE'),         (N'CK_검사코드_AEX_GENDER'),

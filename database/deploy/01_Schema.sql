@@ -8,7 +8,6 @@ PRINT N'--- 01_Schema 시작 ---';
 GO
 DROP TABLE IF EXISTS [dbo].[변경이력];
 DROP TABLE IF EXISTS [dbo].[완료이력];
-DROP TABLE IF EXISTS [dbo].[검사항목];
 DROP TABLE IF EXISTS [dbo].[예약접수];
 DROP TABLE IF EXISTS [dbo].[휴무일];
 DROP TABLE IF EXISTS [dbo].[검사코드];
@@ -106,8 +105,11 @@ CREATE TABLE [dbo].[예약접수]
     [최종수정일시] DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_LAST_EDIT_DATE] DEFAULT (SYSDATETIME()),
     [행버전]       ROWVERSION   NOT NULL,
     -- 검사구성. 검사항목코드를 오름차순으로 쉼표로 잇는다 (plans/10 §1).
-    -- T50 은 NULL 허용으로 만든다. T52 가 국가검사항목을 NOT NULL 로 승격한다.
-    [국가검사항목] NVARCHAR(100) NULL,
+    -- [X] NOT NULL 은 "국가검사가 반드시 있다" 를 보증하지 않는다. CORRUPT-2(저장 NEX 0행)를
+    --     만들 수 있어야 하므로 빈 문자열이 통과한다. 빈 문자열이 검사구성 손상의 유일한
+    --     표현이고 판정식은 LEN([국가검사항목]) = 0 이다. NULL 과 빈 문자열이 둘 다 손상을
+    --     뜻하는 상태를 만들지 않으려고 NOT NULL 을 건다.
+    [국가검사항목] NVARCHAR(100) NOT NULL,
     [추가검사항목] NVARCHAR(50)  NULL,
 
     CONSTRAINT [PK_예약접수] PRIMARY KEY CLUSTERED ([업무ID]),
@@ -115,7 +117,13 @@ CREATE TABLE [dbo].[예약접수]
         REFERENCES [dbo].[수검자] ([수검자ID]) ON DELETE NO ACTION ON UPDATE NO ACTION,
     CONSTRAINT [CK_예약접수_TIME_SLOT] CHECK ([시간대코드] IN ('AM','PM')),
     CONSTRAINT [CK_예약접수_STATUS]    CHECK ([상태코드] IN ('RSV','RCP','CNR','CNC')),
-    CONSTRAINT [CK_예약접수_EDIT_DATE] CHECK ([최종수정일시] >= [생성일시])
+    CONSTRAINT [CK_예약접수_EDIT_DATE] CHECK ([최종수정일시] >= [생성일시]),
+    -- 코드 존재는 보증하지 못한다(FK_검사항목_검사코드 를 잃은 대가). 형식만 막는다.
+    CONSTRAINT [CK_예약접수_EXAM_FORMAT] CHECK
+    (
+        [국가검사항목] NOT LIKE '%[^A-Z0-9,]%'
+    AND ([추가검사항목] IS NULL OR [추가검사항목] NOT LIKE '%[^A-Z0-9,]%')
+    )
 );
 GO
 CREATE NONCLUSTERED INDEX [IX_예약접수_SLOT]
@@ -125,20 +133,6 @@ GO
 CREATE NONCLUSTERED INDEX [IX_예약접수_PATIENT_STATE_DATE]
     ON [dbo].[예약접수] ([수검자ID], [상태코드], [예약일])
     INCLUDE ([시간대코드]);
-GO
-CREATE TABLE [dbo].[검사항목]
-(
-    [업무ID]       BIGINT      NOT NULL,
-    [검사항목코드] VARCHAR(10) NOT NULL,
-    [검사출처코드] CHAR(3)     NOT NULL,
-
-    CONSTRAINT [PK_검사항목] PRIMARY KEY CLUSTERED ([업무ID], [검사항목코드]),
-    CONSTRAINT [FK_검사항목_예약접수] FOREIGN KEY ([업무ID])
-        REFERENCES [dbo].[예약접수] ([업무ID]) ON DELETE NO ACTION ON UPDATE NO ACTION,
-    CONSTRAINT [FK_검사항목_검사코드] FOREIGN KEY ([검사항목코드])
-        REFERENCES [dbo].[검사코드] ([검사항목코드]) ON DELETE NO ACTION ON UPDATE NO ACTION,
-    CONSTRAINT [CK_검사항목_SOURCE] CHECK ([검사출처코드] IN ('NEX','AEX'))
-);
 GO
 CREATE TABLE [dbo].[완료이력]
 (
@@ -151,7 +145,12 @@ CREATE TABLE [dbo].[완료이력]
 
     CONSTRAINT [PK_완료이력] PRIMARY KEY CLUSTERED ([수검자ID], [완료일자]),
     CONSTRAINT [FK_완료이력_수검자] FOREIGN KEY ([수검자ID])
-        REFERENCES [dbo].[수검자] ([수검자ID]) ON DELETE NO ACTION ON UPDATE NO ACTION
+        REFERENCES [dbo].[수검자] ([수검자ID]) ON DELETE NO ACTION ON UPDATE NO ACTION,
+    CONSTRAINT [CK_완료이력_EXAM_FORMAT] CHECK
+    (
+        ([국가검사항목] IS NULL OR [국가검사항목] NOT LIKE '%[^A-Z0-9,]%')
+    AND ([추가검사항목] IS NULL OR [추가검사항목] NOT LIKE '%[^A-Z0-9,]%')
+    )
 );
 GO
 CREATE TABLE [dbo].[변경이력]
