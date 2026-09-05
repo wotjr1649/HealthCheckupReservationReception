@@ -14,6 +14,38 @@
 | 시각 | KST `+09:00` (`DATEPART(TZOFFSET, SYSDATETIMEOFFSET()) = 540`) |
 | 도구 | `sqlcmd` / Git Bash / `node` (표준 라이브러리만) |
 
+## 구조 한눈에
+
+```mermaid
+erDiagram
+    수검자 ||--o{ 예약접수 : "업무"
+    수검자 ||--o{ 완료이력 : "과거 검진완료일"
+    예약접수 ||--|{ 검사항목 : "검사구성 스냅샷"
+    검사코드 ||--o{ 검사항목 : "검사 Master"
+```
+
+`휴무일` 은 날짜로만 조회되는 독립 Master, `변경이력` 은 FK 를 갖지 않으므로 관계선이 없다
+(`../docs/baseline/04_DB_Design.md` §4.5).
+
+| 테이블 | 구분 | 책임 | 쓰는 주체 |
+|---|---|---|---|
+| `수검자` | 핵심 업무 | 수검자 Master. Work 와 1:N | Write SP |
+| `예약접수` | 핵심 업무 | 예약·접수 동일 행. 일정·상태·정원·동시성 | Write SP |
+| `검사항목` | 핵심 업무 | Work 별 NEX/AEX **실제 구성 스냅샷**. `ExamSourceCode` 가 NEX/AEX 를 가른다 | Write SP |
+| `검사코드` | 기준 Master | 검사 19종 + NEX/AEX 역할 통합 (12 NEX · 6 AEX · 1 겸용) | Seed 고정 |
+| `휴무일` | 기준 Master | 공휴일·센터 휴진일 | Seed 고정 |
+| `완료이력` | Rule 입력 | **이 시스템 밖에서** 받은 일반검진 완료일. TGT 판정 입력 | Seed/Test 만 |
+| `변경이력` | 감사 기록 | Write SP 8개의 업무 단위 조작기록 (`00` CP-06) | Write SP. 읽는 SP 없음 |
+
+실제 데이터를 한 화면에서 보려면:
+
+```bash
+./scripts/inspect.sh     # 7테이블 행수 · 검사코드 19행 역할 · 업무 1건 상세 · 타임라인 · 슬롯 정원
+```
+
+조회 전용이고 배포물이 아니다. 볼 대상을 바꾸려면 `scripts/inspect.sql` 위쪽의
+`@WorkId` · `@ChartNo` 두 변수만 고친다.
+
 ## 빠른 시작
 
 ```bash
