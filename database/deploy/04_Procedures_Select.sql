@@ -268,3 +268,95 @@ BEGIN
       AND w.[StatusCode] IN ('RSV','RCP');
 END
 GO
+-- 허용 Code 0 / 101 / 103 / 104 (05 §8.1).
+-- 05 §8.1 은 "Status=NULL 은 조회조건으로 보지 않음" 이라고 NULL 을 한정했다.
+-- 값이 있는 @Status 는 실질 조건으로 센다 — 상태만으로 전체 RSV 를 조회하는 것은 막지 않는다.
+CREATE OR ALTER PROCEDURE [dbo].[USP_HC_SELECT_예약접수목록]
+    @FromDate DATE,
+    @ToDate   DATE,
+    @Status   CHAR(3),
+    @ChartNo  NVARCHAR(100),
+    @Name     NVARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
+
+    -- 1. 정규화
+    SET @Status  = NULLIF(UPPER(LTRIM(RTRIM(@Status))), '');
+    SET @ChartNo = NULLIF(LTRIM(RTRIM(@ChartNo)), N'');
+    SET @Name    = NULLIF(LTRIM(RTRIM(@Name)), N'');
+
+    -- 2. 허용값
+    IF @Status IS NOT NULL AND @Status NOT IN ('RSV','RCP','CNR','CNC')
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(101 AS INT)                  AS Code
+            , CAST(N'입력값이 올바르지 않습니다.' AS NVARCHAR(300)) AS Message
+            , CAST('Status' AS VARCHAR(50))     AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- 3. 날짜 범위
+    IF @FromDate IS NOT NULL AND @ToDate IS NOT NULL AND @FromDate > @ToDate
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(104 AS INT)                  AS Code
+            , CAST(N'시작일은 종료일보다 늦을 수 없습니다.' AS NVARCHAR(300)) AS Message
+            , CAST('FromDate' AS VARCHAR(50))   AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- 4. 조회조건
+    IF @FromDate IS NULL AND @ToDate IS NULL AND @Status IS NULL
+       AND @ChartNo IS NULL AND @Name IS NULL
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(103 AS INT)                  AS Code
+            , CAST(N'조회조건을 하나 이상 입력하십시오.' AS NVARCHAR(300)) AS Message
+            , CAST(NULL AS VARCHAR(50))         AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- RS0
+    SELECT
+          CAST(1 AS BIT)                    AS Success
+        , CAST(0 AS INT)                    AS Code
+        , CAST(N'정상 처리되었습니다.' AS NVARCHAR(300)) AS Message
+        , CAST(NULL AS VARCHAR(50))         AS Field
+        , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+
+    -- RS1 (11컬럼, 05 §8.1)
+    SELECT
+          WorkId          = CAST(w.[WorkId] AS BIGINT)
+        , PatientId       = CAST(w.[PatientId] AS BIGINT)
+        , ReservationDate = CAST(w.[ReservationDate] AS DATE)
+        , TimeSlot        = CAST(w.[TimeSlotCode] AS CHAR(2))
+        , Status          = CAST(w.[StatusCode] AS CHAR(3))
+        , StatusName      = CAST(CASE w.[StatusCode]
+                                     WHEN 'RSV' THEN N'예약'
+                                     WHEN 'RCP' THEN N'접수완료'
+                                     WHEN 'CNR' THEN N'예약취소'
+                                     ELSE N'접수취소' END AS NVARCHAR(10))
+        , Name            = CAST(p.[Name] AS NVARCHAR(100))
+        , ChartNo         = CAST(p.[ChartNo] AS NVARCHAR(100))
+        , Gender          = CAST(p.[Gender] AS CHAR(1))
+        , Birthday        = CAST(p.[Birthday] AS VARCHAR(8))
+        , MobilePhone     = CAST(p.[CelNumber] AS VARCHAR(13))
+    FROM [dbo].[예약접수] w
+    JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
+    WHERE (@FromDate IS NULL OR w.[ReservationDate] >= @FromDate)
+      AND (@ToDate   IS NULL OR w.[ReservationDate] <= @ToDate)
+      AND (@Status   IS NULL OR w.[StatusCode]      =  @Status)
+      AND (@ChartNo  IS NULL OR p.[ChartNo]         =  @ChartNo)
+      AND (@Name     IS NULL OR p.[Name]            LIKE @Name + N'%')
+    ORDER BY w.[ReservationDate] ASC, w.[TimeSlotCode] ASC, p.[Name] ASC, w.[WorkId] ASC;
+END
+GO
