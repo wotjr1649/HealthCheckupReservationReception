@@ -191,7 +191,7 @@ IF NOT EXISTS (SELECT Code,Nm,Nex,Aex,G,Act FROM @ExpExam
    AND NOT EXISTS (SELECT [ExamItemCode],[ExamItemName],[NexRuleCode],[AdditionalExamCode],
                           [AdditionalGenderCode],[AdditionalActive] FROM [dbo].[검사코드]
                    EXCEPT SELECT Code,Nm,Nex,Aex,G,Act FROM @ExpExam)
-    PRINT 'PASS SED-001 Exam Master 19행 전건 값 일치';
+    PRINT 'PASS SED-001 Exam Master 전건 값 일치';
 ELSE
 BEGIN
     PRINT 'FAIL SED-001 Exam Master 불일치';
@@ -242,7 +242,7 @@ IF EXISTS (SELECT 1 FROM [dbo].[휴무일] WHERE [HolidayDate] = '2026-12-26' AN
 ELSE BEGIN PRINT 'FAIL SED-010 토요일 휴무일 없음 또는 요일 불일치'; SET @Fail += 1; END
 
 -- SED-011 AEX 7종이 전부 AdditionalActive=1 인가
---   CORRUPT-3 이 tests/03 에서 일시적으로 0 으로 바꾸고 ROLLBACK 하므로,
+--   CORRUPT-3 이 tests/03 에서 일시적으로 0 으로 바꾸고 되돌리므로,
 --   이 검사는 그 오염이 남지 않았음을 보증한다.
 IF ((SELECT COUNT(*) FROM [dbo].[검사코드]
       WHERE [AdditionalExamCode] IS NOT NULL AND [AdditionalActive] = 1) = 7)
@@ -944,13 +944,53 @@ Expected: 배포 exit 0, 테스트 exit 0, `RUL-T01`~`RUL-T12` 12건 PASS.
 
 요일은 실측 확인했다: `2020-01-05` 일 · `2020-01-06` 월 · `2026-11-21` 토 · `2026-11-22` 일 · `2026-12-25` 금 · `2026-12-26` 토.
 
-각 행은 아래 한 덩어리다 — 인자와 기대값만 표에서 가져온다.
+`[X]` **초안은 `RUL-D01` 하나만 적고 나머지 7건을 표에서 가져오라고 했다.** 정보가 빠진 것은 아니지만
+계획서가 *"실행의 단일 출처"* 인 이상 실제로 돌아간 SQL 이 계획서에 없으면 다음 세션이 재현할 수 없다.
+`V02`(placeholder)는 정해진 문구 목록만 대조하므로 다르게 쓴 이 표현을 놓쳤다.
+전건을 적는다.
 
 ```sql
 IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2020-01-06', 'AM', 'NONE')) = 300)
     PRINT 'PASS RUL-D01 과거 평일 300';
 ELSE BEGIN PRINT 'FAIL RUL-D01'; SET @Fail += 1; END
+
+IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+        CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2020-01-05', 'AM', 'NONE')) = 300)
+    PRINT 'PASS RUL-D02 과거 일요일 300 (과거가 일요일보다 우선)';
+ELSE BEGIN PRINT 'FAIL RUL-D02'; SET @Fail += 1; END
+
+IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+        CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2026-11-22', 'AM', 'NONE')) = 301)
+    PRINT 'PASS RUL-D03 미래 일요일 301';
+ELSE BEGIN PRINT 'FAIL RUL-D03'; SET @Fail += 1; END
+
+IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+        CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2026-12-25', 'AM', 'NONE')) = 302)
+    PRINT 'PASS RUL-D04 활성 평일 휴무일 302';
+ELSE BEGIN PRINT 'FAIL RUL-D04'; SET @Fail += 1; END
+
+IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+        CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2026-12-26', 'AM', 'NONE')) = 302)
+    PRINT 'PASS RUL-D05 활성 토요일 휴무일 302 (휴무일이 토요일 규칙보다 우선)';
+ELSE BEGIN PRINT 'FAIL RUL-D05'; SET @Fail += 1; END
+
+IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+        CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2026-11-21', 'AM', 'NONE')) = 0)
+    PRINT 'PASS RUL-D06 미래 토요일 오전 운영';
+ELSE BEGIN PRINT 'FAIL RUL-D06'; SET @Fail += 1; END
+
+IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+        CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2026-11-21', 'PM', 'NONE')) = 303)
+    PRINT 'PASS RUL-D07 미래 토요일 오후 미운영 303';
+ELSE BEGIN PRINT 'FAIL RUL-D07'; SET @Fail += 1; END
+
+-- 토요일 오후는 마감시각이 존재하지 않는다. RawCutoff 가 요일을 보지 않으므로
+-- CutoffTime 이 NULL 인지 함께 본다 (05 §6.1.3 "마감 적용 시각이 있을 때만 반환").
+IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+        CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2026-11-17', 'AM', 'NONE')) = 0)
+    PRINT 'PASS RUL-D08 정상 평일 0';
+ELSE BEGIN PRINT 'FAIL RUL-D08'; SET @Fail += 1; END
 ```
 
 `RUL-D09` 는 `SET DATEFIRST 1` 과 `SET DATEFIRST 7` 양쪽에서 `RUL-D03` 을 재실행해 동일 결과를 확인한다.
@@ -1131,7 +1171,7 @@ git add database/deploy/03_Functions.sql database/tests/03_Rule_Tests.sql
 git commit -m "feat(phase4): UFN_HC_검진대상확인 구현 및 TGT 경계 테스트 8건"
 ```
 
-**완료조건:** RED 관측 + 스펙 §45.2 의 `RUL-G*`·`RUL-N*` 전건 PASS.
+**완료조건:** RED 관측 + 스펙 §45.2 의 `RUL-G*` 전건 PASS. (`RUL-N*` 은 `T13` 의 산출물이다)
 
 ---
 
