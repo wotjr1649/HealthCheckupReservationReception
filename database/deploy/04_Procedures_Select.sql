@@ -227,9 +227,9 @@ BEGIN
     END
 
     DECLARE @Cnt INT = (SELECT COUNT(*) FROM [dbo].[예약접수] w
-                         WHERE w.[PatientId] = @PatientId
-                           AND w.[ReservationDate] >= @Today
-                           AND w.[StatusCode] IN ('RSV','RCP'));
+                         WHERE w.[수검자ID] = @PatientId
+                           AND w.[예약일] >= @Today
+                           AND w.[상태코드] IN ('RSV','RCP'));
     IF @Cnt >= 2
     BEGIN
         SELECT
@@ -251,21 +251,21 @@ BEGIN
 
     -- RS1 (7컬럼, 0행 또는 1행)
     SELECT
-          WorkId          = CAST(w.[WorkId] AS BIGINT)
-        , ReservationDate = CAST(w.[ReservationDate] AS DATE)
-        , TimeSlot        = CAST(w.[TimeSlotCode] AS CHAR(2))
-        , Status          = CAST(w.[StatusCode] AS CHAR(3))
-        , StatusName      = CAST(CASE w.[StatusCode]
+          WorkId          = CAST(w.[업무ID] AS BIGINT)
+        , ReservationDate = CAST(w.[예약일] AS DATE)
+        , TimeSlot        = CAST(w.[시간대코드] AS CHAR(2))
+        , Status          = CAST(w.[상태코드] AS CHAR(3))
+        , StatusName      = CAST(CASE w.[상태코드]
                                      WHEN 'RSV' THEN N'예약'
                                      WHEN 'RCP' THEN N'접수완료'
                                      WHEN 'CNR' THEN N'예약취소'
                                      ELSE N'접수취소' END AS NVARCHAR(10))
-        , IsToday         = CAST(CASE WHEN w.[ReservationDate] = @Today THEN 1 ELSE 0 END AS BIT)
-        , RowVersion      = CAST(w.[RowVersion] AS BINARY(8))
+        , IsToday         = CAST(CASE WHEN w.[예약일] = @Today THEN 1 ELSE 0 END AS BIT)
+        , RowVersion      = CAST(w.[행버전] AS BINARY(8))
     FROM [dbo].[예약접수] w
-    WHERE w.[PatientId] = @PatientId
-      AND w.[ReservationDate] >= @Today
-      AND w.[StatusCode] IN ('RSV','RCP');
+    WHERE w.[수검자ID] = @PatientId
+      AND w.[예약일] >= @Today
+      AND w.[상태코드] IN ('RSV','RCP');
 END
 GO
 -- 허용 Code 0 / 101 / 103 / 104 (05 §8.1).
@@ -335,12 +335,12 @@ BEGIN
 
     -- RS1 (11컬럼, 05 §8.1)
     SELECT
-          WorkId          = CAST(w.[WorkId] AS BIGINT)
-        , PatientId       = CAST(w.[PatientId] AS BIGINT)
-        , ReservationDate = CAST(w.[ReservationDate] AS DATE)
-        , TimeSlot        = CAST(w.[TimeSlotCode] AS CHAR(2))
-        , Status          = CAST(w.[StatusCode] AS CHAR(3))
-        , StatusName      = CAST(CASE w.[StatusCode]
+          WorkId          = CAST(w.[업무ID] AS BIGINT)
+        , PatientId       = CAST(w.[수검자ID] AS BIGINT)
+        , ReservationDate = CAST(w.[예약일] AS DATE)
+        , TimeSlot        = CAST(w.[시간대코드] AS CHAR(2))
+        , Status          = CAST(w.[상태코드] AS CHAR(3))
+        , StatusName      = CAST(CASE w.[상태코드]
                                      WHEN 'RSV' THEN N'예약'
                                      WHEN 'RCP' THEN N'접수완료'
                                      WHEN 'CNR' THEN N'예약취소'
@@ -351,13 +351,13 @@ BEGIN
         , Birthday        = CAST(p.[Birthday] AS VARCHAR(8))
         , MobilePhone     = CAST(p.[CelNumber] AS VARCHAR(13))
     FROM [dbo].[예약접수] w
-    JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
-    WHERE (@FromDate IS NULL OR w.[ReservationDate] >= @FromDate)
-      AND (@ToDate   IS NULL OR w.[ReservationDate] <= @ToDate)
-      AND (@Status   IS NULL OR w.[StatusCode]      =  @Status)
+    JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID]
+    WHERE (@FromDate IS NULL OR w.[예약일] >= @FromDate)
+      AND (@ToDate   IS NULL OR w.[예약일] <= @ToDate)
+      AND (@Status   IS NULL OR w.[상태코드]      =  @Status)
       AND (@ChartNo  IS NULL OR p.[ChartNo]         =  @ChartNo)
       AND (@Name     IS NULL OR p.[Name]            LIKE @Name + N'%')
-    ORDER BY w.[ReservationDate] ASC, w.[TimeSlotCode] ASC, p.[Name] ASC, w.[WorkId] ASC;
+    ORDER BY w.[예약일] ASC, w.[시간대코드] ASC, p.[Name] ASC, w.[업무ID] ASC;
 END
 GO
 -- 허용 Code 0 / 100 / 500 / 701 (05 §8.2). RS0~RS4 다섯 개를 반환한다.
@@ -382,7 +382,7 @@ BEGIN
         RETURN;
     END
 
-    IF NOT EXISTS (SELECT 1 FROM [dbo].[예약접수] WHERE [WorkId] = @WorkId)
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[예약접수] WHERE [업무ID] = @WorkId)
     BEGIN
         SELECT
               CAST(0 AS BIT)                    AS Success
@@ -416,17 +416,17 @@ BEGIN
 
     -- RS1 업무상세 (15컬럼)
     SELECT
-          WorkId          = CAST(w.[WorkId] AS BIGINT)
-        , PatientId       = CAST(w.[PatientId] AS BIGINT)
+          WorkId          = CAST(w.[업무ID] AS BIGINT)
+        , PatientId       = CAST(w.[수검자ID] AS BIGINT)
         , ChartNo         = CAST(p.[ChartNo] AS NVARCHAR(100))
         , Name            = CAST(p.[Name] AS NVARCHAR(100))
         , Birthday        = CAST(p.[Birthday] AS VARCHAR(8))
         , Gender          = CAST(p.[Gender] AS CHAR(1))
         , MobilePhone     = CAST(p.[CelNumber] AS VARCHAR(13))
-        , ReservationDate = CAST(w.[ReservationDate] AS DATE)
-        , TimeSlot        = CAST(w.[TimeSlotCode] AS CHAR(2))
-        , Status          = CAST(w.[StatusCode] AS CHAR(3))
-        , StatusName      = CAST(CASE w.[StatusCode]
+        , ReservationDate = CAST(w.[예약일] AS DATE)
+        , TimeSlot        = CAST(w.[시간대코드] AS CHAR(2))
+        , Status          = CAST(w.[상태코드] AS CHAR(3))
+        , StatusName      = CAST(CASE w.[상태코드]
                                      WHEN 'RSV' THEN N'예약'
                                      WHEN 'RCP' THEN N'접수완료'
                                      WHEN 'CNR' THEN N'예약취소'
@@ -434,14 +434,14 @@ BEGIN
         , Capacity        = CAST(20 AS INT)
         , CurrentCount    = CAST(c.Cnt AS INT)
         , SeatsLeft       = CAST(CASE WHEN 20 - c.Cnt < 0 THEN 0 ELSE 20 - c.Cnt END AS INT)
-        , RowVersion      = CAST(w.[RowVersion] AS BINARY(8))
+        , RowVersion      = CAST(w.[행버전] AS BINARY(8))
     FROM [dbo].[예약접수] w
-    JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
+    JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID]
     CROSS APPLY (SELECT Cnt = COUNT(*) FROM [dbo].[예약접수] x
-                  WHERE x.[ReservationDate] = w.[ReservationDate]
-                    AND x.[TimeSlotCode]    = w.[TimeSlotCode]
-                    AND x.[StatusCode] IN ('RSV','RCP')) c
-    WHERE w.[WorkId] = @WorkId;
+                  WHERE x.[예약일] = w.[예약일]
+                    AND x.[시간대코드]    = w.[시간대코드]
+                    AND x.[상태코드] IN ('RSV','RCP')) c
+    WHERE w.[업무ID] = @WorkId;
 
     -- RS2 국가검사항목 — 실제 저장된 NEX 만
     SELECT
@@ -481,19 +481,19 @@ BEGIN
     FROM [dbo].[예약접수] w
     CROSS JOIN (VALUES (1,'EDIT_RESERVATION'),(2,'CANCEL_RESERVATION'),(3,'START_RECEPTION'),
                        (4,'EDIT_EXTRA'),(5,'CANCEL_RECEPTION')) a(Ord, Code)
-    CROSS APPLY [dbo].[UFN_HC_일정확인](@ServerTime, w.[ReservationDate], w.[TimeSlotCode], 'RECEPTION') s
+    CROSS APPLY [dbo].[UFN_HC_일정확인](@ServerTime, w.[예약일], w.[시간대코드], 'RECEPTION') s
     CROSS APPLY (SELECT Rc =
           CASE
               WHEN a.Code IN ('EDIT_RESERVATION','CANCEL_RESERVATION','START_RECEPTION')
-                   AND w.[StatusCode] <> 'RSV'                                   THEN 502
+                   AND w.[상태코드] <> 'RSV'                                   THEN 502
               WHEN a.Code IN ('EDIT_EXTRA','CANCEL_RECEPTION')
-                   AND w.[StatusCode] <> 'RCP'                                   THEN 502
+                   AND w.[상태코드] <> 'RCP'                                   THEN 502
               WHEN s.WorkCode <> 0                                                THEN s.WorkCode
-              WHEN a.Code = 'START_RECEPTION' AND w.[ReservationDate] <> @Today   THEN 503
+              WHEN a.Code = 'START_RECEPTION' AND w.[예약일] <> @Today   THEN 503
               WHEN a.Code = 'START_RECEPTION' AND s.CutoffPassed = 1              THEN 304
               ELSE 0
           END) r
-    WHERE w.[WorkId] = @WorkId
+    WHERE w.[업무ID] = @WorkId
     ORDER BY a.Ord;
 END
 GO
@@ -585,9 +585,9 @@ BEGIN
     -- 6. Work 존재 → 소유 → 상태 → 동시성
     IF @WorkId IS NOT NULL
     BEGIN
-        SELECT @WPatient = w.[PatientId], @WDate = w.[ReservationDate]
-             , @WSlot = w.[TimeSlotCode], @WStatus = w.[StatusCode]
-        FROM [dbo].[예약접수] w WHERE w.[WorkId] = @WorkId;
+        SELECT @WPatient = w.[수검자ID], @WDate = w.[예약일]
+             , @WSlot = w.[시간대코드], @WStatus = w.[상태코드]
+        FROM [dbo].[예약접수] w WHERE w.[업무ID] = @WorkId;
 
         IF @WPatient IS NULL
         BEGIN
@@ -614,7 +614,7 @@ BEGIN
             RETURN;
         END
         IF NOT EXISTS (SELECT 1 FROM [dbo].[예약접수]
-                        WHERE [WorkId] = @WorkId AND [RowVersion] = @RowVersion)
+                        WHERE [업무ID] = @WorkId AND [행버전] = @RowVersion)
         BEGIN
             SELECT CAST(0 AS BIT) AS Success, CAST(601 AS INT) AS Code
                  , CAST(N'다른 사용자가 예약·접수 업무를 변경했습니다. 최신 정보를 다시 조회하십시오.' AS NVARCHAR(300)) AS Message
@@ -697,10 +697,10 @@ BEGIN
     IF @Scope IN ('ALL','SLOT','SLOT_EXTRA')
     BEGIN
         DECLARE @OtherCnt INT = (SELECT COUNT(*) FROM [dbo].[예약접수] w
-                                  WHERE w.[PatientId] = @PatientId
-                                    AND w.[ReservationDate] >= @Today
-                                    AND w.[StatusCode] IN ('RSV','RCP')
-                                    AND (@WorkId IS NULL OR w.[WorkId] <> @WorkId));
+                                  WHERE w.[수검자ID] = @PatientId
+                                    AND w.[예약일] >= @Today
+                                    AND w.[상태코드] IN ('RSV','RCP')
+                                    AND (@WorkId IS NULL OR w.[업무ID] <> @WorkId));
         IF @OtherCnt >= 2
         BEGIN
             SELECT CAST(0 AS BIT) AS Success, CAST(701 AS INT) AS Code
@@ -709,12 +709,12 @@ BEGIN
                  , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
             RETURN;
         END
-        SELECT TOP (1) @OtherWorkId = w.[WorkId] FROM [dbo].[예약접수] w
-         WHERE w.[PatientId] = @PatientId
-           AND w.[ReservationDate] >= @Today
-           AND w.[StatusCode] IN ('RSV','RCP')
-           AND (@WorkId IS NULL OR w.[WorkId] <> @WorkId)
-         ORDER BY w.[WorkId];
+        SELECT TOP (1) @OtherWorkId = w.[업무ID] FROM [dbo].[예약접수] w
+         WHERE w.[수검자ID] = @PatientId
+           AND w.[예약일] >= @Today
+           AND w.[상태코드] IN ('RSV','RCP')
+           AND (@WorkId IS NULL OR w.[업무ID] <> @WorkId)
+         ORDER BY w.[업무ID];
     END
 
     -- 요청일 자체의 판정(300/301/302). 슬롯·마감과 무관한 날짜 수준 차단이다.
@@ -749,16 +749,16 @@ BEGIN
     FROM (VALUES ('AM'),('PM')) v(Slot)
     CROSS APPLY [dbo].[UFN_HC_일정확인](@ServerTime, @ReservationDate, v.Slot, @CutoffType) s
     CROSS APPLY (SELECT Cnt = COUNT(*) FROM [dbo].[예약접수] x
-                  WHERE x.[ReservationDate] = @ReservationDate
-                    AND x.[TimeSlotCode] = v.Slot
-                    AND x.[StatusCode] IN ('RSV','RCP')) c
+                  WHERE x.[예약일] = @ReservationDate
+                    AND x.[시간대코드] = v.Slot
+                    AND x.[상태코드] IN ('RSV','RCP')) c
     CROSS APPLY (SELECT After = c.Cnt
                    - CASE WHEN @WorkId IS NOT NULL
                            AND EXISTS (SELECT 1 FROM [dbo].[예약접수] y
-                                        WHERE y.[WorkId] = @WorkId
-                                          AND y.[ReservationDate] = @ReservationDate
-                                          AND y.[TimeSlotCode] = v.Slot
-                                          AND y.[StatusCode] IN ('RSV','RCP'))
+                                        WHERE y.[업무ID] = @WorkId
+                                          AND y.[예약일] = @ReservationDate
+                                          AND y.[시간대코드] = v.Slot
+                                          AND y.[상태코드] IN ('RSV','RCP'))
                           THEN 1 ELSE 0 END + 1) a;
 
     -- TGT / NEX / AEX

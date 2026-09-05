@@ -77,36 +77,36 @@ GO
 -- LIKE 'F0%' 만 쓰면 F020 까지 RSV 가 되어 슬롯이 20/20 이 된다.
 -- CON-002(19/20 경합 → 최종 20) 의 사전조건이 깨지므로 F020 을 제외하고, 별도로 CNR 을 넣는다.
 -- Slot 날짜는 리터럴 하나로 통일한다. 2026-11-16 은 월요일이다.
-INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
 SELECT [PatientId], '2026-11-16', 'AM', 'RSV'
 FROM [dbo].[수검자] WHERE [ChartNo] LIKE 'F0%' AND [ChartNo] <> 'F020';
 
-INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
 SELECT [PatientId], '2026-11-16', 'AM', 'CNR'
 FROM [dbo].[수검자] WHERE [ChartNo] = 'F020';
 GO
 -- T020 의 RSV Work. 2026-11-17 기준 만 53세라 EX012 가 없고 OPT04 를 선택할 수 있다.
 -- RWR-031 이 이 Work 의 예약일을 2026-11-20 으로 옮기면 만 54세가 되어 EX012 가 생기고 OPT04 가 412 다.
 -- 이 Work 는 2026-11-17 슬롯이므로 2026-11-16 정원(CON-002)과 무관하다.
-INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
 SELECT [PatientId], '2026-11-17', 'AM', 'RSV'
 FROM [dbo].[수검자] WHERE [ChartNo] = 'T020';
 GO
 INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
-SELECT w.[WorkId], e.[검사항목코드], 'NEX'
+SELECT w.[업무ID], e.[검사항목코드], 'NEX'
 FROM [dbo].[예약접수] w
-JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] = 'T020'
+JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID] AND p.[ChartNo] = 'T020'
 CROSS JOIN [dbo].[검사코드] e
 WHERE e.[국가검사규칙코드] = 'NEX-01';
 INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
-SELECT w.[WorkId], 'EX012', 'AEX'   -- OPT04 를 선택한 상태 (만 53세라 아직 중복이 아니다)
+SELECT w.[업무ID], 'EX012', 'AEX'   -- OPT04 를 선택한 상태 (만 53세라 아직 중복이 아니다)
 FROM [dbo].[예약접수] w
-JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] = 'T020';
+JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID] AND p.[ChartNo] = 'T020';
 GO
 INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
-SELECT w.[WorkId], e.[검사항목코드], 'NEX'
+SELECT w.[업무ID], e.[검사항목코드], 'NEX'
 FROM [dbo].[예약접수] w
-JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId] AND p.[ChartNo] LIKE 'F0%'
+JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID] AND p.[ChartNo] LIKE 'F0%'
 CROSS JOIN [dbo].[검사코드] e
 WHERE e.[국가검사규칙코드] = 'NEX-01';
 GO
@@ -127,13 +127,13 @@ GO
 PRINT '--- CORRUPT 구획 (701 검증 전용) ---';
 GO
 -- CORRUPT-1: 동일 Patient 에 유효업무 2건  → 701
-INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
 SELECT p.[PatientId], '2026-11-17', 'AM', 'RSV' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T012';
-INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
 SELECT p.[PatientId], '2026-11-18', 'PM', 'RSV' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T012';
 GO
 -- CORRUPT-2: NEX 0행인 Work  → 701
-INSERT INTO [dbo].[예약접수] ([PatientId], [ReservationDate], [TimeSlotCode], [StatusCode])
+INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
 SELECT p.[PatientId], '2026-11-19', 'AM', 'RSV' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T013';
 GO
 PRINT 'PASS FIX-DEPLOY Fixture 배치 완료';

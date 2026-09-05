@@ -108,14 +108,14 @@ INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
  (N'수검자', N'CreationDate',         N'datetime',  NULL,  0),
  (N'수검자', N'LastEditDate',         N'datetime',  NULL,  0),
  -- 예약접수 8행
- (N'예약접수', N'WorkId',               N'bigint',    NULL,  0),
- (N'예약접수', N'PatientId',            N'bigint',    NULL,  0),
- (N'예약접수', N'ReservationDate',      N'date',      NULL,  0),
- (N'예약접수', N'TimeSlotCode',         N'char',      2,     0),
- (N'예약접수', N'StatusCode',           N'char',      3,     0),
- (N'예약접수', N'CreationDate',         N'datetime2', NULL,  0),
- (N'예약접수', N'LastEditDate',         N'datetime2', NULL,  0),
- (N'예약접수', N'RowVersion',           N'timestamp', NULL,  0),
+ (N'예약접수', N'업무ID',                N'bigint',    NULL,  0),
+ (N'예약접수', N'수검자ID',              N'bigint',    NULL,  0),
+ (N'예약접수', N'예약일',                N'date',      NULL,  0),
+ (N'예약접수', N'시간대코드',            N'char',      2,     0),
+ (N'예약접수', N'상태코드',              N'char',      3,     0),
+ (N'예약접수', N'생성일시',              N'datetime2', NULL,  0),
+ (N'예약접수', N'최종수정일시',          N'datetime2', NULL,  0),
+ (N'예약접수', N'행버전',                N'timestamp', NULL,  0),
  -- 검사항목 3행
  (N'검사항목', N'업무ID',                N'bigint',    NULL,  0),
  (N'검사항목', N'검사항목코드',          N'varchar',   10,    0),
@@ -216,12 +216,12 @@ INSERT @ExpIx (IxName, Ord, ColName) VALUES
  (N'IX_수검자_NAME_BIRTHDAY',              2, N'Birthday'),
  (N'IX_수검자_BIRTHDAY',                   1, N'Birthday'),
  (N'IX_수검자_CEL_NUMBER_S',               1, N'CelNumberS'),
- (N'IX_예약접수_SLOT',                  1, N'ReservationDate'),
- (N'IX_예약접수_SLOT',                  2, N'TimeSlotCode'),
- (N'IX_예약접수_SLOT',                  3, N'StatusCode'),
- (N'IX_예약접수_PATIENT_STATE_DATE',    1, N'PatientId'),
- (N'IX_예약접수_PATIENT_STATE_DATE',    2, N'StatusCode'),
- (N'IX_예약접수_PATIENT_STATE_DATE',    3, N'ReservationDate');
+ (N'IX_예약접수_SLOT',                  1, N'예약일'),
+ (N'IX_예약접수_SLOT',                  2, N'시간대코드'),
+ (N'IX_예약접수_SLOT',                  3, N'상태코드'),
+ (N'IX_예약접수_PATIENT_STATE_DATE',    1, N'수검자ID'),
+ (N'IX_예약접수_PATIENT_STATE_DATE',    2, N'상태코드'),
+ (N'IX_예약접수_PATIENT_STATE_DATE',    3, N'예약일');
 
 -- [X] 초안은 `;WITH Act AS (…) IF NOT EXISTS …` 였다. CTE 뒤에는 SELECT/INSERT/UPDATE/DELETE/MERGE 만
 --     올 수 있어 `IF` 는 구문오류이고, 설령 통과해도 CTE 는 IF 본문까지 유효범위가 미치지 않는다.

@@ -102,30 +102,30 @@ CREATE TABLE [dbo].[휴무일]
 GO
 CREATE TABLE [dbo].[예약접수]
 (
-    [WorkId]          BIGINT       IDENTITY(1,1) NOT NULL,
-    [PatientId]       BIGINT       NOT NULL,
-    [ReservationDate] DATE         NOT NULL,
-    [TimeSlotCode]    CHAR(2)      NOT NULL,
-    [StatusCode]      CHAR(3)      NOT NULL,
-    [CreationDate]    DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_CREATION_DATE]  DEFAULT (SYSDATETIME()),
-    [LastEditDate]    DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_LAST_EDIT_DATE] DEFAULT (SYSDATETIME()),
-    [RowVersion]      ROWVERSION   NOT NULL,
+    [업무ID]       BIGINT       IDENTITY(1,1) NOT NULL,
+    [수검자ID]     BIGINT       NOT NULL,
+    [예약일]       DATE         NOT NULL,
+    [시간대코드]   CHAR(2)      NOT NULL,
+    [상태코드]     CHAR(3)      NOT NULL,
+    [생성일시]     DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_CREATION_DATE]  DEFAULT (SYSDATETIME()),
+    [최종수정일시] DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_LAST_EDIT_DATE] DEFAULT (SYSDATETIME()),
+    [행버전]       ROWVERSION   NOT NULL,
 
-    CONSTRAINT [PK_예약접수] PRIMARY KEY CLUSTERED ([WorkId]),
-    CONSTRAINT [FK_예약접수_수검자] FOREIGN KEY ([PatientId])
+    CONSTRAINT [PK_예약접수] PRIMARY KEY CLUSTERED ([업무ID]),
+    CONSTRAINT [FK_예약접수_수검자] FOREIGN KEY ([수검자ID])
         REFERENCES [dbo].[수검자] ([PatientId]) ON DELETE NO ACTION ON UPDATE NO ACTION,
-    CONSTRAINT [CK_예약접수_TIME_SLOT] CHECK ([TimeSlotCode] IN ('AM','PM')),
-    CONSTRAINT [CK_예약접수_STATUS]    CHECK ([StatusCode] IN ('RSV','RCP','CNR','CNC')),
-    CONSTRAINT [CK_예약접수_EDIT_DATE] CHECK ([LastEditDate] >= [CreationDate])
+    CONSTRAINT [CK_예약접수_TIME_SLOT] CHECK ([시간대코드] IN ('AM','PM')),
+    CONSTRAINT [CK_예약접수_STATUS]    CHECK ([상태코드] IN ('RSV','RCP','CNR','CNC')),
+    CONSTRAINT [CK_예약접수_EDIT_DATE] CHECK ([최종수정일시] >= [생성일시])
 );
 GO
 CREATE NONCLUSTERED INDEX [IX_예약접수_SLOT]
-    ON [dbo].[예약접수] ([ReservationDate], [TimeSlotCode], [StatusCode])
-    INCLUDE ([PatientId]);
+    ON [dbo].[예약접수] ([예약일], [시간대코드], [상태코드])
+    INCLUDE ([수검자ID]);
 GO
 CREATE NONCLUSTERED INDEX [IX_예약접수_PATIENT_STATE_DATE]
-    ON [dbo].[예약접수] ([PatientId], [StatusCode], [ReservationDate])
-    INCLUDE ([TimeSlotCode]);
+    ON [dbo].[예약접수] ([수검자ID], [상태코드], [예약일])
+    INCLUDE ([시간대코드]);
 GO
 CREATE TABLE [dbo].[검사항목]
 (
@@ -135,7 +135,7 @@ CREATE TABLE [dbo].[검사항목]
 
     CONSTRAINT [PK_검사항목] PRIMARY KEY CLUSTERED ([업무ID], [검사항목코드]),
     CONSTRAINT [FK_검사항목_예약접수] FOREIGN KEY ([업무ID])
-        REFERENCES [dbo].[예약접수] ([WorkId]) ON DELETE NO ACTION ON UPDATE NO ACTION,
+        REFERENCES [dbo].[예약접수] ([업무ID]) ON DELETE NO ACTION ON UPDATE NO ACTION,
     CONSTRAINT [FK_검사항목_검사코드] FOREIGN KEY ([검사항목코드])
         REFERENCES [dbo].[검사코드] ([검사항목코드]) ON DELETE NO ACTION ON UPDATE NO ACTION,
     CONSTRAINT [CK_검사항목_SOURCE] CHECK ([검사출처코드] IN ('NEX','AEX'))

@@ -330,8 +330,8 @@ ELSE BEGIN PRINT 'FAIL RUL-A08'; SET @Fail += 1; END
 --   T011(여 만 54세)의 RCP Work 는 저장 NEX 에 EX012 를 갖는다(tests/00b). 그래서 OPT04 는 412 다.
 --   T014 는 남성이라 NEX-05 술어(Gender='F')가 성립하지 않아 저장 NEX 에 EX012 가 없다.
 DECLARE @Pa BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T011');
-DECLARE @Wa BIGINT = (SELECT TOP (1) [WorkId] FROM [dbo].[예약접수]
-                       WHERE [PatientId] = @Pa AND [StatusCode] = 'RCP' ORDER BY [WorkId]);
+DECLARE @Wa BIGINT = (SELECT TOP (1) [업무ID] FROM [dbo].[예약접수]
+                       WHERE [수검자ID] = @Pa AND [상태코드] = 'RCP' ORDER BY [업무ID]);
 IF @Wa IS NULL
 BEGIN PRINT N'FAIL RUL-A09 사전조건 — T011 의 RCP Work 가 없다 (tests/00b 를 먼저 실행했는가)'; SET @Fail += 1; END
 ELSE IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@Pa, @Ref, @Wa, 1, 0,0,0,1,0,0,0)
