@@ -497,3 +497,421 @@ BEGIN
     ORDER BY a.Ord;
 END
 GO
+-- 허용 Code 0 / 100~102 / 200 / 500~502 / 601 / 700~701 (05 §9).
+-- 휴무일·정원마감·TGT 비대상은 SP 실패가 아니다 — RS0 Success=1 Code=0 + RS1 CanSave=0 + BlockCode 다 (05 §3.3).
+-- Scope=NONE 에 Code=1 을 쓰지 않는다. Code=1 은 Write SP No-op 전용이다.
+CREATE OR ALTER PROCEDURE [dbo].[USP_HC_SELECT_예약가능정보]
+    @PatientId        BIGINT,
+    @WorkId           BIGINT,
+    @RowVersion       BINARY(8),
+    @ReservationType  VARCHAR(10),
+    @ReservationDate  DATE,
+    @TimeSlot         CHAR(2),
+    @AexOpt01Selected BIT,
+    @AexOpt02Selected BIT,
+    @AexOpt03Selected BIT,
+    @AexOpt04Selected BIT,
+    @AexOpt05Selected BIT,
+    @AexOpt06Selected BIT,
+    @AexOpt07Selected BIT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
+    DECLARE @Today DATE = CONVERT(DATE, @ServerTime);
+
+    DECLARE @Scope        VARCHAR(12);
+    DECLARE @DateChanged  BIT = NULL, @SlotChanged BIT = NULL, @ExtraChanged BIT = NULL;
+    DECLARE @WDate DATE, @WSlot CHAR(2), @WStatus CHAR(3), @WPatient BIGINT;
+    DECLARE @OtherWorkId  BIGINT = NULL;
+    DECLARE @Req TABLE (OptionCode VARCHAR(10) PRIMARY KEY);
+
+    -- 2. 필수값 (05 §5: 필수값 → 값 형식·허용값 순서)
+    --    ReservationType·ReservationDate 가 빠지면 NOT IN 이 UNKNOWN 이라 101 도 안 나고
+    --    NULL 이 Scope 계산까지 흘러들어간다. 여기서 막는다.
+    IF @PatientId IS NULL OR @ReservationType IS NULL OR @ReservationDate IS NULL
+       OR @AexOpt01Selected IS NULL OR @AexOpt02Selected IS NULL OR @AexOpt03Selected IS NULL
+       OR @AexOpt04Selected IS NULL OR @AexOpt05Selected IS NULL OR @AexOpt06Selected IS NULL
+       OR @AexOpt07Selected IS NULL
+       OR (@WorkId IS NOT NULL AND @RowVersion IS NULL)
+    BEGIN
+        SELECT CAST(0 AS BIT) AS Success, CAST(100 AS INT) AS Code
+             , CAST(N'필수값을 입력하십시오.' AS NVARCHAR(300)) AS Message
+             , CAST(CASE WHEN @PatientId IS NULL THEN 'PatientId'
+                         WHEN @ReservationType IS NULL THEN 'ReservationType'
+                         WHEN @ReservationDate IS NULL THEN 'ReservationDate'
+                         WHEN @WorkId IS NOT NULL AND @RowVersion IS NULL THEN 'RowVersion'
+                         ELSE 'AexOptSelected' END AS VARCHAR(50)) AS Field
+             , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- 3. 허용값
+    IF @ReservationType NOT IN ('NORMAL','WALKIN')
+    BEGIN
+        SELECT CAST(0 AS BIT) AS Success, CAST(101 AS INT) AS Code
+             , CAST(N'입력값이 올바르지 않습니다.' AS NVARCHAR(300)) AS Message
+             , CAST('ReservationType' AS VARCHAR(50)) AS Field
+             , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- 4. Parameter 조합 (05 §9.3). 나머지 한 종("기존 날짜 유지 + TimeSlot NULL")은
+    --    Work 행이 있어야 판정할 수 있으므로 6단계 뒤로 미룬다.
+    IF (@WorkId IS NULL AND @RowVersion IS NOT NULL)
+       OR (@WorkId IS NOT NULL AND @ReservationType = 'WALKIN')
+       OR (@ReservationType = 'WALKIN' AND @ReservationDate <> @Today)
+    BEGIN
+        SELECT CAST(0 AS BIT) AS Success, CAST(102 AS INT) AS Code
+             , CAST(N'함께 사용할 수 없는 입력값 조합입니다.' AS NVARCHAR(300)) AS Message
+             , CAST(CASE WHEN @WorkId IS NULL AND @RowVersion IS NOT NULL THEN 'RowVersion'
+                         WHEN @WorkId IS NOT NULL THEN 'ReservationType'
+                         ELSE 'ReservationDate' END AS VARCHAR(50)) AS Field
+             , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- 5. Patient 존재
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [PatientId] = @PatientId)
+    BEGIN
+        SELECT CAST(0 AS BIT) AS Success, CAST(200 AS INT) AS Code
+             , CAST(N'수검자를 찾을 수 없습니다.' AS NVARCHAR(300)) AS Message
+             , CAST('PatientId' AS VARCHAR(50)) AS Field
+             , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- 6. Work 존재 → 소유 → 상태 → 동시성
+    IF @WorkId IS NOT NULL
+    BEGIN
+        SELECT @WPatient = w.[PatientId], @WDate = w.[ReservationDate]
+             , @WSlot = w.[TimeSlotCode], @WStatus = w.[StatusCode]
+        FROM [dbo].[예약접수] w WHERE w.[WorkId] = @WorkId;
+
+        IF @WPatient IS NULL
+        BEGIN
+            SELECT CAST(0 AS BIT) AS Success, CAST(500 AS INT) AS Code
+                 , CAST(N'예약·접수 업무를 찾을 수 없습니다.' AS NVARCHAR(300)) AS Message
+                 , CAST('WorkId' AS VARCHAR(50)) AS Field
+                 , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+            RETURN;
+        END
+        IF @WPatient <> @PatientId
+        BEGIN
+            SELECT CAST(0 AS BIT) AS Success, CAST(501 AS INT) AS Code
+                 , CAST(N'요청한 수검자와 예약·접수 업무의 수검자가 다릅니다.' AS NVARCHAR(300)) AS Message
+                 , CAST('PatientId' AS VARCHAR(50)) AS Field
+                 , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+            RETURN;
+        END
+        IF @WStatus <> 'RSV'
+        BEGIN
+            SELECT CAST(0 AS BIT) AS Success, CAST(502 AS INT) AS Code
+                 , CAST(N'현재 상태에서는 요청한 업무를 처리할 수 없습니다.' AS NVARCHAR(300)) AS Message
+                 , CAST('WorkId' AS VARCHAR(50)) AS Field
+                 , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+            RETURN;
+        END
+        IF NOT EXISTS (SELECT 1 FROM [dbo].[예약접수]
+                        WHERE [WorkId] = @WorkId AND [RowVersion] = @RowVersion)
+        BEGIN
+            SELECT CAST(0 AS BIT) AS Success, CAST(601 AS INT) AS Code
+                 , CAST(N'다른 사용자가 예약·접수 업무를 변경했습니다. 최신 정보를 다시 조회하십시오.' AS NVARCHAR(300)) AS Message
+                 , CAST('RowVersion' AS VARCHAR(50)) AS Field
+                 , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+            RETURN;
+        END
+        IF @ReservationDate = @WDate AND @TimeSlot IS NULL
+        BEGIN
+            SELECT CAST(0 AS BIT) AS Success, CAST(102 AS INT) AS Code
+                 , CAST(N'함께 사용할 수 없는 입력값 조합입니다.' AS NVARCHAR(300)) AS Message
+                 , CAST('TimeSlot' AS VARCHAR(50)) AS Field
+                 , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+            RETURN;
+        END
+    END
+
+    -- 7. Scope 계산 (05 §9.4). ExtraChanged 는 §28.1 대로 EXCEPT 양방향이다.
+    INSERT INTO @Req (OptionCode)
+    SELECT v.c FROM (VALUES ('OPT01',@AexOpt01Selected),('OPT02',@AexOpt02Selected),('OPT03',@AexOpt03Selected),
+                            ('OPT04',@AexOpt04Selected),('OPT05',@AexOpt05Selected),('OPT06',@AexOpt06Selected),
+                            ('OPT07',@AexOpt07Selected)) v(c, b)
+     WHERE v.b = 1;
+
+    IF @WorkId IS NULL
+        SET @Scope = 'ALL';
+    ELSE
+    BEGIN
+        SET @DateChanged = CASE WHEN @ReservationDate <> @WDate THEN 1 ELSE 0 END;
+        SET @SlotChanged = CASE WHEN @TimeSlot IS NOT NULL AND @TimeSlot <> @WSlot THEN 1 ELSE 0 END;
+        SET @ExtraChanged = CASE WHEN EXISTS (
+                SELECT OptionCode FROM @Req
+                EXCEPT
+                SELECT m.[AdditionalExamCode] FROM [dbo].[검사항목] d
+                  JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[ExamItemCode]
+                 WHERE d.[WorkId] = @WorkId AND d.[ExamSourceCode] = 'AEX')
+            OR EXISTS (
+                SELECT m.[AdditionalExamCode] FROM [dbo].[검사항목] d
+                  JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[ExamItemCode]
+                 WHERE d.[WorkId] = @WorkId AND d.[ExamSourceCode] = 'AEX'
+                EXCEPT
+                SELECT OptionCode FROM @Req)
+            THEN 1 ELSE 0 END;
+
+        SET @Scope = CASE WHEN @DateChanged = 1                              THEN 'ALL'
+                          WHEN @SlotChanged = 1 AND @ExtraChanged = 1        THEN 'SLOT_EXTRA'
+                          WHEN @SlotChanged = 1                             THEN 'SLOT'
+                          WHEN @ExtraChanged = 1                            THEN 'EXTRA'
+                          ELSE 'NONE' END;
+    END
+
+    -- 9/10. 검사 Master 무결성
+    IF @Scope IN ('ALL','EXTRA','SLOT_EXTRA')
+       AND ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [NexRuleCode] IS NOT NULL) < 8
+            OR (SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [AdditionalExamCode] IS NOT NULL) <> 7)
+    BEGIN
+        SELECT CAST(0 AS BIT) AS Success, CAST(700 AS INT) AS Code
+             , CAST(N'검사 Master 구성이 올바르지 않습니다.' AS NVARCHAR(300)) AS Message
+             , CAST(NULL AS VARCHAR(50)) AS Field
+             , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+    IF @Scope IN ('EXTRA','SLOT_EXTRA')
+       AND NOT EXISTS (SELECT 1 FROM [dbo].[검사항목]
+                        WHERE [WorkId] = @WorkId AND [ExamSourceCode] = 'NEX')
+    BEGIN
+        SELECT CAST(0 AS BIT) AS Success, CAST(701 AS INT) AS Code
+             , CAST(N'예약·접수 업무의 검사구성 또는 유효업무 데이터가 올바르지 않습니다.' AS NVARCHAR(300)) AS Message
+             , CAST('WorkId' AS VARCHAR(50)) AS Field
+             , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- 11. 현재 공통 업무 가능 여부
+    DECLARE @CanWorkNow BIT, @WorkCode INT;
+    SELECT @CanWorkNow = s.CanWorkNow, @WorkCode = s.WorkCode
+      FROM [dbo].[UFN_HC_일정확인](@ServerTime, @Today, 'AM', 'NONE') s;
+
+    -- 12. 다른 유효업무
+    IF @Scope IN ('ALL','SLOT','SLOT_EXTRA')
+    BEGIN
+        DECLARE @OtherCnt INT = (SELECT COUNT(*) FROM [dbo].[예약접수] w
+                                  WHERE w.[PatientId] = @PatientId
+                                    AND w.[ReservationDate] >= @Today
+                                    AND w.[StatusCode] IN ('RSV','RCP')
+                                    AND (@WorkId IS NULL OR w.[WorkId] <> @WorkId));
+        IF @OtherCnt >= 2
+        BEGIN
+            SELECT CAST(0 AS BIT) AS Success, CAST(701 AS INT) AS Code
+                 , CAST(N'예약·접수 업무의 검사구성 또는 유효업무 데이터가 올바르지 않습니다.' AS NVARCHAR(300)) AS Message
+                 , CAST('WorkId' AS VARCHAR(50)) AS Field
+                 , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+            RETURN;
+        END
+        SELECT TOP (1) @OtherWorkId = w.[WorkId] FROM [dbo].[예약접수] w
+         WHERE w.[PatientId] = @PatientId
+           AND w.[ReservationDate] >= @Today
+           AND w.[StatusCode] IN ('RSV','RCP')
+           AND (@WorkId IS NULL OR w.[WorkId] <> @WorkId)
+         ORDER BY w.[WorkId];
+    END
+
+    -- 요청일 자체의 판정(300/301/302). 슬롯·마감과 무관한 날짜 수준 차단이다.
+    DECLARE @DateBlock INT = (SELECT ReasonCode FROM
+        [dbo].[UFN_HC_일정확인](@ServerTime, @ReservationDate, 'AM', 'NONE'));
+    DECLARE @ScheduleOk BIT = CASE WHEN @DateBlock = 0 THEN 1 ELSE 0 END;
+    DECLARE @CutoffType VARCHAR(10) = CASE WHEN @ReservationType = 'WALKIN' THEN 'RECEPTION' ELSE 'NORMAL' END;
+
+    -- AM/PM 두 행. 05 §9.7 의 세 경우를 한 식으로 만족한다.
+    DECLARE @Slots TABLE (
+        TimeSlot CHAR(2) PRIMARY KEY, SlotName NVARCHAR(10), Capacity INT,
+        CurrentCount INT, AfterCount INT, SeatsLeft INT, IsOpen BIT,
+        CutoffTime TIME(0), CutoffPassed BIT, CanSelect BIT, BlockCode INT, BlockMessage NVARCHAR(300));
+
+    INSERT INTO @Slots
+    SELECT
+          v.Slot
+        , CASE v.Slot WHEN 'AM' THEN N'오전' ELSE N'오후' END
+        , 20
+        , c.Cnt
+        , a.After
+        , CASE WHEN 20 - a.After < 0 THEN 0 ELSE 20 - a.After END
+        , s.IsOpen
+        , s.CutoffTime
+        , s.CutoffPassed
+        , CASE WHEN s.ReasonCode = 0 AND a.After <= 20 THEN 1 ELSE 0 END
+        , CASE WHEN s.ReasonCode <> 0 THEN s.ReasonCode
+               WHEN a.After > 20 THEN 305 ELSE 0 END
+        , CASE WHEN s.ReasonCode <> 0 THEN s.ReasonMessage
+               WHEN a.After > 20 THEN N'해당 시간대의 예약 정원이 마감되었습니다.'
+               ELSE N'' END
+    FROM (VALUES ('AM'),('PM')) v(Slot)
+    CROSS APPLY [dbo].[UFN_HC_일정확인](@ServerTime, @ReservationDate, v.Slot, @CutoffType) s
+    CROSS APPLY (SELECT Cnt = COUNT(*) FROM [dbo].[예약접수] x
+                  WHERE x.[ReservationDate] = @ReservationDate
+                    AND x.[TimeSlotCode] = v.Slot
+                    AND x.[StatusCode] IN ('RSV','RCP')) c
+    CROSS APPLY (SELECT After = c.Cnt
+                   - CASE WHEN @WorkId IS NOT NULL
+                           AND EXISTS (SELECT 1 FROM [dbo].[예약접수] y
+                                        WHERE y.[WorkId] = @WorkId
+                                          AND y.[ReservationDate] = @ReservationDate
+                                          AND y.[TimeSlotCode] = v.Slot
+                                          AND y.[StatusCode] IN ('RSV','RCP'))
+                          THEN 1 ELSE 0 END + 1) a;
+
+    -- TGT / NEX / AEX
+    DECLARE @Eligible BIT = NULL, @TgtReason INT = NULL;
+    IF @Scope = 'ALL' AND @ScheduleOk = 1
+        SELECT @Eligible = g.Eligible, @TgtReason = g.ReasonCode
+          FROM [dbo].[UFN_HC_검진대상확인](@PatientId, @ReservationDate) g;
+
+    DECLARE @NexCnt INT = 0;
+    IF @Scope = 'ALL' AND @ScheduleOk = 1 AND @Eligible = 1
+        SET @NexCnt = (SELECT COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](@PatientId, @ReservationDate));
+
+    DECLARE @AexOn BIT = CASE WHEN @Scope IN ('EXTRA','SLOT_EXTRA')
+                                OR (@Scope = 'ALL' AND @ScheduleOk = 1) THEN 1 ELSE 0 END;
+    DECLARE @UseSaved BIT = CASE WHEN @Scope IN ('EXTRA','SLOT_EXTRA') THEN 1 ELSE 0 END;
+
+    DECLARE @Aex TABLE (OptionCode VARCHAR(10) PRIMARY KEY, ExamCode VARCHAR(10), ExamName NVARCHAR(100),
+                        Requested BIT, Selected BIT, CanSelect BIT, ReasonCode INT, ReasonMessage NVARCHAR(300));
+    IF @AexOn = 1
+        INSERT INTO @Aex
+        SELECT x.OptionCode, x.ExamCode, x.ExamName, x.Requested, x.Selected, x.CanSelect, x.ReasonCode, x.ReasonMessage
+          FROM [dbo].[UFN_HC_추가검사확인](@PatientId, @ReservationDate, @WorkId, @UseSaved,
+                 @AexOpt01Selected, @AexOpt02Selected, @AexOpt03Selected, @AexOpt04Selected,
+                 @AexOpt05Selected, @AexOpt06Selected, @AexOpt07Selected) x;
+
+    DECLARE @BadAex INT = (SELECT COUNT(*) FROM @Aex WHERE Requested = 1 AND CanSelect = 0);
+    DECLARE @BadAexCode INT = (SELECT TOP (1) ReasonCode FROM @Aex
+                                WHERE Requested = 1 AND CanSelect = 0 ORDER BY OptionCode);
+
+    -- RS1 의 대표 BlockCode (05 §9.6 우선순위)
+    DECLARE @SelBlock INT = (SELECT BlockCode FROM @Slots WHERE TimeSlot = @TimeSlot);
+    DECLARE @AnySlot  BIT = CASE WHEN EXISTS (SELECT 1 FROM @Slots WHERE CanSelect = 1) THEN 1 ELSE 0 END;
+    DECLARE @BlockCode INT =
+        CASE WHEN @Scope = 'NONE'                                    THEN 0
+             WHEN @CanWorkNow = 0                                    THEN @WorkCode
+             WHEN @OtherWorkId IS NOT NULL                           THEN 306
+             WHEN @TimeSlot IS NOT NULL AND @SelBlock <> 0           THEN @SelBlock
+             WHEN @TimeSlot IS NULL AND @AnySlot = 0                 THEN 307
+             WHEN @Scope = 'ALL' AND @ScheduleOk = 1
+              AND ISNULL(@Eligible, 1) = 0                           THEN @TgtReason
+             WHEN @BadAex > 0                                        THEN @BadAexCode
+             ELSE 0 END;
+
+    DECLARE @CanSave BIT =
+        CASE @Scope
+            WHEN 'NONE' THEN 0
+            WHEN 'ALL'  THEN CASE WHEN @CanWorkNow = 1 AND @OtherWorkId IS NULL
+                                   AND @TimeSlot IS NOT NULL
+                                   AND (SELECT CanSelect FROM @Slots WHERE TimeSlot = @TimeSlot) = 1
+                                   AND @Eligible = 1 AND @NexCnt >= 8 AND @BadAex = 0
+                              THEN 1 ELSE 0 END
+            WHEN 'SLOT' THEN CASE WHEN @CanWorkNow = 1 AND @OtherWorkId IS NULL
+                                   AND @TimeSlot IS NOT NULL
+                                   AND (SELECT CanSelect FROM @Slots WHERE TimeSlot = @TimeSlot) = 1
+                              THEN 1 ELSE 0 END
+            WHEN 'EXTRA' THEN CASE WHEN @CanWorkNow = 1 AND @BadAex = 0 AND @ExtraChanged = 1
+                              THEN 1 ELSE 0 END
+            ELSE CASE WHEN @CanWorkNow = 1 AND @OtherWorkId IS NULL
+                       AND @TimeSlot IS NOT NULL
+                       AND (SELECT CanSelect FROM @Slots WHERE TimeSlot = @TimeSlot) = 1
+                       AND @BadAex = 0
+                  THEN 1 ELSE 0 END
+        END;
+
+    -- RS0
+    SELECT CAST(1 AS BIT) AS Success, CAST(0 AS INT) AS Code
+         , CAST(N'정상 처리되었습니다.' AS NVARCHAR(300)) AS Message
+         , CAST(NULL AS VARCHAR(50)) AS Field
+         , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+
+    -- RS1 예약요약 (14컬럼, 정확히 1행)
+    SELECT
+          Scope           = CAST(@Scope AS VARCHAR(12))
+        , PatientId       = CAST(@PatientId AS BIGINT)
+        , WorkId          = CAST(@WorkId AS BIGINT)
+        , ReservationType = CAST(@ReservationType AS VARCHAR(10))
+        , ReservationDate = CAST(@ReservationDate AS DATE)
+        , TimeSlot        = CAST(@TimeSlot AS CHAR(2))
+        , DateChanged     = CAST(@DateChanged AS BIT)
+        , SlotChanged     = CAST(@SlotChanged AS BIT)
+        , ExtraChanged    = CAST(@ExtraChanged AS BIT)
+        , CanWorkNow      = CAST(@CanWorkNow AS BIT)
+        , OtherWorkId     = CAST(@OtherWorkId AS BIGINT)
+        , CanSave         = CAST(@CanSave AS BIT)
+        , BlockCode       = CAST(@BlockCode AS INT)
+        , BlockMessage    = CAST(CASE @BlockCode
+                                     WHEN 0   THEN N''
+                                     WHEN 300 THEN N'과거 날짜는 예약할 수 없습니다.'
+                                     WHEN 301 THEN N'일요일은 업무일이 아닙니다.'
+                                     WHEN 302 THEN N'선택한 날짜는 휴무일입니다.'
+                                     WHEN 303 THEN N'선택한 시간대는 운영하지 않습니다.'
+                                     WHEN 304 THEN N'해당 시간대의 마감시간이 지났습니다.'
+                                     WHEN 305 THEN N'해당 시간대의 예약 정원이 마감되었습니다.'
+                                     WHEN 306 THEN N'수검자에게 다른 유효 예약 또는 접수 업무가 있습니다.'
+                                     WHEN 307 THEN N'선택할 수 있는 시간대가 없습니다.'
+                                     WHEN 308 THEN N'오늘은 업무일이 아닙니다.'
+                                     WHEN 309 THEN N'현재는 업무 운영시간이 아닙니다.'
+                                     WHEN 400 THEN N'예약일 기준 만 20세 미만으로 검진 대상이 아닙니다.'
+                                     WHEN 401 THEN N'일반건강검진 2년 주기가 도래하지 않았습니다.'
+                                     WHEN 410 THEN N'현재 사용할 수 없는 추가검사입니다.'
+                                     WHEN 411 THEN N'성별 조건을 충족하지 않는 추가검사입니다.'
+                                     WHEN 412 THEN N'일반건강검진에 포함된 검사입니다.'
+                                     ELSE N'' END AS NVARCHAR(300));
+
+    -- RS2 시간대정보 — ALL/SLOT/SLOT_EXTRA 는 2행, EXTRA/NONE 은 같은 Schema 의 0행
+    SELECT
+          TimeSlot     = CAST(s.TimeSlot AS CHAR(2))
+        , SlotName     = CAST(s.SlotName AS NVARCHAR(10))
+        , Capacity     = CAST(s.Capacity AS INT)
+        , CurrentCount = CAST(s.CurrentCount AS INT)
+        , AfterCount   = CAST(s.AfterCount AS INT)
+        , SeatsLeft    = CAST(s.SeatsLeft AS INT)
+        , IsOpen       = CAST(s.IsOpen AS BIT)
+        , CutoffTime   = CAST(s.CutoffTime AS TIME(0))
+        , CutoffPassed = CAST(s.CutoffPassed AS BIT)
+        , CanSelect    = CAST(s.CanSelect AS BIT)
+        , BlockCode    = CAST(s.BlockCode AS INT)
+        , BlockMessage = CAST(s.BlockMessage AS NVARCHAR(300))
+    FROM @Slots s
+    WHERE @Scope IN ('ALL','SLOT','SLOT_EXTRA')
+    ORDER BY s.TimeSlot ASC;
+
+    -- RS3 검진대상 — ALL 에서 일정 평가가 가능할 때만 1행
+    SELECT
+          Eligible        = CAST(g.Eligible AS BIT)
+        , Age             = CAST(g.Age AS INT)
+        , LastCheckupDate = CAST(g.LastCheckupDate AS DATE)
+        , ReasonCode      = CAST(g.ReasonCode AS INT)
+        , ReasonMessage   = CAST(g.ReasonMessage AS NVARCHAR(300))
+    FROM [dbo].[UFN_HC_검진대상확인](@PatientId, @ReservationDate) g
+    WHERE @Scope = 'ALL' AND @ScheduleOk = 1;
+
+    -- RS4 국가검사항목 — ALL + TGT 대상일 때만 8~11행
+    SELECT
+          ExamCode = CAST(n.ExamCode AS VARCHAR(10))
+        , ExamName = CAST(n.ExamName AS NVARCHAR(100))
+        , ExamType = CAST(n.ExamType AS VARCHAR(12))
+        , RuleCode = CAST(n.RuleCode AS VARCHAR(10))
+    FROM [dbo].[UFN_HC_국가검사구성](@PatientId, @ReservationDate) n
+    WHERE @Scope = 'ALL' AND @ScheduleOk = 1
+    ORDER BY n.ExamCode ASC;
+
+    -- RS5 추가검사항목 — AEX 를 실제 평가하는 Scope 에서만 7행
+    SELECT
+          OptionCode    = CAST(a.OptionCode AS VARCHAR(10))
+        , ExamCode      = CAST(a.ExamCode AS VARCHAR(10))
+        , ExamName      = CAST(a.ExamName AS NVARCHAR(100))
+        , Requested     = CAST(a.Requested AS BIT)
+        , Selected      = CAST(a.Selected AS BIT)
+        , CanSelect     = CAST(a.CanSelect AS BIT)
+        , ReasonCode    = CAST(a.ReasonCode AS INT)
+        , ReasonMessage = CAST(a.ReasonMessage AS NVARCHAR(300))
+    FROM @Aex a
+    ORDER BY a.OptionCode ASC;
+END
+GO

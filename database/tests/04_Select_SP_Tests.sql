@@ -45,6 +45,10 @@ DECLARE @Wn BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
 EXEC [dbo].[USP_HC_SELECT_예약접수상세] @Wn;
 EXEC [dbo].[USP_HC_SELECT_예약접수상세] -1;
 
+EXEC [dbo].[USP_HC_SELECT_예약가능정보] @P15, NULL, NULL, 'NORMAL', '2026-11-16', 'AM', 1,0,0,0,0,0,1;
+EXEC [dbo].[USP_HC_SELECT_예약가능정보] @P15, NULL, NULL, 'NORMAL', '2026-12-25', 'AM', 0,0,0,0,0,0,0;
+EXEC [dbo].[USP_HC_SELECT_예약가능정보] @P15, NULL, NULL, 'WALKIN', '2026-11-16', 'AM', 0,0,0,0,0,0,0;
+
 DECLARE @After VARCHAR(100) =
       CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[수검자]))   + '|'
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[예약접수])) + '|'
