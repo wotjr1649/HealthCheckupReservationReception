@@ -143,19 +143,22 @@ ELSE BEGIN PRINT 'FAIL 실패 경로가 행을 남겼다'; SET @Fail += 1; END
 
 `[R3]` 이 SP 는 Parameter 목록 **맨 끝**에 `@OperatorName NVARCHAR(50)` 을 받는다(`05` §19.2). 아래 시험의 모든 호출은 마지막 인자로 `@OperatorName = N'TEST'` 를 명시 전달한다 — `05` §2.1 이 선택 Parameter 의 생략을 금지한다.
 
-`[R3]` 성공·업무실패 두 경로 모두 `04` §8.7.4 의 `<감사 블록>` 을 통과해 `변경이력` 1행을 남긴다. 감사 INSERT 는 트랜잭션 밖·자체 `TRY/CATCH`·해당 Result Set `SELECT` 뒤이며, 업무 INSERT 계열은 `SCOPE_IDENTITY()` 를 **감사 INSERT 앞에서** 변수로 확정한다.
+`[R3]` **`plans/10` 이 `변경이력`을 EAV 로 바꿨다.** 성공 경로에서만, 그리고 **실제로 값이 바뀐 컬럼마다** 1행을 남긴다 (`00` CP-06 · `04` §8.6.4). 업무실패·입력검증 실패는 데이터를 바꾸지 않으므로 기록 지점이 아니다. 감사 INSERT 는 트랜잭션 밖·자체 `TRY/CATCH`·해당 Result Set `SELECT` 뒤이며, 업무 INSERT 계열은 `SCOPE_IDENTITY()` 를 **감사 INSERT 앞에서** 변수로 확정한다.
 
 ```sql
 -- PWR-030  USP_HC_INSERT_수검자 가 변경이력 1행을 남긴다 (성공·업무실패 각각)
-DECLARE @H0 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'PAT_INSERT');
---   … 성공 호출 1회 + 업무실패 호출 1회를 수행한다 …
-IF ((SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'PAT_INSERT') = @H0 + 2
-    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
-                     WHERE [OperationCode] = 'PAT_INSERT' AND [TargetTable] <> N'수검자')
-    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
-                     WHERE [OperationCode] = 'PAT_INSERT' AND [ResultCode] < 100 AND [TargetKey] IS NULL))
-    PRINT 'PASS PWR-030 PAT_INSERT 감사 2행 · TargetTable · 성공행 TargetKey NOT NULL';
-ELSE BEGIN PRINT 'FAIL PWR-030 감사 기록 불일치'; SET @Fail += 1; END
+DECLARE @H0 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상테이블] = N'수검자');
+--   … 성공 호출 1회(값이 바뀌는 것) + 업무실패 호출 1회를 수행한다 …
+--   EAV 는 성공한 변경만 남기므로 업무실패 호출은 행을 만들지 않는다.
+DECLARE @H1 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상테이블] = N'수검자');
+IF (@H1 > @H0                                        -- 성공 변경이 최소 1개 컬럼을 남겼다
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]    -- 성공 기록에 대상키가 없을 수 없다
+                     WHERE [대상테이블] = N'수검자' AND [대상키] IS NULL)
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]    -- 값이 같은 컬럼은 기록되지 않는다
+                     WHERE [대상테이블] = N'수검자'
+                       AND ISNULL([변경전], N'~NULL~') = ISNULL([변경후], N'~NULL~')))
+    PRINT 'PASS PWR-030 수검자 변경기록 · 대상키 NOT NULL · 무변경 컬럼 0행';
+ELSE BEGIN PRINT 'FAIL PWR-030 변경기록 불일치'; SET @Fail += 1; END
 ```
 
 **완료조건:** 스펙 §45.2 의 `PWR-001`~`PWR-014` 가 계약 판정(`verify-contract.js`) + DB 상태 단언으로 **각각** 증명된다. 업무시간 밖 실행이면 `SKIP 1건 + FAIL 0건`.
@@ -514,14 +517,12 @@ DECLARE @NewEdit DATETIME = CONVERT(DATETIME, @ServerTime);
 IF @NewEdit <= @OldEdit SET @NewEdit = DATEADD(MILLISECOND, 4, @OldEdit);
 
 UPDATE [dbo].[수검자]
-   SET [차트번호] = @ChartNo, [Name] = @Name, [주민번호] = @SocialNumber
-     , [생년월일] = @Birthday, [Gender] = @Gender
-     , [CelNumber]  = @MobilePhone
-     , [CelNumberS] = CASE WHEN @MobilePhone IS NULL THEN NULL ELSE REPLACE(@MobilePhone,'-','') END
-     , [TelNumber]  = @Phone
-     , [TelNumberS] = CASE WHEN @Phone       IS NULL THEN NULL ELSE REPLACE(@Phone,'-','')       END
-     , [EMail] = @Email, [Zipcode] = @Zipcode, [Address] = @Address
-     , [AddressDetail] = @AddressDetail, [Memo] = @Memo
+   SET [차트번호] = @ChartNo, [성명] = @Name, [주민번호] = @SocialNumber
+     , [생년월일] = @Birthday, [성별] = @Gender
+     , [휴대전화] = @MobilePhone
+     , [전화번호] = @Phone
+     , [이메일] = @Email, [우편번호] = @Zipcode, [주소] = @Address
+     , [상세주소] = @AddressDetail, [비고] = @Memo
      , [최종수정일시] = @NewEdit
  WHERE [수검자ID]    = @PatientId
    AND [최종수정일시] = @OldEdit;
@@ -529,15 +530,18 @@ UPDATE [dbo].[수검자]
 IF @@ROWCOUNT = 0 BEGIN SET @Code = 600; SET @Field = 'LastEditDate'; END
 ```
 
-`[X]` **`REPLACE(ISNULL(@MobilePhone,''),'-','')` 는 CHECK 제약을 위반한다.** `@MobilePhone IS NULL` 이면 `CelNumber = NULL`, `CelNumberS = ''` 가 되는데, `CK_수검자_CEL_NORMALIZED` 는
+`[X]` **`plans/09` `T46` 이 `CelNumberS` 를 제거했다.** 정규화 값을 저장하지 않으므로
+`CK_수검자_CEL_NORMALIZED` 도 함께 사라졌고, 위 `UPDATE` 는 표시값만 그대로 넣는다.
+초안이 경고하던 `Msg 547`(정규화 짝이 어긋나 CHECK 위반)은 구조적으로 발생할 수 없다.
+
+남은 방어는 `CK_수검자_CEL_DIGIT` 하나다.
 
 ```text
-(CelNumber IS NULL AND CelNumberS IS NULL) OR (CelNumber IS NOT NULL AND CelNumberS = REPLACE(CelNumber,'-',''))
+[휴대전화] IS NULL OR REPLACE([휴대전화], '-', '') NOT LIKE '%[^0-9]%'
 ```
 
-이므로 첫 항은 `''`가 NULL이 아니라 거짓, 둘째 항도 거짓 → **`Msg 547`**. `PWR-020`~`PWR-028` 이 전부 `@MobilePhone`/`@Phone` 에 NULL 을 넘기므로 `T24` 의 모든 테스트가 SP 의 `CATCH → THROW` 로 배치 중단된다. 초안은 이 수정을 **산문으로만** 적고 코드 블록은 틀린 채 두었다.
-
-`NULLIF(REPLACE(...), '')` 도 되지만 입력이 `'-'` 뿐일 때 `''`→NULL 로 조용히 바뀌므로 **`CASE` 가 안전하다.**
+`@MobilePhone` 검색은 `REPLACE(p.[휴대전화],'-','') = @MobilePhone` 으로 하며 인덱스 seek 이 아니다
+(`plans/09` §4.2 의 받아들인 대가).
 
 - [ ] **Step 4: GREEN 실행**
 
@@ -591,19 +595,22 @@ git commit -m "feat(phase4): USP_HC_UPDATE_수검자정보 구현 및 수정·�
 
 `[R3]` 이 SP 는 Parameter 목록 **맨 끝**에 `@OperatorName NVARCHAR(50)` 을 받는다(`05` §19.2). 아래 시험의 모든 호출은 마지막 인자로 `@OperatorName = N'TEST'` 를 명시 전달한다 — `05` §2.1 이 선택 Parameter 의 생략을 금지한다.
 
-`[R3]` 성공·업무실패 두 경로 모두 `04` §8.7.4 의 `<감사 블록>` 을 통과해 `변경이력` 1행을 남긴다. 감사 INSERT 는 트랜잭션 밖·자체 `TRY/CATCH`·해당 Result Set `SELECT` 뒤이며, 업무 INSERT 계열은 `SCOPE_IDENTITY()` 를 **감사 INSERT 앞에서** 변수로 확정한다.
+`[R3]` **`plans/10` 이 `변경이력`을 EAV 로 바꿨다.** 성공 경로에서만, 그리고 **실제로 값이 바뀐 컬럼마다** 1행을 남긴다 (`00` CP-06 · `04` §8.6.4). 업무실패·입력검증 실패는 데이터를 바꾸지 않으므로 기록 지점이 아니다. 감사 INSERT 는 트랜잭션 밖·자체 `TRY/CATCH`·해당 Result Set `SELECT` 뒤이며, 업무 INSERT 계열은 `SCOPE_IDENTITY()` 를 **감사 INSERT 앞에서** 변수로 확정한다.
 
 ```sql
 -- PWR-031  USP_HC_UPDATE_수검자정보 가 변경이력 1행을 남긴다 (성공·업무실패 각각)
-DECLARE @H0 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'PAT_UPDATE');
---   … 성공 호출 1회 + 업무실패 호출 1회를 수행한다 …
-IF ((SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'PAT_UPDATE') = @H0 + 2
-    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
-                     WHERE [OperationCode] = 'PAT_UPDATE' AND [TargetTable] <> N'수검자')
-    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
-                     WHERE [OperationCode] = 'PAT_UPDATE' AND [ResultCode] < 100 AND [TargetKey] IS NULL))
-    PRINT 'PASS PWR-031 PAT_UPDATE 감사 2행 · TargetTable · 성공행 TargetKey NOT NULL';
-ELSE BEGIN PRINT 'FAIL PWR-031 감사 기록 불일치'; SET @Fail += 1; END
+DECLARE @H0 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상테이블] = N'수검자');
+--   … 성공 호출 1회(값이 바뀌는 것) + 업무실패 호출 1회를 수행한다 …
+--   EAV 는 성공한 변경만 남기므로 업무실패 호출은 행을 만들지 않는다.
+DECLARE @H1 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상테이블] = N'수검자');
+IF (@H1 > @H0                                        -- 성공 변경이 최소 1개 컬럼을 남겼다
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]    -- 성공 기록에 대상키가 없을 수 없다
+                     WHERE [대상테이블] = N'수검자' AND [대상키] IS NULL)
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]    -- 값이 같은 컬럼은 기록되지 않는다
+                     WHERE [대상테이블] = N'수검자'
+                       AND ISNULL([변경전], N'~NULL~') = ISNULL([변경후], N'~NULL~')))
+    PRINT 'PASS PWR-031 수검자 변경기록 · 대상키 NOT NULL · 무변경 컬럼 0행';
+ELSE BEGIN PRINT 'FAIL PWR-031 변경기록 불일치'; SET @Fail += 1; END
 ```
 
 **완료조건:** 스펙 §45.2 의 `PWR-020`~`PWR-028` 전건 PASS + 연속 5회 수정 성공(단조증가 실증).

@@ -270,19 +270,22 @@ READ COMMITTED 스캔이 `'RCP'` 구간을 지난 뒤 `'RSV'` 에서 X 잠금에
 
 `[R3]` 이 SP 는 Parameter 목록 **맨 끝**에 `@OperatorName NVARCHAR(50)` 을 받는다(`05` §19.2). 아래 시험의 모든 호출은 마지막 인자로 `@OperatorName = N'TEST'` 를 명시 전달한다 — `05` §2.1 이 선택 Parameter 의 생략을 금지한다.
 
-`[R3]` 성공·업무실패 두 경로 모두 `04` §8.7.4 의 `<감사 블록>` 을 통과해 `변경이력` 1행을 남긴다. 감사 INSERT 는 트랜잭션 밖·자체 `TRY/CATCH`·해당 Result Set `SELECT` 뒤이며, 업무 INSERT 계열은 `SCOPE_IDENTITY()` 를 **감사 INSERT 앞에서** 변수로 확정한다.
+`[R3]` **`plans/10` 이 `변경이력`을 EAV 로 바꿨다.** 성공 경로에서만, 그리고 **실제로 값이 바뀐 컬럼마다** 1행을 남긴다 (`00` CP-06 · `04` §8.6.4). 업무실패·입력검증 실패는 데이터를 바꾸지 않으므로 기록 지점이 아니다. 감사 INSERT 는 트랜잭션 밖·자체 `TRY/CATCH`·해당 Result Set `SELECT` 뒤이며, 업무 INSERT 계열은 `SCOPE_IDENTITY()` 를 **감사 INSERT 앞에서** 변수로 확정한다.
 
 ```sql
 -- CWR-050  USP_HC_UPDATE_접수완료 가 변경이력 1행을 남긴다 (성공·업무실패 각각)
-DECLARE @H0 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'RCP_ACCEPT');
---   … 성공 호출 1회 + 업무실패 호출 1회를 수행한다 …
-IF ((SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'RCP_ACCEPT') = @H0 + 2
-    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
-                     WHERE [OperationCode] = 'RCP_ACCEPT' AND [TargetTable] <> N'예약접수')
-    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
-                     WHERE [OperationCode] = 'RCP_ACCEPT' AND [ResultCode] < 100 AND [TargetKey] IS NULL))
-    PRINT 'PASS CWR-050 RCP_ACCEPT 감사 2행 · TargetTable · 성공행 TargetKey NOT NULL';
-ELSE BEGIN PRINT 'FAIL CWR-050 감사 기록 불일치'; SET @Fail += 1; END
+DECLARE @H0 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상테이블] = N'예약접수');
+--   … 성공 호출 1회(값이 바뀌는 것) + 업무실패 호출 1회를 수행한다 …
+--   EAV 는 성공한 변경만 남기므로 업무실패 호출은 행을 만들지 않는다.
+DECLARE @H1 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상테이블] = N'예약접수');
+IF (@H1 > @H0                                        -- 성공 변경이 최소 1개 컬럼을 남겼다
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]    -- 성공 기록에 대상키가 없을 수 없다
+                     WHERE [대상테이블] = N'예약접수' AND [대상키] IS NULL)
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]    -- 값이 같은 컬럼은 기록되지 않는다
+                     WHERE [대상테이블] = N'예약접수'
+                       AND ISNULL([변경전], N'~NULL~') = ISNULL([변경후], N'~NULL~')))
+    PRINT 'PASS CWR-050 예약접수 변경기록 · 대상키 NOT NULL · 무변경 컬럼 0행';
+ELSE BEGIN PRINT 'FAIL CWR-050 변경기록 불일치'; SET @Fail += 1; END
 ```
 
 **완료조건:** `CWR-001`~`CWR-007` PASS (`CWR-006` 은 시간대에 따라 SKIP 허용).
@@ -453,19 +456,22 @@ PRINT '=== 07_Reception_Write_Tests 완료 ===';
 
 `[R3]` 이 SP 는 Parameter 목록 **맨 끝**에 `@OperatorName NVARCHAR(50)` 을 받는다(`05` §19.2). 아래 시험의 모든 호출은 마지막 인자로 `@OperatorName = N'TEST'` 를 명시 전달한다 — `05` §2.1 이 선택 Parameter 의 생략을 금지한다.
 
-`[R3]` 성공·업무실패 두 경로 모두 `04` §8.7.4 의 `<감사 블록>` 을 통과해 `변경이력` 1행을 남긴다. 감사 INSERT 는 트랜잭션 밖·자체 `TRY/CATCH`·해당 Result Set `SELECT` 뒤이며, 업무 INSERT 계열은 `SCOPE_IDENTITY()` 를 **감사 INSERT 앞에서** 변수로 확정한다.
+`[R3]` **`plans/10` 이 `변경이력`을 EAV 로 바꿨다.** 성공 경로에서만, 그리고 **실제로 값이 바뀐 컬럼마다** 1행을 남긴다 (`00` CP-06 · `04` §8.6.4). 업무실패·입력검증 실패는 데이터를 바꾸지 않으므로 기록 지점이 아니다. 감사 INSERT 는 트랜잭션 밖·자체 `TRY/CATCH`·해당 Result Set `SELECT` 뒤이며, 업무 INSERT 계열은 `SCOPE_IDENTITY()` 를 **감사 INSERT 앞에서** 변수로 확정한다.
 
 ```sql
 -- CWR-051  USP_HC_UPDATE_접수추가검사 가 변경이력 1행을 남긴다 (성공·업무실패 각각)
-DECLARE @H0 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'RCP_AEX');
---   … 성공 호출 1회 + 업무실패 호출 1회를 수행한다 …
-IF ((SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'RCP_AEX') = @H0 + 2
-    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
-                     WHERE [OperationCode] = 'RCP_AEX' AND [TargetTable] <> N'예약접수')
-    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
-                     WHERE [OperationCode] = 'RCP_AEX' AND [ResultCode] < 100 AND [TargetKey] IS NULL))
-    PRINT 'PASS CWR-051 RCP_AEX 감사 2행 · TargetTable · 성공행 TargetKey NOT NULL';
-ELSE BEGIN PRINT 'FAIL CWR-051 감사 기록 불일치'; SET @Fail += 1; END
+DECLARE @H0 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상테이블] = N'예약접수');
+--   … 성공 호출 1회(값이 바뀌는 것) + 업무실패 호출 1회를 수행한다 …
+--   EAV 는 성공한 변경만 남기므로 업무실패 호출은 행을 만들지 않는다.
+DECLARE @H1 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상테이블] = N'예약접수');
+IF (@H1 > @H0                                        -- 성공 변경이 최소 1개 컬럼을 남겼다
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]    -- 성공 기록에 대상키가 없을 수 없다
+                     WHERE [대상테이블] = N'예약접수' AND [대상키] IS NULL)
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]    -- 값이 같은 컬럼은 기록되지 않는다
+                     WHERE [대상테이블] = N'예약접수'
+                       AND ISNULL([변경전], N'~NULL~') = ISNULL([변경후], N'~NULL~')))
+    PRINT 'PASS CWR-051 예약접수 변경기록 · 대상키 NOT NULL · 무변경 컬럼 0행';
+ELSE BEGIN PRINT 'FAIL CWR-051 변경기록 불일치'; SET @Fail += 1; END
 ```
 
 **완료조건:** `CWR-020`(No-op 시 RowVersion 불변)과 `CWR-021`(실제변경 시 RowVersion 갱신)이 **둘 다** PASS. 이 두 건이 `04` §1.2.1 Aggregate 동시성 계약의 핵심 증거다.
@@ -549,19 +555,22 @@ git commit -m "feat(phase4): USP_HC_UPDATE_접수취소 구현 — 15개 SP 완�
 
 `[R3]` 이 SP 는 Parameter 목록 **맨 끝**에 `@OperatorName NVARCHAR(50)` 을 받는다(`05` §19.2). 아래 시험의 모든 호출은 마지막 인자로 `@OperatorName = N'TEST'` 를 명시 전달한다 — `05` §2.1 이 선택 Parameter 의 생략을 금지한다.
 
-`[R3]` 성공·업무실패 두 경로 모두 `04` §8.7.4 의 `<감사 블록>` 을 통과해 `변경이력` 1행을 남긴다. 감사 INSERT 는 트랜잭션 밖·자체 `TRY/CATCH`·해당 Result Set `SELECT` 뒤이며, 업무 INSERT 계열은 `SCOPE_IDENTITY()` 를 **감사 INSERT 앞에서** 변수로 확정한다.
+`[R3]` **`plans/10` 이 `변경이력`을 EAV 로 바꿨다.** 성공 경로에서만, 그리고 **실제로 값이 바뀐 컬럼마다** 1행을 남긴다 (`00` CP-06 · `04` §8.6.4). 업무실패·입력검증 실패는 데이터를 바꾸지 않으므로 기록 지점이 아니다. 감사 INSERT 는 트랜잭션 밖·자체 `TRY/CATCH`·해당 Result Set `SELECT` 뒤이며, 업무 INSERT 계열은 `SCOPE_IDENTITY()` 를 **감사 INSERT 앞에서** 변수로 확정한다.
 
 ```sql
 -- CWR-052  USP_HC_UPDATE_접수취소 가 변경이력 1행을 남긴다 (성공·업무실패 각각)
-DECLARE @H0 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'RCP_CANCEL');
---   … 성공 호출 1회 + 업무실패 호출 1회를 수행한다 …
-IF ((SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [OperationCode] = 'RCP_CANCEL') = @H0 + 2
-    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
-                     WHERE [OperationCode] = 'RCP_CANCEL' AND [TargetTable] <> N'예약접수')
-    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]
-                     WHERE [OperationCode] = 'RCP_CANCEL' AND [ResultCode] < 100 AND [TargetKey] IS NULL))
-    PRINT 'PASS CWR-052 RCP_CANCEL 감사 2행 · TargetTable · 성공행 TargetKey NOT NULL';
-ELSE BEGIN PRINT 'FAIL CWR-052 감사 기록 불일치'; SET @Fail += 1; END
+DECLARE @H0 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상테이블] = N'예약접수');
+--   … 성공 호출 1회(값이 바뀌는 것) + 업무실패 호출 1회를 수행한다 …
+--   EAV 는 성공한 변경만 남기므로 업무실패 호출은 행을 만들지 않는다.
+DECLARE @H1 INT = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상테이블] = N'예약접수');
+IF (@H1 > @H0                                        -- 성공 변경이 최소 1개 컬럼을 남겼다
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]    -- 성공 기록에 대상키가 없을 수 없다
+                     WHERE [대상테이블] = N'예약접수' AND [대상키] IS NULL)
+    AND NOT EXISTS (SELECT 1 FROM [dbo].[변경이력]    -- 값이 같은 컬럼은 기록되지 않는다
+                     WHERE [대상테이블] = N'예약접수'
+                       AND ISNULL([변경전], N'~NULL~') = ISNULL([변경후], N'~NULL~')))
+    PRINT 'PASS CWR-052 예약접수 변경기록 · 대상키 NOT NULL · 무변경 컬럼 0행';
+ELSE BEGIN PRINT 'FAIL CWR-052 변경기록 불일치'; SET @Fail += 1; END
 ```
 
 **완료조건:** 스펙 §45.2 의 `CWR` 전건 PASS + `tests/01_Schema_Tests.sql` 의 `SCH` 전건 PASS (G04·G05·G06 충족).

@@ -327,8 +327,7 @@ database/
 Drop 역순 (생성 순서 `04` §9.2의 역):
 
 ```text
-변경이력 → 완료이력
-→ 검사항목 → 예약접수
+변경이력 → 완료이력 → 예약접수
 → 휴무일 → 검사코드 → 수검자
 → SEQ_HC_CHART_NO
 ```
@@ -520,20 +519,18 @@ Isolation          기본 READ COMMITTED. SET TRANSACTION ISOLATION LEVEL 문을
 
 | No | Table | 역할 | 컬럼 수 | PK |
 |---:|---|---|---:|---|
-| 1 | `수검자` | 수검자 Master | **17** | `PatientId` `BIGINT IDENTITY(1,1)` Clustered |
-| 2 | `예약접수` | 예약·접수 업무 Master | 8 | `WorkId` `BIGINT IDENTITY(1,1)` Clustered |
-| 3 | `검사항목` | Work 검사 스냅샷 | 3 | `(WorkId, ExamItemCode)` Clustered |
-| 4 | `검사코드` | 통합 검사 Master | 6 | `ExamItemCode` Clustered |
-| 5 | `휴무일` | 휴무일 Master | 4 | `HolidayDate` Clustered |
-| 6 | `완료이력` | TGT 완료이력 | 2 | `(PatientId, CompletionDate)` Clustered |
-| 7 | `변경이력` | 업무 단위 조작기록 | 7 | `HistoryId` `BIGINT IDENTITY(1,1)` Clustered |
+| 1 | `수검자` | 수검자 Master | **16** | `수검자ID` `BIGINT IDENTITY(1,1)` Clustered |
+| 2 | `예약접수` | 예약·접수 업무 Master + 검사구성 | 10 | `업무ID` `BIGINT IDENTITY(1,1)` Clustered |
+| 3 | `검사코드` | 통합 검사 Master | 6 | `검사항목코드` Clustered |
+| 4 | `휴무일` | 휴무일 Master | 4 | `휴무일자` Clustered |
+| 5 | `완료이력` | TGT 완료이력 + 검사구성 | 4 | `(수검자ID, 완료일자)` Clustered |
+| 6 | `변경이력` | 데이터 변경기록 (컬럼 단위) | 8 | `이력ID` `BIGINT IDENTITY(1,1)` Clustered |
 
 생성 순서 (`04` §9.2):
 
 ```text
 1 수검자  2 검사코드  3 휴무일
-4 예약접수  5 검사항목
-6 완료이력  7 변경이력
+4 예약접수  5 완료이력  6 변경이력
 ```
 
 추가 테이블을 만들지 않는다. 특히 `SEC_PATIENT_IDENTIFIERS`, `MST_NATIONAL_EXAMS`, `MST_ADDITIONAL_EXAMS`, 별도 접수 Master/Detail, 상태 History, 범용 Rule Engine, 공통 코드 테이블, 테스트 전용 영구 Table을 만들지 않는다.
@@ -1020,25 +1017,35 @@ BEGIN
 END
 ```
 
-`<감사 블록>` 은 네 지점(`[1]` 입력검증 실패 · `[2]` 사전조회 실패 · `[4]` 업무실패 · `[7]` 성공)에서 **문자 그대로 같은 형태**로 반복된다.
+`[X]` **`plans/10` 이 `변경이력`을 EAV 로 바꾸면서 감사 지점이 넷에서 하나로 줄었다.**
+`00` CP-06 이 "실제로 바꾼 컬럼마다 1행"으로 개정되어 데이터를 바꾸지 않은 호출은 기록하지 않는다.
+`[1]` 입력검증 실패 · `[2]` 사전조회 실패 · `[4]` 업무실패는 데이터를 바꾸지 않으므로 **기록 지점이 아니다.**
+남는 것은 `[7]` 성공 하나이며, 그 안에서 **실제로 값이 바뀐 컬럼마다** 1행을 넣는다.
 
 ```sql
 BEGIN TRY
     INSERT INTO [dbo].[변경이력]
-        ([CreationDate], [OperatorName], [OperationCode],
-         [TargetTable], [TargetKey], [ResultCode])
-    VALUES (@StoredNow, @OperatorName, 'RSV_CANCEL',      -- SP별 고정 업무코드 (`04` §8.7.2)
-            N'예약접수', @TargetKey, @Code);              -- SP별 고정 대상 테이블
+        ([기록일시], [조작자명], [대상테이블], [대상키], [컬럼명], [변경전], [변경후])
+    SELECT @StoredNow, @OperatorName, N'예약접수', @TargetKey, V.[컬럼명], V.[변경전], V.[변경후]
+      FROM (VALUES
+              (N'상태코드', @Before상태, @After상태)
+            , (N'예약일',   CONVERT(NVARCHAR(4000), @Before예약일), CONVERT(NVARCHAR(4000), @After예약일))
+           ) V([컬럼명], [변경전], [변경후])
+     WHERE ISNULL(V.[변경전], N'~NULL~') <> ISNULL(V.[변경후], N'~NULL~');   -- 실제로 바뀐 것만
 END TRY
 BEGIN CATCH
 END CATCH
 ```
 
+`VALUES` 행 생성자로 컬럼 목록을 세우고 `WHERE` 가 실제 변경분만 남긴다. 그래서 값이 같은 컬럼은 기록되지 않는다.
+`NULL` 끼리도 같은 것으로 보아야 하므로 `ISNULL` 로 감싼다 (`05` §28.2 NULL-safe 비교와 같은 규칙).
+`변경전`은 SP가 Transaction 안의 재검증 단계에서 이미 읽은 값을 변수에 담아 재사용한다. 추가 조회를 하지 않는다.
+
 세 가지가 규칙이다.
 
 | # | 규칙 | 근거 |
 |---:|---|---|
-| ① | 항상 **`@@TRANCOUNT = 0` 지점**에서만 실행한다 | `[1]`·`[2]`는 트랜잭션을 열기 전, `[4]`는 `ROLLBACK` 뒤, `[7]`은 `COMMIT` 뒤다. 네 지점 모두 자동커밋이라 업무 트랜잭션에 영향을 줄 수 없다 |
+| ① | 항상 **`@@TRANCOUNT = 0` 지점**에서만 실행한다 | `[7]`은 `COMMIT` 뒤다. 자동커밋이라 업무 트랜잭션에 영향을 줄 수 없다 |
 | ② | 자체 `TRY/CATCH`로 감싸고 `CATCH`를 **비운다** | 기록 실패가 업무 호출 결과를 바꾸지 않는다. 바깥 `CATCH`에 도달하지 않으므로 계약된 RS0가 반드시 나간다 |
 | ③ | 해당 Result Set의 `SELECT`를 **먼저** 낸 뒤에 실행한다 | `RBK-008`(실패 응답 RS0 1개만)과 `contract/` 의 RS 개수 판정이 흔들리지 않는다. 성공 경로에서 RS1 이 실패하면 감사행도 남지 않아 로그가 성공을 주장하지 않는다 |
 
@@ -1060,8 +1067,8 @@ END CATCH
 
 | SP | 입력 정규화 | 사전조회 | Transaction 시작 | App Lock | Row Lock | 재검증 | 변경대상 | Commit | 성공 반환 | 예상 실패 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `INSERT_수검자` | Trim/NULL화/UPPER, SocialNumber 13자리·날짜·세기·성별 검증, Birthday/Gender 산출 | 없음 | 잠금 직전 | `SSN` → `CHART`(수동) | 없음 | 공통 업무가능 → 동일 SSN 조회 → Name+Birthday 후보 → ChartNo 고유성 → Sequence 발급 | `수검자` 1행 INSERT + `변경이력` 1행(트랜잭션 밖) | O | RS0(0 또는 2) + RS1 수검자결과 | 100~102, 201~203, 206, 308~309 (202/203은 RS1 동반) |
-| `UPDATE_수검자정보` | 동일 | `PatientId`(입력) | 잠금 직전 | **`SSN` → `CHART` → `PAT`** (조건 없이 항상, §24.1) | 없음 | Patient 존재 → `LastEditDate` → 실제 변경 여부(**NULL-safe**, §28.2) → 공통 업무가능 → ChartNo/SSN 고유성 → SSN 변경 시 RSV/RCP 부재 | `수검자` 1행 UPDATE (No-op이면 없음) + `변경이력` 1행(트랜잭션 밖) | O | RS0(0 또는 1) + RS1(PatientId, ChartNo, LastEditDate) | 100~102, 200~201, 204~205, 600, 308~309 |
+| `INSERT_수검자` | Trim/NULL화/UPPER, 주민번호 13자리·날짜·세기·성별 검증, 생년월일/성별 산출 | 없음 | 잠금 직전 | `SSN` → `CHART`(수동) | 없음 | 공통 업무가능 → 동일 SSN 조회 → 성명+생년월일 후보 → 차트번호 고유성 → Sequence 발급 | `수검자` 1행 INSERT + `변경이력` 컬럼 수만큼(트랜잭션 밖) | O | RS0(0 또는 2) + RS1 수검자결과 | 100~102, 201~203, 206, 308~309 (202/203은 RS1 동반) |
+| `UPDATE_수검자정보` | 동일 | `PatientId`(입력) | 잠금 직전 | **`SSN` → `CHART` → `PAT`** (조건 없이 항상, §24.1) | 없음 | Patient 존재 → `최종수정일시` → 실제 변경 여부(**NULL-safe**, §28.2) → 공통 업무가능 → 차트번호/SSN 고유성 → SSN 변경 시 RSV/RCP 부재 | `수검자` 1행 UPDATE (No-op이면 없음) + `변경이력` 바뀐 컬럼 수만큼(트랜잭션 밖) | O | RS0(0 또는 1) + RS1(PatientId, ChartNo, LastEditDate) | 100~102, 200~201, 204~205, 600, 308~309 |
 | `INSERT_예약` | 허용값·AEX 7 BIT NOT NULL·WalkIn 날짜 | 없음 | 잠금 직전 | `PAT` → `SLOT(신규)` | 없음 | Patient 존재 → 검사 Master 구성 → 공통 업무가능 → 다른 유효업무(2건↑ 701, 1건 306) → 일정·마감 → 정원 → TGT → NEX → AEX | `예약접수` INSERT(RSV) + `검사항목` NEX 전체 + Selected AEX + `변경이력` 1행(트랜잭션 밖) | O | RS0(0) + RS1(WorkId, Status, RowVersion) | 100~102, 200, 300~306, 308~309, 400~401, 410~412, 700~701 |
 | `UPDATE_예약변경` | 허용값·AEX 7 BIT NOT NULL | `WorkId` → `PatientId`, 현재 Date/Slot/AEX 집합 | 잠금 직전 | `PAT` → `WORK` → `SLOT(기존·신규 정렬)` | 없음 | Work 존재 → Status=RSV → RowVersion → Scope 계산 → Scope별 Rule(§29) | Scope에 따라 Work / NEX·AEX Detail (No-op이면 없음) + `변경이력` 1행(트랜잭션 밖) | O | RS0(0 또는 1) + RS1 | 100~102, 300~306, 308~309, 400~401, 410~412, 500, 502, 601, 700~701 |
 | `UPDATE_예약취소` | 필수값 | `WorkId` → `PatientId` | 잠금 직전 | `WORK` | 없음 | Work 존재 → Status=RSV → RowVersion → 공통 업무가능 | `예약접수.StatusCode='CNR'` 조건부 UPDATE. Detail 보존 + `변경이력` 1행(트랜잭션 밖) | O | RS0(0) + RS1 | 100, 500, 502, 601, 308~309 |
