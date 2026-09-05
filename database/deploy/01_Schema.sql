@@ -155,20 +155,21 @@ CREATE TABLE [dbo].[완료이력]
 GO
 CREATE TABLE [dbo].[변경이력]
 (
-    [이력ID]     BIGINT        IDENTITY(1,1) NOT NULL,
-    [기록일시]   DATETIME2(0)  NOT NULL CONSTRAINT [DF_변경이력_CREATION_DATE] DEFAULT (SYSDATETIME()),
-    [조작자명]   NVARCHAR(50)  NULL,
-    [업무코드]   VARCHAR(20)   NOT NULL,
-    [대상테이블] NVARCHAR(10)  NOT NULL,
-    [대상키]     BIGINT        NULL,
-    [결과코드]   INT           NOT NULL,
+    -- 성공한 데이터 변경만 기록한다. 바뀐 컬럼 1개당 1행이다 (plans/10 §4.5, 00 CP-06).
+    -- 실패한 호출은 데이터를 바꾸지 않으므로 남기지 않는다.
+    [이력ID]     BIGINT         IDENTITY(1,1) NOT NULL,
+    [기록일시]   DATETIME2(0)   NOT NULL CONSTRAINT [DF_변경이력_CREATION_DATE] DEFAULT (SYSDATETIME()),
+    [조작자명]   NVARCHAR(50)   NULL,
+    [대상테이블] NVARCHAR(10)   NOT NULL,
+    [대상키]     BIGINT         NULL,
+    [컬럼명]     NVARCHAR(30)   NOT NULL,
+    -- 감사 기록은 복원 근거가 아니라 열람용이라 4000자에서 자른다 (00 CP-06).
+    [변경전]     NVARCHAR(4000) NULL,
+    [변경후]     NVARCHAR(4000) NULL,
 
     CONSTRAINT [PK_변경이력] PRIMARY KEY CLUSTERED ([이력ID]),
-    CONSTRAINT [CK_변경이력_OPERATION] CHECK (
-        ([대상테이블] = N'수검자'   AND [업무코드] IN ('PAT_INSERT','PAT_UPDATE'))
-     OR ([대상테이블] = N'예약접수' AND [업무코드] IN ('RSV_INSERT','RSV_UPDATE','RSV_CANCEL','RCP_ACCEPT','RCP_AEX','RCP_CANCEL'))),
-    CONSTRAINT [CK_변경이력_RESULT_CODE] CHECK ([결과코드] BETWEEN 0 AND 9 OR [결과코드] BETWEEN 100 AND 799),
-    CONSTRAINT [CK_변경이력_TARGET_KEY]  CHECK ([결과코드] >= 100 OR [대상키] IS NOT NULL)
+    CONSTRAINT [CK_변경이력_TARGET_TABLE] CHECK ([대상테이블] IN (N'수검자', N'예약접수', N'완료이력')),
+    CONSTRAINT [CK_변경이력_COLUMN_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([컬럼명]))) > 0)
 );
 GO
 CREATE SEQUENCE [dbo].[SEQ_HC_CHART_NO]

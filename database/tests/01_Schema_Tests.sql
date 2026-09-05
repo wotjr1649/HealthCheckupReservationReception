@@ -136,14 +136,15 @@ INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
  (N'완료이력', N'완료일자',             N'date',      NULL,  0),
  (N'완료이력', N'국가검사항목',         N'nvarchar',  100,   1),
  (N'완료이력', N'추가검사항목',         N'nvarchar',  50,    1),
- -- 변경이력 7행
+ -- 변경이력 8행 (EAV)
  (N'변경이력', N'이력ID',               N'bigint',    NULL,  0),
  (N'변경이력', N'기록일시',             N'datetime2', NULL,  0),
  (N'변경이력', N'조작자명',             N'nvarchar',  50,    1),
- (N'변경이력', N'업무코드',             N'varchar',   20,    0),
  (N'변경이력', N'대상테이블',           N'nvarchar',  10,    0),
  (N'변경이력', N'대상키',               N'bigint',    NULL,  1),
- (N'변경이력', N'결과코드',             N'int',       NULL,  0);
+ (N'변경이력', N'컬럼명',               N'nvarchar',  30,    0),
+ (N'변경이력', N'변경전',               N'nvarchar',  4000,  1),
+ (N'변경이력', N'변경후',               N'nvarchar',  4000,  1);
 
 DECLARE @ActCol TABLE (T SYSNAME, C SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, C));
 INSERT INTO @ActCol (T, C, Ty, Len, Nul)
@@ -182,8 +183,7 @@ INSERT INTO @ExpCk (N) VALUES
  (N'CK_검사코드_ROLE_REQUIRED'),    (N'CK_검사코드_NEX_RULE'),
  (N'CK_검사코드_AEX_CODE'),         (N'CK_검사코드_AEX_GENDER'),
  (N'CK_검사코드_AEX_GROUP'),        (N'CK_휴무일_NAME_NOT_BLANK'),
- (N'CK_변경이력_OPERATION'),        (N'CK_변경이력_RESULT_CODE'),
- (N'CK_변경이력_TARGET_KEY');
+ (N'CK_변경이력_TARGET_TABLE'),     (N'CK_변경이력_COLUMN_NOT_BLANK');
 
 IF NOT EXISTS (SELECT N FROM @ExpCk EXCEPT SELECT name FROM sys.check_constraints)
    AND NOT EXISTS (SELECT name FROM sys.check_constraints EXCEPT SELECT N FROM @ExpCk)
