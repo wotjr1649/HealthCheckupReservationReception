@@ -1,0 +1,3 @@
+﻿SET NOCOUNT ON;
+EXEC [dbo].[USP_HC_SELECT_예약접수상세] -1;
+GO

@@ -37,6 +37,14 @@ DECLARE @P12 BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo]
 EXEC [dbo].[USP_HC_SELECT_수검자유효업무] @P15;
 EXEC [dbo].[USP_HC_SELECT_수검자유효업무] @P12;
 
+EXEC [dbo].[USP_HC_SELECT_예약접수목록] '2026-11-01', '2026-11-30', NULL, NULL, NULL;
+EXEC [dbo].[USP_HC_SELECT_예약접수목록] NULL, NULL, NULL, NULL, NULL;
+DECLARE @Wn BIGINT = (SELECT TOP (1) w.[WorkId] FROM [dbo].[예약접수] w
+                        JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
+                       WHERE p.[ChartNo] = N'T020' AND w.[StatusCode] = 'RSV' ORDER BY w.[WorkId]);
+EXEC [dbo].[USP_HC_SELECT_예약접수상세] @Wn;
+EXEC [dbo].[USP_HC_SELECT_예약접수상세] -1;
+
 DECLARE @After VARCHAR(100) =
       CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[수검자]))   + '|'
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[예약접수])) + '|'

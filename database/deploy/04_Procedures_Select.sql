@@ -360,3 +360,140 @@ BEGIN
     ORDER BY w.[ReservationDate] ASC, w.[TimeSlotCode] ASC, p.[Name] ASC, w.[WorkId] ASC;
 END
 GO
+-- 허용 Code 0 / 100 / 500 / 701 (05 §8.2). RS0~RS4 다섯 개를 반환한다.
+-- RS4 는 고정 5행이다. 업무시간 밖이라고 실패시키지 않는다 — Allowed=0 으로 반환한다.
+CREATE OR ALTER PROCEDURE [dbo].[USP_HC_SELECT_예약접수상세]
+    @WorkId BIGINT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
+    DECLARE @Today DATE = CONVERT(DATE, @ServerTime);
+
+    IF @WorkId IS NULL
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(100 AS INT)                  AS Code
+            , CAST(N'필수값을 입력하십시오.' AS NVARCHAR(300)) AS Message
+            , CAST('WorkId' AS VARCHAR(50))     AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[예약접수] WHERE [WorkId] = @WorkId)
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(500 AS INT)                  AS Code
+            , CAST(N'예약·접수 업무를 찾을 수 없습니다.' AS NVARCHAR(300)) AS Message
+            , CAST('WorkId' AS VARCHAR(50))     AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- 저장 NEX 0행은 검사구성 손상이다 (CORRUPT-2 가 이것을 만든다)
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[검사항목] d
+                    WHERE d.[WorkId] = @WorkId AND d.[ExamSourceCode] = 'NEX')
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(701 AS INT)                  AS Code
+            , CAST(N'예약·접수 업무의 검사구성 또는 유효업무 데이터가 올바르지 않습니다.' AS NVARCHAR(300)) AS Message
+            , CAST('WorkId' AS VARCHAR(50))     AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- RS0
+    SELECT
+          CAST(1 AS BIT)                    AS Success
+        , CAST(0 AS INT)                    AS Code
+        , CAST(N'정상 처리되었습니다.' AS NVARCHAR(300)) AS Message
+        , CAST(NULL AS VARCHAR(50))         AS Field
+        , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+
+    -- RS1 업무상세 (15컬럼)
+    SELECT
+          WorkId          = CAST(w.[WorkId] AS BIGINT)
+        , PatientId       = CAST(w.[PatientId] AS BIGINT)
+        , ChartNo         = CAST(p.[ChartNo] AS NVARCHAR(100))
+        , Name            = CAST(p.[Name] AS NVARCHAR(100))
+        , Birthday        = CAST(p.[Birthday] AS VARCHAR(8))
+        , Gender          = CAST(p.[Gender] AS CHAR(1))
+        , MobilePhone     = CAST(p.[CelNumber] AS VARCHAR(13))
+        , ReservationDate = CAST(w.[ReservationDate] AS DATE)
+        , TimeSlot        = CAST(w.[TimeSlotCode] AS CHAR(2))
+        , Status          = CAST(w.[StatusCode] AS CHAR(3))
+        , StatusName      = CAST(CASE w.[StatusCode]
+                                     WHEN 'RSV' THEN N'예약'
+                                     WHEN 'RCP' THEN N'접수완료'
+                                     WHEN 'CNR' THEN N'예약취소'
+                                     ELSE N'접수취소' END AS NVARCHAR(10))
+        , Capacity        = CAST(20 AS INT)
+        , CurrentCount    = CAST(c.Cnt AS INT)
+        , SeatsLeft       = CAST(CASE WHEN 20 - c.Cnt < 0 THEN 0 ELSE 20 - c.Cnt END AS INT)
+        , RowVersion      = CAST(w.[RowVersion] AS BINARY(8))
+    FROM [dbo].[예약접수] w
+    JOIN [dbo].[수검자] p ON p.[PatientId] = w.[PatientId]
+    CROSS APPLY (SELECT Cnt = COUNT(*) FROM [dbo].[예약접수] x
+                  WHERE x.[ReservationDate] = w.[ReservationDate]
+                    AND x.[TimeSlotCode]    = w.[TimeSlotCode]
+                    AND x.[StatusCode] IN ('RSV','RCP')) c
+    WHERE w.[WorkId] = @WorkId;
+
+    -- RS2 국가검사항목 — 실제 저장된 NEX 만
+    SELECT
+          ExamCode = CAST(m.[ExamItemCode] AS VARCHAR(10))
+        , ExamName = CAST(m.[ExamItemName] AS NVARCHAR(100))
+        , ExamType = CAST(CASE WHEN m.[NexRuleCode] = 'NEX-01' THEN 'BASIC' ELSE 'CONDITIONAL' END AS VARCHAR(12))
+        , RuleCode = CAST(m.[NexRuleCode] AS VARCHAR(10))
+    FROM [dbo].[검사항목] d
+    JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[ExamItemCode]
+    WHERE d.[WorkId] = @WorkId AND d.[ExamSourceCode] = 'NEX'
+    ORDER BY m.[ExamItemCode] ASC;
+
+    -- RS3 추가검사항목 — 실제 저장된 AEX 만
+    SELECT
+          OptionCode = CAST(m.[AdditionalExamCode] AS VARCHAR(10))
+        , ExamCode   = CAST(m.[ExamItemCode] AS VARCHAR(10))
+        , ExamName   = CAST(m.[ExamItemName] AS NVARCHAR(100))
+    FROM [dbo].[검사항목] d
+    JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[ExamItemCode]
+    WHERE d.[WorkId] = @WorkId AND d.[ExamSourceCode] = 'AEX'
+    ORDER BY m.[AdditionalExamCode] ASC;
+
+    -- RS4 가능한업무 — 정확히 5행. 순서는 05 §8.2 의 고정 목록이므로 Ord 로 강제한다.
+    --   상관 인자를 받는 TVF 는 CROSS APPLY 여야 한다. CROSS JOIN 으로 쓰면
+    --   같은 FROM 절 다른 테이블의 컬럼을 인자로 못 받아 Msg 4104 가 난다.
+    SELECT
+          ActionCode    = CAST(a.Code AS VARCHAR(30))
+        , Allowed       = CAST(CASE WHEN r.Rc = 0 THEN 1 ELSE 0 END AS BIT)
+        , ReasonCode    = CAST(r.Rc AS INT)
+        , ReasonMessage = CAST(CASE r.Rc
+                                   WHEN 304 THEN N'해당 시간대의 마감시간이 지났습니다.'
+                                   WHEN 308 THEN N'오늘은 업무일이 아닙니다.'
+                                   WHEN 309 THEN N'현재는 업무 운영시간이 아닙니다.'
+                                   WHEN 502 THEN N'현재 상태에서는 요청한 업무를 처리할 수 없습니다.'
+                                   WHEN 503 THEN N'예약일이 오늘인 업무만 접수할 수 있습니다.'
+                                   ELSE N'' END AS NVARCHAR(300))
+    FROM [dbo].[예약접수] w
+    CROSS JOIN (VALUES (1,'EDIT_RESERVATION'),(2,'CANCEL_RESERVATION'),(3,'START_RECEPTION'),
+                       (4,'EDIT_EXTRA'),(5,'CANCEL_RECEPTION')) a(Ord, Code)
+    CROSS APPLY [dbo].[UFN_HC_일정확인](@ServerTime, w.[ReservationDate], w.[TimeSlotCode], 'RECEPTION') s
+    CROSS APPLY (SELECT Rc =
+          CASE
+              WHEN a.Code IN ('EDIT_RESERVATION','CANCEL_RESERVATION','START_RECEPTION')
+                   AND w.[StatusCode] <> 'RSV'                                   THEN 502
+              WHEN a.Code IN ('EDIT_EXTRA','CANCEL_RECEPTION')
+                   AND w.[StatusCode] <> 'RCP'                                   THEN 502
+              WHEN s.WorkCode <> 0                                                THEN s.WorkCode
+              WHEN a.Code = 'START_RECEPTION' AND w.[ReservationDate] <> @Today   THEN 503
+              WHEN a.Code = 'START_RECEPTION' AND s.CutoffPassed = 1              THEN 304
+              ELSE 0
+          END) r
+    WHERE w.[WorkId] = @WorkId
+    ORDER BY a.Ord;
+END
+GO
