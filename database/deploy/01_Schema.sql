@@ -142,8 +142,12 @@ CREATE TABLE [dbo].[검사항목]
 GO
 CREATE TABLE [dbo].[완료이력]
 (
-    [수검자ID]  BIGINT NOT NULL,
-    [완료일자]  DATE   NOT NULL,
+    [수검자ID]     BIGINT        NOT NULL,
+    [완료일자]     DATE          NOT NULL,
+    -- 검사구성. 예약접수와 같은 형식이다 (plans/10 §1 · §4.3).
+    -- 외부 기관 검진은 검사 내용을 모를 수 있으므로 둘 다 NULL 을 허용한다.
+    [국가검사항목] NVARCHAR(100) NULL,
+    [추가검사항목] NVARCHAR(50)  NULL,
 
     CONSTRAINT [PK_완료이력] PRIMARY KEY CLUSTERED ([수검자ID], [완료일자]),
     CONSTRAINT [FK_완료이력_수검자] FOREIGN KEY ([수검자ID])

@@ -112,14 +112,40 @@ WHERE e.[국가검사규칙코드] = 'NEX-01';
 GO
 -- T003 에 완료이력을 주면 안 된다. T003(만 23세 남)의 목적은 "NEX-02 남 미해당 → NEX 8행" 인데
 -- 1년차 완료이력을 붙이면 TGT 401 NotDue 비대상이 되어 NEX 0행이 나온다. 401 전담은 T016 이다.
-INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자])
-SELECT p.[수검자ID], '2025-05-01' FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T016';  -- 1년차 → 401 NotDue
-INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자])
-SELECT p.[수검자ID], '2024-05-01' FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T004';  -- 2년차 → 대상
-INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자])
-SELECT p.[수검자ID], '2026-10-01' FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T005';  -- 예약일 당일 → 제외
-INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자])
-SELECT p.[수검자ID], '2026-11-01' FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T006';  -- 예약일 이후 → 제외
+-- 기본검사(NEX-01) 문자열을 검사코드에서 유도한다. 손으로 적으면 Seed 와 어긋난다.
+DECLARE @Basic NVARCHAR(100) = N'', @BC VARCHAR(10);
+DECLARE @BCodes TABLE (C VARCHAR(10) PRIMARY KEY);
+INSERT INTO @BCodes (C) SELECT [검사항목코드] FROM [dbo].[검사코드] WHERE [국가검사규칙코드] = 'NEX-01';
+WHILE EXISTS (SELECT 1 FROM @BCodes)
+BEGIN
+    SELECT TOP (1) @BC = C FROM @BCodes ORDER BY C;
+    SET @Basic = @Basic + @BC + N',';
+    DELETE FROM @BCodes WHERE C = @BC;
+END
+SET @Basic = LEFT(@Basic, LEN(@Basic) - 1);
+
+-- T016 · T004 는 검사 내용을 아는 이력, T005 · T006 은 모르는 이력(외부 기관)이다.
+INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자], [국가검사항목], [추가검사항목])
+SELECT p.[수검자ID], '2025-05-01', @Basic, N'EX014' FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T016';  -- 1년차 → 401 NotDue
+INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자], [국가검사항목], [추가검사항목])
+SELECT p.[수검자ID], '2024-05-01', @Basic, NULL    FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T004';  -- 2년차 → 대상
+INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자], [국가검사항목], [추가검사항목])
+SELECT p.[수검자ID], '2026-10-01', NULL,   NULL    FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T005';  -- 예약일 당일 → 제외
+INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자], [국가검사항목], [추가검사항목])
+SELECT p.[수검자ID], '2026-11-01', NULL,   NULL    FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T006';  -- 예약일 이후 → 제외
+
+DECLARE @BDrift INT = 0;
+SELECT @BDrift = COUNT(*) FROM (
+    SELECT m.[검사항목코드] FROM [dbo].[검사코드] m
+     WHERE m.[국가검사규칙코드] = 'NEX-01'
+       AND N',' + @Basic + N',' NOT LIKE N'%,' + m.[검사항목코드] + N',%'
+    UNION ALL
+    SELECT m.[검사항목코드] FROM [dbo].[검사코드] m
+     WHERE N',' + @Basic + N',' LIKE N'%,' + m.[검사항목코드] + N',%'
+       AND ISNULL(m.[국가검사규칙코드], '') <> 'NEX-01'
+) a;
+IF (@BDrift = 0) PRINT 'PASS FIX-EXAM-003 완료이력 기본검사 문자열 = 검사코드 NEX-01 (양방향)';
+ELSE BEGIN PRINT 'FAIL FIX-EXAM-003 완료이력 기본검사 문자열 어긋남'; THROW 51012, N'완료이력 유도 실패', 1; END
 GO
 UPDATE [dbo].[수검자] SET [B형간염제외여부] = 1
  WHERE [차트번호] = 'T008';   -- B형간염 제외 — NEX-03 테스트
