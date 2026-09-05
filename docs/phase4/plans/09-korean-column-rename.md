@@ -37,7 +37,7 @@
 
 ### 1.1 "테이블 먼저, SP 나중" 은 불가능하다
 
-```text
+```sql
 CREATE PROCEDURE ... SELECT [완료일자] FROM [dbo].[완료이력]
   → Msg 207 : 열 이름 '완료일자'이(가) 유효하지 않습니다.
 CREATE FUNCTION  ... SELECT [완료일자] FROM [dbo].[완료이력]
@@ -117,7 +117,7 @@ Phase 5 착수 전인 지금이 최저비용 시점이다.
 
 **대가:** `04` §3.3 이 피하려던 별칭이 SELECT 목록에 붙는다. 형식을 하나로 고정한다.
 
-```text
+```sql
 SELECT ChartNo = p.[차트번호]        ← 이 형식
      , Name    = p.[성명]
 ```
@@ -254,22 +254,34 @@ Seed 한 행으로 국가검사가 조용히 사라지는데 그것을 막는 �
 
 ### 4.1 현재
 
-```text
+```sql
 [CelNumberS] VARCHAR(13) NULL                                    ← Write SP 가 계산해서 저장
 CK_수검자_CEL_NORMALIZED   CelNumberS = REPLACE(CelNumber,'-','')   ← 어긋남을 사후 검사
 CK_수검자_CEL_DIGIT        CelNumberS 는 숫자만
 IX_수검자_CEL_NUMBER_S     ON (CelNumberS) WHERE CelNumberS IS NOT NULL
 ```
 
-### 4.2 전환 후
+### 4.2 계산열 전환안 (기각)
 
 ```text
-[휴대전화검색값] AS (CONVERT(VARCHAR(13), REPLACE([휴대전화], '-', ''))) PERSISTED
-IX_수검자_CEL_NUMBER_S  ON ([휴대전화검색값])
-                        INCLUDE (...) WHERE [휴대전화] IS NOT NULL    ← 필터를 기반열로
-CK_수검자_CEL_NORMALIZED   삭제                                       ← 어긋남이 구조적으로 불가능
+휴대전화검색값 AS (CONVERT(VARCHAR(13), REPLACE(휴대전화, '-', ''))) PERSISTED
+IX_수검자_CEL_NUMBER_S  ON (휴대전화검색값)
+                        INCLUDE (...) WHERE 휴대전화 IS NOT NULL    ← 필터를 기반열로
+CK_수검자_CEL_NORMALIZED   삭제                                     ← 어긋남이 구조적으로 불가능
 CK_수검자_CEL_DIGIT        유지 (계산열 대상)
 ```
+
+`[X]` **이 안은 채택되지 않았다.** 사용자가 컬럼 완전 제거를 택했다(`T46`). 실제 결과는 다음과 같다.
+
+```text
+컬럼                     17 -> 16   휴대전화검색값 없음
+CK_수검자_CEL_NORMALIZED 삭제       지킬 대상이 사라졌다
+CK_수검자_CEL_DIGIT      유지       술어를 휴대전화 기준으로 다시 썼다
+IX_수검자_CEL_NUMBER_S   삭제       Key 컬럼이 없어졌다. NCI 5 -> 4
+@MobilePhone 검색        REPLACE([휴대전화],'-','') = @MobilePhone   비-SARGable 전체 스캔
+```
+
+수검자 규모가 커져 스캔 비용이 문제가 되면 위 계산열 안이 되돌릴 지점이다.
 
 ### 4.3 사용자 요청과의 차이
 
