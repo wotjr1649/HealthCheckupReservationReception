@@ -134,3 +134,62 @@ BEGIN
     ORDER BY p.[Name] ASC, p.[Birthday] ASC, p.[ChartNo] ASC;
 END
 GO
+-- 허용 Code 0 / 100 / 200 (05 §13). RS1 은 정확히 1행이다.
+CREATE OR ALTER PROCEDURE [dbo].[USP_HC_SELECT_수검자상세]
+    @PatientId BIGINT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
+
+    IF @PatientId IS NULL
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(100 AS INT)                  AS Code
+            , CAST(N'필수값을 입력하십시오.' AS NVARCHAR(300)) AS Message
+            , CAST('PatientId' AS VARCHAR(50))  AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [PatientId] = @PatientId)
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(200 AS INT)                  AS Code
+            , CAST(N'수검자를 찾을 수 없습니다.' AS NVARCHAR(300)) AS Message
+            , CAST('PatientId' AS VARCHAR(50))  AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- RS0
+    SELECT
+          CAST(1 AS BIT)                    AS Success
+        , CAST(0 AS INT)                    AS Code
+        , CAST(N'정상 처리되었습니다.' AS NVARCHAR(300)) AS Message
+        , CAST(NULL AS VARCHAR(50))         AS Field
+        , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+
+    -- RS1 (14컬럼, 정확히 1행)
+    SELECT
+          PatientId     = CAST(p.[PatientId]     AS BIGINT)
+        , ChartNo       = CAST(p.[ChartNo]       AS NVARCHAR(100))
+        , Name          = CAST(p.[Name]          AS NVARCHAR(100))
+        , SocialNumber  = CAST(p.[SocialNumber]  AS VARCHAR(13))
+        , Birthday      = CAST(p.[Birthday]      AS VARCHAR(8))
+        , Gender        = CAST(p.[Gender]        AS CHAR(1))
+        , MobilePhone   = CAST(p.[CelNumber]     AS VARCHAR(13))
+        , Phone         = CAST(p.[TelNumber]     AS VARCHAR(13))
+        , Email         = CAST(p.[EMail]         AS VARCHAR(200))
+        , Zipcode       = CAST(p.[Zipcode]       AS VARCHAR(10))
+        , Address       = CAST(p.[Address]       AS NVARCHAR(200))
+        , AddressDetail = CAST(p.[AddressDetail] AS NVARCHAR(200))
+        , Memo          = CAST(p.[Memo]          AS NVARCHAR(MAX))
+        , LastEditDate  = CAST(p.[LastEditDate]  AS DATETIME)
+    FROM [dbo].[수검자] p
+    WHERE p.[PatientId] = @PatientId;
+END
+GO

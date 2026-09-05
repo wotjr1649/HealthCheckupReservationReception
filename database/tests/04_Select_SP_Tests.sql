@@ -27,6 +27,12 @@ EXEC [dbo].[USP_HC_SELECT_공통업무상태];
 EXEC [dbo].[USP_HC_SELECT_수검자목록] N'T001', NULL, NULL, NULL, NULL;
 EXEC [dbo].[USP_HC_SELECT_수검자목록] NULL, NULL, NULL, NULL, NULL;
 
+EXEC [dbo].[USP_HC_SELECT_수검자상세] NULL;
+-- EXEC sp (SELECT …) 는 인자가 아니라 별도 SELECT 문으로 파싱된다 — SP 는 인자를 못 받아 실패한다(실측).
+-- 인자는 변수로 받는다.
+DECLARE @P15 BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = N'T015');
+EXEC [dbo].[USP_HC_SELECT_수검자상세] @P15;
+
 DECLARE @After VARCHAR(100) =
       CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[수검자]))   + '|'
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[예약접수])) + '|'

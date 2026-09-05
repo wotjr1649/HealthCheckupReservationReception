@@ -170,6 +170,10 @@ DECLARE @Before VARCHAR(100) =
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[휴무일]));
 
 -- T16~T21 은 여기에 EXEC 한 줄씩만 더한다. 성공 경로와 실패 경로를 모두 지난다.
+-- [X] EXEC sp (SELECT …) 로 인자를 넘기지 않는다. 괄호 안이 인자가 아니라
+--     별도 SELECT 문으로 파싱되어 SP 는 인자를 못 받고 "매개 변수가 필요하지만
+--     제공되지 않았습니다" 로 실패한다(실측 확인). PRINT 의 하위 쿼리와 같은 계열이다.
+--     Fixture 에서 뽑는 인자는 DECLARE 로 먼저 받는다.
 EXEC [dbo].[USP_HC_SELECT_공통업무상태];
 
 DECLARE @After VARCHAR(100) = /* @Before 와 같은 식 */ NULL;

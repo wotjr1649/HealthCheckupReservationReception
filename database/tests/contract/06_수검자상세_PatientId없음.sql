@@ -1,0 +1,3 @@
+﻿SET NOCOUNT ON;
+EXEC [dbo].[USP_HC_SELECT_수검자상세] NULL;
+GO
