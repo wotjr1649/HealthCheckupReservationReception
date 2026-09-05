@@ -33,6 +33,10 @@ EXEC [dbo].[USP_HC_SELECT_수검자상세] NULL;
 DECLARE @P15 BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = N'T015');
 EXEC [dbo].[USP_HC_SELECT_수검자상세] @P15;
 
+DECLARE @P12 BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = N'T012');
+EXEC [dbo].[USP_HC_SELECT_수검자유효업무] @P15;
+EXEC [dbo].[USP_HC_SELECT_수검자유효업무] @P12;
+
 DECLARE @After VARCHAR(100) =
       CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[수검자]))   + '|'
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[예약접수])) + '|'

@@ -193,3 +193,78 @@ BEGIN
     WHERE p.[PatientId] = @PatientId;
 END
 GO
+-- 허용 Code 0 / 100 / 200 / 701. RP-06 은 유효업무를 0~1건으로 제한한다.
+-- 2건 이상은 조회로 고칠 수 없는 데이터 손상이므로 701 로 알린다 (00 RP-06, 05 §7.4).
+CREATE OR ALTER PROCEDURE [dbo].[USP_HC_SELECT_수검자유효업무]
+    @PatientId BIGINT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
+    DECLARE @Today DATE = CONVERT(DATE, @ServerTime);
+
+    IF @PatientId IS NULL
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(100 AS INT)                  AS Code
+            , CAST(N'필수값을 입력하십시오.' AS NVARCHAR(300)) AS Message
+            , CAST('PatientId' AS VARCHAR(50))  AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [PatientId] = @PatientId)
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(200 AS INT)                  AS Code
+            , CAST(N'수검자를 찾을 수 없습니다.' AS NVARCHAR(300)) AS Message
+            , CAST('PatientId' AS VARCHAR(50))  AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    DECLARE @Cnt INT = (SELECT COUNT(*) FROM [dbo].[예약접수] w
+                         WHERE w.[PatientId] = @PatientId
+                           AND w.[ReservationDate] >= @Today
+                           AND w.[StatusCode] IN ('RSV','RCP'));
+    IF @Cnt >= 2
+    BEGIN
+        SELECT
+              CAST(0 AS BIT)                    AS Success
+            , CAST(701 AS INT)                  AS Code
+            , CAST(N'예약·접수 업무의 검사구성 또는 유효업무 데이터가 올바르지 않습니다.' AS NVARCHAR(300)) AS Message
+            , CAST('WorkId' AS VARCHAR(50))     AS Field
+            , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
+    -- RS0
+    SELECT
+          CAST(1 AS BIT)                    AS Success
+        , CAST(0 AS INT)                    AS Code
+        , CAST(N'정상 처리되었습니다.' AS NVARCHAR(300)) AS Message
+        , CAST(NULL AS VARCHAR(50))         AS Field
+        , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+
+    -- RS1 (7컬럼, 0행 또는 1행)
+    SELECT
+          WorkId          = CAST(w.[WorkId] AS BIGINT)
+        , ReservationDate = CAST(w.[ReservationDate] AS DATE)
+        , TimeSlot        = CAST(w.[TimeSlotCode] AS CHAR(2))
+        , Status          = CAST(w.[StatusCode] AS CHAR(3))
+        , StatusName      = CAST(CASE w.[StatusCode]
+                                     WHEN 'RSV' THEN N'예약'
+                                     WHEN 'RCP' THEN N'접수완료'
+                                     WHEN 'CNR' THEN N'예약취소'
+                                     ELSE N'접수취소' END AS NVARCHAR(10))
+        , IsToday         = CAST(CASE WHEN w.[ReservationDate] = @Today THEN 1 ELSE 0 END AS BIT)
+        , RowVersion      = CAST(w.[RowVersion] AS BINARY(8))
+    FROM [dbo].[예약접수] w
+    WHERE w.[PatientId] = @PatientId
+      AND w.[ReservationDate] >= @Today
+      AND w.[StatusCode] IN ('RSV','RCP');
+END
+GO
