@@ -30,18 +30,18 @@ EXEC [dbo].[USP_HC_SELECT_수검자목록] NULL, NULL, NULL, NULL, NULL;
 EXEC [dbo].[USP_HC_SELECT_수검자상세] NULL;
 -- EXEC sp (SELECT …) 는 인자가 아니라 별도 SELECT 문으로 파싱된다 — SP 는 인자를 못 받아 실패한다(실측).
 -- 인자는 변수로 받는다.
-DECLARE @P15 BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = N'T015');
+DECLARE @P15 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T015');
 EXEC [dbo].[USP_HC_SELECT_수검자상세] @P15;
 
-DECLARE @P12 BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = N'T012');
+DECLARE @P12 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T012');
 EXEC [dbo].[USP_HC_SELECT_수검자유효업무] @P15;
 EXEC [dbo].[USP_HC_SELECT_수검자유효업무] @P12;
 
 EXEC [dbo].[USP_HC_SELECT_예약접수목록] '2026-11-01', '2026-11-30', NULL, NULL, NULL;
 EXEC [dbo].[USP_HC_SELECT_예약접수목록] NULL, NULL, NULL, NULL, NULL;
 DECLARE @Wn BIGINT = (SELECT TOP (1) w.[업무ID] FROM [dbo].[예약접수] w
-                        JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID]
-                       WHERE p.[ChartNo] = N'T020' AND w.[상태코드] = 'RSV' ORDER BY w.[업무ID]);
+                        JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
+                       WHERE p.[차트번호] = N'T020' AND w.[상태코드] = 'RSV' ORDER BY w.[업무ID]);
 EXEC [dbo].[USP_HC_SELECT_예약접수상세] @Wn;
 EXEC [dbo].[USP_HC_SELECT_예약접수상세] -1;
 

@@ -11,7 +11,7 @@ GO
 -- 정상 체크디지트 = (11 - (가중합 % 11)) % 10   /   무효 체크디지트 = (정상 + 1) % 10
 -- 주민번호를 손으로 계산하지 않는다. 13번째 자리는 SQL 이 만든다. SSN-006 이 무효임을 증명한다.
 INSERT INTO [dbo].[수검자]
-    ([ChartNo], [Name], [SocialNumber], [Birthday], [Gender], [CelNumber], [CelNumberS])
+    ([차트번호], [성명], [주민번호], [생년월일], [성별], [휴대전화])
 SELECT
       p.ChartNo
     , p.Name
@@ -26,7 +26,7 @@ SELECT
               ) % 11 ) ) % 10 + 1 ) % 10 ) )   -- 마지막 ) 가 CONVERT(CHAR(1), … 를 닫는다
     , p.Birthday
     , p.Gender
-    , NULL, NULL
+    , NULL
 FROM (VALUES
       ('T001', N'테스트일구', '061002300001', '20061002', 'M')
     , ('T002', N'테스트이공', '061001300002', '20061001', 'M')
@@ -54,7 +54,7 @@ GO
 -- 2026-11-16 AM 슬롯을 19/20 으로 채우는 데만 19명이 필요하고, F020 은 RWR-012 가
 -- CNR → RSV 로 뒤집어 20/20 을 만들 예비 1명이다.
 -- ROW_NUMBER() OVER (ORDER BY (SELECT 1)) FROM sys.all_objects 를 쓰지 않는다 — n 이 1..20 이라는 보장이 없다.
-INSERT INTO [dbo].[수검자] ([ChartNo], [Name], [SocialNumber], [Birthday], [Gender])
+INSERT INTO [dbo].[수검자] ([차트번호], [성명], [주민번호], [생년월일], [성별])
 SELECT
       'F' + RIGHT('000' + CONVERT(VARCHAR(3), n.n), 3)
     , N'정원채움' + CONVERT(NVARCHAR(3), n.n)
@@ -78,63 +78,63 @@ GO
 -- CON-002(19/20 경합 → 최종 20) 의 사전조건이 깨지므로 F020 을 제외하고, 별도로 CNR 을 넣는다.
 -- Slot 날짜는 리터럴 하나로 통일한다. 2026-11-16 은 월요일이다.
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
-SELECT [PatientId], '2026-11-16', 'AM', 'RSV'
-FROM [dbo].[수검자] WHERE [ChartNo] LIKE 'F0%' AND [ChartNo] <> 'F020';
+SELECT [수검자ID], '2026-11-16', 'AM', 'RSV'
+FROM [dbo].[수검자] WHERE [차트번호] LIKE 'F0%' AND [차트번호] <> 'F020';
 
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
-SELECT [PatientId], '2026-11-16', 'AM', 'CNR'
-FROM [dbo].[수검자] WHERE [ChartNo] = 'F020';
+SELECT [수검자ID], '2026-11-16', 'AM', 'CNR'
+FROM [dbo].[수검자] WHERE [차트번호] = 'F020';
 GO
 -- T020 의 RSV Work. 2026-11-17 기준 만 53세라 EX012 가 없고 OPT04 를 선택할 수 있다.
 -- RWR-031 이 이 Work 의 예약일을 2026-11-20 으로 옮기면 만 54세가 되어 EX012 가 생기고 OPT04 가 412 다.
 -- 이 Work 는 2026-11-17 슬롯이므로 2026-11-16 정원(CON-002)과 무관하다.
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
-SELECT [PatientId], '2026-11-17', 'AM', 'RSV'
-FROM [dbo].[수검자] WHERE [ChartNo] = 'T020';
+SELECT [수검자ID], '2026-11-17', 'AM', 'RSV'
+FROM [dbo].[수검자] WHERE [차트번호] = 'T020';
 GO
 INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
 SELECT w.[업무ID], e.[검사항목코드], 'NEX'
 FROM [dbo].[예약접수] w
-JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID] AND p.[ChartNo] = 'T020'
+JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID] AND p.[차트번호] = 'T020'
 CROSS JOIN [dbo].[검사코드] e
 WHERE e.[국가검사규칙코드] = 'NEX-01';
 INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
 SELECT w.[업무ID], 'EX012', 'AEX'   -- OPT04 를 선택한 상태 (만 53세라 아직 중복이 아니다)
 FROM [dbo].[예약접수] w
-JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID] AND p.[ChartNo] = 'T020';
+JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID] AND p.[차트번호] = 'T020';
 GO
 INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
 SELECT w.[업무ID], e.[검사항목코드], 'NEX'
 FROM [dbo].[예약접수] w
-JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID] AND p.[ChartNo] LIKE 'F0%'
+JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID] AND p.[차트번호] LIKE 'F0%'
 CROSS JOIN [dbo].[검사코드] e
 WHERE e.[국가검사규칙코드] = 'NEX-01';
 GO
 -- T003 에 완료이력을 주면 안 된다. T003(만 23세 남)의 목적은 "NEX-02 남 미해당 → NEX 8행" 인데
 -- 1년차 완료이력을 붙이면 TGT 401 NotDue 비대상이 되어 NEX 0행이 나온다. 401 전담은 T016 이다.
 INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자])
-SELECT p.[PatientId], '2025-05-01' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T016';  -- 1년차 → 401 NotDue
+SELECT p.[수검자ID], '2025-05-01' FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T016';  -- 1년차 → 401 NotDue
 INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자])
-SELECT p.[PatientId], '2024-05-01' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T004';  -- 2년차 → 대상
+SELECT p.[수검자ID], '2024-05-01' FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T004';  -- 2년차 → 대상
 INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자])
-SELECT p.[PatientId], '2026-10-01' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T005';  -- 예약일 당일 → 제외
+SELECT p.[수검자ID], '2026-10-01' FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T005';  -- 예약일 당일 → 제외
 INSERT INTO [dbo].[완료이력] ([수검자ID], [완료일자])
-SELECT p.[PatientId], '2026-11-01' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T006';  -- 예약일 이후 → 제외
+SELECT p.[수검자ID], '2026-11-01' FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T006';  -- 예약일 이후 → 제외
 GO
-UPDATE [dbo].[수검자] SET [HepatitisBExcluded] = 1
- WHERE [ChartNo] = 'T008';   -- B형간염 제외 — NEX-03 테스트
+UPDATE [dbo].[수검자] SET [B형간염제외여부] = 1
+ WHERE [차트번호] = 'T008';   -- B형간염 제외 — NEX-03 테스트
 GO
 PRINT '--- CORRUPT 구획 (701 검증 전용) ---';
 GO
 -- CORRUPT-1: 동일 Patient 에 유효업무 2건  → 701
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
-SELECT p.[PatientId], '2026-11-17', 'AM', 'RSV' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T012';
+SELECT p.[수검자ID], '2026-11-17', 'AM', 'RSV' FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T012';
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
-SELECT p.[PatientId], '2026-11-18', 'PM', 'RSV' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T012';
+SELECT p.[수검자ID], '2026-11-18', 'PM', 'RSV' FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T012';
 GO
 -- CORRUPT-2: NEX 0행인 Work  → 701
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
-SELECT p.[PatientId], '2026-11-19', 'AM', 'RSV' FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T013';
+SELECT p.[수검자ID], '2026-11-19', 'AM', 'RSV' FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T013';
 GO
 PRINT 'PASS FIX-DEPLOY Fixture 배치 완료';
 PRINT '=== 00_Test_Harness 완료 ===';

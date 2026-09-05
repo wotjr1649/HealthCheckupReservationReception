@@ -4,23 +4,23 @@ GO
 -- 재실행 가능하도록 기존 RCP fixture 를 먼저 제거한다
 DELETE d FROM [dbo].[검사항목] d
   JOIN [dbo].[예약접수] w ON w.[업무ID] = d.[업무ID]
-  JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID]
- WHERE p.[ChartNo] = 'T014' AND w.[상태코드] = 'RCP';
+  JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
+ WHERE p.[차트번호] = 'T014' AND w.[상태코드] = 'RCP';
 DELETE w FROM [dbo].[예약접수] w
-  JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID]
- WHERE p.[ChartNo] = 'T014' AND w.[상태코드] = 'RCP';
+  JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
+ WHERE p.[차트번호] = 'T014' AND w.[상태코드] = 'RCP';
 GO
 -- T014 (남, 기준일 2026-10-01 에 만 56세) 의 RCP Work
 --   ReservationDate 와 NEX 산출 기준일을 동일하게 '2026-10-01' 로 맞춘다.
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
-SELECT p.[PatientId], '2026-10-01', 'AM', 'RCP'
-FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T014';
+SELECT p.[수검자ID], '2026-10-01', 'AM', 'RCP'
+FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T014';
 GO
 DECLARE @Wrcp BIGINT, @Prcp BIGINT;
 SELECT TOP (1) @Wrcp = w.[업무ID], @Prcp = w.[수검자ID]
   FROM [dbo].[예약접수] w
-  JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID]
- WHERE p.[ChartNo] = 'T014' AND w.[상태코드] = 'RCP'
+  JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
+ WHERE p.[차트번호] = 'T014' AND w.[상태코드] = 'RCP'
  ORDER BY w.[업무ID] DESC;
 
 INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
@@ -47,20 +47,20 @@ IF @Fail > 0 THROW 51000, N'RCP Fixture 배치 실패', 1;
 --   412 ExamDuplicate 는 EX012 로만 발생하므로(스펙 §17.2a) RUL-A09·CWR-024 는 이 Work 를 쓴다.
 DELETE x FROM [dbo].[검사항목] x
  JOIN [dbo].[예약접수] w ON w.[업무ID] = x.[업무ID]
- JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID]
- WHERE p.[ChartNo] = 'T011' AND w.[상태코드] = 'RCP';
+ JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
+ WHERE p.[차트번호] = 'T011' AND w.[상태코드] = 'RCP';
 DELETE w FROM [dbo].[예약접수] w
- JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID]
- WHERE p.[ChartNo] = 'T011' AND w.[상태코드] = 'RCP';
+ JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
+ WHERE p.[차트번호] = 'T011' AND w.[상태코드] = 'RCP';
 GO
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드])
-SELECT p.[PatientId], '2026-10-01', 'AM', 'RCP'
-FROM [dbo].[수검자] p WHERE p.[ChartNo] = 'T011';
+SELECT p.[수검자ID], '2026-10-01', 'AM', 'RCP'
+FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T011';
 GO
 DECLARE @W11 BIGINT = (SELECT TOP (1) w.[업무ID] FROM [dbo].[예약접수] w
-                        JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID]
-                       WHERE p.[ChartNo] = 'T011' AND w.[상태코드] = 'RCP' ORDER BY w.[업무ID] DESC);
-DECLARE @P11 BIGINT = (SELECT [PatientId] FROM [dbo].[수검자] WHERE [ChartNo] = 'T011');
+                        JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
+                       WHERE p.[차트번호] = 'T011' AND w.[상태코드] = 'RCP' ORDER BY w.[업무ID] DESC);
+DECLARE @P11 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T011');
 INSERT INTO [dbo].[검사항목] ([업무ID], [검사항목코드], [검사출처코드])
 SELECT @W11, n.[ExamCode], 'NEX' FROM [dbo].[UFN_HC_국가검사구성](@P11, '2026-10-01') n;
 

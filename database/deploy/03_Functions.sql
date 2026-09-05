@@ -122,8 +122,8 @@ RETURN
                                       WHERE h.[수검자ID] = @PatientId
                                         AND h.[완료일자] < @ReservationDate
                                       ORDER BY h.[완료일자] DESC)
-            FROM (SELECT [Birthday_D] = CONVERT(DATE, i.[Birthday], 112)
-                    FROM [dbo].[수검자] i WHERE i.[PatientId] = @PatientId) p
+            FROM (SELECT [Birthday_D] = CONVERT(DATE, i.[생년월일], 112)
+                    FROM [dbo].[수검자] i WHERE i.[수검자ID] = @PatientId) p
         ) a
     ) x
 );
@@ -148,10 +148,10 @@ RETURN
     FROM [dbo].[검사코드] m
     CROSS JOIN
     (
-        SELECT g.Eligible, g.Age, i.[Gender], i.[HepatitisBExcluded]
+        SELECT g.Eligible, g.Age, i.[성별], i.[B형간염제외여부]
         FROM [dbo].[수검자] i
-        CROSS APPLY [dbo].[UFN_HC_검진대상확인](i.[PatientId], @ReservationDate) g
-        WHERE i.[PatientId] = @PatientId
+        CROSS APPLY [dbo].[UFN_HC_검진대상확인](i.[수검자ID], @ReservationDate) g
+        WHERE i.[수검자ID] = @PatientId
     ) t
     WHERE m.[국가검사규칙코드] IS NOT NULL
       AND t.Eligible = 1
@@ -159,12 +159,12 @@ RETURN
       (
             m.[국가검사규칙코드] = 'NEX-01'
         OR (m.[국가검사규칙코드] = 'NEX-02' AND
-            (  (t.[Gender] = 'M' AND t.Age >= 24 AND (t.Age - 24) % 4 = 0)
-            OR (t.[Gender] = 'F' AND t.Age >= 40 AND (t.Age - 40) % 4 = 0) ))
+            (  (t.[성별] = 'M' AND t.Age >= 24 AND (t.Age - 24) % 4 = 0)
+            OR (t.[성별] = 'F' AND t.Age >= 40 AND (t.Age - 40) % 4 = 0) ))
         OR (m.[국가검사규칙코드] = 'NEX-03' AND t.Age = 40
-            AND t.[HepatitisBExcluded] = 0)
+            AND t.[B형간염제외여부] = 0)
         OR (m.[국가검사규칙코드] = 'NEX-04' AND t.Age = 56)
-        OR (m.[국가검사규칙코드] = 'NEX-05' AND t.[Gender] = 'F' AND t.Age IN (54, 60, 66))
+        OR (m.[국가검사규칙코드] = 'NEX-05' AND t.[성별] = 'F' AND t.Age IN (54, 60, 66))
         OR (m.[국가검사규칙코드] = 'NEX-06' AND t.Age IN (56, 66))
       )
 );
@@ -210,7 +210,7 @@ RETURN
                      WHEN @UseSavedExams = 0 AND t.Eligible = 0 THEN t.ReasonCode      -- 400 / 401
                      WHEN m.[추가검사사용여부] = 0                                THEN 410
                      WHEN m.[추가검사성별코드] <> 'A'
-                      AND m.[추가검사성별코드] <> t.[Gender]                  THEN 411
+                      AND m.[추가검사성별코드] <> t.[성별]                  THEN 411
                      WHEN EXISTS
                           (
                               SELECT 1 FROM
@@ -227,12 +227,12 @@ RETURN
         FROM [dbo].[검사코드] m
         CROSS JOIN
         (
-            SELECT i.[Gender]
+            SELECT i.[성별]
                  , Eligible   = ISNULL(g.Eligible, CONVERT(BIT,0))
                  , ReasonCode = ISNULL(g.ReasonCode, 400)
             FROM [dbo].[수검자] i
-            OUTER APPLY [dbo].[UFN_HC_검진대상확인](i.[PatientId], @ReservationDate) g
-            WHERE i.[PatientId] = @PatientId
+            OUTER APPLY [dbo].[UFN_HC_검진대상확인](i.[수검자ID], @ReservationDate) g
+            WHERE i.[수검자ID] = @PatientId
         ) t
         JOIN
         (

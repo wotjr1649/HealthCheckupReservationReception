@@ -17,50 +17,45 @@ DROP SEQUENCE IF EXISTS [dbo].[SEQ_HC_CHART_NO];
 GO
 CREATE TABLE [dbo].[수검자]
 (
-    [PatientId]          BIGINT          IDENTITY(1,1) NOT NULL,
-    [ChartNo]            NVARCHAR(100)   NOT NULL,
-    [Name]               NVARCHAR(100)   NOT NULL,
-    [SocialNumber]       VARCHAR(13)     NOT NULL,
-    [Birthday]           VARCHAR(8)      NOT NULL,
-    [Gender]             CHAR(1)         NOT NULL,
-    [EMail]              VARCHAR(200)    NULL,
-    [CelNumberS]         VARCHAR(13)     NULL,
-    [CelNumber]          VARCHAR(13)     NULL,
-    [TelNumber]          VARCHAR(13)     NULL,
-    [Zipcode]            VARCHAR(10)     NULL,
-    [Address]            NVARCHAR(200)   NULL,
-    [AddressDetail]      NVARCHAR(200)   NULL,
-    [Memo]               NVARCHAR(MAX)   NULL,
-    [HepatitisBExcluded] BIT             NOT NULL CONSTRAINT [DF_수검자_HEPATITIS_B_EXCLUDED] DEFAULT (0),
-    [CreationDate]       DATETIME        NOT NULL CONSTRAINT [DF_수검자_CREATION_DATE]        DEFAULT (GETDATE()),
-    [LastEditDate]       DATETIME        NOT NULL CONSTRAINT [DF_수검자_LAST_EDIT_DATE]       DEFAULT (GETDATE()),
+    [수검자ID]        BIGINT          IDENTITY(1,1) NOT NULL,
+    [차트번호]        NVARCHAR(100)   NOT NULL,
+    [성명]            NVARCHAR(100)   NOT NULL,
+    [주민번호]        VARCHAR(13)     NOT NULL,
+    [생년월일]        VARCHAR(8)      NOT NULL,
+    [성별]            CHAR(1)         NOT NULL,
+    [이메일]          VARCHAR(200)    NULL,
+    [휴대전화]        VARCHAR(13)     NULL,
+    [전화번호]        VARCHAR(13)     NULL,
+    [우편번호]        VARCHAR(10)     NULL,
+    [주소]            NVARCHAR(200)   NULL,
+    [상세주소]        NVARCHAR(200)   NULL,
+    [비고]            NVARCHAR(MAX)   NULL,
+    [B형간염제외여부] BIT             NOT NULL CONSTRAINT [DF_수검자_HEPATITIS_B_EXCLUDED] DEFAULT (0),
+    [생성일시]        DATETIME        NOT NULL CONSTRAINT [DF_수검자_CREATION_DATE]        DEFAULT (GETDATE()),
+    [최종수정일시]    DATETIME        NOT NULL CONSTRAINT [DF_수검자_LAST_EDIT_DATE]       DEFAULT (GETDATE()),
 
-    CONSTRAINT [PK_수검자] PRIMARY KEY CLUSTERED ([PatientId]),
-    CONSTRAINT [UQ_수검자_CHART_NO]       UNIQUE ([ChartNo]),
-    CONSTRAINT [UQ_수검자_SOCIAL_NUMBER]  UNIQUE ([SocialNumber]),
+    CONSTRAINT [PK_수검자] PRIMARY KEY CLUSTERED ([수검자ID]),
+    CONSTRAINT [UQ_수검자_CHART_NO]       UNIQUE ([차트번호]),
+    CONSTRAINT [UQ_수검자_SOCIAL_NUMBER]  UNIQUE ([주민번호]),
 
-    CONSTRAINT [CK_수검자_CHART_NO_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([ChartNo]))) > 0),
-    CONSTRAINT [CK_수검자_NAME_NOT_BLANK]     CHECK (LEN(LTRIM(RTRIM([Name]))) > 0),
-    CONSTRAINT [CK_수검자_SOCIAL_FORMAT]      CHECK (LEN([SocialNumber]) = 13 AND [SocialNumber] NOT LIKE '%[^0-9]%'),
-    CONSTRAINT [CK_수검자_BIRTHDAY]           CHECK (LEN([Birthday]) = 8 AND [Birthday] NOT LIKE '%[^0-9]%' AND TRY_CONVERT(DATE, [Birthday], 112) IS NOT NULL),
-    CONSTRAINT [CK_수검자_GENDER]             CHECK ([Gender] IN ('M','F')),
-    CONSTRAINT [CK_수검자_CEL_NORMALIZED]     CHECK (([CelNumber] IS NULL AND [CelNumberS] IS NULL) OR ([CelNumber] IS NOT NULL AND [CelNumberS] = REPLACE([CelNumber], '-', ''))),
-    CONSTRAINT [CK_수검자_CEL_DIGIT]          CHECK ([CelNumberS] IS NULL OR [CelNumberS] NOT LIKE '%[^0-9]%'),
-    CONSTRAINT [CK_수검자_EDIT_DATE]          CHECK ([LastEditDate] >= [CreationDate])
+    CONSTRAINT [CK_수검자_CHART_NO_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([차트번호]))) > 0),
+    CONSTRAINT [CK_수검자_NAME_NOT_BLANK]     CHECK (LEN(LTRIM(RTRIM([성명]))) > 0),
+    CONSTRAINT [CK_수검자_SOCIAL_FORMAT]      CHECK (LEN([주민번호]) = 13 AND [주민번호] NOT LIKE '%[^0-9]%'),
+    CONSTRAINT [CK_수검자_BIRTHDAY]           CHECK (LEN([생년월일]) = 8 AND [생년월일] NOT LIKE '%[^0-9]%' AND TRY_CONVERT(DATE, [생년월일], 112) IS NOT NULL),
+    CONSTRAINT [CK_수검자_GENDER]             CHECK ([성별] IN ('M','F')),
+    -- CelNumberS 를 제거했으므로 CK_수검자_CEL_NORMALIZED 는 지킬 대상이 없어 사라진다.
+    -- 숫자 보증은 잃지 않는다 - 표시값에서 '-' 를 뺀 결과를 직접 검사한다.
+    CONSTRAINT [CK_수검자_CEL_DIGIT]          CHECK ([휴대전화] IS NULL OR REPLACE([휴대전화], '-', '') NOT LIKE '%[^0-9]%'),
+    CONSTRAINT [CK_수검자_EDIT_DATE]          CHECK ([최종수정일시] >= [생성일시])
 );
 GO
 CREATE NONCLUSTERED INDEX [IX_수검자_NAME_BIRTHDAY]
-    ON [dbo].[수검자] ([Name], [Birthday])
-    INCLUDE ([PatientId], [ChartNo], [Gender], [CelNumber]);
+    ON [dbo].[수검자] ([성명], [생년월일])
+    INCLUDE ([수검자ID], [차트번호], [성별], [휴대전화]);
 GO
 CREATE NONCLUSTERED INDEX [IX_수검자_BIRTHDAY]
-    ON [dbo].[수검자] ([Birthday])
-    INCLUDE ([PatientId], [ChartNo], [Name], [Gender], [CelNumber]);
-GO
-CREATE NONCLUSTERED INDEX [IX_수검자_CEL_NUMBER_S]
-    ON [dbo].[수검자] ([CelNumberS])
-    INCLUDE ([PatientId], [ChartNo], [Name], [Birthday], [Gender], [CelNumber])
-    WHERE [CelNumberS] IS NOT NULL;
+    ON [dbo].[수검자] ([생년월일])
+    INCLUDE ([수검자ID], [차트번호], [성명], [성별], [휴대전화]);
 GO
 CREATE TABLE [dbo].[검사코드]
 (
@@ -113,7 +108,7 @@ CREATE TABLE [dbo].[예약접수]
 
     CONSTRAINT [PK_예약접수] PRIMARY KEY CLUSTERED ([업무ID]),
     CONSTRAINT [FK_예약접수_수검자] FOREIGN KEY ([수검자ID])
-        REFERENCES [dbo].[수검자] ([PatientId]) ON DELETE NO ACTION ON UPDATE NO ACTION,
+        REFERENCES [dbo].[수검자] ([수검자ID]) ON DELETE NO ACTION ON UPDATE NO ACTION,
     CONSTRAINT [CK_예약접수_TIME_SLOT] CHECK ([시간대코드] IN ('AM','PM')),
     CONSTRAINT [CK_예약접수_STATUS]    CHECK ([상태코드] IN ('RSV','RCP','CNR','CNC')),
     CONSTRAINT [CK_예약접수_EDIT_DATE] CHECK ([최종수정일시] >= [생성일시])
@@ -148,7 +143,7 @@ CREATE TABLE [dbo].[완료이력]
 
     CONSTRAINT [PK_완료이력] PRIMARY KEY CLUSTERED ([수검자ID], [완료일자]),
     CONSTRAINT [FK_완료이력_수검자] FOREIGN KEY ([수검자ID])
-        REFERENCES [dbo].[수검자] ([PatientId]) ON DELETE NO ACTION ON UPDATE NO ACTION
+        REFERENCES [dbo].[수검자] ([수검자ID]) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 GO
 CREATE TABLE [dbo].[변경이력]

@@ -114,24 +114,24 @@ BEGIN
 
     -- RS1 — 조회 0건은 실패가 아니다 (05 §3.4)
     SELECT
-          PatientId    = CAST(p.[PatientId]    AS BIGINT)
-        , ChartNo      = CAST(p.[ChartNo]      AS NVARCHAR(100))
-        , Name         = CAST(p.[Name]         AS NVARCHAR(100))
-        , SocialNumber = CAST(p.[SocialNumber] AS VARCHAR(13))
-        , Birthday     = CAST(p.[Birthday]     AS VARCHAR(8))
-        , Gender       = CAST(p.[Gender]       AS CHAR(1))
-        , MobilePhone  = CAST(p.[CelNumber]    AS VARCHAR(13))
-        , Phone        = CAST(p.[TelNumber]    AS VARCHAR(13))
-        , Email        = CAST(p.[EMail]        AS VARCHAR(200))
-        , Zipcode      = CAST(p.[Zipcode]      AS VARCHAR(10))
-        , Address      = CAST(p.[Address]      AS NVARCHAR(200))
+          PatientId    = CAST(p.[수검자ID]    AS BIGINT)
+        , ChartNo      = CAST(p.[차트번호]      AS NVARCHAR(100))
+        , Name         = CAST(p.[성명]         AS NVARCHAR(100))
+        , SocialNumber = CAST(p.[주민번호] AS VARCHAR(13))
+        , Birthday     = CAST(p.[생년월일]     AS VARCHAR(8))
+        , Gender       = CAST(p.[성별]       AS CHAR(1))
+        , MobilePhone  = CAST(p.[휴대전화]    AS VARCHAR(13))
+        , Phone        = CAST(p.[전화번호]    AS VARCHAR(13))
+        , Email        = CAST(p.[이메일]        AS VARCHAR(200))
+        , Zipcode      = CAST(p.[우편번호]      AS VARCHAR(10))
+        , Address      = CAST(p.[주소]      AS NVARCHAR(200))
     FROM [dbo].[수검자] p
-    WHERE (@ChartNo      IS NULL OR p.[ChartNo]      =  @ChartNo)
-      AND (@Name         IS NULL OR p.[Name]         LIKE @Name + N'%')
-      AND (@SocialNumber IS NULL OR p.[SocialNumber] =  @SocialNumber)
-      AND (@Birthday     IS NULL OR p.[Birthday]     =  @Birthday)
-      AND (@MobilePhone  IS NULL OR p.[CelNumberS]   =  @MobilePhone)
-    ORDER BY p.[Name] ASC, p.[Birthday] ASC, p.[ChartNo] ASC;
+    WHERE (@ChartNo      IS NULL OR p.[차트번호]      =  @ChartNo)
+      AND (@Name         IS NULL OR p.[성명]         LIKE @Name + N'%')
+      AND (@SocialNumber IS NULL OR p.[주민번호] =  @SocialNumber)
+      AND (@Birthday     IS NULL OR p.[생년월일]     =  @Birthday)
+      AND (@MobilePhone  IS NULL OR REPLACE(p.[휴대전화], '-', '') = @MobilePhone)
+    ORDER BY p.[성명] ASC, p.[생년월일] ASC, p.[차트번호] ASC;
 END
 GO
 -- 허용 Code 0 / 100 / 200 (05 §13). RS1 은 정확히 1행이다.
@@ -154,7 +154,7 @@ BEGIN
         RETURN;
     END
 
-    IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [PatientId] = @PatientId)
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [수검자ID] = @PatientId)
     BEGIN
         SELECT
               CAST(0 AS BIT)                    AS Success
@@ -175,22 +175,22 @@ BEGIN
 
     -- RS1 (14컬럼, 정확히 1행)
     SELECT
-          PatientId     = CAST(p.[PatientId]     AS BIGINT)
-        , ChartNo       = CAST(p.[ChartNo]       AS NVARCHAR(100))
-        , Name          = CAST(p.[Name]          AS NVARCHAR(100))
-        , SocialNumber  = CAST(p.[SocialNumber]  AS VARCHAR(13))
-        , Birthday      = CAST(p.[Birthday]      AS VARCHAR(8))
-        , Gender        = CAST(p.[Gender]        AS CHAR(1))
-        , MobilePhone   = CAST(p.[CelNumber]     AS VARCHAR(13))
-        , Phone         = CAST(p.[TelNumber]     AS VARCHAR(13))
-        , Email         = CAST(p.[EMail]         AS VARCHAR(200))
-        , Zipcode       = CAST(p.[Zipcode]       AS VARCHAR(10))
-        , Address       = CAST(p.[Address]       AS NVARCHAR(200))
-        , AddressDetail = CAST(p.[AddressDetail] AS NVARCHAR(200))
-        , Memo          = CAST(p.[Memo]          AS NVARCHAR(MAX))
-        , LastEditDate  = CAST(p.[LastEditDate]  AS DATETIME)
+          PatientId     = CAST(p.[수검자ID]     AS BIGINT)
+        , ChartNo       = CAST(p.[차트번호]       AS NVARCHAR(100))
+        , Name          = CAST(p.[성명]          AS NVARCHAR(100))
+        , SocialNumber  = CAST(p.[주민번호]  AS VARCHAR(13))
+        , Birthday      = CAST(p.[생년월일]      AS VARCHAR(8))
+        , Gender        = CAST(p.[성별]        AS CHAR(1))
+        , MobilePhone   = CAST(p.[휴대전화]     AS VARCHAR(13))
+        , Phone         = CAST(p.[전화번호]     AS VARCHAR(13))
+        , Email         = CAST(p.[이메일]         AS VARCHAR(200))
+        , Zipcode       = CAST(p.[우편번호]       AS VARCHAR(10))
+        , Address       = CAST(p.[주소]       AS NVARCHAR(200))
+        , AddressDetail = CAST(p.[상세주소] AS NVARCHAR(200))
+        , Memo          = CAST(p.[비고]          AS NVARCHAR(MAX))
+        , LastEditDate  = CAST(p.[최종수정일시]  AS DATETIME)
     FROM [dbo].[수검자] p
-    WHERE p.[PatientId] = @PatientId;
+    WHERE p.[수검자ID] = @PatientId;
 END
 GO
 -- 허용 Code 0 / 100 / 200 / 701. RP-06 은 유효업무를 0~1건으로 제한한다.
@@ -215,7 +215,7 @@ BEGIN
         RETURN;
     END
 
-    IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [PatientId] = @PatientId)
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [수검자ID] = @PatientId)
     BEGIN
         SELECT
               CAST(0 AS BIT)                    AS Success
@@ -345,19 +345,19 @@ BEGIN
                                      WHEN 'RCP' THEN N'접수완료'
                                      WHEN 'CNR' THEN N'예약취소'
                                      ELSE N'접수취소' END AS NVARCHAR(10))
-        , Name            = CAST(p.[Name] AS NVARCHAR(100))
-        , ChartNo         = CAST(p.[ChartNo] AS NVARCHAR(100))
-        , Gender          = CAST(p.[Gender] AS CHAR(1))
-        , Birthday        = CAST(p.[Birthday] AS VARCHAR(8))
-        , MobilePhone     = CAST(p.[CelNumber] AS VARCHAR(13))
+        , Name            = CAST(p.[성명] AS NVARCHAR(100))
+        , ChartNo         = CAST(p.[차트번호] AS NVARCHAR(100))
+        , Gender          = CAST(p.[성별] AS CHAR(1))
+        , Birthday        = CAST(p.[생년월일] AS VARCHAR(8))
+        , MobilePhone     = CAST(p.[휴대전화] AS VARCHAR(13))
     FROM [dbo].[예약접수] w
-    JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID]
+    JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
     WHERE (@FromDate IS NULL OR w.[예약일] >= @FromDate)
       AND (@ToDate   IS NULL OR w.[예약일] <= @ToDate)
       AND (@Status   IS NULL OR w.[상태코드]      =  @Status)
-      AND (@ChartNo  IS NULL OR p.[ChartNo]         =  @ChartNo)
-      AND (@Name     IS NULL OR p.[Name]            LIKE @Name + N'%')
-    ORDER BY w.[예약일] ASC, w.[시간대코드] ASC, p.[Name] ASC, w.[업무ID] ASC;
+      AND (@ChartNo  IS NULL OR p.[차트번호]         =  @ChartNo)
+      AND (@Name     IS NULL OR p.[성명]            LIKE @Name + N'%')
+    ORDER BY w.[예약일] ASC, w.[시간대코드] ASC, p.[성명] ASC, w.[업무ID] ASC;
 END
 GO
 -- 허용 Code 0 / 100 / 500 / 701 (05 §8.2). RS0~RS4 다섯 개를 반환한다.
@@ -418,11 +418,11 @@ BEGIN
     SELECT
           WorkId          = CAST(w.[업무ID] AS BIGINT)
         , PatientId       = CAST(w.[수검자ID] AS BIGINT)
-        , ChartNo         = CAST(p.[ChartNo] AS NVARCHAR(100))
-        , Name            = CAST(p.[Name] AS NVARCHAR(100))
-        , Birthday        = CAST(p.[Birthday] AS VARCHAR(8))
-        , Gender          = CAST(p.[Gender] AS CHAR(1))
-        , MobilePhone     = CAST(p.[CelNumber] AS VARCHAR(13))
+        , ChartNo         = CAST(p.[차트번호] AS NVARCHAR(100))
+        , Name            = CAST(p.[성명] AS NVARCHAR(100))
+        , Birthday        = CAST(p.[생년월일] AS VARCHAR(8))
+        , Gender          = CAST(p.[성별] AS CHAR(1))
+        , MobilePhone     = CAST(p.[휴대전화] AS VARCHAR(13))
         , ReservationDate = CAST(w.[예약일] AS DATE)
         , TimeSlot        = CAST(w.[시간대코드] AS CHAR(2))
         , Status          = CAST(w.[상태코드] AS CHAR(3))
@@ -436,7 +436,7 @@ BEGIN
         , SeatsLeft       = CAST(CASE WHEN 20 - c.Cnt < 0 THEN 0 ELSE 20 - c.Cnt END AS INT)
         , RowVersion      = CAST(w.[행버전] AS BINARY(8))
     FROM [dbo].[예약접수] w
-    JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID]
+    JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
     CROSS APPLY (SELECT Cnt = COUNT(*) FROM [dbo].[예약접수] x
                   WHERE x.[예약일] = w.[예약일]
                     AND x.[시간대코드]    = w.[시간대코드]
@@ -573,7 +573,7 @@ BEGIN
     END
 
     -- 5. Patient 존재
-    IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [PatientId] = @PatientId)
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [수검자ID] = @PatientId)
     BEGIN
         SELECT CAST(0 AS BIT) AS Success, CAST(200 AS INT) AS Code
              , CAST(N'수검자를 찾을 수 없습니다.' AS NVARCHAR(300)) AS Message

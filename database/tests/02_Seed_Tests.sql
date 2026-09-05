@@ -95,34 +95,34 @@ ELSE BEGIN PRINT N'FAIL FIX-SSN-PRE 수검자 0행 — tests/00_Test_Harness 를
 
 -- SSN-001 13자리 숫자
 SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
- WHERE LEN([SocialNumber]) <> 13 OR [SocialNumber] LIKE '%[^0-9]%';
+ WHERE LEN([주민번호]) <> 13 OR [주민번호] LIKE '%[^0-9]%';
 IF @Bad = 0 PRINT 'PASS SSN-001 전 행 13자리 숫자';
 ELSE BEGIN PRINT 'FAIL SSN-001 형식 위반 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
 -- SSN-002 7번째 자리 = 1/2/3/4
 SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
- WHERE SUBSTRING([SocialNumber], 7, 1) NOT IN ('1','2','3','4');
+ WHERE SUBSTRING([주민번호], 7, 1) NOT IN ('1','2','3','4');
 IF @Bad = 0 PRINT 'PASS SSN-002 세기·성별 코드 유효';
 ELSE BEGIN PRINT 'FAIL SSN-002 세기·성별 코드 위반 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
 -- SSN-003 앞 6자리가 실제 날짜
 SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
  WHERE TRY_CONVERT(DATE,
-        CASE WHEN SUBSTRING([SocialNumber],7,1) IN ('1','2') THEN '19' ELSE '20' END
-        + SUBSTRING([SocialNumber], 1, 6), 112) IS NULL;
+        CASE WHEN SUBSTRING([주민번호],7,1) IN ('1','2') THEN '19' ELSE '20' END
+        + SUBSTRING([주민번호], 1, 6), 112) IS NULL;
 IF @Bad = 0 PRINT 'PASS SSN-003 앞 6자리가 실제 날짜';
 ELSE BEGIN PRINT 'FAIL SSN-003 날짜 아님 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
 -- SSN-004 Birthday 파생값 일치
 SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
- WHERE [Birthday] <> CASE WHEN SUBSTRING([SocialNumber],7,1) IN ('1','2') THEN '19' ELSE '20' END
-                     + SUBSTRING([SocialNumber], 1, 6);
+ WHERE [생년월일] <> CASE WHEN SUBSTRING([주민번호],7,1) IN ('1','2') THEN '19' ELSE '20' END
+                     + SUBSTRING([주민번호], 1, 6);
 IF @Bad = 0 PRINT 'PASS SSN-004 Birthday 파생값 일치';
 ELSE BEGIN PRINT 'FAIL SSN-004 Birthday 불일치 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
 -- SSN-005 Gender 파생값 일치
 SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
- WHERE [Gender] <> CASE WHEN SUBSTRING([SocialNumber],7,1) IN ('1','3') THEN 'M' ELSE 'F' END;
+ WHERE [성별] <> CASE WHEN SUBSTRING([주민번호],7,1) IN ('1','3') THEN 'M' ELSE 'F' END;
 IF @Bad = 0 PRINT 'PASS SSN-005 Gender 파생값 일치';
 ELSE BEGIN PRINT 'FAIL SSN-005 Gender 불일치 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
@@ -131,14 +131,14 @@ SELECT @Bad = COUNT(*)
 FROM [dbo].[수검자] s
 CROSS APPLY (SELECT Valid =
       ( 11 - (
-        ( CAST(SUBSTRING(s.[SocialNumber], 1,1) AS INT)*2 + CAST(SUBSTRING(s.[SocialNumber], 2,1) AS INT)*3
-        + CAST(SUBSTRING(s.[SocialNumber], 3,1) AS INT)*4 + CAST(SUBSTRING(s.[SocialNumber], 4,1) AS INT)*5
-        + CAST(SUBSTRING(s.[SocialNumber], 5,1) AS INT)*6 + CAST(SUBSTRING(s.[SocialNumber], 6,1) AS INT)*7
-        + CAST(SUBSTRING(s.[SocialNumber], 7,1) AS INT)*8 + CAST(SUBSTRING(s.[SocialNumber], 8,1) AS INT)*9
-        + CAST(SUBSTRING(s.[SocialNumber], 9,1) AS INT)*2 + CAST(SUBSTRING(s.[SocialNumber],10,1) AS INT)*3
-        + CAST(SUBSTRING(s.[SocialNumber],11,1) AS INT)*4 + CAST(SUBSTRING(s.[SocialNumber],12,1) AS INT)*5
+        ( CAST(SUBSTRING(s.[주민번호], 1,1) AS INT)*2 + CAST(SUBSTRING(s.[주민번호], 2,1) AS INT)*3
+        + CAST(SUBSTRING(s.[주민번호], 3,1) AS INT)*4 + CAST(SUBSTRING(s.[주민번호], 4,1) AS INT)*5
+        + CAST(SUBSTRING(s.[주민번호], 5,1) AS INT)*6 + CAST(SUBSTRING(s.[주민번호], 6,1) AS INT)*7
+        + CAST(SUBSTRING(s.[주민번호], 7,1) AS INT)*8 + CAST(SUBSTRING(s.[주민번호], 8,1) AS INT)*9
+        + CAST(SUBSTRING(s.[주민번호], 9,1) AS INT)*2 + CAST(SUBSTRING(s.[주민번호],10,1) AS INT)*3
+        + CAST(SUBSTRING(s.[주민번호],11,1) AS INT)*4 + CAST(SUBSTRING(s.[주민번호],12,1) AS INT)*5
         ) % 11 ) ) % 10 ) c
-WHERE CAST(SUBSTRING(s.[SocialNumber], 13, 1) AS INT) = c.Valid;   -- 유효하면 위반
+WHERE CAST(SUBSTRING(s.[주민번호], 13, 1) AS INT) = c.Valid;   -- 유효하면 위반
 IF @Bad = 0 PRINT N'PASS SSN-006 전 행 체크디지트 무효 — 실제 주민등록번호 미사용 증명';
 ELSE BEGIN PRINT 'FAIL SSN-006 체크디지트가 유효한 행 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 

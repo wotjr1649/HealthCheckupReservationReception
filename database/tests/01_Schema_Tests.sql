@@ -18,9 +18,9 @@ IF NOT EXISTS (SELECT Name FROM @Expected EXCEPT SELECT name FROM sys.tables WHE
     PRINT 'PASS SCH-002 테이블 이름 집합 일치';
 ELSE BEGIN PRINT 'FAIL SCH-002 테이블 이름 집합 불일치'; SET @Fail += 1; END
 
--- SCH-003 수검자 컬럼 17개
-IF ((SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[수검자]')) = 17)
-    PRINT 'PASS SCH-003 수검자 17컬럼';
+-- SCH-003 수검자 컬럼 16개 (CelNumberS 제거)
+IF ((SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[수검자]')) = 16)
+    PRINT 'PASS SCH-003 수검자 16컬럼';
 ELSE BEGIN PRINT 'FAIL SCH-003 수검자 컬럼 수 불일치'; SET @Fail += 1; END
 
 -- SCH-004 PK 7
@@ -46,11 +46,11 @@ IF ((SELECT COUNT(*) FROM sys.indexes i
     PRINT 'PASS SCH-007 Filtered Unique Index 1개';
 ELSE BEGIN PRINT 'FAIL SCH-007 Filtered Unique Index 수 불일치'; SET @Fail += 1; END
 
--- SCH-008 업무/조회 NCI 5 (PK/UQ/UX 제외)
+-- SCH-008 업무/조회 NCI 4 (PK/UQ/UX 제외). IX_수검자_CEL_NUMBER_S 는 CelNumberS 와 함께 사라졌다
 IF ((SELECT COUNT(*) FROM sys.indexes i
       JOIN sys.tables t ON t.object_id = i.object_id AND t.is_ms_shipped = 0
-     WHERE i.type = 2 AND i.is_primary_key = 0 AND i.is_unique_constraint = 0 AND i.is_unique = 0) = 5)
-    PRINT 'PASS SCH-008 업무/조회 Nonclustered Index 5개';
+     WHERE i.type = 2 AND i.is_primary_key = 0 AND i.is_unique_constraint = 0 AND i.is_unique = 0) = 4)
+    PRINT 'PASS SCH-008 업무/조회 Nonclustered Index 4개';
 ELSE BEGIN PRINT 'FAIL SCH-008 Nonclustered Index 수 불일치'; SET @Fail += 1; END
 
 -- SCH-009 Sequence 1 / MAXVALUE 999999
@@ -90,23 +90,22 @@ INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
  -- 47행 전건. 기준선 04 §8 의 컬럼 표에서 기계 생성했다(개수·타입·길이·NULL 모두 그 표가 출처다).
  -- Len 은 문자·이진형만 채운다. nvarchar/nchar 는 문자 수, MAX 는 -1, 그 밖은 NULL.
  -- 수검자 17행
- (N'수검자', N'PatientId',            N'bigint',    NULL,  0),
- (N'수검자', N'ChartNo',              N'nvarchar',  100,   0),
- (N'수검자', N'Name',                 N'nvarchar',  100,   0),
- (N'수검자', N'SocialNumber',         N'varchar',   13,    0),
- (N'수검자', N'Birthday',             N'varchar',   8,     0),
- (N'수검자', N'Gender',               N'char',      1,     0),
- (N'수검자', N'EMail',                N'varchar',   200,   1),
- (N'수검자', N'CelNumberS',           N'varchar',   13,    1),
- (N'수검자', N'CelNumber',            N'varchar',   13,    1),
- (N'수검자', N'TelNumber',            N'varchar',   13,    1),
- (N'수검자', N'Zipcode',              N'varchar',   10,    1),
- (N'수검자', N'Address',              N'nvarchar',  200,   1),
- (N'수검자', N'AddressDetail',        N'nvarchar',  200,   1),
- (N'수검자', N'Memo',                 N'nvarchar',  -1,    1),
- (N'수검자', N'HepatitisBExcluded',   N'bit',       NULL,  0),
- (N'수검자', N'CreationDate',         N'datetime',  NULL,  0),
- (N'수검자', N'LastEditDate',         N'datetime',  NULL,  0),
+ (N'수검자', N'수검자ID',              N'bigint',    NULL,  0),
+ (N'수검자', N'차트번호',              N'nvarchar',  100,   0),
+ (N'수검자', N'성명',                  N'nvarchar',  100,   0),
+ (N'수검자', N'주민번호',              N'varchar',   13,    0),
+ (N'수검자', N'생년월일',              N'varchar',   8,     0),
+ (N'수검자', N'성별',                  N'char',      1,     0),
+ (N'수검자', N'이메일',                N'varchar',   200,   1),
+ (N'수검자', N'휴대전화',              N'varchar',   13,    1),
+ (N'수검자', N'전화번호',              N'varchar',   13,    1),
+ (N'수검자', N'우편번호',              N'varchar',   10,    1),
+ (N'수검자', N'주소',                  N'nvarchar',  200,   1),
+ (N'수검자', N'상세주소',              N'nvarchar',  200,   1),
+ (N'수검자', N'비고',                  N'nvarchar',  -1,    1),
+ (N'수검자', N'B형간염제외여부',        N'bit',       NULL,  0),
+ (N'수검자', N'생성일시',              N'datetime',  NULL,  0),
+ (N'수검자', N'최종수정일시',          N'datetime',  NULL,  0),
  -- 예약접수 8행
  (N'예약접수', N'업무ID',                N'bigint',    NULL,  0),
  (N'예약접수', N'수검자ID',              N'bigint',    NULL,  0),
@@ -172,8 +171,8 @@ DECLARE @ExpCk TABLE (N SYSNAME PRIMARY KEY);
 INSERT INTO @ExpCk (N) VALUES
  (N'CK_수검자_CHART_NO_NOT_BLANK'), (N'CK_수검자_NAME_NOT_BLANK'),
  (N'CK_수검자_SOCIAL_FORMAT'),      (N'CK_수검자_BIRTHDAY'),
- (N'CK_수검자_GENDER'),             (N'CK_수검자_CEL_NORMALIZED'),
- (N'CK_수검자_CEL_DIGIT'),          (N'CK_수검자_EDIT_DATE'),
+ (N'CK_수검자_GENDER'),             (N'CK_수검자_CEL_DIGIT'),
+ (N'CK_수검자_EDIT_DATE'),
  (N'CK_예약접수_TIME_SLOT'),        (N'CK_예약접수_STATUS'),
  (N'CK_예약접수_EDIT_DATE'),        (N'CK_검사항목_SOURCE'),
  (N'CK_검사코드_CODE_NOT_BLANK'),   (N'CK_검사코드_NAME_NOT_BLANK'),
@@ -212,10 +211,9 @@ ELSE BEGIN PRINT 'FAIL SCH-017 Default 제약 집합 불일치'; SET @Fail += 1;
 --     `검사항목` 는 04 §8.3.3 이 "별도 Nonclustered Index 를 만들지 않는다"고 못박았다.
 DECLARE @ExpIx TABLE (IxName SYSNAME, Ord TINYINT, ColName SYSNAME, PRIMARY KEY (IxName, Ord));
 INSERT @ExpIx (IxName, Ord, ColName) VALUES
- (N'IX_수검자_NAME_BIRTHDAY',              1, N'Name'),
- (N'IX_수검자_NAME_BIRTHDAY',              2, N'Birthday'),
- (N'IX_수검자_BIRTHDAY',                   1, N'Birthday'),
- (N'IX_수검자_CEL_NUMBER_S',               1, N'CelNumberS'),
+ (N'IX_수검자_NAME_BIRTHDAY',              1, N'성명'),
+ (N'IX_수검자_NAME_BIRTHDAY',              2, N'생년월일'),
+ (N'IX_수검자_BIRTHDAY',                   1, N'생년월일'),
  (N'IX_예약접수_SLOT',                  1, N'예약일'),
  (N'IX_예약접수_SLOT',                  2, N'시간대코드'),
  (N'IX_예약접수_SLOT',                  3, N'상태코드'),

@@ -21,9 +21,9 @@ IF @WorkId IS NULL
       FROM [dbo].[검사항목] GROUP BY [업무ID] ORDER BY COUNT(*) DESC, [업무ID];
 
 IF @ChartNo IS NULL
-    SELECT TOP (1) @ChartNo = p.[ChartNo]
-      FROM [dbo].[예약접수] w JOIN [dbo].[수검자] p ON p.[PatientId] = w.[수검자ID]
-     GROUP BY p.[ChartNo] ORDER BY COUNT(*) DESC, p.[ChartNo];
+    SELECT TOP (1) @ChartNo = p.[차트번호]
+      FROM [dbo].[예약접수] w JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
+     GROUP BY p.[차트번호] ORDER BY COUNT(*) DESC, p.[차트번호];
 
 PRINT N'==== [1] 7개 테이블 ====';
 SELECT TableNm = CAST(t.[name] AS NVARCHAR(10))
@@ -51,12 +51,12 @@ SELECT Code    = [검사항목코드]
 
 PRINT N'==== [3] 업무 1건 상세 ====';
 SELECT WorkId  = w.[업무ID]
-     , ChartNo = CAST(p.[ChartNo] AS NVARCHAR(8)), Nm = CAST(p.[Name] AS NVARCHAR(10))
-     , Sex     = p.[Gender], Birth = p.[Birthday]
+     , ChartNo = CAST(p.[차트번호] AS NVARCHAR(8)), Nm = CAST(p.[성명] AS NVARCHAR(10))
+     , Sex     = p.[성별], Birth = p.[생년월일]
      , ResDate = w.[예약일], Slot = w.[시간대코드], Status = w.[상태코드]
      , Edited  = w.[최종수정일시]
   FROM [dbo].[예약접수] w
-  JOIN [dbo].[수검자]   p ON p.[PatientId] = w.[수검자ID]
+  JOIN [dbo].[수검자]   p ON p.[수검자ID] = w.[수검자ID]
  WHERE w.[업무ID] = @WorkId;
 
 SELECT Src    = d.[검사출처코드]
@@ -70,22 +70,22 @@ SELECT Src    = d.[검사출처코드]
  ORDER BY d.[검사출처코드], d.[검사항목코드];
 
 PRINT N'==== [4] 수검자 1명의 업무 타임라인 ====';
-SELECT ChartNo = CAST(p.[ChartNo] AS NVARCHAR(8)), Nm = CAST(p.[Name] AS NVARCHAR(10))
+SELECT ChartNo = CAST(p.[차트번호] AS NVARCHAR(8)), Nm = CAST(p.[성명] AS NVARCHAR(10))
      , WorkId  = w.[업무ID]
      , ResDate = w.[예약일], Slot = w.[시간대코드], Status = w.[상태코드]
      , NexCnt  = SUM(CASE WHEN d.[검사출처코드] = 'NEX' THEN 1 ELSE 0 END)
      , AexCnt  = SUM(CASE WHEN d.[검사출처코드] = 'AEX' THEN 1 ELSE 0 END)
   FROM [dbo].[수검자]   p
-  JOIN [dbo].[예약접수] w ON w.[수검자ID] = p.[PatientId]
+  JOIN [dbo].[예약접수] w ON w.[수검자ID] = p.[수검자ID]
   LEFT JOIN [dbo].[검사항목] d ON d.[업무ID] = w.[업무ID]
- WHERE p.[ChartNo] = @ChartNo
- GROUP BY p.[ChartNo], p.[Name], w.[업무ID], w.[예약일], w.[시간대코드], w.[상태코드]
+ WHERE p.[차트번호] = @ChartNo
+ GROUP BY p.[차트번호], p.[성명], w.[업무ID], w.[예약일], w.[시간대코드], w.[상태코드]
  ORDER BY w.[예약일], w.[업무ID];
 
-SELECT ChartNo = CAST(p.[ChartNo] AS NVARCHAR(8)), LastCheckup = h.[완료일자]
+SELECT ChartNo = CAST(p.[차트번호] AS NVARCHAR(8)), LastCheckup = h.[완료일자]
   FROM [dbo].[수검자] p
-  JOIN [dbo].[완료이력] h ON h.[수검자ID] = p.[PatientId]
- WHERE p.[ChartNo] = @ChartNo
+  JOIN [dbo].[완료이력] h ON h.[수검자ID] = p.[수검자ID]
+ WHERE p.[차트번호] = @ChartNo
  ORDER BY h.[완료일자] DESC;
 
 PRINT N'==== [5] 슬롯별 정원 현황 (RSV+RCP 만 산정 · 정원 20) ====';
