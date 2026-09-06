@@ -948,21 +948,23 @@ Rule/UDF/SP 입출력 계약은 `05_DB_Rule_SP_Contract.md`, 잠금 SQL·Seed/Te
 
 | 이름 | 컬럼 | 값 |
 |---|---|---|
-| `DF_수검자_HEPATITIS_B_EXCLUDED` | `HepatitisBExcluded` | `0` |
-| `DF_수검자_CREATION_DATE` | `CreationDate` | `GETDATE()` |
-| `DF_수검자_LAST_EDIT_DATE` | `LastEditDate` | `GETDATE()` |
+| `DF_수검자_HEPATITIS_B_EXCLUDED` | `B형간염제외여부` | `0` |
+| `DF_수검자_CREATION_DATE` | `생성일시` | `GETDATE()` |
+| `DF_수검자_LAST_EDIT_DATE` | `최종수정일시` | `GETDATE()` |
 
 ### 8.1.5 Index
 
 | 이름 | Key | INCLUDE / Filter | 목적 |
 |---|---|---|---|
-| `UQ_수검자_CHART_NO` | `ChartNo` | - | 차트번호 정확조회·고유성 |
-| `UQ_수검자_SOCIAL_NUMBER` | `SocialNumber` | - | 주민번호 테스트값 정확조회·고유성 |
-| `IX_수검자_NAME_BIRTHDAY` | `Name, Birthday` | `PatientId, ChartNo, Gender, CelNumber` | 이름 조회·이름+생년월일 중복후보 |
-| `IX_수검자_BIRTHDAY` | `Birthday` | `PatientId, ChartNo, Name, Gender, CelNumber` | 생년월일 단독조회·중복후보 |
-| `IX_수검자_CEL_NUMBER_S` | `CelNumberS` | `PatientId, ChartNo, Name, Birthday, Gender, CelNumber` / `WHERE CelNumberS IS NOT NULL` | 휴대전화 정확조회 |
+| `UQ_수검자_CHART_NO` | `차트번호` | - | 차트번호 정확조회·고유성 |
+| `UQ_수검자_SOCIAL_NUMBER` | `주민번호` | - | 주민번호 테스트값 정확조회·고유성 |
+| `IX_수검자_NAME_BIRTHDAY` | `성명, 생년월일` | `수검자ID, 차트번호, 성별, 휴대전화` | 이름 조회·이름+생년월일 중복후보 |
+| `IX_수검자_BIRTHDAY` | `생년월일` | `수검자ID, 차트번호, 성명, 성별, 휴대전화` | 생년월일 단독조회·중복후보 |
 
-`HepatitisBExcluded`는 항상 `PatientId`로 단일행을 집은 뒤 읽으므로 Index를 두지 않는다.
+`B형간염제외여부`는 항상 `수검자ID`로 단일행을 집은 뒤 읽으므로 Index를 두지 않는다.
+
+휴대전화 검색 전용 Index 를 두지 않는다. `CelNumberS` 를 제거하면서 그 Key 컬럼이 사라졌고,
+`@MobilePhone` 검색은 `REPLACE([휴대전화], '-', '')` 비교라 seek 이 성립하지 않는다(§8.1.2).
 
 ## 8.2 `예약접수`
 

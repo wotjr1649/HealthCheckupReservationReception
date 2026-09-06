@@ -1654,7 +1654,7 @@ RS1 Work결과
 
 ```text
 예약접수.StatusCode='RSV'
-검사항목=NEX 전체 + Selected=1인 AEX
+검사구성=NEX 전체 + Selected=1인 AEX
 ```
 
 Write SP는 조회 SP 결과를 신뢰하지 않고 모든 조건을 다시 검증한다.

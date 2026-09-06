@@ -841,13 +841,13 @@ CREATE TABLE [dbo].[수검자]
 (
     [수검자ID]          BIGINT          IDENTITY(1,1) NOT NULL,
     [차트번호]            NVARCHAR(100)   NOT NULL,
-    [Name]               NVARCHAR(100)   NOT NULL,
+    [성명]               NVARCHAR(100)   NOT NULL,
     [주민번호]       VARCHAR(13)     NOT NULL,
     [생년월일]           VARCHAR(8)      NOT NULL,
-    [Gender]             CHAR(1)         NOT NULL,
+    [성별]             CHAR(1)         NOT NULL,
     [EMail]              VARCHAR(200)    NULL,
     [CelNumberS]         VARCHAR(13)     NULL,
-    [CelNumber]          VARCHAR(13)     NULL,
+    [휴대전화]          VARCHAR(13)     NULL,
     [TelNumber]          VARCHAR(13)     NULL,
     [Zipcode]            VARCHAR(10)     NULL,
     [Address]            NVARCHAR(200)   NULL,
@@ -862,27 +862,22 @@ CREATE TABLE [dbo].[수검자]
     CONSTRAINT [UQ_수검자_SOCIAL_NUMBER]  UNIQUE ([주민번호]),
 
     CONSTRAINT [CK_수검자_CHART_NO_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([차트번호]))) > 0),
-    CONSTRAINT [CK_수검자_NAME_NOT_BLANK]     CHECK (LEN(LTRIM(RTRIM([Name]))) > 0),
+    CONSTRAINT [CK_수검자_NAME_NOT_BLANK]     CHECK (LEN(LTRIM(RTRIM([성명]))) > 0),
     CONSTRAINT [CK_수검자_SOCIAL_FORMAT]      CHECK (LEN([주민번호]) = 13 AND [주민번호] NOT LIKE '%[^0-9]%'),
     CONSTRAINT [CK_수검자_BIRTHDAY]           CHECK (LEN([생년월일]) = 8 AND [생년월일] NOT LIKE '%[^0-9]%' AND TRY_CONVERT(DATE, [생년월일], 112) IS NOT NULL),
-    CONSTRAINT [CK_수검자_GENDER]             CHECK ([Gender] IN ('M','F')),
-    CONSTRAINT [CK_수검자_CEL_DIGIT]     CHECK (([CelNumber] IS NULL AND [CelNumberS] IS NULL) OR ([CelNumber] IS NOT NULL AND [CelNumberS] = REPLACE([CelNumber], '-', ''))),
+    CONSTRAINT [CK_수검자_GENDER]             CHECK ([성별] IN ('M','F')),
+    CONSTRAINT [CK_수검자_CEL_DIGIT]     CHECK (([휴대전화] IS NULL AND [CelNumberS] IS NULL) OR ([휴대전화] IS NOT NULL AND [CelNumberS] = REPLACE([휴대전화], '-', ''))),
     CONSTRAINT [CK_수검자_CEL_DIGIT]          CHECK ([CelNumberS] IS NULL OR [CelNumberS] NOT LIKE '%[^0-9]%'),
     CONSTRAINT [CK_수검자_EDIT_DATE]          CHECK ([최종수정일시] >= [생성일시])
 );
 GO
 CREATE NONCLUSTERED INDEX [IX_수검자_NAME_BIRTHDAY]
-    ON [dbo].[수검자] ([Name], [생년월일])
-    INCLUDE ([수검자ID], [차트번호], [Gender], [CelNumber]);
+    ON [dbo].[수검자] ([성명], [생년월일])
+    INCLUDE ([수검자ID], [차트번호], [성별], [휴대전화]);
 GO
 CREATE NONCLUSTERED INDEX [IX_수검자_BIRTHDAY]
     ON [dbo].[수검자] ([생년월일])
-    INCLUDE ([수검자ID], [차트번호], [Name], [Gender], [CelNumber]);
-GO
-CREATE NONCLUSTERED INDEX [IX_수검자_CEL_NUMBER_S]
-    ON [dbo].[수검자] ([CelNumberS])
-    INCLUDE ([수검자ID], [차트번호], [Name], [생년월일], [Gender], [CelNumber])
-    WHERE [CelNumberS] IS NOT NULL;
+    INCLUDE ([수검자ID], [차트번호], [성명], [성별], [휴대전화]);
 GO
 ```
 

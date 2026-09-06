@@ -4,12 +4,12 @@ cd "$(dirname "$0")/.."
 node -e '
 const fs=require("fs"),c=require("crypto");
 const exp={
- "00_Project_Policy.md":"af2b17635c9b6f3264b91a1cdd671c2ff19aa4299044d282c676f9d8025143ac",
- "01_Process_Definition.md":"633bf096ae729674e70bf0a78209b68c9d068632fe68ba7f69e814d1f639325b",
- "02_Function_Definition.xlsx":"7763aaae5e7a48c16b3751777be0787fdbf62a0f22d1d91fd5995eda7a3897eb",
- "03_Wireframe_Definition.md":"f2660e62d436a4970a685779da1a4b6ef5338faaaf92f57798e4b7da1f0d145e",
- "04_DB_Design.md":"0148ad24733586d8c2efd5d72f8cac0aabb15c392eb4839ed597b57120bd8682",
- "05_DB_Rule_SP_Contract.md":"63457f8dde74dae403af944f063c892b70ee7d1b32b8163e8e4dffba3b96e7b6"};
+ "00_Project_Policy.md":"b33aa64df24f9d42481fd1bea5a8e05da65f2cfe30892b66266dea67e388864e",
+ "01_Process_Definition.md":"079891e98f69d40082d822b53ad50ba81f16d21ee74ce3e45fd5b499e80811a0",
+ "02_Function_Definition.xlsx":"e4e6601d07cf86c23a1f30d5bd17e18f993949b30cfd769de239d1a50c83e41a",
+ "03_Wireframe_Definition.md":"84c283d6f4c761b45362f91ce4f208a24389c0c38815dd5f59b71c45c476a5b8",
+ "04_DB_Design.md":"359a14a0800de11fd322ed98cb081277602eb65b3fe88846418ee3ddd0e856b9",
+ "05_DB_Rule_SP_Contract.md":"0cd0776011d7cb35d688139d0269c9e1287a876dd606e61692448892842a33ed"};
 let ok=0;
 for(const [n,e] of Object.entries(exp)){
   const h=c.createHash("sha256").update(fs.readFileSync("../docs/baseline/"+n)).digest("hex");
