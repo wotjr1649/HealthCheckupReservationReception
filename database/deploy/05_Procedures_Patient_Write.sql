@@ -295,6 +295,10 @@ BEGIN
         , CAST(@ServerTime AS DATETIME2(7))   AS ServerTime;
 
     -- RS1 수검자결과 — 성공(0·2)과 실패 202·203 에만 낸다 (05 §3.5)
+    -- [I] 여기는 커밋 뒤 재조회를 유지한다 (06 §43-18 의 예외).
+    --     202·203 이 돌려주는 것은 **다른 사람의 행**이라 우리 잠금이 보호한 적이 없다 —
+    --     포획해도 스냅샷일 뿐이고 살아 있는 값을 보여주는 편이 정직하다.
+    --     0 은 방금 만든 행이라 그 PatientId 를 아는 세션이 아직 없다.
     IF @Code IN (0, 2, 202, 203)
         SELECT
               PatientId    = CAST(p.[수검자ID]     AS BIGINT)
@@ -380,6 +384,7 @@ BEGIN
     SET XACT_ABORT ON;
 
     DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
+    DECLARE @RsChart NVARCHAR(100), @RsEdit DATETIME;
     DECLARE @Today      DATE         = CONVERT(DATE, @ServerTime);
     DECLARE @StoredNow  DATETIME2(0) = CONVERT(DATETIME2(0), @ServerTime);
 
@@ -621,6 +626,13 @@ BEGIN
                 END
             END
 
+            -- [X] RS1 을 COMMIT **뒤에** 다시 읽으면 그 사이 다른 세션이 바꾼 LastEditDate 가 나간다.
+            --     호출자는 자기 것이 아닌 동시성 토큰을 받고, 그 값으로 보낸 다음 요청이
+            --     600 으로 막혔어야 하는데 통과한다. 잠금 안에서 포획한다 (06 §43-18).
+            IF @Code IN (0, 1)
+                SELECT @RsChart = p.[차트번호], @RsEdit = p.[최종수정일시]
+                  FROM [dbo].[수검자] p WHERE p.[수검자ID] = @PatientId;
+
             IF @Code IN (0, 1) COMMIT TRANSACTION;
             ELSE ROLLBACK TRANSACTION;
         END TRY
@@ -641,13 +653,12 @@ BEGIN
         , CAST(@ServerTime AS DATETIME2(7))   AS ServerTime;
 
     -- RS1 수검자변경결과. No-op 은 갱신하지 않은 기존 LastEditDate 가 그대로 나온다 (05 §10.2).
+    -- 값은 잠금 안에서 포획한 것이다 (아래 [X] 참조). 커밋 뒤 재조회하지 않는다.
     IF @Code IN (0, 1)
         SELECT
-              PatientId    = CAST(p.[수검자ID]     AS BIGINT)
-            , ChartNo      = CAST(p.[차트번호]     AS NVARCHAR(100))
-            , LastEditDate = CAST(p.[최종수정일시] AS DATETIME)
-          FROM [dbo].[수검자] p
-         WHERE p.[수검자ID] = @PatientId;
+              PatientId    = CAST(@PatientId AS BIGINT)
+            , ChartNo      = CAST(@RsChart   AS NVARCHAR(100))
+            , LastEditDate = CAST(@RsEdit    AS DATETIME);
 
     ----------------------------------------------------------------------------
     -- [7] 감사 기록. 실제로 값이 바뀐 컬럼만 남는다 (00 CP-06 · 04 §8.6.2).

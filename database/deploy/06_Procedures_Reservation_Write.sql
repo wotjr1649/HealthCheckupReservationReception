@@ -44,6 +44,7 @@ BEGIN
     SET XACT_ABORT ON;
 
     DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
+    DECLARE @RsStatus CHAR(3), @RsRv BINARY(8);
     DECLARE @Today      DATE         = CONVERT(DATE, @ServerTime);
     DECLARE @StoredNow  DATETIME2(0) = CONVERT(DATETIME2(0), @ServerTime);
 
@@ -274,6 +275,15 @@ BEGIN
                      @Nex, @Aex, @StoredNow, @StoredNow);
 
                 SET @TargetKey = SCOPE_IDENTITY();
+                -- [X] RS1 을 COMMIT **뒤에** 다시 읽으면 그 사이 다른 세션이 바꾼 값이 나간다.
+                --     호출자는 자기 것이 아닌 RowVersion 을 받고, 그 값으로 보낸 다음 요청이
+                --     601 로 막혔어야 하는데 통과한다 — 낙관적 동시성의 유일한 방어선이 뚫린다.
+                --     잠금 안에서 포획하고 COMMIT 뒤에는 변수를 낸다. RS 를 트랜잭션 밖에서
+                --     낸다는 스펙 §21.1 [6] 은 그대로다 (06 §43-18).
+                IF @Code = 0
+                    SELECT @RsStatus = w.[상태코드], @RsRv = w.[행버전]
+                      FROM [dbo].[예약접수] w WHERE w.[업무ID] = @TargetKey;
+
                 COMMIT TRANSACTION;
             END
             ELSE
@@ -298,11 +308,9 @@ BEGIN
     -- RS1 Work결과 (05 §11). RowVersion 은 COMMIT 이후 다시 읽는다.
     IF @Code = 0
         SELECT
-              WorkId     = CAST(w.[업무ID]   AS BIGINT)
-            , Status     = CAST(w.[상태코드] AS CHAR(3))
-            , RowVersion = CAST(w.[행버전]   AS BINARY(8))
-          FROM [dbo].[예약접수] w
-         WHERE w.[업무ID] = @TargetKey;
+              WorkId     = CAST(@TargetKey   AS BIGINT)
+            , Status     = CAST(@RsStatus AS CHAR(3))
+            , RowVersion = CAST(@RsRv     AS BINARY(8));
 
     ----------------------------------------------------------------------------
     -- [7] 감사 기록 (04 §8.6.5). INSERT 라 변경전은 항상 NULL 이다.
@@ -367,6 +375,7 @@ BEGIN
     SET XACT_ABORT ON;
 
     DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
+    DECLARE @RsStatus CHAR(3), @RsRv BINARY(8);
     DECLARE @Today      DATE         = CONVERT(DATE, @ServerTime);
     DECLARE @StoredNow  DATETIME2(0) = CONVERT(DATETIME2(0), @ServerTime);
 
@@ -762,6 +771,15 @@ BEGIN
                     SET @TargetKey = @WorkId;
             END
 
+            -- [X] RS1 을 COMMIT **뒤에** 다시 읽으면 그 사이 다른 세션이 바꾼 값이 나간다.
+            --     호출자는 자기 것이 아닌 RowVersion 을 받고, 그 값으로 보낸 다음 요청이
+            --     601 로 막혔어야 하는데 통과한다 — 낙관적 동시성의 유일한 방어선이 뚫린다.
+            --     잠금 안에서 포획하고 COMMIT 뒤에는 변수를 낸다. RS 를 트랜잭션 밖에서
+            --     낸다는 스펙 §21.1 [6] 은 그대로다 (06 §43-18).
+            IF @Code IN (0, 1)
+                SELECT @RsStatus = w.[상태코드], @RsRv = w.[행버전]
+                  FROM [dbo].[예약접수] w WHERE w.[업무ID] = @WorkId;
+
             IF @Code IN (0, 1) COMMIT TRANSACTION;
             ELSE ROLLBACK TRANSACTION;
         END TRY
@@ -784,11 +802,9 @@ BEGIN
     -- No-op 은 갱신하지 않은 기존 RowVersion 이 그대로 나온다 (05 §11.2).
     IF @Code IN (0, 1)
         SELECT
-              WorkId     = CAST(w.[업무ID]   AS BIGINT)
-            , Status     = CAST(w.[상태코드] AS CHAR(3))
-            , RowVersion = CAST(w.[행버전]   AS BINARY(8))
-          FROM [dbo].[예약접수] w
-         WHERE w.[업무ID] = @WorkId;
+              WorkId     = CAST(@WorkId   AS BIGINT)
+            , Status     = CAST(@RsStatus AS CHAR(3))
+            , RowVersion = CAST(@RsRv     AS BINARY(8));
 
     ----------------------------------------------------------------------------
     -- [7] 감사 기록. 실제로 값이 바뀐 컬럼만 남는다 (00 CP-06).
@@ -838,6 +854,7 @@ BEGIN
     SET XACT_ABORT ON;
 
     DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
+    DECLARE @RsStatus CHAR(3), @RsRv BINARY(8);
     DECLARE @Today      DATE         = CONVERT(DATE, @ServerTime);
     DECLARE @StoredNow  DATETIME2(0) = CONVERT(DATETIME2(0), @ServerTime);
 
@@ -935,6 +952,15 @@ BEGIN
                     SET @TargetKey = @WorkId;
             END
 
+            -- [X] RS1 을 COMMIT **뒤에** 다시 읽으면 그 사이 다른 세션이 바꾼 값이 나간다.
+            --     호출자는 자기 것이 아닌 RowVersion 을 받고, 그 값으로 보낸 다음 요청이
+            --     601 로 막혔어야 하는데 통과한다 — 낙관적 동시성의 유일한 방어선이 뚫린다.
+            --     잠금 안에서 포획하고 COMMIT 뒤에는 변수를 낸다. RS 를 트랜잭션 밖에서
+            --     낸다는 스펙 §21.1 [6] 은 그대로다 (06 §43-18).
+            IF @Code = 0
+                SELECT @RsStatus = w.[상태코드], @RsRv = w.[행버전]
+                  FROM [dbo].[예약접수] w WHERE w.[업무ID] = @WorkId;
+
             IF @Code = 0 COMMIT TRANSACTION;
             ELSE ROLLBACK TRANSACTION;
         END TRY
@@ -956,11 +982,9 @@ BEGIN
 
     IF @Code = 0
         SELECT
-              WorkId     = CAST(w.[업무ID]   AS BIGINT)
-            , Status     = CAST(w.[상태코드] AS CHAR(3))
-            , RowVersion = CAST(w.[행버전]   AS BINARY(8))
-          FROM [dbo].[예약접수] w
-         WHERE w.[업무ID] = @WorkId;
+              WorkId     = CAST(@WorkId   AS BIGINT)
+            , Status     = CAST(@RsStatus AS CHAR(3))
+            , RowVersion = CAST(@RsRv     AS BINARY(8));
 
     ----------------------------------------------------------------------------
     -- [7] 감사 기록. 바뀐 것은 상태코드 하나다.

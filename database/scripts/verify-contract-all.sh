@@ -42,6 +42,21 @@ DAYOK=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
                                WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [사용여부] = 1)
          THEN 1 ELSE 0 END;" | tr -d ' \r')
 
+# SEL-025 정원 일치. 조회 SP 의 Capacity 와 저장 SP 의 상한이 갈리면 화면은 "자리 있음" 을
+# 보여주고 저장은 305 를 낸다 (06 §43-21). 정원 20 은 조회 SP 8곳·저장 SP 2곳에 따로 박혀 있고
+# 어떤 시험도 둘의 일치를 보지 않았다.
+#   조회 쪽은 여기서 매 회귀 고정한다 (SELECT SP 라 시각과 무관하다).
+#   저장 쪽은 CON-002(19/20 → 20)·CON-008(20/20 → 305)이 경계에서 고정한다.
+#   한쪽만 바뀌면 둘 중 하나가 반드시 깨진다.
+CAPQ="SET NOCOUNT ON; DECLARE @P BIGINT = (SELECT TOP (1) [수검자ID] FROM [dbo].[수검자] ORDER BY [수검자ID]); EXEC [dbo].[USP_HC_SELECT_예약가능정보] @P, NULL, NULL, 'NORMAL', '2026-11-16', 'AM', 0,0,0,0,0,0,0;"
+CAPP=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -s"|" -Q "$CAPQ" 2>/dev/null \
+       | grep -E '^(AM|PM)\|' | cut -d'|' -f3 | sort -u | tr -d ' \r' | tr '\n' ' ' | sed 's/ *$//')
+if [ "$CAPP" = "20" ]; then
+  echo "PASS SEL-025 조회 SP 의 Capacity = 20 (AM·PM 동일) — 저장 쪽은 CON-002·008 이 고정" >> "$OUT"
+else
+  echo "FAIL SEL-025 조회 SP 의 Capacity 가 [$CAPP] 다 (기대 20)" >> "$OUT"; FAILED=1
+fi
+
 for f in tests/contract/*.sql; do
   k=$(basename "$f" .sql)
   # SELECT SP 계약은 시간대와 무관하다. Write SP 계약만 가드한다 (T36 이 추가한다).
