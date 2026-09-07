@@ -95,6 +95,28 @@ else
   say 'FAIL RBD-009 타 DB 변경 감지'; diff -u artifacts/reports/otherdb_before.txt artifacts/reports/otherdb_after.txt >> "$OUT"; FAILED=1
 fi
 
+
+# ── RBD-011  재배포가 IDENTITY 시드를 감사기록 뒤로 이어받는가 (06 §9.2 · §43-16)
+#    [X] 공허하지 않게 만든다. 변경이력이 비어 있으면 "MAX <= IDENT_CURRENT" 는 언제나 참이라
+#        재시드를 통째로 지워도 통과한다. **탐침 감사행을 일부러 심고** 시드가 그 뒤로 가는지 본다.
+PK=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
+  DELETE FROM dbo.변경이력 WHERE [조작자명] = N'RBD-011-PROBE';
+  DECLARE @K BIGINT = ISNULL((SELECT MAX([대상키]) FROM dbo.변경이력 WHERE [대상테이블]=N'수검자'),0) + 1000;
+  INSERT INTO dbo.변경이력 ([기록일시],[조작자명],[대상테이블],[대상키],[컬럼명],[변경전],[변경후])
+  VALUES (SYSDATETIME(), N'RBD-011-PROBE', N'수검자', @K, N'성명', N'전세대', N'전세대');
+  SELECT CONVERT(VARCHAR(20), @K);" 2>/dev/null | tr -d ' \r' | head -1)
+./scripts/deploy.sh > artifacts/logs/rbd011.log 2>&1
+RC=$?
+SEED=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q \
+  "SET NOCOUNT ON; SELECT CONVERT(VARCHAR(20), CONVERT(BIGINT, IDENT_CURRENT('dbo.수검자')));" 2>/dev/null | tr -d ' \r' | head -1)
+sqlcmd -S "$SRV" -E -d "$DB" -b -I -Q "DELETE FROM dbo.변경이력 WHERE [조작자명] = N'RBD-011-PROBE';" > /dev/null 2>&1
+LEFT=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q \
+  "SET NOCOUNT ON; SELECT CONVERT(VARCHAR(5), COUNT(*)) FROM dbo.변경이력 WHERE [조작자명] = N'RBD-011-PROBE';" 2>/dev/null | tr -d ' \r' | head -1)
+if [ "$RC" -eq 0 ] && [ -n "$PK" ] && [ "${SEED:-0}" -ge "${PK:-1}" ] && [ "${LEFT:-1}" = "0" ]; then
+  say "PASS RBD-011 재배포가 IDENTITY 시드를 감사기록 뒤로 이어받았다 (탐침 대상키 $PK → 시드 $SEED · 탐침 정리 0건)"
+else
+  say "FAIL RBD-011 시드가 안 밀렸다 (deploy=$RC · 탐침 대상키 $PK · 시드 $SEED · 잔여 $LEFT)"; FAILED=1
+fi
 cp artifacts/reports/inventory_run4.txt artifacts/reports/object-inventory.txt
 rm -f artifacts/reports/inventory_run1.txt artifacts/reports/inventory_run2.txt \
       artifacts/reports/inventory_run3.txt artifacts/reports/inventory_run4.txt

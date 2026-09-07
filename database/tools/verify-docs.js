@@ -601,6 +601,30 @@ function splitFences(src) {
 }
 
 
+// V19 감사 INSERT 가 RS1 보다 **앞**인가.
+// [X] 감사를 RS1 뒤에 두면 RS0 만 읽고 끊은 호출에서 업무는 커밋됐는데 감사만 없는 상태가 된다
+//     (§43-19). 순서는 눈에 안 띄게 되돌아갈 수 있어 정적으로 고정한다.
+//     각 Write SP 본문에서  [6] Result Set  <  [7] 감사 기록  <  [6b] RS1  이어야 한다.
+{
+  const hits = [];
+  let bodies = 0;
+  for (const f of ['05_Procedures_Patient_Write.sql', '06_Procedures_Reservation_Write.sql',
+                   '07_Procedures_Reception_Write.sql']) {
+    const txt = fs.readFileSync(path.join('deploy', f), 'utf8');
+    for (const body of txt.split(/CREATE OR ALTER PROCEDURE/).slice(1)) {
+      const a = body.indexOf('-- [6] ');   // 문구가 SP 마다 다르다 — 번호만 본다
+      const b = body.indexOf('-- [7] 감사 기록');
+      const c = body.indexOf('-- [6b] RS1');
+      if (a < 0 || b < 0 || c < 0) { hits.push(f + ' 표지 누락 [6]=' + a + ' [7]=' + b + ' [6b]=' + c); continue; }
+      bodies++;
+      if (!(a < b && b < c)) hits.push(f + ' 순서 어긋남 [6]=' + a + ' [7]=' + b + ' [6b]=' + c);
+    }
+  }
+  if (bodies !== 8) hits.push('Write SP 본문 ' + bodies + '개 (기대 8)');
+  hits.length ? F('V19', '감사/RS1 순서 위반 ' + hits.length + '건', hits.join(String.fromCharCode(10)))
+              : P('V19', '감사 INSERT 가 RS1 보다 앞 (Write SP ' + bodies + '개)');
+}
+
 // V18 RBK-008 — 실패 응답의 Result Set 개수는 RS0 1개뿐이다 (05 §3.5).
 //   T-SQL 로는 셀 수 없다. INSERT … EXEC 는 RS 2개 이상에서 Msg 213 이고(스펙 §33.1a),
 //   DMV 는 sp_getapplock 을 부르는 Write SP 에서 Msg 11520 이다(스펙 §36 실측).

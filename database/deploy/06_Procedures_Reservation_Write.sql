@@ -305,13 +305,12 @@ BEGIN
         , CAST(@Field   AS VARCHAR(50))       AS Field
         , CAST(@ServerTime AS DATETIME2(7))   AS ServerTime;
 
-    -- RS1 Work결과 (05 §11). RowVersion 은 COMMIT 이후 다시 읽는다.
-    IF @Code = 0
-        SELECT
-              WorkId     = CAST(@TargetKey   AS BIGINT)
-            , Status     = CAST(@RsStatus AS CHAR(3))
-            , RowVersion = CAST(@RsRv     AS BINARY(8));
-
+    -- [X] 감사를 RS1 **뒤**에 두면, 클라이언트가 RS0 만 읽고 끊었을 때(ExecuteNonQuery·조기
+    --     Dispose) 업무는 커밋됐는데 감사행만 없는 상태가 된다. 04 §8.6.5 ③ 은 "**해당**
+    --     Result Set 의 SELECT 를 먼저 낸 뒤에" 로 **단수**이고, 같은 절의 목적은 §14 L1
+    --     "기록이 업무 호출을 실패시키지 않는다" 이다. RS0 뒤에 두어도 그 목적은 그대로다.
+    --     그래서 '해당 Result Set' 을 결과를 보고하는 RS0 로 읽고 감사를 RS0 뒤·RS1 앞에 둔다.
+    --     감사는 여전히 @@TRANCOUNT = 0 지점 · 자체 TRY / 빈 CATCH 다 (06 §21.1 · §43-19).
     ----------------------------------------------------------------------------
     -- [7] 감사 기록 (04 §8.6.5). INSERT 라 변경전은 항상 NULL 이다.
     ----------------------------------------------------------------------------
@@ -334,6 +333,15 @@ BEGIN
         BEGIN CATCH
         END CATCH
     END
+
+    -- [6b] RS1 — 감사 **뒤**에 낸다. 순서가 뒤집히면 RS0 만 읽은 호출에서 감사가 사라진다 (§43-19).
+    -- RS1 Work결과 (05 §11). RowVersion 은 COMMIT 이후 다시 읽는다.
+    IF @Code = 0
+        SELECT
+              WorkId     = CAST(@TargetKey   AS BIGINT)
+            , Status     = CAST(@RsStatus AS CHAR(3))
+            , RowVersion = CAST(@RsRv     AS BINARY(8));
+
 END
 GO
 -- 05 §11.2. Phase 4 에서 가장 복잡한 Write SP 다.
@@ -799,13 +807,12 @@ BEGIN
         , CAST(@Field   AS VARCHAR(50))       AS Field
         , CAST(@ServerTime AS DATETIME2(7))   AS ServerTime;
 
-    -- No-op 은 갱신하지 않은 기존 RowVersion 이 그대로 나온다 (05 §11.2).
-    IF @Code IN (0, 1)
-        SELECT
-              WorkId     = CAST(@WorkId   AS BIGINT)
-            , Status     = CAST(@RsStatus AS CHAR(3))
-            , RowVersion = CAST(@RsRv     AS BINARY(8));
-
+    -- [X] 감사를 RS1 **뒤**에 두면, 클라이언트가 RS0 만 읽고 끊었을 때(ExecuteNonQuery·조기
+    --     Dispose) 업무는 커밋됐는데 감사행만 없는 상태가 된다. 04 §8.6.5 ③ 은 "**해당**
+    --     Result Set 의 SELECT 를 먼저 낸 뒤에" 로 **단수**이고, 같은 절의 목적은 §14 L1
+    --     "기록이 업무 호출을 실패시키지 않는다" 이다. RS0 뒤에 두어도 그 목적은 그대로다.
+    --     그래서 '해당 Result Set' 을 결과를 보고하는 RS0 로 읽고 감사를 RS0 뒤·RS1 앞에 둔다.
+    --     감사는 여전히 @@TRANCOUNT = 0 지점 · 자체 TRY / 빈 CATCH 다 (06 §21.1 · §43-19).
     ----------------------------------------------------------------------------
     -- [7] 감사 기록. 실제로 값이 바뀐 컬럼만 남는다 (00 CP-06).
     ----------------------------------------------------------------------------
@@ -831,6 +838,15 @@ BEGIN
         BEGIN CATCH
         END CATCH
     END
+
+    -- [6b] RS1 — 감사 **뒤**에 낸다. 순서가 뒤집히면 RS0 만 읽은 호출에서 감사가 사라진다 (§43-19).
+    -- No-op 은 갱신하지 않은 기존 RowVersion 이 그대로 나온다 (05 §11.2).
+    IF @Code IN (0, 1)
+        SELECT
+              WorkId     = CAST(@WorkId   AS BIGINT)
+            , Status     = CAST(@RsStatus AS CHAR(3))
+            , RowVersion = CAST(@RsRv     AS BINARY(8));
+
 END
 GO
 -- 05 §11.3. RSV → CNR. 검사구성 두 컬럼은 지우지 않고, 마감시각은 취소 가능조건이 아니다.
@@ -980,12 +996,12 @@ BEGIN
         , CAST(@Field   AS VARCHAR(50))       AS Field
         , CAST(@ServerTime AS DATETIME2(7))   AS ServerTime;
 
-    IF @Code = 0
-        SELECT
-              WorkId     = CAST(@WorkId   AS BIGINT)
-            , Status     = CAST(@RsStatus AS CHAR(3))
-            , RowVersion = CAST(@RsRv     AS BINARY(8));
-
+    -- [X] 감사를 RS1 **뒤**에 두면, 클라이언트가 RS0 만 읽고 끊었을 때(ExecuteNonQuery·조기
+    --     Dispose) 업무는 커밋됐는데 감사행만 없는 상태가 된다. 04 §8.6.5 ③ 은 "**해당**
+    --     Result Set 의 SELECT 를 먼저 낸 뒤에" 로 **단수**이고, 같은 절의 목적은 §14 L1
+    --     "기록이 업무 호출을 실패시키지 않는다" 이다. RS0 뒤에 두어도 그 목적은 그대로다.
+    --     그래서 '해당 Result Set' 을 결과를 보고하는 RS0 로 읽고 감사를 RS0 뒤·RS1 앞에 둔다.
+    --     감사는 여전히 @@TRANCOUNT = 0 지점 · 자체 TRY / 빈 CATCH 다 (06 §21.1 · §43-19).
     ----------------------------------------------------------------------------
     -- [7] 감사 기록. 바뀐 것은 상태코드 하나다.
     ----------------------------------------------------------------------------
@@ -1000,5 +1016,13 @@ BEGIN
         BEGIN CATCH
         END CATCH
     END
+
+    -- [6b] RS1 — 감사 **뒤**에 낸다. 순서가 뒤집히면 RS0 만 읽은 호출에서 감사가 사라진다 (§43-19).
+    IF @Code = 0
+        SELECT
+              WorkId     = CAST(@WorkId   AS BIGINT)
+            , Status     = CAST(@RsStatus AS CHAR(3))
+            , RowVersion = CAST(@RsRv     AS BINARY(8));
+
 END
 GO

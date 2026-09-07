@@ -44,7 +44,11 @@ done
 
 # CREATE OR ALTER 는 배포 배관 전용 허용이다 (스펙 §9.2 예외 · D4-004b).
 # deploy/ · Deploy.sql · Rebuild.sql 밖에 있으면 결함이다.
-COA=$(grep -rl 'CREATE OR ALTER' tests/ tools/ 2>/dev/null || true)
+# [X] tools/ 를 훑으면 JavaScript 의 **문자열 리터럴**이 걸린다 — verify-docs.js 의 V19 가
+#     body.split('CREATE OR ALTER PROCEDURE') 를 쓰는데 그것은 DDL 이 아니다(실측 FAIL).
+#     verify-no-secret.sh 에서 고쳤던 자기참조 오탐과 같은 부류다.
+#     tools/ 는 JavaScript 라 DDL 을 실행할 수 없다. .sql 만 본다.
+COA=$(grep -rl --include='*.sql' 'CREATE OR ALTER' tests/ 2>/dev/null || true)
 if [ -n "$COA" ]; then
   echo "HIT  CREATE OR ALTER 가 배포 밖에 있다:" >> "$OUT"
   echo "$COA" | sed 's/^/     /' >> "$OUT"

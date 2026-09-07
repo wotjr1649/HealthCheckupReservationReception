@@ -274,3 +274,39 @@ CREATE SEQUENCE [dbo].[SEQ_HC_CHART_NO]
 GO
 PRINT N'PASS SCH-DEPLOY 스키마 배포 완료';
 GO
+----------------------------------------------------------------------------
+-- IDENTITY 시드 이어받기 (06 §9.2 · §43-16)
+--
+-- [X] 수검자·예약접수 는 clean-create 라 재배포마다 키가 1부터 다시 나간다.
+--     그런데 변경이력 만 IF OBJECT_ID(...) IS NULL 가드로 보존된다(04 §8.6.3).
+--     그러면 새로 등록한 첫 수검자가 수검자ID = 1 을 받고, 그 사람의 변경기록 화면에
+--     **이전 세대 1번 환자의 주민번호 변경전/후가 그대로 보인다.**
+--     문서는 "사라진 행을 가리키게 된다"(dangling, 무해)까지만 인정했는데
+--     실제로 일어나는 것은 **재사용에 의한 오귀속**이다. 둘은 다른 문제다.
+--
+--     시드를 감사기록의 최대 대상키 뒤로 밀면 그 겹침이 구조적으로 사라진다.
+--     Rebuild.sql 경로에서는 DB 를 통째로 지워 변경이력도 없으므로 아무 일도 하지 않는다
+--     — 그래서 RBD-005(연속 2회 rebuild 덤프 동일)에 영향이 없다.
+--     발동하는 것은 Deploy.sql 단독 재실행 경로뿐이고, 그것이 README 가 권하는 정상 경로다.
+----------------------------------------------------------------------------
+DECLARE @MaxPat BIGINT = (SELECT ISNULL(MAX([대상키]), 0) FROM [dbo].[변경이력]
+                           WHERE [대상테이블] = N'수검자');
+DECLARE @MaxWrk BIGINT = (SELECT ISNULL(MAX([대상키]), 0) FROM [dbo].[변경이력]
+                           WHERE [대상테이블] = N'예약접수');
+
+-- DBCC CHECKIDENT 는 리터럴 테이블명만 받는다. 변수·동적 SQL 을 쓰지 않는다 (CLAUDE.md §9 와 같은 원칙).
+IF @MaxPat > 0
+BEGIN
+    DBCC CHECKIDENT ('dbo.수검자', RESEED, @MaxPat) WITH NO_INFOMSGS;
+    PRINT N'INFO 수검자 IDENTITY 시드를 감사기록 뒤로 이어받았다 (다음 값 = '
+        + CONVERT(NVARCHAR(20), @MaxPat + 1) + N')';
+END
+IF @MaxWrk > 0
+BEGIN
+    DBCC CHECKIDENT ('dbo.예약접수', RESEED, @MaxWrk) WITH NO_INFOMSGS;
+    PRINT N'INFO 예약접수 IDENTITY 시드를 감사기록 뒤로 이어받았다 (다음 값 = '
+        + CONVERT(NVARCHAR(20), @MaxWrk + 1) + N')';
+END
+GO
+PRINT N'PASS SCH-DEPLOY-RESEED IDENTITY 시드 이어받기 완료';
+GO

@@ -294,26 +294,12 @@ BEGIN
         , CAST(@Field   AS VARCHAR(50))       AS Field
         , CAST(@ServerTime AS DATETIME2(7))   AS ServerTime;
 
-    -- RS1 수검자결과 — 성공(0·2)과 실패 202·203 에만 낸다 (05 §3.5)
-    -- [I] 여기는 커밋 뒤 재조회를 유지한다 (06 §43-18 의 예외).
-    --     202·203 이 돌려주는 것은 **다른 사람의 행**이라 우리 잠금이 보호한 적이 없다 —
-    --     포획해도 스냅샷일 뿐이고 살아 있는 값을 보여주는 편이 정직하다.
-    --     0 은 방금 만든 행이라 그 PatientId 를 아는 세션이 아직 없다.
-    IF @Code IN (0, 2, 202, 203)
-        SELECT
-              PatientId    = CAST(p.[수검자ID]     AS BIGINT)
-            , ChartNo      = CAST(p.[차트번호]     AS NVARCHAR(100))
-            , Name         = CAST(p.[성명]         AS NVARCHAR(100))
-            , SocialNumber = CAST(p.[주민번호]     AS VARCHAR(13))
-            , Birthday     = CAST(p.[생년월일]     AS VARCHAR(8))
-            , Gender       = CAST(p.[성별]         AS CHAR(1))
-            , MobilePhone  = CAST(p.[휴대전화]     AS VARCHAR(13))
-            , LastEditDate = CAST(p.[최종수정일시] AS DATETIME)
-          FROM [dbo].[수검자] p
-         WHERE (@RowId IS NOT NULL AND p.[수검자ID] = @RowId)
-            OR (@Code = 203 AND p.[성명] = @Name AND p.[생년월일] = @Birthday)
-         ORDER BY p.[수검자ID] ASC;
-
+    -- [X] 감사를 RS1 **뒤**에 두면, 클라이언트가 RS0 만 읽고 끊었을 때(ExecuteNonQuery·조기
+    --     Dispose) 업무는 커밋됐는데 감사행만 없는 상태가 된다. 04 §8.6.5 ③ 은 "**해당**
+    --     Result Set 의 SELECT 를 먼저 낸 뒤에" 로 **단수**이고, 같은 절의 목적은 §14 L1
+    --     "기록이 업무 호출을 실패시키지 않는다" 이다. RS0 뒤에 두어도 그 목적은 그대로다.
+    --     그래서 '해당 Result Set' 을 결과를 보고하는 RS0 로 읽고 감사를 RS0 뒤·RS1 앞에 둔다.
+    --     감사는 여전히 @@TRANCOUNT = 0 지점 · 자체 TRY / 빈 CATCH 다 (06 §21.1 · §43-19).
     ----------------------------------------------------------------------------
     -- [7] 감사 기록 (04 §8.6.5 · 스펙 §21.1)
     --   ① @@TRANCOUNT = 0 지점의 자동커밋  ② 자체 TRY/CATCH 이고 CATCH 는 비운다
@@ -344,6 +330,28 @@ BEGIN
         BEGIN CATCH
         END CATCH
     END
+
+    -- [6b] RS1 — 감사 **뒤**에 낸다. 순서가 뒤집히면 RS0 만 읽은 호출에서 감사가 사라진다 (§43-19).
+    -- RS1 수검자결과 — 성공(0·2)과 실패 202·203 에만 낸다 (05 §3.5)
+    -- [I] 여기는 커밋 뒤 재조회를 유지한다 (06 §43-18 의 예외).
+    --     202·203 이 돌려주는 것은 **다른 사람의 행**이라 우리 잠금이 보호한 적이 없다 —
+    --     포획해도 스냅샷일 뿐이고 살아 있는 값을 보여주는 편이 정직하다.
+    --     0 은 방금 만든 행이라 그 PatientId 를 아는 세션이 아직 없다.
+    IF @Code IN (0, 2, 202, 203)
+        SELECT
+              PatientId    = CAST(p.[수검자ID]     AS BIGINT)
+            , ChartNo      = CAST(p.[차트번호]     AS NVARCHAR(100))
+            , Name         = CAST(p.[성명]         AS NVARCHAR(100))
+            , SocialNumber = CAST(p.[주민번호]     AS VARCHAR(13))
+            , Birthday     = CAST(p.[생년월일]     AS VARCHAR(8))
+            , Gender       = CAST(p.[성별]         AS CHAR(1))
+            , MobilePhone  = CAST(p.[휴대전화]     AS VARCHAR(13))
+            , LastEditDate = CAST(p.[최종수정일시] AS DATETIME)
+          FROM [dbo].[수검자] p
+         WHERE (@RowId IS NOT NULL AND p.[수검자ID] = @RowId)
+            OR (@Code = 203 AND p.[성명] = @Name AND p.[생년월일] = @Birthday)
+         ORDER BY p.[수검자ID] ASC;
+
 END
 GO
 -- 05 §10.2. 검증순서는 존재 → LastEditDate → 실제 변경 여부 → 공통 업무가능 →
@@ -652,14 +660,12 @@ BEGIN
         , CAST(@Field   AS VARCHAR(50))       AS Field
         , CAST(@ServerTime AS DATETIME2(7))   AS ServerTime;
 
-    -- RS1 수검자변경결과. No-op 은 갱신하지 않은 기존 LastEditDate 가 그대로 나온다 (05 §10.2).
-    -- 값은 잠금 안에서 포획한 것이다 (아래 [X] 참조). 커밋 뒤 재조회하지 않는다.
-    IF @Code IN (0, 1)
-        SELECT
-              PatientId    = CAST(@PatientId AS BIGINT)
-            , ChartNo      = CAST(@RsChart   AS NVARCHAR(100))
-            , LastEditDate = CAST(@RsEdit    AS DATETIME);
-
+    -- [X] 감사를 RS1 **뒤**에 두면, 클라이언트가 RS0 만 읽고 끊었을 때(ExecuteNonQuery·조기
+    --     Dispose) 업무는 커밋됐는데 감사행만 없는 상태가 된다. 04 §8.6.5 ③ 은 "**해당**
+    --     Result Set 의 SELECT 를 먼저 낸 뒤에" 로 **단수**이고, 같은 절의 목적은 §14 L1
+    --     "기록이 업무 호출을 실패시키지 않는다" 이다. RS0 뒤에 두어도 그 목적은 그대로다.
+    --     그래서 '해당 Result Set' 을 결과를 보고하는 RS0 로 읽고 감사를 RS0 뒤·RS1 앞에 둔다.
+    --     감사는 여전히 @@TRANCOUNT = 0 지점 · 자체 TRY / 빈 CATCH 다 (06 §21.1 · §43-19).
     ----------------------------------------------------------------------------
     -- [7] 감사 기록. 실제로 값이 바뀐 컬럼만 남는다 (00 CP-06 · 04 §8.6.2).
     --   최종수정일시는 동시성 stamp 이지 사용자 데이터가 아니라 기록하지 않는다.
@@ -694,5 +700,15 @@ BEGIN
         BEGIN CATCH
         END CATCH
     END
+
+    -- [6b] RS1 — 감사 **뒤**에 낸다. 순서가 뒤집히면 RS0 만 읽은 호출에서 감사가 사라진다 (§43-19).
+    -- RS1 수검자변경결과. No-op 은 갱신하지 않은 기존 LastEditDate 가 그대로 나온다 (05 §10.2).
+    -- 값은 잠금 안에서 포획한 것이다 (아래 [X] 참조). 커밋 뒤 재조회하지 않는다.
+    IF @Code IN (0, 1)
+        SELECT
+              PatientId    = CAST(@PatientId AS BIGINT)
+            , ChartNo      = CAST(@RsChart   AS NVARCHAR(100))
+            , LastEditDate = CAST(@RsEdit    AS DATETIME);
+
 END
 GO

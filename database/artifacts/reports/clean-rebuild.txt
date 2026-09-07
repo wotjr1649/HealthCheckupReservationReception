@@ -5,4 +5,5 @@ PASS RBD-005 연속 2회 Rebuild 의 정렬 덤프가 완전히 동일
 PASS RBD-007 Deploy 단독 재실행 exit 0 + 덤프 동일
 PASS RBD-008 Procedure 파일 단독 재실행 exit 0 + 덤프 동일 (GRANT 구획 포함)
 PASS RBD-009 타 DB 메타데이터가 rebuild 전후로 동일
+PASS RBD-011 재배포가 IDENTITY 시드를 감사기록 뒤로 이어받았다 (탐침 대상키 1000 → 시드 1000 · 탐침 정리 0건)
 clean-rebuild FAILED=0

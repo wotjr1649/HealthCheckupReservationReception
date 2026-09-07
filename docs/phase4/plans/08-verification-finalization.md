@@ -1215,3 +1215,27 @@ Verdict               PHASE 4 COMPLETE 또는 BLOCKED
 **Rollback/Cleanup:** `git switch main` 후 `git branch -D phase4-database` 로 Phase 4 작업 전체를 되돌릴 수 있다.
 
 **완료조건:** baseline 6/6 · WinForms 0건 · G13 금지 기능 0건 · 전체 회귀 exit 0 · FINAL 후보 문서 작성 완료. **하나라도 미충족이면 `BLOCKED` 로 보고하고 `PHASE 4 COMPLETE` 를 선언하지 않는다.**
+
+---
+
+## `[X 실측 2026-09-08]` `RBD-011` — 재배포가 IDENTITY 시드를 이어받는가
+
+`수검자`·`예약접수` 는 clean-create 라 재배포마다 키가 1부터 다시 나가는데 `변경이력` 만 보존된다.
+그러면 새로 등록한 사람에게 **이전 세대의 감사기록이 붙는다** (`06` §43-16).
+배포 마지막에 `DBCC CHECKIDENT` 로 시드를 감사기록의 최대 `대상키` 뒤로 민다.
+
+`[X]` **공허하지 않게 만든다.** 변경이력이 비어 있으면 `MAX <= IDENT_CURRENT` 는 언제나 참이라
+재시드를 통째로 지워도 통과한다. 탐침 감사행을 **일부러 심고** 시드가 그 뒤로 가는지 본다.
+
+```text
+탐침 대상키 = 현재 최대 + 1000 으로 감사행 1건 삽입
+./scripts/deploy.sh  (변경이력 보존 경로)
+IDENT_CURRENT(수검자) >= 탐침 대상키 이어야 한다
+탐침 정리 후 잔여 0건까지 확인
+```
+
+`[실측]` `PASS RBD-011 … 탐침 대상키 1000 → 시드 1000 · 탐침 정리 0건`
+
+`Rebuild.sql` 경로는 DB 를 통째로 지워 변경이력도 없으므로 발동하지 않는다 — `RBD-005`(연속 2회
+rebuild 덤프 동일)에 영향이 없다. 발동하는 것은 `Deploy.sql` 단독 재실행뿐이고 그것이 README 가
+권하는 정상 경로다.
