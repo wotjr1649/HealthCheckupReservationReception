@@ -42,6 +42,14 @@ run tests/14_Clean_Rebuild_Verify.sql     14
 # 계약 검증 (G09) — 스펙 §8.4 가 test.sh 범위로 지정했다
 ./scripts/verify-contract-all.sh || FAILED=1
 
+# R4-3 C# 호출 (06 §46.3). 여기 두는 이유는 DB 에 Fixture 가 살아 있는 마지막 지점이기
+# 때문이다 — 뒤의 verify-red·clean-rebuild 가 DB 를 다시 만든다.
+# csc.exe 가 없는 환경에서는 exit 3 = NOT RUN 이다. SKIP 을 PASS 로 쓰지 않는다.
+crc=0; ./scripts/verify-csharp-call.sh > /dev/null || crc=$?
+if   [ "$crc" -eq 0 ]; then echo "PASS CS-001~016 C# 호출 — 한글 SP·Parameter·Result Set 컬럼을 ADO.NET 으로 실제 호출"
+elif [ "$crc" -eq 3 ]; then ./scripts/verify-csharp-call.sh; NOTRUN=$((NOTRUN+1))
+else ./scripts/verify-csharp-call.sh; FAILED=1; fi
+
 # 동시성 (G11) — 8개 시나리오
 if [ ! -x scripts/concurrency-test.sh ]; then
   echo "NOT RUN scripts/concurrency-test.sh — T34 미착수. CON-001~008 이 판정되지 않는다"
@@ -96,6 +104,11 @@ fi
 
 # 문서 정합성 게이트 (스펙 §45.3)
 node tools/verify-docs.js || FAILED=1
+
+# R4-2 기대값 ↔ 기준선 (06 §46.3). verify-contract.js 는 기대값과 실행결과를 맞출 뿐이라
+# 둘이 **같이** 틀리면 통과한다 — 06 §44.8 의 결함이 그 축으로 살아남았다.
+# 기대값의 Result Set 컬럼을 기준선 05 의 표와 직접 대조하는 것은 이 게이트뿐이다.
+node tools/verify-rs-contract.js || FAILED=1
 
 # RBD-001(잘못된 서버명 50020)은 인스턴스가 1개뿐이라 음성 시험이 **구조적으로** 불가능하다.
 # clean-rebuild-verify.sh 가 NOT RUN 으로 출력하는데 여기서 세지 않으면 요약이 "NOT RUN 0" 을

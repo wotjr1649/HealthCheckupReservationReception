@@ -31,9 +31,14 @@
 | `B` 창 밖 (R3) | 2026-09-08 03:05 | 밖 | 0 | **185** | 0 | 78 | 9 | `artifacts/logs/full_test_run_off.log` |
 | `C` 창 밖 (R4) | 2026-09-08 04:37 | 밖 | 0 | **185** | 0 | 78 | 9 | — |
 | `D` 창 안 (R4) | 2026-09-08 12:59 | 안 | 0 | **357** | 0 | 2 | **1** | `artifacts/logs/full_test_run.log` |
+| `E` 창 밖 (R4+게이트) | 2026-09-08 05:12 | 밖 | 0 | **187** | 0 | 78 | 9 | `artifacts/logs/full_test_run_off.log` |
 
 - 회차 `A` 의 `SKIP` 2건은 `OFF-309-01`·`02` 뿐이다 — 업무시간 안에서 `309` 는 **정의상** 나올 수 없고, 회차 `B` 에서 `PASS` 로 판정된다.
 - 회차 `B` 의 `SKIP` 78건은 업무시간 밖이라 성립하지 않는 Write SP 성공 경로다. 회차 `A` 가 판정한다.
+
+회차 `E` 의 `187` 은 `C` 의 `185` 에 **R4-2·R4-3 게이트 두 줄이 더해진 것**이다. 처음에는 둘을
+손으로 돌렸는데, 회귀 밖의 증거는 다음 회차에 썩는다 — `test.sh` 안으로 넣었다. 그래서
+다음 창 안 회귀는 `357` 이 아니라 `359` 여야 맞다.
 
 **R4 한글화는 판정 대상을 한 건도 줄이지 않았다.** 회차 `C`·`D` 가 `A`·`B` 와 `PASS`/`FAIL`/`SKIP`/`NOT RUN` 네 수치는 물론 **`SKIP`·`NOT RUN` 항목까지 같다** (`06` §46.4). R4 에서 새로 돈 것은 `verify-rs-contract` 170건과 `csharp-probe` 16건이다.
 
@@ -85,9 +90,9 @@
   scripts/verify-winforms-unchanged.sh   0    G01
   scripts/verify-schema-doc.sh           0    G05
   node tools/verify-docs.js              0    V01~V19 (21 판정)
-node tools/verify-rs-contract.js         0    R4-2 기대값 Result Set 170개 ↔ 기준선 05
-node tools/r4-rename.js check            0    R4 개명 매핑의 빠짐·충돌·예산
-./scripts/verify-csharp-call.sh          0    R4-3 C# 호출. csc.exe 가 없으면 exit 3 = NOT RUN
+  node tools/verify-rs-contract.js       0    R4-2 기대값 Result Set 170개 ↔ 기준선 05
+  ./scripts/verify-csharp-call.sh        0    R4-3 C# 호출. csc.exe 가 없으면 exit 3 = NOT RUN
+node tools/r4-rename.js check            0    R4 개명 매핑의 빠짐·충돌·예산 (회귀 밖 · 개명 때만)
 ./scripts/run-con-window.sh              0    CON 8종을 한 창에서
 ./scripts/make-summary.sh                0    artifacts/reports/test-summary.txt
 ```

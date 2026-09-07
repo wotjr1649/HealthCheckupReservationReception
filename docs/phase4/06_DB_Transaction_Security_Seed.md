@@ -297,12 +297,17 @@ database/
 │  ├─ verify-tsql-allowlist.sh        G13-b. .sql 만 · 주석 제외 → 허용목록(§9.2) 밖 0건
 │  ├─ make-summary.sh                 T37 Step 2. 회귀 로그 → artifacts/reports/test-summary.txt
 │  ├─ verify-red.sh                   RED-001~004 음성시험 (폐기용 DB · §40a)
+│  ├─ verify-csharp-call.sh           R4-3. csc.exe 로 Probe.cs 를 컴파일해 실제 ADO.NET 호출
 │  ├─ copy-completion.sql/.sh         RCP 업무 전체를 완료이력으로 복사 (배포물 아님)
 │  └─ dev-completion-sp.sql/.sh       DEV_완료이력_등록 — 한 사람의 한 날짜를 콕 집어 (배포물 아님)
 │
 ├─ tools/
 │  ├─ verify-contract.js              node, 의존성 0
 │  ├─ verify-docs.js                  스펙↔계획 정합성 게이트 (§45.3)
+│  ├─ verify-rs-contract.js           R4-2. 기대값 Result Set ↔ 기준선 05 의 표 직접 대조
+│  ├─ verify-schema-doc.js            G05. 실측 스키마 ↔ 04 §8 양방향
+│  ├─ r4-rename.js / r4-rename-map.json   R4 개명의 단일 출처와 자체검증 (§46.3)
+│  ├─ csharp-probe/Probe.cs           R4-3 호출 탐침. UTF-8 with BOM
 │  ├─ expected-contracts.json         16 SP의 기대 Result Set 형상·RS0 결과코드
 │  └─ allowed-codes.json              `05` §13 SP별 허용 ResultCode 집합
 │
@@ -2838,6 +2843,8 @@ scripts/verify-csharp-call.sh [신설] csc.exe 로 Probe.cs 를 컴파일해 실
                   R3 창 밖 기준선 PASS 185 · FAIL 0 · SKIP 78 · NOT RUN 9  -> 동등
 2026-09-08 12:59  창 안 회귀   exit 0 · PASS 357 · FAIL 0 · SKIP 2  · NOT RUN 1
                   R3 창 안 기준선 PASS 357 · FAIL 0 · SKIP 2  · NOT RUN 1  -> 동등
+2026-09-08 05:12  창 밖 재회귀  exit 0 · PASS 187 · FAIL 0 · SKIP 78 · NOT RUN 9
+                  +2 는 R4-2·R4-3 게이트를 test.sh 안으로 넣은 것이다 (아래)
                   CON-001~008 8/8. 001~005·007 에서 applock 대기 후 획득이 실측됐다
                   (경합이 실제로 일어났다는 증거다 — §38.4)
                   verify-baseline 6/6 · verify-docs 21/0 · contract 110/110
@@ -2853,6 +2860,11 @@ scripts/verify-csharp-call.sh [신설] csc.exe 로 Probe.cs 를 컴파일해 실
 창 밖 SKIP 78     Write SP 계약 시나리오     308/309 를 업무 Rule 보다 먼저 판정한다
 NOT RUN 1         RBD-001                   인스턴스가 1개라 잘못된 서버명 50020 을 발화시킬 수 없다
 ```
+
+`[!]` **두 게이트를 처음에는 손으로 돌렸다.** 회귀 밖의 증거는 다음 회차에 썩는다 —
+`G13-b`·`G00`·`G01`·`G05` 가 전부 같은 방식으로 한 번 실패했다(§45.3 주석). 그래서
+`verify-rs-contract` 와 `verify-csharp-call` 을 `test.sh` 안에 넣었고, 그것이 `185 -> 187` 이다.
+창 안 회차 `357` 은 넣기 **전**의 수치이므로 다음 창 안 회귀는 `359` 가 되어야 맞다.
 
 `[!]` **창 안 회귀는 머신 시각을 옮겨 판정했다.** 2026-09-08 04:57 에 `Set-Date -Adjust +8h`
 (사람이 실행)로 12:58 로 옮기고 셸·SQL Server 양쪽 시각을 확인한 뒤 돌렸으며, 끝난 뒤 같은
