@@ -46,9 +46,14 @@ else
 for s in 1 2 3 4 5 6 7 8; do
   # [X] 시나리오마다 rebuild + fixture 재배치. T34 Step 4 가 "시나리오 간 오염이 없다"의 근거로 삼은 절차다.
   #     이것이 없으면 tests/01~14 가 이미 변형한 DB 위에서 CON-002(19/20) 가 첫 실행부터 FAIL 한다.
+  # exit 3 = 업무시간·접수마감 밖이라 실행하지 않았다. SKIP 은 PASS 가 아니다 (CLAUDE.md §10).
+  # 게이트를 **먼저** 묻는다. 창 밖에서 rebuild 를 8회 돌리면 몇 분을 버리고 결과는 전부 NOT RUN 이다.
+  crc=0; ./scripts/concurrency-test.sh --check "$s" || crc=$?
+  if [ "$crc" -eq 3 ]; then NOTRUN=$((NOTRUN+1)); continue; fi
   ./scripts/rebuild.sh > /dev/null 2>&1 || { FAILED=1; continue; }
   sqlcmd -S "$SRV" -E -d "$DB" -b -I -i tests/00_Test_Harness.sql > /dev/null 2>&1 || FAILED=1
-  ./scripts/concurrency-test.sh "$s" || FAILED=1
+  crc=0; ./scripts/concurrency-test.sh "$s" || crc=$?
+  if [ "$crc" -eq 3 ]; then NOTRUN=$((NOTRUN+1)); elif [ "$crc" -ne 0 ]; then FAILED=1; fi
 done
 fi
 

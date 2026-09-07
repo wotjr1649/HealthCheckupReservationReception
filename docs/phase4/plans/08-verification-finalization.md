@@ -181,6 +181,22 @@ Expected: exit 0, 8건 PASS.
                             11:00~15:50 창을 쓴다 (스펙 §38.7). AM 은 09:00~10:50 뿐이다.
 ```
 
+`[X 실측]` **착수 후 실제 실행에서 드러난 결함 7건은 스펙 §38.8 에 등재했다.** 요지만 적는다.
+
+```text
+5  -v 값의 콜론      sqlcmd 가 -v BarrierTime=17:50:00 을 ':50:00' 에서 잘라 접속 전에 죽는다.
+                    barrier 는 HHMMSS 로 넘기고 세션 스크립트가 STUFF 로 콜론을 끼운다.
+                    WAITFOR TIME 은 TIME 형을 거부한다(Msg 9815) -> VARCHAR(8).
+6  CON-005 최종상태  예약취소의 목표는 CNR 이다. Step 3 표의 CNC 는 접수취소(RCP->CNC)의 것이다.
+7  CON-004 인자      UPDATE_수검자정보 는 전체치환형이라 @LastEditDate·@ChartNo·@Name 이 전부
+                    필수다. 주민번호만 넣으면 100 으로 끝나고, 그래도 최종 상태는 '아무것도
+                    안 바뀜' 이라 판정이 **공허하게 PASS** 한다. 실제로 그렇게 통과했다.
+                    -> concurrency-test.sh 가 로그의 100 을 세어 1건이라도 있으면 FAIL 한다.
+8  CON-001 주민번호  9505051000019 는 체크디지트 무효다. 유효값은 9505051000014.
+9  CON-008 사전상태  F001~F019 에 오늘 PM Work 를 새로 넣으면 유효업무 2건이 되어 RP-06 위반
+                    상태에서 시험하게 된다. 기존 Work 를 옮긴다.
+```
+
 `[R3]` **`CON-006` 의 Session A 는 반드시 *실제 변경* 이어야 한다.** 동일 AEX 집합을 주면 A 가
 No-op(`Code=1`)으로 끝나 `RowVersion` 이 그대로 남고, B 도 No-op 이 되어 **`601` 이 영영 나오지 않는다.**
 A 는 AEX 를 실제로 바꾸고 B 는 그 전에 읽은(이제 stale 인) `RowVersion` 으로 또 다른 변경을 요청한다.
@@ -192,7 +208,7 @@ A 는 AEX 를 실제로 바꾸고 B 는 그 전에 읽은(이제 stale 인) `Row
 `[R3]` **`CON-007` 은 `rc=1` 을 함께 본다.** 경합이 실제로 일어나지 않으면 "교착 0건" 은 공허하다 —
 자원 정렬 획득을 통째로 지워도 우연한 직렬 실행이면 PASS 한다.
 
-- [ ] **Step 1: `scripts/concurrency-test.sh` 작성**
+- [x] **Step 1: `scripts/concurrency-test.sh` 작성**
 
 ```bash
 #!/usr/bin/env bash
@@ -255,7 +271,7 @@ exit $RC
 
 세션 A/B는 업무실패(`306`/`305`/`601` 등)로 끝날 수 있고 그것이 정상이므로 exit code를 치명적으로 다루지 않는다. **판정은 DB 최종 상태 + 로그 수치**로 한다.
 
-- [ ] **Step 2: 세션 스크립트의 barrier 패턴**
+- [x] **Step 2: 세션 스크립트의 barrier 패턴**
 
 `tests/10_Concurrency_Session_A.sql` 머리:
 
@@ -283,7 +299,7 @@ GO
 
 `tests/11_Concurrency_Session_B.sql` 은 시나리오별로 A와 짝이 되는 호출을 한다.
 
-- [ ] **Step 3: 시나리오 8종과 판정 (`tests/12_Concurrency_Verify.sql`)**
+- [x] **Step 3: 시나리오 8종과 판정 (`tests/12_Concurrency_Verify.sql`)**
 
 | # | Test ID | 시나리오 | Session A | Session B | DB 최종 상태 판정 |
 |---:|---|---|---|---|---|
@@ -353,7 +369,7 @@ BEGIN
 END
 ```
 
-- [ ] **Step 4: 8개 시나리오 순차 실행**
+- [x] **Step 4: 8개 시나리오 순차 실행**
 
 ```bash
 chmod +x scripts/concurrency-test.sh
@@ -366,7 +382,7 @@ done
 
 각 시나리오 전에 rebuild + fixture 재배치를 하므로 **시나리오 간 오염이 없다.**
 
-- [ ] **Step 5: 교착 검사 (시나리오 7)**
+- [x] **Step 5: 교착 검사 (시나리오 7)**
 
 ```bash
 # concurrency-test.sh 가 이미 수치 판정한다. 여기서는 누적 확인만 한다.
@@ -375,7 +391,7 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/conc_A.log artifacts/logs/conc_B.log 2>/
 
 Expected: `0`. 1205가 나오면 Slot 자원 정렬 획득이 제대로 구현되지 않은 것이다 — `T26` Step 5를 다시 본다.
 
-- [ ] **Step 6: 잠금 timeout 확인**
+- [x] **Step 6: 잠금 timeout 확인**
 
 ```bash
 iconv -f UTF-16 -t UTF-8 artifacts/logs/conc_A.log artifacts/logs/conc_B.log 2>/dev/null | grep -c 'Msg 50001' || true
