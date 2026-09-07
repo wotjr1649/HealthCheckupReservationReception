@@ -1,6 +1,18 @@
 `[!]` **이 계획서의 스키마 참조는 `plans/09`·`plans/10` 이 교체했다** ― 컬럼명 한글화,
 검사구성의 `예약접수`·`완료이력` 흡수, `검사항목` 삭제, `변경이력` EAV 전환. 당시 구조는 git 이력에 있다.
 
+`[R3]` **`T25`~`T27` 착수 시점(2026-09-07)에 착수 차단 결함을 제거했다.** 아래 셋이 실행을 막고 있었다.
+
+```text
+검사항목 Detail 테이블 INSERT/DELETE      -> 검사구성은 예약접수 행의 컬럼 2개다 (04 §8.2.2).
+                                            저장이 언제나 예약접수 한 행의 UPDATE/INSERT 다.
+ExamSourceCode 로 NEX/AEX 역할 판정        -> 그 컬럼이 없다. 스펙 §21.2a 의 양끝 패딩 LIKE 조인으로 센다.
+업무시간 가드의 [Active]                    -> [사용여부]
+Parameter 11 / 11 / 2                      -> 12 / 12 / 3. R3 이 Write SP 8개에 @OperatorName 을 더했다.
+```
+
+구현의 기준은 이 계획서의 SQL 본문이 아니라 `05` 계약과 `06` 스펙이다. 나머지 서술은 그대로 두었다.
+
 # Stage 7 — 예약 Write Stored Procedure 3개 · Slot 잠금
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
@@ -53,7 +65,7 @@ DECLARE @ResSlot NVARCHAR(255) =
 
 ## Task T25: `[dbo].[USP_HC_INSERT_예약]`
 
-**목적:** Normal/WalkIn 신규 예약을 Work + NEX/AEX Detail과 함께 원자적으로 저장한다.
+**목적:** Normal/WalkIn 신규 예약을 검사구성 2컬럼과 함께 예약접수 1행으로 저장한다.
 
 **관련 Baseline 위치:** `05` §11.1, `00` RP-01~08, 스펙 §21.2·§24.1·§30.
 
@@ -66,7 +78,7 @@ DECLARE @ResSlot NVARCHAR(255) =
 **Interfaces:**
 - Consumes: 4개 TVF
 - Produces: RS0 + RS1 `(WorkId BIGINT, Status CHAR(3), RowVersion BINARY(8))`
-- Parameter 11개: `@PatientId BIGINT`, `@ReservationType VARCHAR(10)`, `@ReservationDate DATE`, `@TimeSlot CHAR(2)`, `@AexOpt01Selected`~`@AexOpt07Selected BIT`
+- Parameter 12개: `@PatientId BIGINT`, `@ReservationType VARCHAR(10)`, `@ReservationDate DATE`, `@TimeSlot CHAR(2)`, `@AexOpt01Selected`~`@AexOpt07Selected BIT`, `@OperatorName NVARCHAR(50)`
 
 **applock:** `HC|PAT|{PatientId}` → `HC|SLOT|{yyyyMMdd}|{AM|PM}`
 
@@ -113,7 +125,7 @@ IF NOT (DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
         AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
         AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
         AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
-                         WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [Active] = 1))
+                         WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [사용여부] = 1))
 BEGIN
     PRINT 'SKIP 06_Reservation_Write_Tests 업무시간(월~토 09:00~18:00, 비휴무일) 밖';
     RETURN;
@@ -234,9 +246,9 @@ UPDATE [dbo].[예약접수] SET [상태코드] = 'CNR'
       → 그 행의 ReasonCode(410/411/412), Field='AexOpt0nSelected' (OptionCode ASC 첫 건)
 15. INSERT 예약접수 (StatusCode='RSV', CreationDate/LastEditDate = @StoredNow)
     SCOPE_IDENTITY() → @WorkId
-16. INSERT 검사항목
-      NEX 전체 (UFN_HC_국가검사구성 결과, ExamSourceCode='NEX')
-      + Selected=1 인 AEX (ExamSourceCode='AEX')
+16. [R3] 검사구성은 15 의 INSERT 안에서 두 컬럼으로 함께 저장한다. 별도 Detail INSERT 가 없다.
+      국가검사항목 = UFN_HC_국가검사구성 결과를 검사항목코드 오름차순 쉼표 연결
+      추가검사항목 = UFN_HC_추가검사확인 의 Selected=1 을 같은 방식으로 연결. 0개면 NULL
 17. COMMIT → RS0 + RS1 (WorkId, 'RSV', 새 RowVersion 재조회)
 ```
 
@@ -292,7 +304,7 @@ IF (@H1 > @H0                                        -- 성공 변경이 최소 
 ELSE BEGIN PRINT 'FAIL RWR-050 변경기록 불일치'; SET @Fail += 1; END
 ```
 
-**완료조건:** 스펙 §45.2 의 `RWR-001`~`RWR-012` 전건 PASS + Detail 이 NEX 8~11 + AEX 정확히 저장.
+**완료조건:** 스펙 §45.2 의 `RWR-001`~`RWR-012` 전건 PASS + 검사구성이 NEX 8~11 + 요청 AEX 로 정확히 저장.
 
 ---
 
@@ -306,21 +318,21 @@ ELSE BEGIN PRINT 'FAIL RWR-050 변경기록 불일치'; SET @Fail += 1; END
 
 **Interfaces:**
 - Produces: RS0 + RS1 `(WorkId, Status, RowVersion)`
-- Parameter 11개: `@WorkId BIGINT`, `@RowVersion BINARY(8)`, `@ReservationDate DATE`, `@TimeSlot CHAR(2)`, `@AexOpt01Selected`~`@AexOpt07Selected BIT`
+- Parameter 12개: `@WorkId BIGINT`, `@RowVersion BINARY(8)`, `@ReservationDate DATE`, `@TimeSlot CHAR(2)`, `@AexOpt01Selected`~`@AexOpt07Selected BIT`, `@OperatorName NVARCHAR(50)`
 
 **applock:** `HC|PAT|{PatientId}` → `HC|WORK|{WorkId}` → `HC|SLOT|…` (기존·신규, **자원명 오름차순**)
 
 **허용 Code:** `0, 1, 100~102, 300~306, 308~309, 400~401, 410~412, 500, 502, 601, 700~701`
 
-**금지사항:** C#이 전달한 변경구분을 신뢰하지 않는다. 시간대만 변경할 때 TGT/NEX/AEX를 재평가하거나 Detail을 재작성하지 않는다.
+**금지사항:** C#이 전달한 변경구분을 신뢰하지 않는다. 시간대만 변경할 때 TGT/NEX/AEX를 재평가하거나 검사구성을 재조립하지 않는다.
 
 - [ ] **Step 1: RED — 변경 Matrix 5분기 + 경합**
 
 ```sql
 -- RWR-020 변경 없음 → Code=1, RowVersion 불변
--- RWR-021 시간대만 변경 → Work 만 UPDATE, NEX/AEX Detail 행 불변
--- RWR-022 AEX만 변경   → AEX Detail 변경 + RowVersion 변경, NEX Detail 불변
--- RWR-023 예약일 변경  → NEX/AEX Detail 전량 재작성
+-- RWR-021 시간대만 변경 → 시간대코드만 UPDATE, 검사구성 2컬럼 불변
+-- RWR-022 AEX만 변경   → 추가검사항목 + 행버전 변경, 국가검사항목 불변
+-- RWR-023 예약일 변경  → 검사구성 2컬럼을 새 예약일 기준으로 재조립
 -- RWR-024 시간대+AEX   → 일정·정원 + AEX 만
 -- RWR-025 stale RowVersion → 601
 -- RWR-026 Status=CNR 인 Work 변경 → 502
@@ -417,7 +429,7 @@ DECLARE @ExtraChanged BIT = CASE
     THEN 0 ELSE 1 END;
 ```
 
-`@CurrentAex` 는 `검사항목 WHERE WorkId=@WorkId AND ExamSourceCode='AEX'` 다.
+`[R3]` `@CurrentAex` 는 `예약접수.추가검사항목` CSV 를 `검사코드` 에 양끝 패딩 `LIKE` 로 조인해 편 집합이다. `검사항목` 테이블은 없다.
 
 - [ ] **Step 3: 구현 — 검증순서 (`05` §11.2 그대로)**
 
@@ -452,17 +464,18 @@ DECLARE @ExtraChanged BIT = CASE
        정원  AfterCount > 20                       → 305
 15. @DateChanged=1 이면 TGT(400/401) → **저장 Work 무결성 3종**(스펙 §21.2a) → AEX(410~412)
        (a) NEX 개수 NOT BETWEEN 8 AND 11                        → 701
-       (b) ExamSourceCode 가 Master 의 NEX/AEX 역할과 불일치      → 701
+       (b) 저장 코드가 Master 에 실재하며 역할이 맞는가 (양끝 패딩 LIKE 조인 개수 대조) → 701
        (c) AEX 개수 > 6                                          → 701
     [X] 초안은 "NEX < 8" 하한만 봤다. 그러면 NEX 12행(CORRUPT-5)이 통과한다.
         §21.2a 는 INSERT_예약·UPDATE_예약변경·UPDATE_접수완료·UPDATE_접수추가검사
         네 SP 모두에 세 검사를 요구한다.
 16. @DateChanged=0 이고 @ExtraChanged=1 이면 저장 NEX 기준 AEX (410~412)
-17. 저장 — 변경 Matrix 대로
-       예약일 포함 : Work UPDATE + Detail 전량 DELETE 후 재INSERT
-       시간대만    : Work UPDATE 만
-       AEX만       : AEX Detail DELETE/INSERT + Work LastEditDate UPDATE
-       시간대+AEX  : Work UPDATE + AEX Detail DELETE/INSERT
+17. [R3] 저장은 언제나 예약접수 한 행의 조건부 UPDATE 다 (05 §11.2). Scope 밖 컬럼은 현재값을 그대로 둔다.
+       예약일 포함 : 예약일 + 시간대코드 + 국가검사항목 + 추가검사항목
+       시간대만    : 시간대코드
+       AEX만       : 추가검사항목
+       시간대+AEX  : 시간대코드 + 추가검사항목
+       공통        : 최종수정일시. 같은 행이라 행버전이 자동으로 바뀐다
 18. COMMIT → RS0 + RS1 (새 RowVersion 재조회)
 ```
 
@@ -538,7 +551,7 @@ IF (@H1 > @H0                                        -- 성공 변경이 최소 
 ELSE BEGIN PRINT 'FAIL RWR-051 변경기록 불일치'; SET @Fail += 1; END
 ```
 
-**완료조건:** 스펙 §45.2 의 `RWR-020`~`RWR-034` 전건 PASS. 특히 `RWR-021`(시간대만 변경 시 Detail 불변), `RWR-028`(자기 Work 오탐 없음), `RWR-030`(20/20 유지 성공)이 반드시 PASS여야 한다.
+**완료조건:** 스펙 §45.2 의 `RWR-020`~`RWR-034` 전건 PASS. 특히 `RWR-021`(시간대만 변경 시 검사구성 불변), `RWR-028`(자기 Work 오탐 없음), `RWR-030`(20/20 유지 성공)이 반드시 PASS여야 한다.
 
 ---
 
@@ -550,13 +563,13 @@ ELSE BEGIN PRINT 'FAIL RWR-051 변경기록 불일치'; SET @Fail += 1; END
 
 **선행조건:** `T26` 완료.
 
-**Interfaces:** Produces RS0 + RS1 `(WorkId, Status, RowVersion)`. Parameter 2개: `@WorkId BIGINT`, `@RowVersion BINARY(8)`.
+**Interfaces:** Produces RS0 + RS1 `(WorkId, Status, RowVersion)`. Parameter 3개: `@WorkId BIGINT`, `@RowVersion BINARY(8)`, `@OperatorName NVARCHAR(50)`.
 
 **applock:** `HC|WORK|{WorkId}` 만.
 
 **허용 Code:** `0, 100, 500, 502, 601, 308~309`
 
-**금지사항:** Detail을 삭제하지 않는다. 예약 마감시각을 취소 가능조건으로 쓰지 않는다. `CNR → RSV` 복원 경로를 만들지 않는다.
+**금지사항:** 검사구성 두 컬럼을 지우지 않는다. 예약 마감시각을 취소 가능조건으로 쓰지 않는다. `CNR → RSV` 복원 경로를 만들지 않는다.
 
 - [ ] **Step 1: RED**
 
@@ -564,7 +577,7 @@ ELSE BEGIN PRINT 'FAIL RWR-051 변경기록 불일치'; SET @Fail += 1; END
 -- RWR-040 미존재 WorkId → 500
 -- RWR-041 stale RowVersion → 601
 -- RWR-042 이미 CNR → 502
--- RWR-043 정상 취소 성공 + Detail 보존
+-- RWR-043 정상 취소 성공 + 검사구성 2컬럼 보존
 -- RWR-044 취소 후 정원 감소 확인
 ```
 
@@ -573,7 +586,7 @@ ELSE BEGIN PRINT 'FAIL RWR-051 변경기록 불일치'; SET @Fail += 1; END
 **계약 시나리오**: `RWR-043` = `EXEC [dbo].[USP_HC_UPDATE_예약취소] @Wc, @RvC;` → 기대 RS0 `Success=1, Code=0`.
 
 ```sql
--- RWR-043 취소 성공 + Detail 보존
+-- RWR-043 취소 성공 + 검사구성 2컬럼 보존
 --   취소 대상은 ORDER BY WorkId 로 F001 을 고정한다. F020 은 RWR-012 전용이라 건드리지 않는다.
 DECLARE @Wc BIGINT = (SELECT TOP (1) w.[업무ID] FROM [dbo].[예약접수] w
                        JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
@@ -651,4 +664,4 @@ IF (@H1 > @H0                                        -- 성공 변경이 최소 
 ELSE BEGIN PRINT 'FAIL RWR-052 변경기록 불일치'; SET @Fail += 1; END
 ```
 
-**완료조건:** 스펙 §45.2 의 `RWR` 전건 PASS, 취소 후 Detail 행수 불변.
+**완료조건:** 스펙 §45.2 의 `RWR` 전건 PASS, 취소 후 검사구성 2컬럼 불변.

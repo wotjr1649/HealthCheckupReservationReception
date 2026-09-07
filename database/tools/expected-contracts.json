@@ -1519,5 +1519,595 @@
         "rows": 1
       }
     ]
+  },
+  "RWR-000_fixture": {
+    "sp": "(fixture)",
+    "resultSets": []
+  },
+  "RWR-001_신규예약_과거일": {
+    "sp": "USP_HC_INSERT_예약",
+    "rs0Success": 0,
+    "rs0Code": 300,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-002_신규예약_일요일": {
+    "sp": "USP_HC_INSERT_예약",
+    "rs0Success": 0,
+    "rs0Code": 301,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-003_신규예약_휴무일": {
+    "sp": "USP_HC_INSERT_예약",
+    "rs0Success": 0,
+    "rs0Code": 302,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-004_신규예약_토요일PM": {
+    "sp": "USP_HC_INSERT_예약",
+    "rs0Success": 0,
+    "rs0Code": 303,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-005_신규예약_WALKIN_날짜불일치": {
+    "sp": "USP_HC_INSERT_예약",
+    "rs0Success": 0,
+    "rs0Code": 102,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-006_신규예약_TGT_미달": {
+    "sp": "USP_HC_INSERT_예약",
+    "rs0Success": 0,
+    "rs0Code": 400,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-007_신규예약_AEX_성별불충족": {
+    "sp": "USP_HC_INSERT_예약",
+    "rs0Success": 0,
+    "rs0Code": 411,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-008_신규예약_성공": {
+    "sp": "USP_HC_INSERT_예약",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-010_신규예약_타유효업무1건": {
+    "sp": "USP_HC_INSERT_예약",
+    "rs0Success": 0,
+    "rs0Code": 306,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-011_신규예약_타유효업무2건": {
+    "sp": "USP_HC_INSERT_예약",
+    "rs0Success": 0,
+    "rs0Code": 701,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-012_신규예약_정원마감": {
+    "sp": "USP_HC_INSERT_예약",
+    "rs0Success": 0,
+    "rs0Code": 305,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-020_예약변경_변경없음": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 1,
+    "rs0Code": 1,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-021_예약변경_시간대만": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-022_예약변경_AEX만": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-023_예약변경_예약일만": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-024_예약변경_시간대_AEX": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-025_예약변경_stale_RowVersion": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 0,
+    "rs0Code": 601,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-026_예약변경_CNR_Work": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 0,
+    "rs0Code": 502,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-027_예약변경_미존재_WorkId": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 0,
+    "rs0Code": 500,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-028_예약변경_자기Work_오탐없음": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-029_예약변경_TGT_비대상": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 0,
+    "rs0Code": 401,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-030_예약변경_정원유지": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-031_예약변경_나이경계_AEX중복": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 0,
+    "rs0Code": 412,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-032_신규예약_타유효업무1건_재확인": {
+    "sp": "USP_HC_INSERT_예약",
+    "rs0Success": 0,
+    "rs0Code": 306,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-033_신규예약_타유효업무2건_재확인": {
+    "sp": "USP_HC_INSERT_예약",
+    "rs0Success": 0,
+    "rs0Code": 701,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-034_예약변경_NEX상한초과": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 0,
+    "rs0Code": 701,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-040_예약취소_미존재_WorkId": {
+    "sp": "USP_HC_UPDATE_예약취소",
+    "rs0Success": 0,
+    "rs0Code": 500,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-041_예약취소_stale_RowVersion": {
+    "sp": "USP_HC_UPDATE_예약취소",
+    "rs0Success": 0,
+    "rs0Code": 601,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-042_예약취소_이미_CNR": {
+    "sp": "USP_HC_UPDATE_예약취소",
+    "rs0Success": 0,
+    "rs0Code": 502,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-043_예약취소_성공": {
+    "sp": "USP_HC_UPDATE_예약취소",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "RWR-099_cleanup": {
+    "sp": "(fixture)",
+    "resultSets": []
   }
 }
