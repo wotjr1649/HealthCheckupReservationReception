@@ -87,3 +87,26 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/*.log | grep -E '^(PASS|FAIL|SKIP|INFO|M
 
 G00~G16 의 정의와 증거 파일 대응은 스펙 §42 에 있다.
 `PASS` 는 실제 실행 증거가 있을 때만 기록한다. 자세한 금지사항은 `CLAUDE.md` 를 본다.
+
+---
+
+## 개발 전용 도구 (배포물 아님 · WinForms 가 부르지 않는다)
+
+| 스크립트 | 하는 일 |
+|---|---|
+| `scripts/copy-completion.sh` | 접수완료(`RCP`) 업무 **전체**를 완료이력으로 복사 |
+| `scripts/dev-completion.sh` | `DEV_완료이력_등록` SP 설치 — 한 사람의 한 날짜를 콕 집어 넣고 지운다 |
+| `scripts/verify-red.sh` | 폐기용 DB 에서 "시험이 실제로 실패를 잡는가" 를 판정 (`RED-001`~`004`) |
+
+```sql
+EXEC [dbo].[DEV_완료이력_등록] @ChartNo = N'T001', @CompletionDate = '2024-05-01';
+EXEC [dbo].[DEV_완료이력_등록] @ChartNo = N'T002', @CompletionDate = '2023-11-11', @Unknown = 1;
+EXEC [dbo].[DEV_완료이력_등록] @ChartNo = N'T001', @CompletionDate = '2024-05-01', @Delete = 1;
+```
+
+`@Nex` 를 비우면 현재 Master 의 `NEX-01` 기본검사로 채운다. `@Unknown = 1` 은 외부 기관 이력(검사구성 모름)이며
+`@Nex`·`@Aex` 와 함께 쓰면 거절한다 — 시나리오를 세우는 도구가 입력을 조용히 삼키면 세운 상태와 의도가 갈린다.
+
+`DEV_` 접두사는 의도적이다. 계약 개수를 세는 게이트가 전부 `name LIKE 'USP[_]HC[_]%'` 로 거르므로
+(`SCH-014` · `VER-003` · `RBD-004` 지문 · `SCH-019`) 이 SP 는 16개 계약을 한 글자도 건드리지 않는다.
+`./scripts/test.sh` 는 언제나 `rebuild.sh`(`DROP DATABASE`)로 시작하므로 회귀에 섞이지도 않는다.

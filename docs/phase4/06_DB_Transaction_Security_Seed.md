@@ -295,7 +295,10 @@ database/
 │  ├─ clean-rebuild-verify.sh         RBD-002·003·005·007·008·009. 회차 사이 덤프 diff
 │  ├─ verify-no-secret.sh             SEC-010. 배포 원본 + 로그 + 보고서 secret 스캔
 │  ├─ verify-tsql-allowlist.sh        G13-b. .sql 만 · 주석 제외 → 허용목록(§9.2) 밖 0건
-│  └─ make-summary.sh                 T37 Step 2. 회귀 로그 → artifacts/reports/test-summary.txt
+│  ├─ make-summary.sh                 T37 Step 2. 회귀 로그 → artifacts/reports/test-summary.txt
+│  ├─ verify-red.sh                   RED-001~004 음성시험 (폐기용 DB · §40a)
+│  ├─ copy-completion.sql/.sh         RCP 업무 전체를 완료이력으로 복사 (배포물 아님)
+│  └─ dev-completion-sp.sql/.sh       DEV_완료이력_등록 — 한 사람의 한 날짜를 콕 집어 (배포물 아님)
 │
 ├─ tools/
 │  ├─ verify-contract.js              node, 의존성 0
