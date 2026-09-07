@@ -1453,8 +1453,7 @@
           "BeforeValue",
           "AfterValue"
         ],
-        "rowsMin": 1,
-        "rowsMax": 500
+        "rows": 2
       }
     ]
   },

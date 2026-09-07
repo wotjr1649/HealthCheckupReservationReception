@@ -1,7 +1,16 @@
 ﻿SET NOCOUNT ON;
--- 파일명이 Test ID 라 glob 순서상 PWR-* 뒤에 온다. 그 시점에는 Write SP 가 남긴
--- 변경이력이 반드시 있다. 비어 있다면 그 자체가 감사 기록 누락 신호다.
-DECLARE @K BIGINT = (SELECT TOP (1) [대상키] FROM [dbo].[변경이력]
-                      WHERE [대상테이블] = N'수검자' ORDER BY [이력ID]);
-EXEC [dbo].[USP_HC_SELECT_변경이력] N'수검자', @K;
+-- [X] 초판은 Write SP 가 남긴 실제 감사행을 읽었다. 그러면 **업무시간 밖에서 FAIL 한다** —
+--     PWR-*·RWR-*·CWR-* 가 SKIP 되어 변경이력이 비고, @TargetKey 가 NULL 이 되어 100 이 나온다(실측).
+--     SP-LOG-01 은 읽기 전용이라 업무시간과 무관해야 하므로 가드를 씌우는 대신
+--     이 시나리오가 자기 행을 직접 심는다. 감사 기록을 남기는 쪽은 PWR-030·031 ·
+--     RWR-050~052 · CWR-050~052 가 별도로 판정한다.
+--
+-- 대상키 -9001 은 IDENTITY(1,1) 인 수검자ID·업무ID 와 절대 겹치지 않는 sentinel 이다.
+-- 실제 감사 기록을 지우지 않고, 기록일시를 다르게 주어 정렬 술어가 실제로 쓰이게 한다.
+DELETE FROM [dbo].[변경이력] WHERE [대상키] = -9001;
+INSERT INTO [dbo].[변경이력] ([기록일시], [조작자명], [대상테이블], [대상키], [컬럼명], [변경전], [변경후])
+VALUES (CONVERT(DATETIME2(0), '2026-01-02 09:00:00'), N'SEL021', N'수검자', -9001, N'성명',   N'옛이름', N'새이름')
+     , (CONVERT(DATETIME2(0), '2026-01-03 09:00:00'), N'SEL021', N'수검자', -9001, N'휴대전화', NULL,     N'010-0000-0000');
+
+EXEC [dbo].[USP_HC_SELECT_변경이력] N'수검자', -9001;
 GO
