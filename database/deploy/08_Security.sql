@@ -1,3 +1,14 @@
 ﻿SET NOCOUNT ON;
-PRINT N'INFO 08_Security placeholder — 아직 구현되지 않았습니다.';
+-- 계정·권한(ROLE · USER · GRANT · DENY)은 2026-09-07 사용자 결정으로 **폐기**했다.
+--   "Security 는 Grant, Role 와 같은 계정, 권한이라면 Security 는 폐기한다."
+-- NOT RUN 으로 미루지 않는다 — 미룬 것이 아니라 이 프로젝트의 산출물이 아니다 (06 §32 · §39).
+-- 설계 기록은 06 §32 와 docs/phase4/discarded/07-security.md 에 남아 있다.
+--
+-- 이 파일은 지우지 않고 no-op 으로 둔다. Deploy.sql 이 :r 로 읽고 있고,
+-- 파일 번호(09_Verify.sql)와 RBD-008 의 배포 파일 목록이 이 자리를 전제한다.
+--
+-- [!] 그래서 화면은 배포 계정으로 붙는다. 개발 환경에서 그것은 sysadmin 이며,
+--     "화면은 SP 만 호출한다"(06 §32.3)는 **강제되지 않는 관례**다. 6개 테이블 직접 DML 이 열려 있다.
+--     실무 이관 시 반드시 닫아야 한다 — 06 §43-7 에 한계로 등재했다.
+PRINT N'INFO 08_Security 폐기 — 계정·권한은 산출물이 아니다 (2026-09-07 사용자 결정)';
 GO

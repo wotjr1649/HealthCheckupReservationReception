@@ -261,9 +261,11 @@ echo "exit=$?"
 
 Expected: `PASS WinForms 변경 0건`, exit 0.
 
-- [ ] **Step 4: 음성 검증 — 변경을 감지하는지 확인**
+- [x] **Step 4: 음성 검증 — 변경을 감지하는지 확인**
 
-  `[미이행]` manifest 를 변조했을 때 `FAIL WinForms 변경 감지` + exit 1 을 실제로 관측한 기록(로그·보고서)이 없다. 스크립트에 FAIL 분기는 있으나 음성 시험 증거가 남아 있지 않다.
+  `[해소 2026-09-07]` `verify-winforms-unchanged.sh selftest` 가 매 회귀에서 판정한다.
+  커밋된 manifest 를 건드리지 않고 **사본**을 변조해 같은 비교를 돌린다 — 해시 한 글자 변조와
+  파일 1개 누락 두 경우 모두 감지한다. 실측: `PASS WF-SELFTEST` 2건.
 
 ```bash
 cp artifacts/reports/winforms-manifest.txt /tmp/wf-manifest.bak
@@ -823,9 +825,10 @@ git commit -m "feat(phase4): Deploy/Rebuild 진입점 및 실행 스크립트 �
 **금지사항:** 컬럼 추가·삭제·이름변경·타입변경 금지. Trigger·FK Cascade·추가 Index 금지. `IF NOT EXISTS` 가드를 넣지 않는다 (clean-create).
 - `[!]` 후속 개정으로 `변경이력` 한 테이블만 이 금지의 예외가 되었다. 감사 기록은 배포로 지워지지 않는다 (`CLAUDE.md` §8 · `04` §8.6.3).
 
-- [ ] **Step 1: RED — 아직 아무 객체도 없음을 확인**
+- [x] **Step 1: RED — 아직 아무 객체도 없음을 확인**
 
-  `[미이행]` `tables=0` 을 관측한 로그가 없다. `RBD-003`(빈 DB 에서 Deploy 전체 exit 0)이 인접 증거이지만 테이블 0건 출력 자체는 어디에도 남아 있지 않다.
+  `[해소 2026-09-07]` `RED-001` 이 대신한다 (`scripts/verify-red.sh` · 스펙 §40a).
+  대상 DB 를 비우는 대신 **폐기용 DB** 에서 돌린다. 실측: 객체 없는 DB 에서 SCH 단언 16건이 실패로 잡혔다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W \
@@ -1090,9 +1093,11 @@ git commit -m "feat(phase4): 6개 물리 테이블 스키마 배포 스크립트
 
 **금지사항:** 스키마를 고쳐서 테스트를 통과시키지 않는다. 불일치가 나오면 `04` §8을 다시 읽고 스키마를 바로잡는다.
 
-- [ ] **Step 1: RED — 테스트를 먼저 쓰고 일부러 틀린 기대값으로 실패를 본다**
+- [x] **Step 1: RED — 테스트를 먼저 쓰고 일부러 틀린 기대값으로 실패를 본다**
 
-  `[미이행]` 기대값을 8 로 둔 RED 회차의 로그(`artifacts/logs/test_01_red.log`)가 없다. 첫 커밋본 `91bae9b` 은 이미 기대값 7 이다.
+  `[해소 2026-09-07]` `RED-003` 이 대신한다. 시험 파일의 기대값을 8 로 변조하는 대신
+  **실측 쪽을** 6 -> 5 로 줄여(폐기용 DB 에서 테이블 하나 DROP) 같은 것을 증명한다.
+  실측: `FAIL SCH-001` 관측 · exit 1.
 
 먼저 `SCH-001` 만 작성하되 기대값을 `8` 로 둔다.
 

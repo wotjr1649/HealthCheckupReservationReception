@@ -152,9 +152,11 @@ git commit -m "feat(phase4): 검사 Master 19행 및 휴무일 2행 Seed 추가"
 `[I]` `SSN-001`~`006` 도 §45.2 상 이 파일의 산출이지만 **`T10` 이 Fixture 를 만든 뒤 이 파일 끝에 덧붙인다.**
 `T09` 시점에는 `수검자` 가 0행이라 `COUNT(*) = 0` 으로 전건이 조용히 PASS 한다 — 무의미한 통과다.
 
-- [ ] **Step 1: RED — 기대표에 없는 행을 하나 넣어 실패를 확인**
+- [x] **Step 1: RED — 기대표에 없는 행을 하나 넣어 실패를 확인**
 
-`[미이행]` RED 로그가 없다 — `artifacts/logs/test_02_red.log` 도, `FAIL SED-001` 을 담은 로그도 저장소에 없다.
+`[해소 2026-09-07]` `RED-004` 가 대신한다 (`scripts/verify-red.sh` · 스펙 §40a).
+폐기용 DB 에 스키마·Seed 를 배포한 뒤 기대표에 없는 행(`EX999`) 1건을 넣으면
+`02_Seed_Tests` 가 실패로 잡는다. 실측 exit 1.
 
 `SED-001`만 먼저 작성하되 `@ExpExam` 에 실재하지 않는 20번째 행 `('EX020', N'없는검사', 'NEX-01', NULL, NULL, 0)` 을 더한다.
 `EXCEPT` 가 양방향이므로 기대에만 있는 행 하나로 `FAIL SED-001` 이 확실히 난다.
@@ -811,9 +813,10 @@ IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
 GO
 ```
 
-- [ ] **Step 2: RED 실행 — 함수가 없어 실패하는지 확인**
+- [x] **Step 2: RED 실행 — 함수가 없어 실패하는지 확인**
 
-`[미이행]` RED 로그가 없다 — `artifacts/logs/test_03_red.log` 도, `Msg 4121`/`Msg 208` 을 담은 로그도 저장소에 없다.
+`[해소 2026-09-07]` `RED-002` 가 대신한다. TVF 가 없는 폐기용 DB 에서 `03_Rule_Tests` 가
+`Msg 208/4121` 로 죽는 것을 실측했다. exit 1.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \

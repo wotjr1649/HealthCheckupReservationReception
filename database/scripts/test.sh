@@ -34,10 +34,9 @@ run tests/05_Patient_Write_Tests.sql      05
 run tests/06_Reservation_Write_Tests.sql  06
 run tests/07_Reception_Write_Tests.sql    07
 run tests/08_Rollback_Tests.sql           08
-# Security(T31·T32)는 범위 밖이다 (06 §32, 2026-09-07 사용자 결정).
-# 파일이 생기면 자동으로 실행된다. NOT RUN 은 PASS 가 아니다 (CLAUDE.md §10).
-if [ -f tests/13_Security_Tests.sql ]; then run tests/13_Security_Tests.sql 13
-else echo "NOT RUN tests/13_Security_Tests.sql — Security 는 범위 밖 (06 §32)"; NOTRUN=$((NOTRUN+1)); fi
+# Security(계정·권한)는 2026-09-07 사용자 결정으로 **폐기**했다 (06 §32 · §39).
+# NOT RUN 으로 미루지 않는다 — 미룬 것이 아니라 산출물이 아니므로 잔여를 남기지 않는다.
+# 남은 SEC-010(secret 스캔)은 scripts/verify-no-secret.sh 가 아래에서 판정한다.
 run tests/14_Clean_Rebuild_Verify.sql     14
 
 # 계약 검증 (G09) — 스펙 §8.4 가 test.sh 범위로 지정했다
@@ -62,6 +61,13 @@ for s in 1 2 3 4 5 6 7 8; do
 done
 fi
 
+# RED 음성시험 (G15) — "시험이 실제로 실패를 잡는가" 를 폐기용 DB 에서 판정한다 (스펙 §40a).
+# clean-rebuild 보다 **먼저** 돌린다. 폐기용 DB 가 남아 있으면 RBD-009(타 DB 무사)를 깨뜨리는데,
+# 여기서 먼저 돌려 지워지는 것까지 확인해야 그 순서가 증거가 된다.
+if ./scripts/verify-red.sh > /dev/null; then
+  echo "PASS RED-001~004 음성시험 — 객체 없음·테이블 부족·Seed 오염을 시험이 실제로 잡는다 (폐기용 DB)"
+else ./scripts/verify-red.sh; FAILED=1; fi
+
 # Clean Rebuild 계약 중 회차 사이 비교가 필요한 것 (RBD-002·003·005·007·008·009).
 # tests/14 는 한 회차의 지문만 보므로 이 스크립트가 없으면 G14 의 절반이 빈다.
 ./scripts/clean-rebuild-verify.sh || FAILED=1
@@ -80,15 +86,21 @@ fi
 G0=0
 ./scripts/verify-baseline.sh           > /dev/null || { ./scripts/verify-baseline.sh;           G0=1; }
 ./scripts/verify-winforms-unchanged.sh > /dev/null || { ./scripts/verify-winforms-unchanged.sh; G0=1; }
+./scripts/verify-winforms-unchanged.sh selftest > /dev/null || { ./scripts/verify-winforms-unchanged.sh selftest; G0=1; }
 ./scripts/verify-schema-doc.sh         > /dev/null || { ./scripts/verify-schema-doc.sh;         G0=1; }
 if [ "$G0" -eq 0 ]; then
-  echo "PASS G00 기준선 6/6 · G01 WinForms 변경 0건 · G05 스키마↔04 양방향 대조 (상세는 각 보고서)"
+  echo "PASS G00 기준선 6/6 · G01 WinForms 변경 0건(+변조 감지 자체시험) · G05 스키마↔04 양방향 대조"
 else
   echo "FAIL G00/G01/G05 중 하나 이상 실패 — 위 출력을 보라"; FAILED=1
 fi
 
 # 문서 정합성 게이트 (스펙 §45.3)
 node tools/verify-docs.js || FAILED=1
+
+# RBD-001(잘못된 서버명 50020)은 인스턴스가 1개뿐이라 음성 시험이 **구조적으로** 불가능하다.
+# clean-rebuild-verify.sh 가 NOT RUN 으로 출력하는데 여기서 세지 않으면 요약이 "NOT RUN 0" 을
+# 주장하게 된다 — 실행하지 않은 것을 통과로 읽히게 하지 않는다 (CLAUDE.md §10).
+NOTRUN=$((NOTRUN+1))
 
 [ "$NOTRUN" -ne 0 ] && echo "!! NOT RUN $NOTRUN 건 — 아래 요약을 완료로 읽지 않는다 (CLAUDE.md §10)"
 

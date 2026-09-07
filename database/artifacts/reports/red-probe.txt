@@ -1,0 +1,7 @@
+PASS RED-001 객체 없는 DB 에서 01_Schema_Tests 가 SCH 단언 16 건을 실패로 잡았다 (exit=1)
+PASS RED-002 TVF 없는 DB 에서 03_Rule_Tests 가 Msg 208/4121 로 실패 (exit=1)
+PASS RED-003 테이블 6->5 에서 SCH-001 이 실패를 잡았다 (exit=1)
+PASS RED-004 Seed 에 없는 행 1건을 넣자 02_Seed_Tests 가 실패를 잡았다 (exit=1)
+PASS RED-CLEAN 폐기용 DB 잔여 0건
+PASS RED-TARGET 대상 DB 무사
+red-probe FAILED=0

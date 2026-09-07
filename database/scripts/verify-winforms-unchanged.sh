@@ -10,6 +10,32 @@ gen() {
     -print0 | sort -z | xargs -0 sha256sum
 }
 
+# selftest — "변조를 실제로 감지하는가" 를 재현 가능하게 판정한다 (plans/01 T02 Step 4).
+# [X] 그 Step 은 manifest 를 변조해 FAIL 을 보는 일회성 관측이었고 증거가 남지 않았다.
+#     커밋된 manifest 를 건드리지 않고 **사본**을 변조해 같은 비교를 돌려 판정한다.
+if [ "${1:-check}" = "selftest" ]; then
+  TMP=$(mktemp); TAMPER=$(mktemp); RC=0
+  gen > "$TMP"
+  # 해시 한 글자만 바꾼다. 파일 목록은 그대로이고 내용만 다른 상태다.
+  awk 'NR==1{ h=substr($1,1,63); c=substr($1,64,1); nc=(c=="0"?"1":"0"); $1=h nc } {print}' "$TMP" > "$TAMPER"
+  if diff -q "$TMP" "$TAMPER" > /dev/null; then
+    echo "FAIL WF-SELFTEST 변조본이 원본과 같다 — 시험이 성립하지 않는다"; RC=1
+  elif diff -q "$TAMPER" "$TMP" > /dev/null; then
+    echo "FAIL WF-SELFTEST 해시가 달라졌는데 diff 가 같다고 했다"; RC=1
+  else
+    echo "PASS WF-SELFTEST manifest 한 글자 변조를 diff 가 감지했다"
+  fi
+  # 파일이 사라진 경우도 본다
+  tail -n +2 "$TMP" > "$TAMPER"
+  if diff -q "$TAMPER" "$TMP" > /dev/null; then
+    echo "FAIL WF-SELFTEST 파일 1개 누락을 감지하지 못했다"; RC=1
+  else
+    echo "PASS WF-SELFTEST 파일 1개 누락을 diff 가 감지했다"
+  fi
+  rm -f "$TMP" "$TAMPER"
+  exit $RC
+fi
+
 if [ "${1:-check}" = "init" ]; then
   gen > "$MANIFEST"
   echo "manifest 생성: $(wc -l < "$MANIFEST") 파일"
