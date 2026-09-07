@@ -455,8 +455,8 @@ async function verify(srcSheets, applied, noteText) {
   const fnRows = fn.rowCount - (FIRST_DATA_ROW - 1);
   const ids = new Set();
   for (let r = FIRST_DATA_ROW; r <= fn.rowCount; r++) ids.add(norm(fn.getCell(r, 2).value));
-  say(fnRows === 36, `기능정의 데이터 36행 (실측 ${fnRows})`);
-  say(ids.size === 16, `기능정의 고유 Function ID 16개 (실측 ${ids.size})`);
+  say(fnRows === 37, `기능정의 데이터 37행 (실측 ${fnRows})`);
+  say(ids.size === 17, `기능정의 고유 Function ID 17개 (실측 ${ids.size})`);
 
   console.log('\n[검증 2] 원본 대비 셀 단위 대조 (원본을 다시 파싱해 무손상 값과 비교)');
   const diffs = [];
@@ -522,7 +522,8 @@ async function verify(srcSheets, applied, noteText) {
   const fnIds = new Set(fnRows.map(r => fn.cells.get(r).get(2)));
   const fnCols = Math.max(...fnRows.map(r => Math.max(...fn.cells.get(r).keys())));
   console.log(`[원본] 시트 ${sheets.size}개 / 기능정의 ${fnRows.length}행 x ${fnCols}열 / 고유 Function ID ${fnIds.size}개`);
-  if (fnRows.length !== 36 || fnCols !== 9 || fnIds.size !== 16) throw new Error('원본 파싱 결과가 기대와 다르다');
+  // F-COM-008(변경기록 열람) 등재로 36행 16개 -> 37행 17개가 되었다 (00 CP-06 · 03 §23).
+  if (fnRows.length !== 37 || fnCols !== 9 || fnIds.size !== 17) throw new Error('원본 파싱 결과가 기대와 다르다');
 
   // 삭제되는 문서정보 시트에만 있는 '논리 기능' 값을 개발범위 상단에 보존
   const logical = sheets.get('문서정보').cells.get(4).get(6);
