@@ -55,7 +55,7 @@
 물리 스키마 DDL   6 Table + PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 / Sequence 1
 Master Seed       검사코드 19행 + 휴무일 2행
 Inline TVF 4개 구현
-Stored Procedure 15개 구현
+Stored Procedure 16개 구현
 Write SP 8개의 Transaction 경계·오류 처리·부분저장 차단
 Patient / SocialNumber / ChartNo / Work / Slot 직렬화 및 잠금 획득 총순서
 Patient LastEditDate 단조증가, Work RowVersion 갱신, No-op 경계
@@ -285,7 +285,7 @@ database/
 │  ├─ 13_Security_Tests.sql
 │  ├─ 14_Clean_Rebuild_Verify.sql
 │  └─ contract/                       SP별 호출 시나리오 — EXEC 한 번, DB 상태 단언 없음
-│     └─ 01_*.sql ~ 26_*.sql           16개 SP 전건. RS0 Code·RS 형상 판정용 원본
+│     └─ 01_*.sql ~ 25_*.sql · PWR-* 등 Test ID 명 16개 SP 전건. RS0 Code·RS 형상 판정용 원본
 │
 ├─ scripts/
 │  ├─ deploy.sh  rebuild.sh  test.sh  concurrency-test.sh
@@ -297,7 +297,7 @@ database/
 ├─ tools/
 │  ├─ verify-contract.js              node, 의존성 0
 │  ├─ verify-docs.js                  스펙↔계획 정합성 게이트 (§45.3)
-│  ├─ expected-contracts.json         15 SP의 기대 Result Set 형상·RS0 Code
+│  ├─ expected-contracts.json         16 SP의 기대 Result Set 형상·RS0 Code
 │  └─ allowed-codes.json              `05` §13 SP별 허용 ResultCode 집합
 │
 └─ artifacts/
@@ -1806,7 +1806,7 @@ END
 
 ## 36.1 Parameter 검증 (SQL만) — `EXCEPT` 양방향 `[X 수정]`
 
-`05` §7~§12의 Parameter 95개를 `(SpName, ParamOrdinal, ParamName, TypeName, IsNullable)` 기대 `VALUES` 인라인 테이블로 두고 `sys.parameters` + `sys.types` 실측과 **`EXCEPT` 양방향** 대조한다. 차집합이 한 건이라도 있으면 `FAIL`.
+`05` §7~§12의 Parameter 99개를 `(SpName, ParamOrdinal, ParamName, TypeName, IsNullable)` 기대 `VALUES` 인라인 테이블로 두고 `sys.parameters` + `sys.types` 실측과 **`EXCEPT` 양방향** 대조한다. 차집합이 한 건이라도 있으면 `FAIL`.
 
 `[X]` 초안은 메타데이터를 `SELECT`만 하고 사람이 눈으로 보라고 했다. 자동 판정이 없으면 회귀에서 잡히지 않는다.
 
@@ -1833,7 +1833,7 @@ FROM sys.procedures p
 OUTER APPLY sys.dm_exec_describe_first_result_set_for_object(p.object_id, NULL) r
 WHERE p.name LIKE 'USP[_]HC[_]%';
 
--- (1) 총 행수가 정확히 75(15 SP × 5컬럼)인가
+-- (1) 총 행수가 정확히 80(16 SP × 5컬럼)인가
 -- (2) error_number 가 NOT NULL 인 행이 0건인가   ← DMV 가 결과셋을 결정하지 못한 SP
 -- (3) 기대 5컬럼 집합과 EXCEPT 양방향 차집합이 0인가
 ```
@@ -2271,6 +2271,31 @@ ROOT·하위 어디에도 `.git`이 없었다. 인계문서 §7.3.C·§10.5(Task
 ```
 
 `INSERT_수검자`/`UPDATE_수검자정보` 구현의 `ELSE NULL` 분기는 도달 불가 코드이지만 **방어적으로 유지**한다(`05` §10.1 표가 바뀌면 즉시 드러난다).
+
+## 44.6a `[X]` `PWR-013` "SocialNumber 14자리 → 101" 은 SP 경계에서 구성 불가
+
+`§33.4`가 `05` §17.6의 *"SocialNumber 14자리 입력"*에 `PWR-013`을 배정하고 `plans/04`가 기대를 `101 BadValue`로 적었으나, **실행으로 성립하지 않는다.**
+
+`@SocialNumber`의 SQL 타입은 `VARCHAR(13)`이다(`05` §10.1·§10.2). 14자리 값을 넘기면 SQL Server가 **SP 진입 전에 조용히 13자리로 절단**하므로 SP 본문의 `LEN(@SocialNumber) <> 13` 검사에 도달할 수 없다. `T23` 구현 중 실측으로 확인했다.
+
+```text
+EXEC USP_HC_INSERT_수검자 1, NULL, N'신규수검자', '90010110000188', … 
+  → SP 가 보는 값 '9001011000018' (13자리)
+  → RS0 Code = 0 또는 2.  101 은 어떤 입력으로도 나오지 않는다
+```
+
+이것은 결함이 아니라 `05` §2.2가 *"하이픈이 포함된 14자리 표시값을 SP에 전달하지 않는다"*고 C#에 못박은 **이유 그 자체**다. 타입 경계가 이미 계약을 강제하고 있다.
+
+**기준선을 수정하지 않는다.** `PWR-013`은 폐기하지 않고 **관측 가능한 계약**으로 다시 정의한다.
+
+```text
+PWR-013  14자리 표시값은 VARCHAR(13) 경계에서 절단된다
+         계약 판정  tests/contract/PWR-013_주민번호_14자리_경계절단.sql → RS0 Code = 2
+                   (절단 결과가 PWR-001 이 만든 행과 같은 주민번호가 되므로 기존수검자 사용)
+         DB 판정    tests/05 — 14자리 주민번호를 가진 행이 0건이고 대상 주민번호 행은 1건 그대로
+```
+
+`05` §17.6의 다른 두 항목(`PWR-014` 비숫자, `PWR-027` RCP 존재)은 영향이 없다. `§45.2`의 `PWR` 건수 25는 유지된다.
 
 ## 44.7 Implementation Blocker
 

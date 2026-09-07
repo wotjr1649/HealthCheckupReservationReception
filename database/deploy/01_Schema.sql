@@ -40,8 +40,8 @@ CREATE TABLE [dbo].[수검자]
     [우편번호]        VARCHAR(10)     NULL,
     [주소]            NVARCHAR(200)   NULL,
     [상세주소]        NVARCHAR(200)   NULL,
-    [비고]            NVARCHAR(MAX)   NULL,
     [B형간염제외여부] BIT             NOT NULL CONSTRAINT [DF_수검자_HEPATITIS_B_EXCLUDED] DEFAULT (0),
+    [비고]            NVARCHAR(MAX)   NULL,
     [생성일시]        DATETIME        NOT NULL CONSTRAINT [DF_수검자_CREATION_DATE]        DEFAULT (GETDATE()),
     [최종수정일시]    DATETIME        NOT NULL CONSTRAINT [DF_수검자_LAST_EDIT_DATE]       DEFAULT (GETDATE()),
 
@@ -143,9 +143,6 @@ CREATE TABLE [dbo].[예약접수]
     [예약일]       DATE         NOT NULL,
     [시간대코드]   CHAR(2)      NOT NULL,
     [상태코드]     CHAR(3)      NOT NULL,
-    [생성일시]     DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_CREATION_DATE]  DEFAULT (SYSDATETIME()),
-    [최종수정일시] DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_LAST_EDIT_DATE] DEFAULT (SYSDATETIME()),
-    [행버전]       ROWVERSION   NOT NULL,
     -- 검사구성. 검사항목코드를 오름차순으로 쉼표로 잇는다 (04 §8.2.2).
     -- [X] NOT NULL 은 "국가검사가 반드시 있다" 를 보증하지 않는다. 저장 NEX 가 0 인 손상 상태를
     --     표현할 수 있어야 하므로 빈 문자열이 통과한다. 빈 문자열이 검사구성 손상의 유일한
@@ -153,7 +150,9 @@ CREATE TABLE [dbo].[예약접수]
     --     뜻하는 상태를 만들지 않으려고 NOT NULL 을 건다.
     [국가검사항목] NVARCHAR(100) NOT NULL,
     [추가검사항목] NVARCHAR(50)  NULL,
-
+    [생성일시]     DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_CREATION_DATE]  DEFAULT (SYSDATETIME()),
+    [최종수정일시] DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_LAST_EDIT_DATE] DEFAULT (SYSDATETIME()),
+    [행버전]       ROWVERSION   NOT NULL,
     CONSTRAINT [PK_예약접수] PRIMARY KEY CLUSTERED ([업무ID]),
     CONSTRAINT [FK_예약접수_수검자] FOREIGN KEY ([수검자ID])
         REFERENCES [dbo].[수검자] ([수검자ID]) ON DELETE NO ACTION ON UPDATE NO ACTION,

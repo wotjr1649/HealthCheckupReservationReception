@@ -10,7 +10,7 @@
 - **Database:** `HealthCheckupReservationReceptionDb`
 - **DB Domain Prefix:** `HC = Health Checkup`
 - **대상 환경:** C# WinForms / .NET Framework 4.6.1 / DevExpress Components 20.2 / Microsoft SQL Server 2012 이상 / Stored Procedure
-- **확정 객체:** 외부 호출 Stored Procedure 15개 / 내부 Inline TVF 4개 / Trigger 0개 / TVP 0개 / DELETE SP 0개
+- **확정 객체:** 외부 호출 Stored Procedure 16개 / 내부 Inline TVF 4개 / Trigger 0개 / TVP 0개 / DELETE SP 0개
 - **기준문서:**
   - `00_Project_Policy.md` — FINAL / GO / READ-ONLY
   - `01_Process_Definition.md` — FINAL / GO / READ-ONLY
@@ -131,7 +131,7 @@ Function은 다음 형식을 사용한다.
 [dbo].[UFN_HC_{한글Rule명}]
 ```
 
-## 1.3 외부 호출 Stored Procedure 15개
+## 1.3 외부 호출 Stored Procedure 16개
 
 | ID | 물리 객체명 | 구분 | 책임 |
 |---|---|:---:|---|
@@ -2353,7 +2353,7 @@ DB Role·GRANT EXECUTE·직접 DML 통제
 ```text
 프로그램·DB 명칭
 HC 접두사 의미
-15개 Stored Procedure 이름과 수
+16개 Stored Procedure 이름과 수
 4개 Inline TVF 이름과 수
 각 SP Parameter 이름·타입·NULL (R3에서 Write SP 8개에 `@OperatorName`을 추가하며 한 번 열렸고, 그 외에는 고정이다)
 RS0 공통 컬럼
