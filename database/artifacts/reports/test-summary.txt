@@ -1,5 +1,5 @@
 === Phase 4 테스트 요약 ===
-생성시각: 2026-09-07T18:12:05+09:00
+생성시각: 2026-09-07T19:38:53+09:00
 회귀 로그: artifacts/logs/full_test_run_off.log
 
 --- 이 회차의 판정 (test.sh 출력 그대로) ---
@@ -16,7 +16,7 @@ NOT RUN RBD-001 잘못된 서버명(50020) - 인스턴스가 1개뿐이라 음�
 !! NOT RUN 9 건 — 아래 요약을 완료로 읽지 않는다 (CLAUDE.md §10)
 === 실패 0건 (NOT RUN 9 건) ===
 
-PASS=176  FAIL=0  SKIP=79
+PASS=178  FAIL=0  SKIP=78
 
 --- SQL 시험 파일별 (이 회차가 쓴 것만) ---
 test_00.log                        PASS=4    FAIL=0    SKIP=0
@@ -36,10 +36,10 @@ PASS CON-001 동일 주민번호 동시등록 2건 → 저장 1건
 PASS CON-002 19/20 Slot 동시예약 2건 → 최종 20
 PASS CON-003 동일 Patient 다른 Slot 동시예약 → 유효업무 1건
 PASS CON-004 저장 국가검사항목 = 최종 수검자 상태 기준 NEX (양방향 일치)
-NOT RUN CON-005  회차 로그 없음 — CON 은 업무시간 창에서만 돈다 (스펙 §38.7)
+PASS CON-005 접수완료 vs 예약취소 → 한쪽만 전이 (RCP 또는 CNR)
 PASS CON-006 같은 Work 동시 AEX 변경 → 한쪽 집합만 저장
 PASS CON-007 교차이동 후에도 각 수검자 유효업무 1건 · 정원 이내
-NOT RUN CON-008  회차 로그 없음 — CON 은 업무시간 창에서만 돈다 (스펙 §38.7)
+PASS CON-008 접수완료 vs WalkIn 신규 → 최종 20 (21 이면 §24.2 결함 재발)
 
 --- artifacts/reports/contract-verify.txt ---
 PASS 01_공통업무상태 Result Set 계약 일치 (2개 RS · RS0 Code=0)
@@ -91,7 +91,7 @@ SKIP CWR-042_접수취소_성공 업무시간 밖 — Write SP 는 308/309 를 �
 SKIP CWR-043_접수취소_이미_CNC 업무시간 밖 — Write SP 는 308/309 를 업무 Rule 보다 먼저 판정한다
 SKIP CWR-044_CNC_예약변경_불가 업무시간 밖 — Write SP 는 308/309 를 업무 Rule 보다 먼저 판정한다
 SKIP CWR-099_cleanup 업무시간 밖 — Write SP 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP OFF-308-01_업무일아님_수검자등록 오늘은 업무일 — 308 은 일요일·활성 휴무일에만 나온다
+PASS OFF-308-01_업무일아님_수검자등록 Result Set 계약 일치 (1개 RS · RS0 Code=308)
 PASS OFF-309-01_업무시간밖_수검자등록 Result Set 계약 일치 (1개 RS · RS0 Code=309)
 PASS OFF-309-02_업무시간밖_예약등록 Result Set 계약 일치 (1개 RS · RS0 Code=309)
 SKIP PWR-000_fixture 업무시간 밖 — Write SP 는 308/309 를 업무 Rule 보다 먼저 판정한다
@@ -152,13 +152,14 @@ PASS SEL-021_변경이력_정상 Result Set 계약 일치 (2개 RS · RS0 Code=0
 PASS SEL-022_변경이력_기록0건 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS SEL-023_변경이력_TargetTable_허용밖 Result Set 계약 일치 (1개 RS · RS0 Code=101)
 PASS SEL-024_변경이력_TargetTable_NULL Result Set 계약 일치 (1개 RS · RS0 Code=100)
+PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 · 휴무일 Seed 2건
 
 --- artifacts/reports/no-secret.txt ---
 배포 원본 검사 12 개 · HIT 0
-실행 스크립트 검사 16 개 · HIT 0
+실행 스크립트 검사 17 개 · HIT 0
 시험 원본 검사 125 개 · HIT 0
 도구 검사 6 개 · HIT 0
-로그 검사 305 개 · HIT 0
+로그 검사 339 개 · HIT 0
 보고서 검사 13 개 · HIT 0
 PASS SEC-010 배포 원본·로그·보고서에 secret 0건
 

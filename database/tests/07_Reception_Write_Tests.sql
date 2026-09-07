@@ -68,20 +68,24 @@ BEGIN
 END
 
 -- [!] 접수완료는 업무시간 안에서도 **접수마감 전**이어야 성공한다 (AM 11:00 / PM 16:00, 05 §2.4).
---     production SP 에 시각 주입 뒷문을 두지 않으므로 CWR-006/007 과 CWR-009 는 서로 배타적이다.
---     지금 시각이 마감 전이면 006/007 을, 마감 후면 009 를 판정하고 나머지는 SKIP 한다.
+--     production SP 에 시각 주입 뒷문을 두지 않으므로 판정 가능 여부는 실제 시각이 정한다.
+--     그렇다고 006/007 과 009 가 배타적인 것은 **아니다** — Slot 을 나누면 겹친다 (아래 참조).
 --     SKIP 은 PASS 가 아니다 (CLAUDE.md §10). 마감 경계 자체는 RUL-T07·T08·T11·T12 가
 --     TVF 수준에서 결정적으로 증명한다.
 DECLARE @Now  TIME(0) = CONVERT(TIME(0), SYSDATETIME());
 DECLARE @Slot CHAR(2) = CASE WHEN @Now < '11:00:00' THEN 'AM' ELSE 'PM' END;
--- 마감 판정은 파일 진입 시 한 번만 재므로 경계 10분 전부터는 어느 쪽도 판정하지 않는다.
---   1 = 마감까지 여유 있음(CWR-006/007/050)   2 = 마감 경과(CWR-009)   0 = 경계 근처(둘 다 SKIP)
-DECLARE @CutState TINYINT =
-    CASE WHEN @Now >= CONVERT(TIME(0), '16:00:00') THEN 2
-         WHEN @Now <  CONVERT(TIME(0), '10:50:00') THEN 1
-         WHEN @Now >= CONVERT(TIME(0), '11:00:00')
-          AND @Now <  CONVERT(TIME(0), '15:50:00') THEN 1
-         ELSE 0 END;
+-- 마감 판정은 파일 진입 시 한 번만 재므로 경계에 10분 여유를 둔다.
+-- [X] 하나의 3상태 변수로 006 과 009 를 갈랐던 것이 "배타적" 의 원인이었다.
+--     배타성은 Rule 이 아니라 **둘 다 같은 Slot 을 쓴 선택**의 결과다. 마감은 Slot 마다 다르다
+--     (AM 11:00 · PM 16:00, 05 §2.4). TVF 에 시각을 주입해 실측했다:
+--       13:00 · AM Work  CutoffTime 11:00  CutoffPassed 1   -> 304
+--       13:00 · PM Work  CutoffTime 16:00  CutoffPassed 0   -> 성공
+--     즉 11:10~15:50 에는 둘 다 성립한다. 이전 구성에서 CWR-009 는 16:00~18:00 에만
+--     판정돼 일반 회귀가 한 번도 닿지 못했다.
+--   @CutPm  PM Work 성공 경로   15:50 전이면 1
+--   @CutAm  AM Work 마감경과 경로  11:10 이후면 1
+DECLARE @CutPm BIT = CASE WHEN @Now <  CONVERT(TIME(0), '15:50:00') THEN 1 ELSE 0 END;
+DECLARE @CutAm BIT = CASE WHEN @Now >= CONVERT(TIME(0), '11:10:00') THEN 1 ELSE 0 END;
 
 DECLARE @P10 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T010');
 DECLARE @P09 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T009');
@@ -177,9 +181,10 @@ IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @Wc4) = 
 ELSE BEGIN PRINT 'FAIL CWR-011 역할 불일치 Work 가 접수됐다'; SET @Fail += 1; END
 DELETE FROM [dbo].[예약접수] WHERE [업무ID] = @Wc4;
 
--- 오늘 Work 를 하나 만든다. CWR-003 은 마감과 무관하고, CWR-006/007 과 CWR-009 는 배타적이다.
+-- 오늘 Work 를 만든다. 성공 경로는 PM Work(@P10), 마감경과 경로는 AM Work(@P09) 다.
+-- CWR-003 은 마감과 무관하다 — 601 이 304 보다 앞에서 판정된다.
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드], [국가검사항목], [추가검사항목])
-VALUES (@P10, CONVERT(DATE, SYSDATETIME()), @Slot, 'RSV', @Basic, NULL);
+VALUES (@P10, CONVERT(DATE, SYSDATETIME()), 'PM', 'RSV', @Basic, NULL);
 SET @W = SCOPE_IDENTITY();
 SET @Rv = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @W);
 
@@ -189,18 +194,24 @@ IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @W) = 'R
     PRINT 'PASS CWR-003 stale RowVersion 이 접수를 막았다';
 ELSE BEGIN PRINT 'FAIL CWR-003 stale 요청이 접수됐다'; SET @Fail += 1; END
 
-IF @CutState = 2
+-- CWR-009  AM Work · 마감(11:00) 경과 → 304. 상태는 그대로다.
+--   @P09 는 CWR-011 이 쓰고 지운 뒤라 이 지점에서 유효업무가 없다.
+IF @CutAm = 1
 BEGIN
-    -- CWR-009  마감 경과 → 304. 상태는 그대로다.
-    EXEC [dbo].[USP_HC_UPDATE_접수완료] @W, @Rv, N'TEST';
-    IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @W) = 'RSV')
-        PRINT 'PASS CWR-009 접수마감 경과 후 접수가 막혔다';
+    INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드], [국가검사항목], [추가검사항목])
+    VALUES (@P09, CONVERT(DATE, SYSDATETIME()), 'AM', 'RSV', @Basic, NULL);
+    DECLARE @Wam  BIGINT     = SCOPE_IDENTITY();
+    DECLARE @Rvam BINARY(8)  = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wam);
+    EXEC [dbo].[USP_HC_UPDATE_접수완료] @Wam, @Rvam, N'TEST';
+    IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @Wam) = 'RSV')
+        PRINT 'PASS CWR-009 접수마감(AM 11:00) 경과 후 접수가 막혔다';
     ELSE BEGIN PRINT 'FAIL CWR-009 마감 후에 접수됐다'; SET @Fail += 1; END
-    PRINT 'SKIP CWR-006/007/050 접수마감(AM 11:00 / PM 16:00) 경과 - 성공 경로는 마감 전에만 성립한다';
+    DELETE FROM [dbo].[예약접수] WHERE [업무ID] = @Wam;
 END
-ELSE IF @CutState = 1
+ELSE PRINT 'SKIP CWR-009 11:10 이전 - AM 마감(11:00) 경과 경로는 그 뒤에만 성립한다';
+
+IF @CutPm = 1
 BEGIN
-    PRINT 'SKIP CWR-009 접수마감 전 - 마감경과 경로는 마감 후에만 성립한다';
     -- CWR-006 / CWR-050  접수 성공 → RCP 전이. 예약일·시간대·검사구성은 바뀌지 않는다.
     SET @H0 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @W);
     EXEC [dbo].[USP_HC_UPDATE_접수완료] @W, @Rv, N'TEST';
@@ -227,10 +238,7 @@ BEGIN
         PRINT 'PASS CWR-007 이미 RCP 인 Work 재접수가 아무것도 바꾸지 않았다';
     ELSE BEGIN PRINT 'FAIL CWR-007 재접수가 행을 갱신했다'; SET @Fail += 1; END
 END
-ELSE
-BEGIN
-    PRINT 'SKIP CWR-006/007/009/050 접수마감 경계 10분 이내 - 어느 쪽도 결정적으로 판정할 수 없다';
-END
+ELSE PRINT 'SKIP CWR-006/007/050 PM 마감(16:00) 10분 전을 지났다 - 성공 경로는 마감 전에만 성립한다';
 
 ----------------------------------------------------------------------------
 -- UPDATE_접수추가검사  (마감과 무관하다 — 05 §12.2 검증순서에 마감이 없다)

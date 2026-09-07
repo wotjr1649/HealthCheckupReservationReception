@@ -22,14 +22,18 @@ BIZ=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
 
 # 접수마감(AM 11:00 / PM 16:00) 판정. 이 값은 게이트 시작 시 한 번만 재므로 경계 10분 전부터는
 # 어느 쪽도 판정하지 않는다 — 실측: 15:59 에 시작한 회차가 16:00 을 넘겨 CWR-006 이 304 를 받았다.
-#   1 = 마감까지 여유 있음(CWR-006)   2 = 마감 경과(CWR-009)   0 = 경계 근처(둘 다 SKIP)
-CUT=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
-  DECLARE @T TIME(0) = CONVERT(TIME(0), SYSDATETIME());
-  SELECT CASE WHEN @T >= CONVERT(TIME(0), '16:00:00') THEN 2
-              WHEN @T <  CONVERT(TIME(0), '10:50:00') THEN 1
-              WHEN @T >= CONVERT(TIME(0), '11:00:00')
-               AND @T <  CONVERT(TIME(0), '15:50:00') THEN 1
-              ELSE 0 END;" | tr -d ' \r')
+#
+# [X] 초안은 하나의 3상태 변수로 006 과 009 를 갈랐다. 그래서 둘이 "배타적" 이 됐는데,
+#     배타성은 Rule 이 아니라 **둘 다 PM Work 를 쓴 선택**의 결과였다. 마감은 Slot 마다 다르다.
+#     TVF 에 시각을 주입해 실측: 13:00 에 AM Work 는 CutoffPassed=1, PM Work 는 0 이다.
+#     CWR-009 를 AM 으로 옮기면 11:10~15:50 에 둘 다 판정된다.
+#     이전 구성에서 CWR-009 는 16:00~18:00 에만 돌아 일반 회귀가 한 번도 닿지 못했다.
+#   CUTPM  PM Work 성공 경로(CWR-006)     15:50 전이면 1
+#   CUTAM  AM Work 마감경과 경로(CWR-009)  11:10 이후면 1
+CUTPM=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
+  SELECT CASE WHEN CONVERT(TIME(0), SYSDATETIME()) <  CONVERT(TIME(0), '15:50:00') THEN 1 ELSE 0 END;" | tr -d ' \r')
+CUTAM=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
+  SELECT CASE WHEN CONVERT(TIME(0), SYSDATETIME()) >= CONVERT(TIME(0), '11:10:00') THEN 1 ELSE 0 END;" | tr -d ' \r')
 
 # 업무일 여부. BIZ 와 나눠 재야 창 밖에서 308 과 309 를 갈라 판정할 수 있다.
 DAYOK=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
@@ -53,22 +57,32 @@ for f in tests/contract/*.sql; do
   case "$k" in
     OFF-309-*) if [ "${BIZ:-0}" -eq 1 ] || [ "${DAYOK:-0}" -ne 1 ]; then
         echo "SKIP $k 업무시간 안이거나 업무일이 아님 — 309 는 업무일의 시간 밖에서만 나온다" >> "$OUT"; continue; fi ;;
-    OFF-308-*) if [ "${DAYOK:-0}" -eq 1 ]; then
-        echo "SKIP $k 오늘은 업무일 — 308 은 일요일·활성 휴무일에만 나온다" >> "$OUT"; continue; fi ;;
+    # OFF-308 은 가드하지 않는다. 시험이 오늘을 활성 휴무일로 **직접 심고** 지운다 —
+    # 일요일을 기다리던 구성에서는 평일 회차마다 SKIP 이라 한 번도 판정된 적이 없었다.
   esac
   # 접수완료는 업무시간 안에서도 접수마감(AM 11:00 / PM 16:00) 전이어야 성공한다 (05 §2.4).
   # CWR-006(성공)과 CWR-009(마감경과)는 배타적이라 시각으로 갈라 하나만 판정한다.
   case "$k" in
-    CWR-006_*) if [ "${CUT:-0}" -ne 1 ]; then
-        echo "SKIP $k 접수마감 경과 또는 경계 10분 이내 — 성공 경로는 마감 전에만 성립한다" >> "$OUT"; continue; fi ;;
-    CWR-009_*) if [ "${CUT:-0}" -ne 2 ]; then
-        echo "SKIP $k 접수마감 전 — 마감경과 경로는 마감 후에만 성립한다" >> "$OUT"; continue; fi ;;
+    CWR-006_*) if [ "${CUTPM:-0}" -ne 1 ]; then
+        echo "SKIP $k PM 마감(16:00) 10분 전을 지났다 — 성공 경로는 마감 전에만 성립한다" >> "$OUT"; continue; fi ;;
+    CWR-009_*) if [ "${CUTAM:-0}" -ne 1 ]; then
+        echo "SKIP $k 11:10 이전 — AM 마감(11:00) 경과 경로는 그 뒤에만 성립한다" >> "$OUT"; continue; fi ;;
   esac
   # -W -w 65535 를 빼지 않는다. 기본 폭 80 에서 줄이 접히면 파서가 무너진다(실측 확인).
   sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -W -w 65535 -s"|" \
          -i "$f" -o "artifacts/logs/rs_${k}.txt" || FAILED=1
   node tools/verify-contract.js "artifacts/logs/rs_${k}.txt" "$k" >> "$OUT" 2>&1 || FAILED=1
 done
+
+# OFF-308 이 심은 임시 휴무일이 남아 있으면 뒤따르는 모든 회차가 308 이 된다.
+# 시험 파일이 지우지만 한 번 더 확인한다 — 남은 채로 green 을 내지 않는다.
+LEFT=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
+  DELETE FROM dbo.휴무일 WHERE [휴무일명] = N'OFF-308 시험용 임시 휴무일';
+  SELECT CONVERT(VARCHAR(5), @@ROWCOUNT) + '/' + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM dbo.휴무일));" | tr -d ' \r')
+case "$LEFT" in
+  0/2) echo "PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 · 휴무일 Seed 2건" >> "$OUT" ;;
+  *)   echo "FAIL OFF-308-CLEAN 임시 휴무일 잔여/총계 = $LEFT (기대 0/2)" >> "$OUT"; FAILED=1 ;;
+esac
 
 cat "$OUT"
 echo "contract-verify FAILED=$FAILED"

@@ -1671,10 +1671,25 @@ Write SP는 검증순서에서 `308`/`309`(공통 업무 가능)를 **업무 Rul
 어느 시각에 돌려도 Write SP 의 업무시간 계약이 한쪽에서 반드시 판정된다.
 
 ```text
-BIZ=1                 PWR·RWR·CWR 실행        OFF-* SKIP
-BIZ=0 · 업무일         OFF-309-* 실행 (309)    PWR·RWR·CWR·OFF-308 SKIP
-BIZ=0 · 업무일 아님     OFF-308-* 실행 (308)    나머지 SKIP
+BIZ=1                 PWR·RWR·CWR 실행        OFF-309-* SKIP
+BIZ=0 · 업무일         OFF-309-* 실행 (309)    PWR·RWR·CWR SKIP
+OFF-308-*             **언제나 실행**          아래 참조
 ```
+
+`[X 실측]` **`OFF-308` 은 한 번도 판정된 적이 없었다.** 일요일이나 활성 휴무일을 기다리는
+구성이라 평일 회차마다 `SKIP` 이었고, `SKIP` 은 `PASS` 가 아니다(CLAUDE.md §10). 실제로 이
+시험은 작성 이후 단 한 번도 실행되지 않았다.
+
+**휴무일은 데이터다.** 시험이 오늘을 활성 휴무일로 직접 심고 지우면 SP·TVF 를 한 글자도
+고치지 않고 `308` 경로가 결정적으로 성립한다. `TodayBiz = 0` 은 `WithinHours` 보다 앞에서
+판정되므로(`UFN_HC_일정확인` 의 `WorkCode CASE`) 하루 중 어느 시각에 돌려도 된다.
+
+```text
+심은 행은 같은 파일에서 지운다. 남으면 뒤따르는 PWR/RWR/CWR 계약이 전부 308 이 된다.
+verify-contract-all.sh 가 루프 뒤에 한 번 더 지우고 '잔여 0건 / 휴무일 2건' 을 판정한다.
+```
+
+`[실측 2026-09-07 19:36]` `PASS OFF-308-01 … RS0 Code=308` · `PASS OFF-308-CLEAN 잔여 0건 · Seed 2건`.
 
 `tests/05`·`06`·`07`·`08` 머리에 다음을 둔다.
 
@@ -1744,6 +1759,19 @@ END
 `[I]` **applock 실패와 예상하지 못한 오류는 기대 행수가 0이다**(`04` §14 L2·L3). `CON` 계열이 경합을 만들 때 `변경이력` 행수를 성공 건수와 같게 기대하면 안 된다.
 
 `[I]` 시간 경계(`CWR-009`)는 `UFN_HC_일정확인` 의 `@ServerTime` 주입으로 **결정적으로** 시험한다. Write SP 경로는 실제 시각에 의존하므로 §33.2a SKIP 가드를 따른다.
+
+`[X 실측]` **`CWR-006`(성공)과 `CWR-009`(마감경과)는 배타적이 아니다.** 배타성은 Rule 이 아니라
+**둘 다 PM Work 를 쓴 선택**의 결과였다. 마감은 Slot 마다 다르다(AM 11:00 · PM 16:00).
+TVF 에 시각을 주입해 실측했다.
+
+```text
+13:00 · AM Work   CutoffTime 11:00   CutoffPassed 1   -> 304
+13:00 · PM Work   CutoffTime 16:00   CutoffPassed 0   -> 성공
+```
+
+`CWR-009` 를 **AM Work** 로 옮기면 `11:10~15:50` 에 둘 다 판정된다. 이전 구성에서 `CWR-009` 는
+`16:00~18:00` 에만 돌아 **일반 회귀가 한 번도 닿지 못했다.** 가드도 Slot 별로 나눈다 —
+`CUTPM`(15:50 전) · `CUTAM`(11:10 이후).
 
 ---
 
@@ -2551,7 +2579,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | `CON` | `001`~`008` | 8 | `tests/09`~`12` + `scripts/concurrency-test.sh` | 2세션 경합. `rc=1` 증거 ≥1 · `Msg 1205`·`50002` 각 0건 (§38) | G11 |
 | `SEC` | `001`~`009` `011` | 10 | `tests/13_Security_Tests.sql` | 권한 경계 · `EXECUTE AS` 거부 `ERROR_NUMBER()=229` (§39) | G12 |
 | `SEC` | `010` | 1 | `scripts/verify-no-secret.sh` | 배포 원본·로그·보고서 secret 0건 — **SQL 이 아니라 셸** | G12 |
-| `OFF` | `308`~`309` | 2 | `tests/contract/OFF-*` | 업무시간 밖 Write SP 의 `308`·`309`. `PWR`/`RWR`/`CWR` 과 배타적이라 어느 시각에 돌려도 한쪽이 판정된다 (§33.2a) | G09 |
+| `OFF` | `308`~`309` | 2 | `tests/contract/OFF-*` | `309` 는 업무시간 밖에서만 — `PWR`/`RWR`/`CWR` 과 배타적이라 어느 시각에 돌려도 한쪽이 판정된다. `308` 은 시험이 휴무일을 심어 **언제나** 판정된다 (§33.2a) | G09 |
 | `VER` | `001`~`007` | 7 | `deploy/09_Verify.sql` | 배포 직후 객체 수량 자체검증 | G03 |
 | `RBD` | `001`~`010` | 10 | `tests/14_Clean_Rebuild_Verify.sql` | Clean Rebuild 재현성 (§40) | G14 |
 | **합계** | | **248** | | | |
