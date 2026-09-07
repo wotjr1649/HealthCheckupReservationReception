@@ -19,6 +19,8 @@ c() { grep -ac "$1" "$2" 2>/dev/null || true; }   # grep -c 는 0건일 때 exit
   echo "=== Phase 4 테스트 요약 ==="
   echo "생성시각: $(date -Iseconds)"
   echo "회귀 로그: $RUNLOG"
+  # 회차의 **자기 시각**을 함께 적는다. 시각을 옮겨 돌린 회차는 생성시각과 크게 어긋난다.
+  [ -f "$RUNLOG" ] && grep -a -m1 '=== Deploy 시작' "$RUNLOG" | sed 's/^/회차 시각: /'
   if [ -f "$RUNLOG" ]; then
     echo
     echo "--- 이 회차의 판정 (test.sh 출력 그대로) ---"
