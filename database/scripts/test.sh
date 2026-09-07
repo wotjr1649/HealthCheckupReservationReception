@@ -9,8 +9,13 @@ NOTRUN=0
 
 ./scripts/rebuild.sh || { echo "rebuild 실패"; exit 1; }
 
+# 이 회차가 쓴 로그만 목록에 남긴다. artifacts/logs/ 는 누적되고 옛 RED 회차의
+# test_01_red.log 같은 파일이 섞이면 요약에 이 회차와 무관한 FAIL 이 들어온다 (실측).
+: > artifacts/logs/_manifest.txt
+
 run() {                       # run <파일> <로그번호>
   local f="$1" log="artifacts/logs/test_${2}.log" rc=0
+  echo "$log" >> artifacts/logs/_manifest.txt
   echo "--- $f"
   sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -i "$f" -o "$log" || rc=$?
   iconv -f UTF-16 -t UTF-8 "$log" | grep -E '^(PASS|FAIL|SKIP|INFO|Msg )' || true

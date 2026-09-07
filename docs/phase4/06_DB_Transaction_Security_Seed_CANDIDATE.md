@@ -294,7 +294,8 @@ database/
 │  ├─ verify-contract-all.sh          tests/contract/* 전건 실행 → verify-contract.js
 │  ├─ clean-rebuild-verify.sh         RBD-002·003·005·007·008·009. 회차 사이 덤프 diff
 │  ├─ verify-no-secret.sh             SEC-010. 배포 원본 + 로그 + 보고서 secret 스캔
-│  └─ verify-tsql-allowlist.sh        G13-b. .sql 만 · 주석 제외 → 허용목록(§9.2) 밖 0건
+│  ├─ verify-tsql-allowlist.sh        G13-b. .sql 만 · 주석 제외 → 허용목록(§9.2) 밖 0건
+│  └─ make-summary.sh                 T37 Step 2. 회귀 로그 → artifacts/reports/test-summary.txt
 │
 ├─ tools/
 │  ├─ verify-contract.js              node, 의존성 0

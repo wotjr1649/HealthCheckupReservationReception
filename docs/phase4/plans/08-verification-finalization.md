@@ -990,7 +990,27 @@ echo "exit=$RC"   # tee 를 쓰면 $? 가 tee 의 것(항상 0)이라 회귀 실
 
 Expected: exit 0, 모든 테스트 파일 통과.
 
-- [ ] **Step 2: `test-summary.txt` 생성**
+- [x] **Step 2: `test-summary.txt` 생성**
+
+`[X 실측]` **초안의 인라인 블록은 세 가지를 놓친다.**
+
+```text
+1  tests/*.log 만 센다 -> 계약 110종 · CON 8종 · Clean Rebuild 가 통째로 빠져
+   "총 테스트 건수" 가 실제의 절반이 된다.
+2  artifacts/logs/ 는 누적된다. 옛 RED 회차의 test_01_red.log 가 남아 있어
+   와일드카드로 세면 이 회차와 무관한 FAIL=1 이 섞인다.
+   -> test.sh 가 자기가 쓴 로그를 _manifest.txt 에 남기고 요약은 그것만 읽는다.
+      mtime 비교는 쓸 수 없다 — RUNLOG 는 회귀가 끝날 때까지 계속 쓰여 가장 새 파일이 되고,
+      그러면 모든 시험 로그가 '오래된 것' 으로 걸러져 요약이 통째로 빈다.
+3  conc_*_verify.log 를 통째로 읽으면 옛 회차까지 나온다 (실측: CON-004 가 세 번).
+   -> 시나리오마다 최신 하나만. 없으면 NOT RUN 으로 적는다.
+```
+
+`scripts/make-summary.sh` 로 옮겼다. NOT RUN 을 요약 **머리**에 세운다 — 업무시간 밖 회차는
+성공 경로를 돌지 못해 PASS 가 176 까지 떨어지는데 숫자만 보면 통과한 회차처럼 읽힌다.
+
+`[실측 2026-09-07 18:11 · 업무시간 밖]` exit 0 · PASS 176 · FAIL 0 · SKIP 79 · NOT RUN 9.
+CON 은 001·002·003·004·006·007 PASS, 005·008 NOT RUN.
 
 ```bash
 {
