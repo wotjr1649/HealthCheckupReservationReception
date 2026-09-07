@@ -935,6 +935,7 @@ Write SP 8개    verify-contract.js 가 계약 시나리오의 **실측 출력 �
 | `SELECT_예약가능정보`의 업무 불가 | RS0 성공 + RS1/RS2/RS3/RS5의 `BlockCode`/`ReasonCode` | `05` §3.3 |
 | `applock` rc `-3` (deadlock victim) | `ROLLBACK` 후 **`THROW 50002`** | §25 |
 | `applock` rc `-1`(timeout) / `-2`(취소) / `-999`(호출오류) | `ROLLBACK` 후 **`THROW 50001`** | §25 |
+| Write SP 진입 시 `@@TRANCOUNT > 0` | **`THROW 50003`** (트랜잭션을 열기 전이라 되돌릴 것이 없다) | §21.1a |
 | Deadlock 1205, Lock timeout 1222 | `CATCH`에서 `ROLLBACK` 후 **`THROW`** (원본 유지) | `05` §3.6 |
 | Unique 위반 2601/2627 | `CATCH`에서 `ROLLBACK` 후 **`THROW`** (원본 유지) | applock으로 사전 직렬화했으므로 발생 시 설계 위반. 숨기지 않는다 |
 | 그 밖의 예상하지 못한 SQL/시스템 오류 | `CATCH`에서 `ROLLBACK` 후 **`THROW`** | `05` §3.6 |
@@ -954,6 +955,7 @@ Catalog 38개에 없는 실패를 기존 업무코드에 억지 매핑
 |---:|---|
 | `50001` | 잠금 **timeout** (`sp_getapplock` rc `-1`) 및 rc `-2`/`-999` |
 | `50002` | 잠금 **deadlock victim** (`sp_getapplock` rc `-3`) |
+| `50003` | Write SP 를 **호출자 트랜잭션 안**에서 실행하려 함 (§21.1a) |
 | `50010`~`50015` | `00_Preflight.sql` 안전가드 위반 (§8.3) |
 | `50020`~`50024` | `Rebuild.sql` 안전가드 위반 (§8.3) |
 | `51000` | 테스트 파일 실패 집계 (테스트 스크립트 전용) |
@@ -1076,6 +1078,35 @@ END CATCH
 | 5 | **No-op도 Transaction·잠금 안에서 판정** 후 UPDATE 없이 `COMMIT` | 상태·동시성의 원자적 확인 보장 |
 
 `ROLLBACK` 후 배치가 정상 진행되고 `XACT_STATE()=0`이 되는 것은 §5.3-4에서 실측 확인했다.
+
+## 21.1a Write SP 진입 가드 `[신설 2026-09-07]`
+
+`[X 실측]` **Write SP 8개 전부 진입 시 `@@TRANCOUNT` 를 보지 않았다.** `deploy/` 전체에서
+`@@TRANCOUNT` 는 주석에만 있었다. savepoint 없이 `BEGIN`/`COMMIT`/`ROLLBACK` 을 맨몸으로 쓰므로
+호출자가 트랜잭션을 열고 부르면 네 가지가 동시에 깨진다.
+
+```text
+업무실패   이름 없는 ROLLBACK 이 **바깥 트랜잭션까지** 되돌리고 EXEC 반환 시 Msg 266
+성공       COMMIT 이 @@TRANCOUNT 를 2->1 로 줄일 뿐인데 RS0 Success=1 이 나간다
+감사       §21.1 ① 의 "@@TRANCOUNT = 0 지점" 전제가 거짓이 되어 감사행이 함께 롤백된다
+잠금       @LockOwner=Transaction 이라 applock 이 바깥 트랜잭션이 끝날 때까지 살아남는다
+```
+
+현재 호출 경로에서는 발생하지 않았다. 그러나 그것을 보장하던 것은 **호출자의 관습뿐** 이었다.
+Phase 5 가 "예약 저장 + 애플리케이션 로그" 를 한 SqlTransaction 으로 묶는 순간 터진다.
+
+```sql
+IF @@TRANCOUNT > 0
+    THROW 50003, N'이 프로시저는 호출자 트랜잭션 안에서 실행할 수 없습니다.', 1;
+```
+
+`[실측]` 호출자 트랜잭션 안 → `Msg 50003` 이고 **바깥 트랜잭션이 살아남는다**
+(`@@TRANCOUNT=1` · `XACT_STATE=1`) — doomed 가 아니므로 호출자가 자기 작업을 되돌리거나
+커밋할 수 있다. 트랜잭션 밖 호출은 그대로 동작한다.
+
+`[I]` **Phase 5 는 Write SP 호출을 SqlTransaction 으로 감싸지 않는다.** SP 하나가 곧 한 업무단위다.
+
+---
 
 ## 21.2 Transaction Matrix (인계문서 §9.4 형식)
 

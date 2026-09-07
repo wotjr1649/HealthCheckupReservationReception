@@ -31,6 +31,16 @@ CREATE OR ALTER PROCEDURE [dbo].[USP_HC_INSERT_예약]
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    -- [X] 호출자 트랜잭션 안에서 실행할 수 없다. Write SP 는 savepoint 없이 BEGIN/COMMIT/ROLLBACK 을
+    --     맨몸으로 쓰므로 @@TRANCOUNT > 0 으로 진입하면 네 가지가 동시에 깨진다.
+    --       업무실패  이름 없는 ROLLBACK 이 **바깥 트랜잭션까지** 되돌리고 EXEC 반환 시 Msg 266
+    --       성공      COMMIT 이 카운트만 줄여 아무것도 확정되지 않은 채 Success=1 이 나간다
+    --       감사      스펙 §21.1 ① 의 '@@TRANCOUNT = 0 지점' 전제가 거짓이 되어 함께 롤백된다
+    --       잠금      @LockOwner='Transaction' 이라 applock 이 바깥 트랜잭션까지 살아남는다
+    --     진입에서 자른다. 스펙 §20 에 50003 으로 등재했다.
+    IF @@TRANCOUNT > 0
+        THROW 50003, N'이 프로시저는 호출자 트랜잭션 안에서 실행할 수 없습니다.', 1;
     SET XACT_ABORT ON;
 
     DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
@@ -344,6 +354,16 @@ CREATE OR ALTER PROCEDURE [dbo].[USP_HC_UPDATE_예약변경]
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    -- [X] 호출자 트랜잭션 안에서 실행할 수 없다. Write SP 는 savepoint 없이 BEGIN/COMMIT/ROLLBACK 을
+    --     맨몸으로 쓰므로 @@TRANCOUNT > 0 으로 진입하면 네 가지가 동시에 깨진다.
+    --       업무실패  이름 없는 ROLLBACK 이 **바깥 트랜잭션까지** 되돌리고 EXEC 반환 시 Msg 266
+    --       성공      COMMIT 이 카운트만 줄여 아무것도 확정되지 않은 채 Success=1 이 나간다
+    --       감사      스펙 §21.1 ① 의 '@@TRANCOUNT = 0 지점' 전제가 거짓이 되어 함께 롤백된다
+    --       잠금      @LockOwner='Transaction' 이라 applock 이 바깥 트랜잭션까지 살아남는다
+    --     진입에서 자른다. 스펙 §20 에 50003 으로 등재했다.
+    IF @@TRANCOUNT > 0
+        THROW 50003, N'이 프로시저는 호출자 트랜잭션 안에서 실행할 수 없습니다.', 1;
     SET XACT_ABORT ON;
 
     DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
@@ -472,7 +492,10 @@ BEGIN
             BEGIN
                 -- SLOT 자원 최대 2개를 자원명 오름차순으로 잡는다 (스펙 §23.1).
                 -- CURSOR 를 쓰지 않는다 — 허용목록 밖이고, THROW 시 CLOSE/DEALLOCATE 가 남는다.
-                SET @ResA = N'HC|SLOT|' + CONVERT(CHAR(8), @CurDate, 112) + N'|' + @CurSlot;
+                -- [X] @CurSlot 은 DB 에서 읽은 값이라 정규화를 거치지 않았다. CK 의 IN 목록이 CI 라
+                --     'am' 행이 존재할 수 있고(실측), 그러면 …|am 과 …|AM 이 다른 자원이 되어
+                --     정원 직렬화가 통째로 사라진다. 요청값 @TimeSlot 은 :57 에서 이미 UPPER 다.
+                SET @ResA = N'HC|SLOT|' + CONVERT(CHAR(8), @CurDate, 112) + N'|' + UPPER(@CurSlot);
                 SET @ResB = N'HC|SLOT|' + CONVERT(CHAR(8), @ReservationDate, 112) + N'|' + @TimeSlot;
                 IF @ResA = @ResB SET @ResB = NULL;
                 IF @ResB IS NOT NULL AND @ResB < @ResA
@@ -802,6 +825,16 @@ CREATE OR ALTER PROCEDURE [dbo].[USP_HC_UPDATE_예약취소]
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    -- [X] 호출자 트랜잭션 안에서 실행할 수 없다. Write SP 는 savepoint 없이 BEGIN/COMMIT/ROLLBACK 을
+    --     맨몸으로 쓰므로 @@TRANCOUNT > 0 으로 진입하면 네 가지가 동시에 깨진다.
+    --       업무실패  이름 없는 ROLLBACK 이 **바깥 트랜잭션까지** 되돌리고 EXEC 반환 시 Msg 266
+    --       성공      COMMIT 이 카운트만 줄여 아무것도 확정되지 않은 채 Success=1 이 나간다
+    --       감사      스펙 §21.1 ① 의 '@@TRANCOUNT = 0 지점' 전제가 거짓이 되어 함께 롤백된다
+    --       잠금      @LockOwner='Transaction' 이라 applock 이 바깥 트랜잭션까지 살아남는다
+    --     진입에서 자른다. 스펙 §20 에 50003 으로 등재했다.
+    IF @@TRANCOUNT > 0
+        THROW 50003, N'이 프로시저는 호출자 트랜잭션 안에서 실행할 수 없습니다.', 1;
     SET XACT_ABORT ON;
 
     DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();

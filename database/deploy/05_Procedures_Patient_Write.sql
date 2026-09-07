@@ -32,6 +32,16 @@ CREATE OR ALTER PROCEDURE [dbo].[USP_HC_INSERT_수검자]
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    -- [X] 호출자 트랜잭션 안에서 실행할 수 없다. Write SP 는 savepoint 없이 BEGIN/COMMIT/ROLLBACK 을
+    --     맨몸으로 쓰므로 @@TRANCOUNT > 0 으로 진입하면 네 가지가 동시에 깨진다.
+    --       업무실패  이름 없는 ROLLBACK 이 **바깥 트랜잭션까지** 되돌리고 EXEC 반환 시 Msg 266
+    --       성공      COMMIT 이 카운트만 줄여 아무것도 확정되지 않은 채 Success=1 이 나간다
+    --       감사      스펙 §21.1 ① 의 '@@TRANCOUNT = 0 지점' 전제가 거짓이 되어 함께 롤백된다
+    --       잠금      @LockOwner='Transaction' 이라 applock 이 바깥 트랜잭션까지 살아남는다
+    --     진입에서 자른다. 스펙 §20 에 50003 으로 등재했다.
+    IF @@TRANCOUNT > 0
+        THROW 50003, N'이 프로시저는 호출자 트랜잭션 안에서 실행할 수 없습니다.', 1;
     SET XACT_ABORT ON;
 
     DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
@@ -115,6 +125,17 @@ BEGIN
     --   열린 Transaction 안에서 나면 XACT_ABORT ON 이 doomed 를 만들어 COMMIT 이 Msg 3930 이 된다.
     --   Sequence 값은 롤백과 무관하게 소비되며 04 §3.6 이 결번을 허용한다.
     ----------------------------------------------------------------------------
+    -- [X] 05 §10.1 검증순서는 '자동 ChartNo 발급' 을 '현재 공통 업무 가능' **뒤**에 둔다.
+    --     구현은 Msg 11728 회피를 위해 발급을 Transaction 밖으로 뺐는데, 그러면서 업무시간
+    --     검사보다 **앞**으로 나가 버렸다. 그 결과 업무시간 밖 자동등록 호출이 실패하면서도
+    --     차트번호를 하나씩 먹는다 — MAXVALUE 999999 이고 고갈되면 재배포 없이 복구되지 않는다.
+    --     Transaction 안의 재검증이 여전히 권위값이다. 여기서는 **소모 전에** 미리 자른다.
+    IF @Code = 0 AND @AutoChartNo = 1
+        SELECT @Code = s.WorkCode, @Msg = s.WorkMessage
+          FROM [dbo].[UFN_HC_일정확인](@ServerTime, @Today, 'AM', 'NONE') s
+         WHERE s.CanWorkNow = 0;
+    IF @Code IN (308, 309) BEGIN SET @Success = 0; SET @Field = NULL; END
+
     IF @Code = 0
     BEGIN
         -- 자원명에 주민번호 원문을 싣지 않는다. DMV·오류 메시지 노출 차단 (스펙 §22).
@@ -160,7 +181,10 @@ BEGIN
 
                     -- 자동발급 경로도 후보마다 CHART 를 잡는다. 잡지 않으면 다른 세션의 수동입력과
                     -- 겹쳐 Msg 2627 이 나는데, 스펙 §20 은 그것을 설계 위반으로 규정했다.
-                    SET @ResChart = N'HC|CHART|' + @Cand;
+                    -- [X] applock 은 바이트 비교, UQ_수검자_CHART_NO 는 CI·폭무시다 (실측).
+                    --     정규화 없이 이어 붙이면 'c000001' 과 'C000001' 이 서로 다른 자원을 잠가
+                    --     둘 다 EXISTS 를 통과하고 뒤쪽이 Msg 2627 로 죽는다 — 위 주석이 막겠다던 그 상황이다.
+                    SET @ResChart = N'HC|CHART|' + UPPER(@Cand);
                     EXEC @rc = sp_getapplock @Resource = @ResChart, @LockMode = 'Exclusive',
                                              @LockOwner = 'Transaction', @LockTimeout = 5000;
                     PRINT 'INFO applock rc=' + CONVERT(VARCHAR(4), @rc);
@@ -343,6 +367,16 @@ CREATE OR ALTER PROCEDURE [dbo].[USP_HC_UPDATE_수검자정보]
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    -- [X] 호출자 트랜잭션 안에서 실행할 수 없다. Write SP 는 savepoint 없이 BEGIN/COMMIT/ROLLBACK 을
+    --     맨몸으로 쓰므로 @@TRANCOUNT > 0 으로 진입하면 네 가지가 동시에 깨진다.
+    --       업무실패  이름 없는 ROLLBACK 이 **바깥 트랜잭션까지** 되돌리고 EXEC 반환 시 Msg 266
+    --       성공      COMMIT 이 카운트만 줄여 아무것도 확정되지 않은 채 Success=1 이 나간다
+    --       감사      스펙 §21.1 ① 의 '@@TRANCOUNT = 0 지점' 전제가 거짓이 되어 함께 롤백된다
+    --       잠금      @LockOwner='Transaction' 이라 applock 이 바깥 트랜잭션까지 살아남는다
+    --     진입에서 자른다. 스펙 §20 에 50003 으로 등재했다.
+    IF @@TRANCOUNT > 0
+        THROW 50003, N'이 프로시저는 호출자 트랜잭션 안에서 실행할 수 없습니다.', 1;
     SET XACT_ABORT ON;
 
     DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
@@ -427,7 +461,8 @@ BEGIN
     IF @Code = 0
     BEGIN
         SET @ResSsn   = N'HC|SSN|' + CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @SocialNumber), 2);
-        SET @ResChart = N'HC|CHART|' + @ChartNo;
+        -- [X] 자원명은 UPPER 로 맞춘다. applock 은 바이트 비교, UQ 는 CI 다 (05 §22 · 실측).
+        SET @ResChart = N'HC|CHART|' + UPPER(@ChartNo);
         SET @ResPat   = N'HC|PAT|' + CONVERT(NVARCHAR(20), @PatientId);
 
         BEGIN TRY

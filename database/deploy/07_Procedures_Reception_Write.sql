@@ -17,6 +17,16 @@ CREATE OR ALTER PROCEDURE [dbo].[USP_HC_UPDATE_접수완료]
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    -- [X] 호출자 트랜잭션 안에서 실행할 수 없다. Write SP 는 savepoint 없이 BEGIN/COMMIT/ROLLBACK 을
+    --     맨몸으로 쓰므로 @@TRANCOUNT > 0 으로 진입하면 네 가지가 동시에 깨진다.
+    --       업무실패  이름 없는 ROLLBACK 이 **바깥 트랜잭션까지** 되돌리고 EXEC 반환 시 Msg 266
+    --       성공      COMMIT 이 카운트만 줄여 아무것도 확정되지 않은 채 Success=1 이 나간다
+    --       감사      스펙 §21.1 ① 의 '@@TRANCOUNT = 0 지점' 전제가 거짓이 되어 함께 롤백된다
+    --       잠금      @LockOwner='Transaction' 이라 applock 이 바깥 트랜잭션까지 살아남는다
+    --     진입에서 자른다. 스펙 §20 에 50003 으로 등재했다.
+    IF @@TRANCOUNT > 0
+        THROW 50003, N'이 프로시저는 호출자 트랜잭션 안에서 실행할 수 없습니다.', 1;
     SET XACT_ABORT ON;
 
     DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
@@ -112,7 +122,8 @@ BEGIN
 
             IF @Code = 0
             BEGIN
-                SET @ResSlot = N'HC|SLOT|' + CONVERT(CHAR(8), @CurDate, 112) + N'|' + @CurSlot;
+                -- [X] @CurSlot 정규화. 06 과 같은 이유다 — applock 은 바이트, CK 의 IN 은 CI 다 (실측).
+                SET @ResSlot = N'HC|SLOT|' + CONVERT(CHAR(8), @CurDate, 112) + N'|' + UPPER(@CurSlot);
                 EXEC @rc = sp_getapplock @Resource = @ResSlot, @LockMode = 'Exclusive',
                                          @LockOwner = 'Transaction', @LockTimeout = 5000;
                 PRINT 'INFO applock rc=' + CONVERT(VARCHAR(4), @rc);
@@ -273,6 +284,16 @@ CREATE OR ALTER PROCEDURE [dbo].[USP_HC_UPDATE_접수추가검사]
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    -- [X] 호출자 트랜잭션 안에서 실행할 수 없다. Write SP 는 savepoint 없이 BEGIN/COMMIT/ROLLBACK 을
+    --     맨몸으로 쓰므로 @@TRANCOUNT > 0 으로 진입하면 네 가지가 동시에 깨진다.
+    --       업무실패  이름 없는 ROLLBACK 이 **바깥 트랜잭션까지** 되돌리고 EXEC 반환 시 Msg 266
+    --       성공      COMMIT 이 카운트만 줄여 아무것도 확정되지 않은 채 Success=1 이 나간다
+    --       감사      스펙 §21.1 ① 의 '@@TRANCOUNT = 0 지점' 전제가 거짓이 되어 함께 롤백된다
+    --       잠금      @LockOwner='Transaction' 이라 applock 이 바깥 트랜잭션까지 살아남는다
+    --     진입에서 자른다. 스펙 §20 에 50003 으로 등재했다.
+    IF @@TRANCOUNT > 0
+        THROW 50003, N'이 프로시저는 호출자 트랜잭션 안에서 실행할 수 없습니다.', 1;
     SET XACT_ABORT ON;
 
     DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
@@ -535,6 +556,16 @@ CREATE OR ALTER PROCEDURE [dbo].[USP_HC_UPDATE_접수취소]
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    -- [X] 호출자 트랜잭션 안에서 실행할 수 없다. Write SP 는 savepoint 없이 BEGIN/COMMIT/ROLLBACK 을
+    --     맨몸으로 쓰므로 @@TRANCOUNT > 0 으로 진입하면 네 가지가 동시에 깨진다.
+    --       업무실패  이름 없는 ROLLBACK 이 **바깥 트랜잭션까지** 되돌리고 EXEC 반환 시 Msg 266
+    --       성공      COMMIT 이 카운트만 줄여 아무것도 확정되지 않은 채 Success=1 이 나간다
+    --       감사      스펙 §21.1 ① 의 '@@TRANCOUNT = 0 지점' 전제가 거짓이 되어 함께 롤백된다
+    --       잠금      @LockOwner='Transaction' 이라 applock 이 바깥 트랜잭션까지 살아남는다
+    --     진입에서 자른다. 스펙 §20 에 50003 으로 등재했다.
+    IF @@TRANCOUNT > 0
+        THROW 50003, N'이 프로시저는 호출자 트랜잭션 안에서 실행할 수 없습니다.', 1;
     SET XACT_ABORT ON;
 
     DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
