@@ -1645,9 +1645,34 @@ IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
 
 **기대 실패**를 검증하는 항목(권한 거부 등)은 `BEGIN TRY … END TRY BEGIN CATCH … END CATCH`로 감싸 기대 오류면 `PASS`로 계산한다.
 
-## 33.2a 업무시간 SKIP 가드 — 모든 Write 테스트 파일 공통 `[I]` `[X 수정]`
+## 33.2a 업무시간 분기 — 모든 Write 테스트 파일 공통 `[I]` `[X 수정 2차]`
 
 Write SP는 검증순서에서 `308`/`309`(공통 업무 가능)를 **업무 Rule보다 먼저** 판정한다. 따라서 업무시간 밖에 실행하면 `300`·`305`·`411`·`0` 등을 기대하는 단언이 **전부 `308`/`309`를 받아 FAIL**한다. 초안은 `CWR-006` 한 곳에만 가드를 두고 나머지 Task의 기대 PASS 수를 무조건값으로 적었다.
+
+`[X 2차]` **초안은 창 밖에서 파일을 통째로 `RETURN` 했다.** 그러면 밤·주말 회귀가 Write SP 에
+대해 아무것도 증명하지 못하고, `308`·`309` 는 **영영 관측되지 않는 ResultCode** 로 남는다
+(실측: Catalog 38개 중 미관측 7개에 둘 다 들어 있었다). `SKIP` 은 `PASS` 가 아니다(`CLAUDE.md` §10)
+— 그렇다고 판정할 수 있는 것을 안 하고 넘기라는 뜻도 아니다.
+
+**창 밖에서도 판정할 것이 있다.** Write SP 가 `308`/`309` 를 내고 **아무것도 바꾸지 않는다** 는 것은
+계약이다(`05` §5 우선순위 9번). `RETURN` 대신 분기한다.
+
+```text
+창 안   성공 경로와 업무 Rule 을 전부 판정한다 (지금까지와 동일)
+창 밖   창 안이면 성공했을 인자로 Write SP 를 호출하고
+        DB 지문(행수 · 상태코드 분포 · 최종수정일시 합)이 **불변** 임을 판정한다
+        + @@TRANCOUNT = 0
+        RS0 Code 는 이 파일에서 받을 수 없으므로(INSERT … EXEC 금지) 아래 계약 시나리오가 판정한다
+```
+
+`tests/contract/OFF-*` 가 Code 를 판정한다. `PWR`/`RWR`/`CWR` 과 **정확히 배타적**이라
+어느 시각에 돌려도 Write SP 의 업무시간 계약이 한쪽에서 반드시 판정된다.
+
+```text
+BIZ=1                 PWR·RWR·CWR 실행        OFF-* SKIP
+BIZ=0 · 업무일         OFF-309-* 실행 (309)    PWR·RWR·CWR·OFF-308 SKIP
+BIZ=0 · 업무일 아님     OFF-308-* 실행 (308)    나머지 SKIP
+```
 
 `tests/05`·`06`·`07`·`08` 머리에 다음을 둔다.
 
@@ -1658,19 +1683,20 @@ DECLARE @Biz  BIT     = CASE WHEN @Dow <> 6
                               AND @NowT >= CONVERT(TIME(7),'09:00:00')
                               AND @NowT <  CONVERT(TIME(7),'18:00:00')
                               AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
-                                               WHERE [HolidayDate] = CONVERT(DATE, SYSDATETIME())
-                                                 AND [Active] = 1)
+                                               WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME())
+                                                 AND [사용여부] = 1)
                              THEN 1 ELSE 0 END;
 PRINT 'INFO 실행시각 ' + CONVERT(VARCHAR(30), SYSDATETIME(), 121) + ' 업무가능=' + CONVERT(VARCHAR(1), @Biz);
 
 IF @Biz = 0
 BEGIN
-    PRINT 'SKIP <파일명> 업무시간(월~토 09:00~18:00, 비휴무일) 밖';
-    RETURN;   -- 이 파일의 단언을 수행하지 않는다
+    -- 지문을 재고 → 창 안이면 성공했을 인자로 호출 → 다시 재서 같은지 본다
+    -- 그리고 NOT RUN <창 안 전용 ID 대역> 을 남긴다. SKIP 을 PASS 로 승격하지 않는다.
+    RETURN;
 END
 ```
 
-**완료조건 표기는 "PASS n건"이 아니라 "업무시간 내 실행 시 PASS n건 / 밖이면 SKIP 1건 + FAIL 0건"으로 기술한다.** `T37`은 최종 Gate를 선언하기 전에 **업무시간 내 실행 로그가 존재하는지** 확인하고, 없으면 해당 Gate를 `NOT RUN`으로 남긴다 — `SKIP`을 `PASS`로 승격하지 않는다.
+**완료조건 표기는 "PASS n건"이 아니라 "업무시간 내 실행 시 PASS n건 / 밖이면 창 밖 분기 PASS 1건 + `NOT RUN` 1건 + FAIL 0건"으로 기술한다.** `T37`은 최종 Gate를 선언하기 전에 **업무시간 내 실행 로그가 존재하는지** 확인하고, 없으면 해당 Gate를 `NOT RUN`으로 남긴다 — `SKIP`을 `PASS`로 승격하지 않는다.
 
 ## 33.3 Test Matrix 형식 (인계문서 §9.6)
 
@@ -2506,9 +2532,10 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | `CON` | `001`~`008` | 8 | `tests/09`~`12` + `scripts/concurrency-test.sh` | 2세션 경합. `rc=1` 증거 ≥1 · `Msg 1205`·`50002` 각 0건 (§38) | G11 |
 | `SEC` | `001`~`009` `011` | 10 | `tests/13_Security_Tests.sql` | 권한 경계 · `EXECUTE AS` 거부 `ERROR_NUMBER()=229` (§39) | G12 |
 | `SEC` | `010` | 1 | `scripts/verify-no-secret.sh` | 배포 원본·로그·보고서 secret 0건 — **SQL 이 아니라 셸** | G12 |
+| `OFF` | `308`~`309` | 2 | `tests/contract/OFF-*` | 업무시간 밖 Write SP 의 `308`·`309`. `PWR`/`RWR`/`CWR` 과 배타적이라 어느 시각에 돌려도 한쪽이 판정된다 (§33.2a) | G09 |
 | `VER` | `001`~`007` | 7 | `deploy/09_Verify.sql` | 배포 직후 객체 수량 자체검증 | G03 |
 | `RBD` | `001`~`010` | 10 | `tests/14_Clean_Rebuild_Verify.sql` | Clean Rebuild 재현성 (§40) | G14 |
-| **합계** | | **246** | | | |
+| **합계** | | **248** | | | |
 
 `[I]` 범위가 전부 **연속**이다. 결번이 생기면 그 자체가 결함이다 — 계획에서 ID를 폐기할 때는 이 표에서도 지우고 뒤를 당기지 말고, 폐기 사유를 §45.4에 적는다.
 

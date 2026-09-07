@@ -74,13 +74,13 @@ function splitFences(src) {
 
 // V03 Test ID 생산↔소비 — 스펙 §45.2 카탈로그가 단일 출처. 계획 배치 집합과 양방향 대조.
 {
-  const RE = /\b(SCH|SED|RUL|SEL|PWR|RWR|CWR|SEC|CON|RBD|VER|SSN|PRE|RBK)-[A-Z]?\d{2,3}\b/g;
+  const RE = /\b(SCH|SED|RUL|SEL|PWR|RWR|CWR|SEC|CON|RBD|VER|SSN|PRE|RBK|OFF)-[A-Z]?\d{2,3}\b/g;
   // 카탈로그는 `| `PWR` | `001`~`014` `020`~`028` | 23 | …` 형태. 범위를 전개한다.
   const catBody = (spec.split(/## 45\.2 Test ID 카탈로그/)[1] || '').split(/\n## /)[0];
   const S = new Set();
   let declaredTotal = 0;
   for (const line of catBody.split('\n')) {
-    const m = line.match(/^\|\s*`(SCH|SED|RUL|SEL|PWR|RWR|CWR|SEC|CON|RBD|VER|SSN|PRE|RBK)`\s*\|([^|]*)\|\s*(\d+)\s*\|/);
+    const m = line.match(/^\|\s*`(SCH|SED|RUL|SEL|PWR|RWR|CWR|SEC|CON|RBD|VER|SSN|PRE|RBK|OFF)`\s*\|([^|]*)\|\s*(\d+)\s*\|/);
     if (!m) continue;
     const [, pre, ranges, cnt] = m;
     declaredTotal += +cnt;
@@ -279,7 +279,7 @@ function splitFences(src) {
       if (!/^\*\*완료조건:\*\*/.test(l)) return;
       if (/§45\.2/.test(l)) return;   // 카탈로그를 참조하면 그 줄 자체가 단일 출처를 가리킨다
       // Test ID prefix 와 함께 개수를 적은 경우만 잡는다. "Msg 1205 0건" 같은 건 아니다.
-      if (/\b(SCH|SED|RUL|SEL|PWR|RWR|CWR|SEC|CON|RBD|VER|SSN|PRE|RBK)\b[^\n]*?\b\d+\s*(건|개)/.test(l)
+      if (/\b(SCH|SED|RUL|SEL|PWR|RWR|CWR|SEC|CON|RBD|VER|SSN|PRE|RBK|OFF)\b[^\n]*?\b\d+\s*(건|개)/.test(l)
           || /\b\d+\s*(건|개)\s*PASS/.test(l) || /PASS\s*\d+\s*(건|개)/.test(l))
         hits.push(n + ':' + (i + 1) + ': ' + l.trim().slice(0, 100));
     });

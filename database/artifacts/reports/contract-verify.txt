@@ -47,6 +47,9 @@ PASS CWR-042_접수취소_성공 Result Set 계약 일치 (2개 RS · RS0 Code=0
 PASS CWR-043_접수취소_이미_CNC Result Set 계약 일치 (1개 RS · RS0 Code=502)
 PASS CWR-044_CNC_예약변경_불가 Result Set 계약 일치 (1개 RS · RS0 Code=502)
 PASS CWR-099_cleanup Result Set 계약 일치 (0개 RS · RS0 Code=undefined)
+SKIP OFF-308-01_업무일아님_수검자등록 오늘은 업무일 — 308 은 일요일·활성 휴무일에만 나온다
+SKIP OFF-309-01_업무시간밖_수검자등록 업무시간 안이거나 업무일이 아님 — 309 는 업무일의 시간 밖에서만 나온다
+SKIP OFF-309-02_업무시간밖_예약등록 업무시간 안이거나 업무일이 아님 — 309 는 업무일의 시간 밖에서만 나온다
 PASS PWR-000_fixture Result Set 계약 일치 (0개 RS · RS0 Code=undefined)
 PASS PWR-001_신규등록_자동차트 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS PWR-002_동일주민_동일이름 Result Set 계약 일치 (2개 RS · RS0 Code=2)

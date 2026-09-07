@@ -7,13 +7,53 @@ DECLARE @Fail INT = 0;
 --
 -- 업무시간 가드 (스펙 §33.2a). Write SP 는 308/309 를 업무 Rule 보다 먼저 판정하므로
 -- 업무시간 밖에서는 성공 경로가 하나도 성립하지 않는다. SKIP 은 PASS 가 아니다 (CLAUDE.md §10).
-IF NOT (DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
-        AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
-        AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
-        AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
-                         WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [사용여부] = 1))
+-- [!] 업무시간 밖이라고 건너뛰지 않는다. 창 밖에서 Write SP 가 308/309 를 내고 **아무것도
+--     바꾸지 않는다** 는 것은 계약이지 시험 사정이 아니다 (05 §5 우선순위 9번).
+--     SKIP 은 PASS 가 아니므로(CLAUDE.md §10) 창 밖에서는 그 계약을 실제로 판정한다.
+--     RS0 Code 자체는 이 파일에서 받을 수 없다(INSERT … EXEC 금지, §33.1a) —
+--     308/309 판정은 tests/contract/OFF-* 가 한다.
+DECLARE @BizOk BIT = CASE WHEN DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
+                           AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
+                           AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
+                           AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
+                                            WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME())
+                                              AND [사용여부] = 1)
+                          THEN 1 ELSE 0 END;
+
+IF @BizOk = 0
 BEGIN
-    PRINT 'SKIP 05_Patient_Write_Tests 업무시간(월~토 09:00~18:00, 비휴무일) 밖';
+    DECLARE @Off0 VARCHAR(300) =
+          CONVERT(VARCHAR(12), (SELECT COUNT(*) FROM [dbo].[수검자]))     + '|'
+        + CONVERT(VARCHAR(12), (SELECT COUNT(*) FROM [dbo].[예약접수]))   + '|'
+        + CONVERT(VARCHAR(12), (SELECT COUNT(*) FROM [dbo].[변경이력]))   + '|'
+        + CONVERT(VARCHAR(20), (SELECT ISNULL(SUM(CONVERT(BIGINT,
+                     DATEDIFF(SECOND, '2020-01-01', [최종수정일시]))), 0) FROM [dbo].[수검자]));
+
+    DECLARE @Op BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T015');
+    DECLARE @Ol DATETIME = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Op);
+    DECLARE @Os VARCHAR(13) = (SELECT [주민번호] FROM [dbo].[수검자] WHERE [수검자ID] = @Op);
+
+    -- 두 Write SP 모두 공통 업무가능을 업무 Rule 보다 먼저 판정한다.
+    EXEC [dbo].[USP_HC_INSERT_수검자] 1, NULL, N'창밖등록', '9501011000019',
+         NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, N'TEST';
+    EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Op, @Ol, N'T015', N'창밖수정', @Os,
+         NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'TEST';
+
+    DECLARE @Off1 VARCHAR(300) =
+          CONVERT(VARCHAR(12), (SELECT COUNT(*) FROM [dbo].[수검자]))     + '|'
+        + CONVERT(VARCHAR(12), (SELECT COUNT(*) FROM [dbo].[예약접수]))   + '|'
+        + CONVERT(VARCHAR(12), (SELECT COUNT(*) FROM [dbo].[변경이력]))   + '|'
+        + CONVERT(VARCHAR(20), (SELECT ISNULL(SUM(CONVERT(BIGINT,
+                     DATEDIFF(SECOND, '2020-01-01', [최종수정일시]))), 0) FROM [dbo].[수검자]));
+
+    IF @Off0 = @Off1 AND @@TRANCOUNT = 0
+        PRINT 'PASS PWR-OFF 업무시간 밖 Write SP 호출이 DB 를 바꾸지 않았다  ' + @Off1;
+    ELSE BEGIN PRINT 'FAIL PWR-OFF 창 밖 호출이 데이터를 바꿨다  ' + @Off0 + ' -> ' + @Off1;
+               SET @Fail += 1; END
+
+    PRINT 'NOT RUN PWR-001~031 업무시간(월~토 09:00~18:00, 비휴무일) 밖 - 성공 경로는 창 안에서만 성립한다';
+    IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
+    PRINT '=== 05_Patient_Write_Tests 완료 (창 밖 분기) ===';
     RETURN;
 END
 

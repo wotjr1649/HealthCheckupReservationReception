@@ -917,8 +917,8 @@ CREATE TABLE [dbo].[휴무일]
 (
     [휴무일자] DATE          NOT NULL,
     [휴무일명] NVARCHAR(100) NOT NULL,
-    [Active]      BIT           NOT NULL CONSTRAINT [DF_휴무일_ACTIVE] DEFAULT (1),
-    [Memo]        NVARCHAR(500) NULL,
+    [사용여부] BIT           NOT NULL CONSTRAINT [DF_휴무일_ACTIVE] DEFAULT (1),
+    [비고]     NVARCHAR(500) NULL,
 
     CONSTRAINT [PK_휴무일] PRIMARY KEY CLUSTERED ([휴무일자]),
     CONSTRAINT [CK_휴무일_NAME_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([휴무일명]))) > 0)
