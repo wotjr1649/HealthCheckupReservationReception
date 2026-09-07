@@ -24,7 +24,25 @@ C# 코드, 화면, 문서 본문은 이 디렉터리의 책임이 아니다.
 ## 3. 쓰기 허용 경계
 
 `database/**` 와 `../docs/phase4/` 를 쓴다. `../docs/baseline/` 은 §2 의 예외 조건에서만 쓴다.
-그 밖의 경로에 쓰지 않는다. 특히 ROOT `tools/` 와 `../docs/baseline/output/` 은 다른 세션의 산출물이므로 읽지도 쓰지도 커밋하지도 않는다(읽기는 조사 목적에 한한다).
+그 밖의 경로에 쓰지 않는다. `../winforms/` 는 §2 대로 예외 없이 읽기만 한다.
+
+**ROOT `tools/` 와 `../docs/baseline/output/` 은 2026-09-07 사용자 승인으로 이 계열이 인수했다.**
+원래는 세션 `a97cfb9f` 몫이었고 `04_DB_Design_R3_DRAFT.md:1903` 이 그 순서를 정해 뒀는데,
+그 세션이 존재하지 않아 R3 재봉인 뒤 산출물이 R2 에 머물러 있었다. 이제 여기서 고치고 돌린다.
+
+```text
+tools/docgen/**              쓴다 · 커밋한다
+docs/baseline/output/**      쓴다 · 커밋하지 않는다 (ROOT .gitignore 대상)
+```
+
+`output/` 은 `.gitignore` 에 있어 어떤 커밋에도 남지 않는다. **재현 수단은 `tools/docgen` 뿐이므로
+산출물을 고치려면 반드시 생성기를 고쳐서 다시 돌린다** — 바이너리를 손으로 만지지 않는다.
+`build_02.js` 만 원본(`02_Function_Definition.xlsx`)을 실제로 읽고, 나머지 셋은 내용이
+`build_00.js` 배열과 `proc/slides/*.js`·`wireframe/screens/*.js` 에 하드코딩돼 있다.
+그래서 기준선을 고쳤다고 산출물이 따라오지 않는다. 기준선을 열었으면 생성기도 함께 연다.
+
+`wireframe/build.js` 만 `pptxgenjs` 를 절대경로 상수 없이 bare `require` 한다 —
+`NODE_PATH='D:/tmp/hcwork/gen/node_modules'` 없이 실행하면 `MODULE_NOT_FOUND` 로 죽는다(실측 확인).
 
 ## 4. Source of Truth 우선순위
 
