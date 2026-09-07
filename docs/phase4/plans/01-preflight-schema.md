@@ -33,7 +33,9 @@
 - `docs/baseline/**` 와 `winforms/**` 의 파일 내용을 수정하지 않는다. `git add` 는 내용을 바꾸지 않는다.
 - `git reset` / `git clean` / `git checkout --` / force push 를 사용하지 않는다. remote 를 추가하지 않는다.
 
-- [ ] **Step 1: RED — 검증 스크립트를 먼저 만들고 실패를 확인한다**
+- [x] **Step 1: RED — 검증 스크립트를 먼저 만들고 실패를 확인한다**
+
+  `[X 실측]` 계획서의 기대 해시 6개는 R2 값이다. 현재 `scripts/verify-baseline.sh` 는 R3 재봉인 값 6개를 들고 있다 — `04_DB_Design_R3_DRAFT.md` §3 의 4~6단계가 기준선 파일과 해시를 같은 커밋에서 교체했다.
 
 `scripts/verify-baseline.sh` 를 만든다.
 
@@ -63,7 +65,7 @@ if(ok!==6) process.exit(1);
 
 `03_Wireframe_Definition.md` 의 기대값은 **인계문서 값이 아니라 `D4-001` 로 승인된 실측값**임에 유의한다.
 
-- [ ] **Step 2: 검증 스크립트를 실행해 통과를 확인한다**
+- [x] **Step 2: 검증 스크립트를 실행해 통과를 확인한다**
 
 ```bash
 chmod +x scripts/verify-baseline.sh
@@ -79,7 +81,7 @@ Expected: `=== 6/6 ===`, `exit=0`.
 
 6/6이 아니면 **여기서 중단**하고 사용자에게 보고한다. 기준선이 흔들린 상태로 진행하지 않는다.
 
-- [ ] **Step 3: ROOT `.gitignore` 작성**
+- [x] **Step 3: ROOT `.gitignore` 작성**
 
 `../.gitignore`:
 
@@ -102,7 +104,7 @@ integration/artifacts/logs/
 winforms/artifacts/logs/
 ```
 
-- [ ] **Step 4: git init + repo-local identity**
+- [x] **Step 4: git init + repo-local identity**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -115,7 +117,9 @@ git config --global --get user.name || echo "global 미설정 유지 확인"
 
 Expected: repo-local 값이 출력되고, global은 여전히 비어 있다.
 
-- [ ] **Step 5: baseline 초기 commit + tag**
+- [x] **Step 5: baseline 초기 commit + tag**
+
+  `[X 실측]` 초기 commit `0f3a7da` 와 그때 붙인 tag 는 R2 기준선 tag 였다. 계획서가 적은 `baseline-HC-RSV-RCP-20260904-R3` 은 R3 재봉인 커밋 `fb5aa26` 에 나중에 붙었고, 지금은 두 tag 가 모두 존재한다.
 
 **`git add -A` 를 쓰지 않는다.** ROOT 전체를 훑어 무관한 파일과 잠재적 secret 까지 초기 commit 에 넣는다. **필요한 경로만 명시**한다.
 
@@ -143,7 +147,7 @@ git tag -a baseline-HC-RSV-RCP-20260904-R3 -m "00~05 FINAL/GO/READ-ONLY + WinFor
 git tag -l
 ```
 
-- [ ] **Step 6: commit 직후 baseline hash 재검증**
+- [x] **Step 6: commit 직후 baseline hash 재검증**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception/database
@@ -153,7 +157,7 @@ echo "exit=$?"
 
 Expected: `=== 6/6 ===`, exit 0. `git add`/`commit` 이 파일 내용을 바꾸지 않았음을 증명한다.
 
-- [ ] **Step 7: Phase 4 전용 branch 생성**
+- [x] **Step 7: Phase 4 전용 branch 생성**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -163,7 +167,7 @@ git branch --show-current
 
 Expected: `phase4-database`
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -208,7 +212,7 @@ git remote -v                                   # 비어 있어야 한다
 
 **금지사항:** `../winforms/**` 에 어떤 쓰기도 하지 않는다.
 
-- [ ] **Step 1: manifest 생성 스크립트 작성**
+- [x] **Step 1: manifest 생성 스크립트 작성**
 
 `scripts/verify-winforms-unchanged.sh`:
 
@@ -238,7 +242,7 @@ else
 fi
 ```
 
-- [ ] **Step 2: 최초 manifest 생성**
+- [x] **Step 2: 최초 manifest 생성**
 
 ```bash
 chmod +x scripts/verify-winforms-unchanged.sh
@@ -248,7 +252,7 @@ cat artifacts/reports/winforms-manifest.txt | head -5
 
 Expected: `manifest 생성: N 파일` (N >= 5)
 
-- [ ] **Step 3: GREEN — 즉시 재검증**
+- [x] **Step 3: GREEN — 즉시 재검증**
 
 ```bash
 ./scripts/verify-winforms-unchanged.sh
@@ -258,6 +262,8 @@ echo "exit=$?"
 Expected: `PASS WinForms 변경 0건`, exit 0.
 
 - [ ] **Step 4: 음성 검증 — 변경을 감지하는지 확인**
+
+  `[미이행]` manifest 를 변조했을 때 `FAIL WinForms 변경 감지` + exit 1 을 실제로 관측한 기록(로그·보고서)이 없다. 스크립트에 FAIL 분기는 있으나 음성 시험 증거가 남아 있지 않다.
 
 ```bash
 cp artifacts/reports/winforms-manifest.txt /tmp/wf-manifest.bak
@@ -273,7 +279,7 @@ Expected: 변조 시 `FAIL WinForms 변경 감지` + exit 1, 복구 후 `PASS` +
 
 **`git checkout --` 를 쓰지 않는다.** `T01` 금지사항이 명시적으로 금지한 명령이다. 단순 파일 복사로 대체한다.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -303,7 +309,9 @@ git commit -m "chore(phase4): WinForms 불변 manifest 및 검증 스크립트 �
 
 **금지사항:** 기준선 내용을 복사하지 않는다. 참조와 경계만 적는다.
 
-- [ ] **Step 1: `CLAUDE.md` 작성**
+- [x] **Step 1: `CLAUDE.md` 작성**
+
+  `[X 실측]` 계획서는 10개 항목인데 실제 `CLAUDE.md` 는 §11(컴파일 함정 — `PRINT` 스칼라 · `GO` 변수경계 · 괄호)이 더해져 11개다.
 
 포함할 내용 (각 항목 1~3줄):
 
@@ -320,7 +328,7 @@ git commit -m "chore(phase4): WinForms 불변 manifest 및 검증 스크립트 �
 10. 실행하지 않은 검증을 PASS 로 기록하지 않는다
 ```
 
-- [ ] **Step 2: `README.md` 작성**
+- [x] **Step 2: `README.md` 작성**
 
 포함할 내용:
 
@@ -332,7 +340,7 @@ git commit -m "chore(phase4): WinForms 불변 manifest 및 검증 스크립트 �
 Gate 표     스펙 §42 링크
 ```
 
-- [ ] **Step 3: 링크·경로 검증**
+- [x] **Step 3: 링크·경로 검증**
 
 ```bash
 grep -oE '\.\./[a-zA-Z0-9_/.-]+' CLAUDE.md README.md | sort -u | while read -r p; do
@@ -342,7 +350,7 @@ done
 
 Expected: `MISS` 0건.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -370,13 +378,13 @@ git commit -m "docs(phase4): database 작업 경계 및 실행 안내 추가"
 
 **금지사항:** Preflight는 **읽기 전용**이다. 어떤 객체도 만들거나 바꾸지 않는다.
 
-- [ ] **Step 1: RED — 가드가 실제로 막는지 먼저 확인한다**
+- [x] **Step 1: RED — 가드가 실제로 막는지 먼저 확인한다**
 
 아직 파일이 없으므로, 잘못된 DB에서 실행할 때 막히는지 확인할 대상이 없다. 먼저 `master` 에서 실행하면 `PRE-002`(대상 DB exact match)가 먼저 걸려 **`THROW 50011`** 이 나야 한다는 기대를 적어 둔다.
 
 `[X]` 초안은 여기서 `50012`(시스템 DB 방어)를 기대했다. 그러나 `PRE-002` 가 이름을 이미 확정하므로 `master` 에서는 `50011` 이 먼저 발화한다 — `50012` 로는 도달할 수 없다. 이것이 `PRE-003` 이 죽은 가드였다는 증거이기도 하다.
 
-- [ ] **Step 2: `deploy/00_Preflight.sql` 작성 (UTF-8 with BOM)**
+- [x] **Step 2: `deploy/00_Preflight.sql` 작성 (UTF-8 with BOM)**
 
 ```sql
 SET NOCOUNT ON;
@@ -432,7 +440,7 @@ PRINT 'INFO LoginName         = ' + SUSER_SNAME();
 GO
 ```
 
-- [ ] **Step 3: BOM 확인**
+- [x] **Step 3: BOM 확인**
 
 ```bash
 head -c 3 deploy/00_Preflight.sql | od -An -tx1
@@ -440,7 +448,7 @@ head -c 3 deploy/00_Preflight.sql | od -An -tx1
 
 Expected: `ef bb bf`
 
-- [ ] **Step 4: RED 검증 — `master` 에서 실행하면 막히는가**
+- [x] **Step 4: RED 검증 — `master` 에서 실행하면 막히는가**
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d master -b -I -u -i deploy/00_Preflight.sql -o artifacts/logs/pre_red.log
@@ -450,7 +458,7 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/pre_red.log
 
 Expected: exit **1**, 로그에 `Msg 50011` (대상 Database 가 아님). `master` 는 `DB_ID()=1` 이지만 PRE-002가 먼저 걸린다.
 
-- [ ] **Step 5: 대상 DB 생성 (최초 1회)**
+- [x] **Step 5: 대상 DB 생성 (최초 1회)**
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d master -b -I -Q "IF DB_ID(N'HealthCheckupReservationReceptionDb') IS NULL CREATE DATABASE [HealthCheckupReservationReceptionDb] COLLATE Korean_Wansung_CI_AS;"
@@ -459,7 +467,7 @@ echo "exit=$?"
 
 Expected: exit 0.
 
-- [ ] **Step 6: GREEN — 대상 DB에서 실행**
+- [x] **Step 6: GREEN — 대상 DB에서 실행**
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -470,7 +478,7 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/00_preflight.log
 
 Expected: exit **0**, `PASS PRE-001` ~ `PASS PRE-006` 6줄 + `INFO` 5줄.
 
-- [ ] **Step 7: 타 DB 메타데이터 사전 스냅샷 (`RBD-009` 의 diff 대상)**
+- [x] **Step 7: 타 DB 메타데이터 사전 스냅샷 (`RBD-009` 의 diff 대상)**
 
 `[X]` `T35` 의 `RBD-009` 는 `otherdb_before.txt` 와 `diff` 하는데, 초안에는 그 파일을 **만드는 Step 이 어디에도 없었다.** 여기서 만든다 — `Rebuild.sql` 이 한 번이라도 돌기 **전**이어야 의미가 있다.
 
@@ -493,7 +501,7 @@ cat artifacts/reports/otherdb_before.txt
 
 Expected: `master` · `model` · `msdb` · `Net461MvpSample` 네 행. 이 파일은 **커밋한다** — `RBD-009` 의 유일한 비교 기준이다.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -528,7 +536,7 @@ git commit -m "feat(phase4): Preflight 안전가드 6종 + 타 DB 사전 스냅�
 
 **금지사항:** `Deploy.sql` 에 `DROP DATABASE` 를 넣지 않는다. `Rebuild.sql` 의 대상 DB명을 변수로 외부에서 주입하지 않는다 (하드코딩 + exact match).
 
-- [ ] **Step 1: `Deploy.sql` 작성 (UTF-8 with BOM)**
+- [x] **Step 1: `Deploy.sql` 작성 (UTF-8 with BOM)**
 
 ```sql
 :setvar DeployDir "deploy"
@@ -570,7 +578,9 @@ ls -1 deploy/
 
 각 Task 가 해당 파일을 실제 내용으로 덮어쓴다. 스텁 상태에서도 `Deploy.sql` 전체 실행이 exit 0 이므로 `T34` 가 막히지 않는다.
 
-- [ ] **Step 2: `Rebuild.sql` 작성 (UTF-8 with BOM)**
+- [x] **Step 2: `Rebuild.sql` 작성 (UTF-8 with BOM)**
+
+  `[X 실측]` `50022` 가드의 계약 테이블 목록은 7개가 아니라 6개다 — `검사항목` 이 `plans/10` 에서 삭제돼 빠졌고 판정도 `@Total = 6 AND @R3 = 6` 이다.
 
 가드 번호대는 **`50020~50024`** 다. Preflight(`50010~50015`)와 섞지 않는다 — 같은 번호가 두 파일에서 다른 의미를 가지면 로그만으로 원인을 알 수 없다.
 
@@ -643,7 +653,7 @@ GO
 
 한글 `PRINT` 에는 `N` 접두사를 붙인다. `master` 의 데이터 정렬이 `Korean_Wansung` 이 아닐 수 있다(대상 DB 만 명시 고정했다).
 
-- [ ] **Step 3: `scripts/deploy.sh` 작성**
+- [x] **Step 3: `scripts/deploy.sh` 작성**
 
 ```bash
 #!/usr/bin/env bash
@@ -662,7 +672,7 @@ exit $RC
 
 **`sqlcmd …` 다음 줄에 `RC=$?` 를 두면 안 된다.** `set -e` 하에서 sqlcmd 가 1을 반환하면 그 줄에서 셸이 끝나 `RC=$?` 도 `iconv | tail` 도 실행되지 않는다(실측 확인). **정확히 실패했을 때만** 진단이 사라진다.
 
-- [ ] **Step 4: `scripts/rebuild.sh` 작성**
+- [x] **Step 4: `scripts/rebuild.sh` 작성**
 
 `[X]` `deploy.sh` 와 동일하게 `-e` 를 쓰지 않는다. `Rebuild.sql` 가드(`50020`~`50024`)가 걸렸을 때 **정확히 그때만** `Msg` 번호를 볼 수 없게 되는 것이 `set -e` 의 실패 방식이다(스펙 §8.4).
 
@@ -678,7 +688,9 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/rebuild.log
 ./scripts/deploy.sh
 ```
 
-- [ ] **Step 5: `scripts/test.sh` 작성**
+- [x] **Step 5: `scripts/test.sh` 작성**
+
+  `[X 실측]` `scripts/test.sh` 는 계획서보다 넓다 — `NOTRUN` 집계, `tests/13_Security_Tests.sql` 조건부 `NOT RUN`(06 §32 범위 밖), `concurrency-test.sh --check` 로 창 밖 선판정, `clean-rebuild-verify.sh` · `verify-tsql-allowlist.sh` · `verify-baseline.sh` · `verify-winforms-unchanged.sh` · `verify-schema-doc.sh` 가 추가됐다.
 
 ```bash
 #!/usr/bin/env bash
@@ -740,7 +752,7 @@ else echo "=== 실패한 단계가 있습니다 ==="; exit 1; fi
 1. `set -e` 로 첫 실패에서 중단시켜 **뒤 단계의 결과를 전혀 볼 수 없었다.** 플래그로 집계하고 끝에서 판정한다.
 2. **동시성 `09`~`12` 와 계약 검증기를 실행하지 않으면서 `"=== 전체 테스트 통과 ==="` 를 출력**했다. G09·G11이 한 번도 안 돌아도 `T37` 의 "전체 회귀 exit 0" 이 성립해 버린다. 스펙 §8.4가 `test.sh` 범위를 *"rebuild → deploy → tests/01~14 → verify-contract.js"* 로 정의했으므로 둘 다 포함한다.
 
-- [ ] **Step 6: 실행 권한 + BOM 확인**
+- [x] **Step 6: 실행 권한 + BOM 확인**
 
 ```bash
 chmod +x scripts/*.sh
@@ -749,7 +761,7 @@ for f in Deploy.sql Rebuild.sql; do printf '%-14s ' "$f"; head -c 3 "$f" | od -A
 
 Expected: 둘 다 `ef bb bf`
 
-- [ ] **Step 7: `Rebuild.sql` 단독 검증 (DB만 재생성)**
+- [x] **Step 7: `Rebuild.sql` 단독 검증 (DB만 재생성)**
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d master -b -I -u -i Rebuild.sql -o artifacts/logs/rebuild.log
@@ -760,7 +772,7 @@ sqlcmd -S '.\SQLEXPRESS' -E -b -I -h -1 -W -Q "SELECT name FROM sys.databases OR
 
 Expected: exit 0, `PASS RBD-CREATE`, DB 목록에 `Net461MvpSample` 이 **그대로 있고** `HealthCheckupReservationReceptionDb` 가 있다.
 
-- [ ] **Step 8: 음성 검증 — 잘못된 컨텍스트에서 막히는가**
+- [x] **Step 8: 음성 검증 — 잘못된 컨텍스트에서 막히는가**
 
 ```bash
 RC=0
@@ -775,7 +787,7 @@ Expected: `exit=1`, `Msg 50021` (master 컨텍스트 필요). DB 목록에 `Heal
 
 `[X]` 이 단계는 `RBD-002`(master 컨텍스트 강제)만 검증한다. **`RBD-001`(잘못된 서버명 = `50020`)은 인스턴스가 1개뿐이라 음성 시험이 불가능하므로 `NOT RUN` 으로 기록한다.** 초안은 이 한 번의 실행으로 `RBD-001`·`RBD-002` 두 Gate를 모두 검증한 것처럼 적었다.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -813,6 +825,8 @@ git commit -m "feat(phase4): Deploy/Rebuild 진입점 및 실행 스크립트 �
 
 - [ ] **Step 1: RED — 아직 아무 객체도 없음을 확인**
 
+  `[미이행]` `tables=0` 을 관측한 로그가 없다. `RBD-003`(빈 DB 에서 Deploy 전체 exit 0)이 인접 증거이지만 테이블 0건 출력 자체는 어디에도 남아 있지 않다.
+
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W \
   -Q "SELECT 'tables=' + CONVERT(varchar(5), COUNT(*)) FROM sys.tables;"
@@ -820,7 +834,9 @@ sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -
 
 Expected: `tables=0`
 
-- [ ] **Step 2: `deploy/01_Schema.sql` 헤더 — FK 역순 DROP**
+- [x] **Step 2: `deploy/01_Schema.sql` 헤더 — FK 역순 DROP**
+
+  `[X 실측]` `DROP TABLE` 목록에서 `변경이력` 을 뺐고(`CLAUDE.md` §8 의 유일한 예외), 파일 첫 배치에 `SET QUOTED_IDENTIFIER ON;` + `GO` 를 두었다 — 필터형 인덱스 `UX_검사코드_AEX_CODE` 가 요구한다.
 
 ```sql
 SET NOCOUNT ON;
@@ -836,7 +852,9 @@ DROP SEQUENCE IF EXISTS [dbo].[SEQ_HC_CHART_NO];
 GO
 ```
 
-- [ ] **Step 3: `수검자` — 16 컬럼**
+- [x] **Step 3: `수검자` — 16 컬럼**
+
+  `[X 실측]` `CelNumberS` 가 사라져 16컬럼이 되었고, `생년월일` · `성별` 은 저장 컬럼이 아니라 `주민번호` 에서 유도하는 `PERSISTED` 계산 컬럼이다. 계획서가 같은 이름 `CK_수검자_CEL_DIGIT` 을 두 번 선언한 것도 1건으로 정리됐다.
 
 ```sql
 CREATE TABLE [dbo].[수검자]
@@ -883,7 +901,9 @@ CREATE NONCLUSTERED INDEX [IX_수검자_BIRTHDAY]
 GO
 ```
 
-- [ ] **Step 4: `검사코드` · `휴무일`**
+- [x] **Step 4: `검사코드` · `휴무일`**
+
+  `[X 실측]` 계획서 DDL 에 없는 `CK_검사코드_CODE_FORMAT` 이 `검사코드` 에 추가되어 제약이 하나 늘었다.
 
 ```sql
 CREATE TABLE [dbo].[검사코드]
@@ -926,7 +946,9 @@ CREATE TABLE [dbo].[휴무일]
 GO
 ```
 
-- [ ] **Step 5: `예약접수` · `검사항목`**
+- [x] **Step 5: `예약접수` · `검사항목`**
+
+  `[X 실측]` `검사항목` 테이블은 `plans/10` 이 `예약접수` 로 흡수해 삭제했다 — 이 Step 이 실제로 만드는 것은 `예약접수` 하나뿐이고 FK 2개도 함께 사라졌다.
 
 ```sql
 CREATE TABLE [dbo].[예약접수]
@@ -965,7 +987,9 @@ CREATE NONCLUSTERED INDEX [IX_예약접수_PATIENT_STATE_DATE]
 GO
 ```
 
-- [ ] **Step 6: `완료이력` · `변경이력` · Sequence**
+- [x] **Step 6: `완료이력` · `변경이력` · Sequence**
+
+  `[X 실측]` `변경이력` 은 `IF OBJECT_ID(...) IS NULL` 가드 안에서 만들고 `IX_변경이력_TARGET` 을 별도로 붙인다. `대상키` 는 `NULL` 이 아니라 `NOT NULL` 이고 `CK_변경이력_TARGET_TABLE` 은 `수검자` · `예약접수` 2값이다(`완료이력` 은 복합 PK 라 `대상키` 로 특정 불가).
 
 ```sql
 CREATE TABLE [dbo].[완료이력]
@@ -1009,7 +1033,7 @@ PRINT N'PASS SCH-DEPLOY 스키마 배포 완료';
 GO
 ```
 
-- [ ] **Step 7: BOM 확인 후 실행**
+- [x] **Step 7: BOM 확인 후 실행**
 
 ```bash
 head -c 3 deploy/01_Schema.sql | od -An -tx1
@@ -1021,7 +1045,7 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/01_schema.log | tail -5
 
 Expected: `ef bb bf`, exit 0, `PASS SCH-DEPLOY`.
 
-- [ ] **Step 8: 재실행 가능성 확인 (clean-create)**
+- [x] **Step 8: 재실행 가능성 확인 (clean-create)**
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -1031,7 +1055,7 @@ echo "exit=$?"
 
 Expected: exit 0. 두 번째 실행도 성공해야 한다 (`DROP IF EXISTS` → `CREATE`).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -1068,6 +1092,8 @@ git commit -m "feat(phase4): 6개 물리 테이블 스키마 배포 스크립트
 
 - [ ] **Step 1: RED — 테스트를 먼저 쓰고 일부러 틀린 기대값으로 실패를 본다**
 
+  `[미이행]` 기대값을 8 로 둔 RED 회차의 로그(`artifacts/logs/test_01_red.log`)가 없다. 첫 커밋본 `91bae9b` 은 이미 기대값 7 이다.
+
 먼저 `SCH-001` 만 작성하되 기대값을 `8` 로 둔다.
 
 ```sql
@@ -1088,7 +1114,9 @@ echo "exit=$?"
 
 Expected: exit **1**, `FAIL SCH-001`. 테스트 하네스가 실제로 실패를 잡아낸다는 증거다.
 
-- [ ] **Step 2: 기대값을 7로 고치고 나머지 15건 추가**
+- [x] **Step 2: 기대값을 7로 고치고 나머지 15건 추가**
+
+  `[X 실측]` 검사는 16건이 아니라 19건이다 — `SCH-001`~`SCH-018` 에 `SCH-019`(SP 별 Parameter 전건 · 합계 99)가 더해졌고 기대값도 테이블 6 · NCI 5 · SP 16 · CHECK 24 로 바뀌었다.
 
 ```sql
 SET NOCOUNT ON;
@@ -1376,7 +1404,9 @@ SELECT o.name, COUNT(pa.parameter_id) FROM sys.procedures o
 
 `[I]` `@ExpCol` 의 47행은 `04` §8을 **한 줄씩 옮겨 적는다.** 축약하지 않는다 — 이 표가 곧 회귀 방지 장치다.
 
-- [ ] **Step 3: 실행 — `SCH-013`·`SCH-014` 만 FAIL 이어야 한다**
+- [x] **Step 3: 실행 — `SCH-013`·`SCH-014` 만 FAIL 이어야 한다**
+
+  `[X 실측]` `T14` · `T30` 이 끝난 뒤라 `SCH-013` · `SCH-014` 도 통과한다 — 최근 회귀의 `test_01.log` 는 `PASS=19 FAIL=0`, exit 0 이다. 계획서가 적은 "16건 PASS + 2건 FAIL" 상태는 이제 재현되지 않는다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -1389,7 +1419,9 @@ Expected: exit **1**. `SCH-001`~`SCH-012`, `SCH-015`~`SCH-018` **16건 PASS**, `
 
 다른 항목이 FAIL이면 스키마를 `04` §8 기준으로 바로잡는다.
 
-- [ ] **Step 4: 객체 인벤토리 보고서 생성**
+- [x] **Step 4: 객체 인벤토리 보고서 생성**
+
+  `[X 실측]` `artifacts/reports/object-inventory.txt` 는 계획서의 9줄 라벨 형식이 아니라 `tests/14_Clean_Rebuild_Verify.sql` 이 쓰는 `RBD-004` 지문 한 줄 + 객체 전건 목록(`OBJ|타입|이름`)이다 — 개수만으로는 못 잡는 이름 드리프트를 잡으려고 바꿨다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W -Q "
@@ -1407,7 +1439,7 @@ SELECT 'Procedure   = ' + CONVERT(varchar(5), COUNT(*)) FROM sys.procedures;
 cat artifacts/reports/object-inventory.txt
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception

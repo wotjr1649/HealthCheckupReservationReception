@@ -22,7 +22,9 @@
 
 **금지사항:** `MERGE`·존재검사 가드를 쓰지 않는다(clean-create라 테이블이 비어 있다). 검사 코드·이름·역할을 바꾸지 않는다. 휴무일을 상대날짜로 계산하지 않는다.
 
-- [ ] **Step 1: `deploy/02_Seed.sql` 작성 (UTF-8 with BOM)**
+- [x] **Step 1: `deploy/02_Seed.sql` 작성 (UTF-8 with BOM)**
+
+`[X 실측]` 계획서 SQL 은 `[Active]`·`[Memo]`·`[Gender]` 같은 영문 컬럼명인데 구현은 `[사용여부]`·`[비고]`·`[성별]` 이다 — T41~T46 한글화 커밋 뒤라 이 계획서 전 구간의 SQL 이 같은 차이를 갖는다.
 
 **선행 `DELETE` 를 넣지 않는다.** clean-create(`01_Schema.sql` 이 `DROP`→`CREATE`)이므로 테이블이 항상 비어 있어 효과가 없고, Fixture 배치 후 이 파일만 단독 재실행하면 `검사항목` 의 FK 때문에 **`Msg 547`** 로 실패한다. 멱등성은 **"clean-create 직후 한정"** 이다.
 
@@ -83,7 +85,7 @@ GO
 앞 배치의 `INSERT` 는 이미 커밋된 뒤라 **Seed 는 들어갔는데 배포는 실패한 것처럼 보인다.**
 변수에 먼저 받는다.
 
-- [ ] **Step 2: 실행**
+- [x] **Step 2: 실행**
 
 ```bash
 head -c 3 deploy/02_Seed.sql | od -An -tx1
@@ -95,7 +97,7 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/02_seed.log | tail -3
 
 Expected: exit 0, `PASS SEED-DEPLOY Exam 19 / Holiday 2`
 
-- [ ] **Step 3: 멱등성 경계 확인 — clean-create 직후에만 재실행 가능**
+- [x] **Step 3: 멱등성 경계 확인 — clean-create 직후에만 재실행 가능**
 
 ```bash
 # (a) 이미 Seed 된 상태에서 단독 재실행 → 51002 로 중단되어야 한다
@@ -112,7 +114,7 @@ sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -
 
 Expected: (a) `exit=1` + `Msg 51002`, (b) exit 0 + `Exam=19`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -152,6 +154,8 @@ git commit -m "feat(phase4): 검사 Master 19행 및 휴무일 2행 Seed 추가"
 
 - [ ] **Step 1: RED — 기대표에 없는 행을 하나 넣어 실패를 확인**
 
+`[미이행]` RED 로그가 없다 — `artifacts/logs/test_02_red.log` 도, `FAIL SED-001` 을 담은 로그도 저장소에 없다.
+
 `SED-001`만 먼저 작성하되 `@ExpExam` 에 실재하지 않는 20번째 행 `('EX020', N'없는검사', 'NEX-01', NULL, NULL, 0)` 을 더한다.
 `EXCEPT` 가 양방향이므로 기대에만 있는 행 하나로 `FAIL SED-001` 이 확실히 난다.
 
@@ -163,7 +167,7 @@ echo "exit=$?"
 
 Expected: exit **1**, `FAIL SED-001`.
 
-- [ ] **Step 2: 전체 테스트 작성**
+- [x] **Step 2: 전체 테스트 작성**
 
 ```sql
 SET NOCOUNT ON;
@@ -254,7 +258,7 @@ PRINT '=== 02_Seed_Tests 완료 ===';
 GO
 ```
 
-- [ ] **Step 3: GREEN 실행**
+- [x] **Step 3: GREEN 실행**
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -265,7 +269,7 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_02.log | grep -E '^(PASS|FAIL)'
 
 Expected: exit 0, `PASS SED-001` ~ `PASS SED-011` (스펙 §45.2 의 `SED` 전건). `SSN` 은 아직 없다.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -296,7 +300,7 @@ git commit -m "test(phase4): Master Seed 검증 추가"
 
 **금지사항:** 실제 주민등록번호를 사용하지 않는다. `PatientId`·`WorkId` 를 하드코딩하지 않는다. Fixture를 Write SP로 만들지 않는다(업무시간 밖에 실패한다).
 
-- [ ] **Step 1: 체크디지트 무효화 식을 인라인으로 정의**
+- [x] **Step 1: 체크디지트 무효화 식을 인라인으로 정의**
 
 주민번호는 손으로 계산하지 않는다. **앞 12자리만 지정**하고 13번째 자리를 SQL이 계산한다.
 
@@ -322,7 +326,9 @@ CONVERT(CHAR(1),
 그 다음 `, p.Gender` 에서 **`Msg 102 — ',' 근처의 구문이 잘못되었습니다`** 가 난다(실측 확인).
 에러 줄이 괄호와 무관한 곳을 가리키므로 원인을 찾기 어렵다. Step 2·Step 3 두 곳 모두 같다.
 
-- [ ] **Step 2: Rule 경계 수검자 15명 INSERT**
+- [x] **Step 2: Rule 경계 수검자 15명 INSERT**
+
+`[X 실측]` 계획서는 `[생년월일]`·`[Gender]` 를 `INSERT` 로 직접 지정하는데 구현은 넣지 않는다 — 둘 다 주민번호에서 유도하는 계산열이라 `Msg 271` 이 난다. `VALUES` 의 두 값은 기대값으로 남아 `FIX-DERIVE` 가 대조한다.
 
 기준 예약일 `2026-10-01` 대비 만 나이를 역산한 프로필이다.
 
@@ -408,7 +414,7 @@ GO
 
 **고정 리터럴 `2007-11-18` 을 쓴다.** 유일한 소비처는 `RWR-006`(예약일 `2026-11-17`, `400 UnderAge` 기대)이고, 만나이는 그날 **18세**다(19세가 되는 날은 `2026-11-18`). 예약일을 옮기면 이 값도 함께 옮겨야 하며, `RWR-006` 이 `400` 대신 `200` 을 받으면 그 신호다.
 
-- [ ] **Step 3: 정원용 수검자 20명 + 기존 `RSV` 예약 19건 (+ `F020` 의 `CNR` 1건)**
+- [x] **Step 3: 정원용 수검자 20명 + 기존 `RSV` 예약 19건 (+ `F020` 의 `CNR` 1건)**
 
 `RP-06` 때문에 한 수검자는 유효업무를 둘 이상 가질 수 없으므로 슬롯을 19/20 으로 채우는 데만 19명이 필요하다.
 `F020` 은 `RWR-012`(`305 SlotFull`)가 `CNR`→`RSV` 로 뒤집어 20/20 을 만들 예비 1명이라 **총 20명**이다.
@@ -464,7 +470,9 @@ GO
 
 `RWR-012` 는 이 파일이 아니라 `tests/06` 머리에서 `F020` 을 `RSV` 로 되돌려 20/20 을 만들고, 단언 후 다시 `CNR` 로 복원한다 — Fixture 파일을 오염시키지 않는다.
 
-- [ ] **Step 4: 완료이력 · B형간염 제외여부**
+- [x] **Step 4: 완료이력 · B형간염 제외여부**
+
+`[X 실측]` 계획서의 완료이력 `INSERT` 는 2컬럼인데 구현은 `[국가검사항목]`·`[추가검사항목]` 을 더한 4컬럼이다 — T51 이 완료이력에 검사구성 2컬럼을 신설했고 `FIX-EXAM-003` 이 그 유도를 단언한다.
 
 `[X]` **`T003` 에 완료이력을 주면 안 된다.** `T003`(만 23세 남)의 프로필 목적은 "NEX-02 남 미해당 → NEX **8행**"인데, 1년차 완료이력을 붙이면 TGT `401 NotDue` 비대상이 되어 **NEX 0행**이 나온다. 두 용도가 양립하지 않는다. `401` 전담 수검자 **`T016`** 을 Step 2 표에 추가한다.
 
@@ -487,7 +495,9 @@ UPDATE [dbo].[수검자] SET [B형간염제외여부] = 1
 GO
 ```
 
-- [ ] **Step 5: 손상 데이터 2종 (구획 분리)**
+- [x] **Step 5: 손상 데이터 2종 (구획 분리)**
+
+`[X 실측]` 계획서의 `CORRUPT-2` 는 "NEX 0행 Work" 인데 구현은 `[국가검사항목] = N''`(빈 문자열)이다 — T52 가 `검사항목` 테이블을 없애 검사구성이 예약접수의 컬럼이 됐고, 빈 문자열이 손상의 유일한 표현이다(`04` §8.2.2).
 
 `[X]` 초안은 `CORRUPT-3` 을 선언만 하고 배치하지 않은 채 완료조건에 *"손상 데이터 3종"* 을 적어 **달성 불가능한 조건**을 만들었다. 이 파일이 만드는 것은 `CORRUPT-1`·`CORRUPT-2` **2종**이고, 나머지 3종의 소유는 아래 표에 못박는다.
 
@@ -506,7 +516,7 @@ SELECT p.[수검자ID], '2026-11-19', 'AM', 'RSV' FROM [dbo].[수검자] p WHERE
 GO
 ```
 
-- [ ] **Step 5b: 손상 데이터 마무리**
+- [x] **Step 5b: 손상 데이터 마무리**
 
 ```sql
 PRINT 'PASS FIX-DEPLOY Fixture 배치 완료';
@@ -570,7 +580,7 @@ BEGIN PRINT 'FAIL CORRUPT-5 NEX 가 12종에 도달하지 못했다'; SET @Fail 
 UPDATE [dbo].[예약접수] SET [국가검사항목] = @Save5 WHERE [업무ID] = @W5;
 ```
 
-- [ ] **Step 6: 주민번호 무효 검수 (스펙 §16.2) — `tests/02_Seed_Tests.sql` 에 덧붙인다**
+- [x] **Step 6: 주민번호 무효 검수 (스펙 §16.2) — `tests/02_Seed_Tests.sql` 에 덧붙인다**
 
 `[X]` 초안은 이 블록을 `tests/00_Test_Harness.sql` 끝에 두었으나 **스펙 §45.2 는 `SSN` 의 산출 파일을
 `tests/02_Seed_Tests.sql` 로 지정한다.** `06 CANDIDATE` 가 계획을 이기므로(`database/CLAUDE.md` §4)
@@ -650,7 +660,7 @@ ELSE BEGIN PRINT 'FAIL SSN-006 체크디지트가 유효한 행 ' + CONVERT(VARC
 블록은 여기서 끝난다. `T09` 가 이미 둔 `IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;`
 과 `PRINT '=== 02_Seed_Tests 완료 ===';` 가 뒤를 잇는다 — **THROW 를 새로 넣지 않는다.**
 
-- [ ] **Step 7: 실행 — `tests/00` → `tests/02` 순서로 돌린다**
+- [x] **Step 7: 실행 — `tests/00` → `tests/02` 순서로 돌린다**
 
 `tests/02` 를 단독으로 돌리면 `FIX-SSN-PRE` 가 FAIL 한다. 그것이 순서를 강제하는 장치다.
 
@@ -671,7 +681,9 @@ Expected: 양쪽 exit 0. `test_00.log` 에 `PASS FIX-DEPLOY`,
 
 `SSN-006` 이 FAIL이면 체크디지트 무효화 식이 틀린 것이다. **여기서 중단하고 식을 고친다.**
 
-- [ ] **Step 8: Slot 요일 확인**
+- [x] **Step 8: Slot 요일 확인**
+
+`[X 실측]` 계획서 쿼리의 `ReservationDate`·`TimeSlotCode`·`StatusCode` 는 현재 `[예약일]`·`[시간대코드]`·`[상태코드]` 다. `dow=0` 은 재조회로 실측했으나 `slot count=19` 는 회귀 뒤 예약접수가 비어 있어 `PASS CON-002 19/20 Slot 동시예약 2건 → 최종 20` 을 증거로 삼았다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W -Q "
@@ -683,7 +695,7 @@ SELECT 'slot count=' + CONVERT(varchar(5), COUNT(*)) FROM 예약접수
 Expected: `dow=0` (월요일 — 업무일), `slot count=19`.
 `dow` 가 5(토) 또는 6(일)이면 다른 날짜를 골라 `@SlotDate` 를 수정한다.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -718,7 +730,7 @@ git commit -m "test(phase4): Test Fixture 및 주민번호 무효 검수 추가"
 
 **금지사항:** `SYSDATETIME()` 을 함수 안에서 호출하지 않는다(호출 SP가 캡처한 `@ServerTime` 만 사용). `SET DATEFIRST` 에 의존하지 않는다. `THROW`·Transaction·데이터 변경 금지.
 
-- [ ] **Step 1: RED — 테스트를 먼저 작성한다**
+- [x] **Step 1: RED — 테스트를 먼저 작성한다**
 
 `tests/03_Rule_Tests.sql` 을 만들고 시간경계 12건을 넣는다.
 
@@ -801,6 +813,8 @@ GO
 
 - [ ] **Step 2: RED 실행 — 함수가 없어 실패하는지 확인**
 
+`[미이행]` RED 로그가 없다 — `artifacts/logs/test_03_red.log` 도, `Msg 4121`/`Msg 208` 을 담은 로그도 저장소에 없다.
+
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
        -i tests/03_Rule_Tests.sql -o artifacts/logs/test_03_red.log
@@ -810,7 +824,7 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_03_red.log | head -5
 
 Expected: exit **1**, `Msg 4121` 또는 `Msg 208` — "UFN_HC_일정확인 개체를 찾을 수 없습니다".
 
-- [ ] **Step 3: `deploy/03_Functions.sql` 에 구현 (UTF-8 with BOM)**
+- [x] **Step 3: `deploy/03_Functions.sql` 에 구현 (UTF-8 with BOM)**
 
 ```sql
 SET QUOTED_IDENTIFIER ON;   -- 01_Schema.sql 과 같은 설정으로 객체를 만든다 (CLAUDE.md §6)
@@ -898,7 +912,7 @@ GO
 
 `[X]` **`CutoffTime` 은 `SlotOpen = 0` 이면 `NULL` 이다.** `RawCutoff` 가 요일을 보지 않으므로, 초안은 토요일 PM 요청에 `15:00`(NORMAL)·`16:00`(RECEPTION)을 반환했다. `00` §3장은 토요일 오후의 마감을 **"해당 없음"** 으로 확정했으므로 존재하지 않는 시각이다. `ReasonCode` 는 `SlotOpen=0` 에 의해 `303` 이 먼저 잡혀 판정 자체는 옳았지만, `USP_HC_SELECT_예약가능정보` RS2의 `CutoffTime` 을 통해 화면에 **없는 마감시각**이 표시된다. `05` §6.1.3의 *"마감 적용 시각이 있을 때만 반환"* 에도 어긋난다.
 
-- [ ] **Step 4: GREEN 실행**
+- [x] **Step 4: GREEN 실행**
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -912,7 +926,7 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_03.log | grep -E '^(PASS|FAIL)'
 
 Expected: 배포 exit 0, 테스트 exit 0, `RUL-T01`~`RUL-T12` 12건 PASS.
 
-- [ ] **Step 5: 일정 경계 9건 추가 (`RUL-D01`~`RUL-D09`)**
+- [x] **Step 5: 일정 경계 9건 추가 (`RUL-D01`~`RUL-D09`)**
 
 `UFN_HC_일정확인(@ServerTime, @ReservationDate, @TimeSlot, @CutoffType)` 의 `ReasonCode` 를 본다. 기준시각은 업무시간 안의 고정값 `2026-11-16 10:30:00` 을 쓴다 — 실행 시각에 의존하면 `309` 가 먼저 걸려 일정 판정에 도달하지 못한다.
 
@@ -994,7 +1008,7 @@ ELSE BEGIN PRINT 'FAIL RUL-D09 DATEFIRST 종속성 발견'; SET @Fail += 1; END
 
 `2026-11-22` 가 일요일인지 먼저 확인한다: `DATEDIFF(DAY,0,'2026-11-22')%7` 이 `6` 이어야 한다.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -1029,7 +1043,9 @@ git commit -m "feat(phase4): UFN_HC_일정확인 구현 및 시간·일정 경�
 
 **금지사항:** 완료이력 범위를 `CompletionDate < @ReservationDate` 외로 넓히지 않는다. Work 상태(RSV/RCP/CNR/CNC)를 완료이력으로 쓰지 않는다.
 
-- [ ] **Step 1: RED — `RUL-G01`~`G08` 을 먼저 작성**
+- [x] **Step 1: RED — `RUL-G01`~`G08` 을 먼저 작성**
+
+`[X 실측]` `RUL-G01`~`G08` 8건은 `tests/03_Rule_Tests.sql` 에 실재하고 전건 PASS 지만, 이 Step 이 함께 요구하는 RED(`Msg 4121/208`) 관측 로그는 없다.
 
 스펙 §35.3 표대로 8건. 예시:
 
@@ -1088,7 +1104,7 @@ ELSE BEGIN PRINT 'FAIL RUL-G08'; SET @Fail += 1; END
 
 RED 실행 → `Msg 4121/208`.
 
-- [ ] **Step 2: 구현**
+- [x] **Step 2: 구현**
 
 ```sql
 CREATE OR ALTER FUNCTION [dbo].[UFN_HC_검진대상확인]
@@ -1136,7 +1152,9 @@ RETURN
 GO
 ```
 
-- [ ] **Step 3: GREEN 실행**
+- [x] **Step 3: GREEN 실행**
+
+`[X 실측]` 계획서는 누적 PASS 29 를 기대하는데 남아 있는 `artifacts/logs/test_03.log` 는 최종 회차라 51 이다 — 중간 회차 로그가 덮여 `RUL-G*` 8건 PASS 로만 확인했다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i deploy/03_Functions.sql
@@ -1148,7 +1166,7 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_03.log | grep -cE '^PASS'
 
 Expected: exit 0, PASS 개수 = 21 + 8 = **29**.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -1177,7 +1195,9 @@ git commit -m "feat(phase4): UFN_HC_검진대상확인 구현 및 TGT 경계 테
 
 **금지사항:** TGT 비대상에게 행을 반환하지 않는다. 조건부 술어를 `00` §7.2.2에서 바꾸지 않는다.
 
-- [ ] **Step 1: RED — `RUL-N01`~`N12` 작성 (스펙 §35.4)**
+- [x] **Step 1: RED — `RUL-N01`~`N12` 작성 (스펙 §35.4)**
+
+`[X 실측]` `RUL-N01`~`N12` 12건은 `tests/03_Rule_Tests.sql` 에 실재하고 전건 PASS 지만, 이 Step 이 함께 요구하는 RED 관측 로그는 없다.
 
 핵심 3건 예시:
 
@@ -1259,7 +1279,7 @@ IF NOT EXISTS (
 ELSE BEGIN PRINT 'FAIL RUL-N11 범위 벗어난 대상자 존재'; SET @Fail += 1; END
 ```
 
-- [ ] **Step 2: 구현**
+- [x] **Step 2: 구현**
 
 ```sql
 CREATE OR ALTER FUNCTION [dbo].[UFN_HC_국가검사구성]
@@ -1304,7 +1324,9 @@ GO
 
 정렬은 Inline TVF에서 `ORDER BY` 를 쓸 수 없으므로 **호출자가 `ORDER BY ExamCode ASC` 를 붙인다.** SP의 `SELECT` 에 반드시 포함한다.
 
-- [ ] **Step 3: GREEN 실행 + 정렬 확인**
+- [x] **Step 3: GREEN 실행 + 정렬 확인**
+
+`[X 실측]` 계획서는 누적 PASS 41 을 기대하는데 남아 있는 `artifacts/logs/test_03.log` 는 최종 회차라 51 이다 — 중간 회차 로그가 덮여 `RUL-N*` 12건 PASS 로만 확인했다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i deploy/03_Functions.sql
@@ -1316,7 +1338,7 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_03.log | grep -cE '^PASS'
 
 Expected: exit 0, PASS 개수 = 29 + 12 = **41**.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -1345,7 +1367,9 @@ git commit -m "feat(phase4): UFN_HC_국가검사구성 구현 및 NEX 경계 테
 
 **금지사항:** 요청 값을 `VALUES` 행 생성자 외의 방법으로 받지 않는다. 선택하지 않은 무효 항목이 저장을 차단하게 만들지 않는다.
 
-- [ ] **Step 1: RED — `RUL-A01`~`A10` 작성 (스펙 §35.5)**
+- [x] **Step 1: RED — `RUL-A01`~`A10` 작성 (스펙 §35.5)**
+
+`[X 실측]` `RUL-A01`~`A10` 10건은 `tests/03_Rule_Tests.sql` 에 실재하고 전건 PASS 지만, 이 Step 이 함께 요구하는 RED 관측 로그는 없다.
 
 ```sql
 SELECT @P = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T015';   -- 남 만 46세, 대상
@@ -1431,7 +1455,7 @@ IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0,
 ELSE BEGIN PRINT 'FAIL RUL-A07'; SET @Fail += 1; END
 ```
 
-- [ ] **Step 2: 구현**
+- [x] **Step 2: 구현**
 
 ```sql
 CREATE OR ALTER FUNCTION [dbo].[UFN_HC_추가검사확인]
@@ -1514,7 +1538,7 @@ GO
 
 정렬(`OptionCode ASC`)은 호출자가 붙인다.
 
-- [ ] **Step 3: GREEN 실행**
+- [x] **Step 3: GREEN 실행**
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i deploy/03_Functions.sql
@@ -1526,7 +1550,9 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_03.log | grep -cE '^PASS'
 
 Expected: exit 0, PASS 개수 = 41 + 10 = **51**.
 
-- [ ] **Step 4: 회귀 — 스키마 테스트의 `SCH-013` 이 이제 PASS 인지 확인**
+- [x] **Step 4: 회귀 — 스키마 테스트의 `SCH-013` 이 이제 PASS 인지 확인**
+
+`[X 실측]` 계획서는 `FAIL SCH-014`(SP 0개)를 기대하는데 현재 `artifacts/logs/test_01.log` 는 `PASS SCH-014 Stored Procedure 16개` 다 — SP 16종이 모두 배포된 최종 상태다. `PASS SCH-013 Inline TVF 4개` 는 그대로 확인했다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -1536,7 +1562,7 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_01.log | grep -E 'SCH-013|SCH-014'
 
 Expected: `PASS SCH-013 Inline TVF 4개`, `FAIL SCH-014` (SP는 아직 0개 — 정상).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -1578,7 +1604,9 @@ git commit -m "feat(phase4): UFN_HC_추가검사확인 구현 및 AEX 경계 테
 
 **금지사항:** SP 경로로 만들지 않는다 — `USP_HC_UPDATE_접수완료` 는 `308`/`309` 를 검증하므로 업무시간 밖에 실패한다. `T10` 파일에 합치지 않는다(`GO` 3개 때문에 `IF` 로 감쌀 수 없다).
 
-- [ ] **Step 1: 파일 작성 (UTF-8 with BOM)**
+- [x] **Step 1: 파일 작성 (UTF-8 with BOM)**
+
+`[X 실측]` 계획서는 빈 RCP Work 를 먼저 `INSERT` 한 뒤 두 번째 `INSERT` 로 검사구성을 넣어 `T014` 에 RCP Work 가 2건 생기는데, 구현은 검사구성을 담은 단일 `INSERT` 1건이다(`T011` 도 같다).
 
 ```sql
 SET NOCOUNT ON;
@@ -1673,7 +1701,7 @@ GO
 
 `[X]` `FAIL FIX-RCP-003` 리터럴에 `—`(U+2014)가 있어 **`N` 접두사가 필요하다** (`database/CLAUDE.md` §5).
 
-- [ ] **Step 2: 실행**
+- [x] **Step 2: 실행**
 
 ```bash
 head -c 3 tests/00b_Test_Harness_RCP.sql | od -An -tx1
@@ -1688,7 +1716,7 @@ Expected: `ef bb bf`, `exit=0`, `PASS FIX-RCP-001` + `PASS FIX-RCP-002`.
 
 `FIX-RCP-001` 이 11행이 아니면 `T13` 의 NEX-02/04/06 술어를 다시 본다 — `T014`(남, 만 56세)는 `(56-24)%4=0`, `56`, `56` 세 조건이 전부 성립한다.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception

@@ -122,7 +122,7 @@
 
 **금지사항:** Parameter를 추가하지 않는다(0개). 업무시간 밖이라고 실패시키지 않는다 — 조회는 항상 성공한다.
 
-- [ ] **Step 1: RED — 테스트 먼저**
+- [x] **Step 1: RED — 테스트 먼저**
 
 | Test ID | 인자 | 기대 RS0 `Code` | 설명 |
 |---|---|---:|---|
@@ -217,7 +217,7 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/rs_01_red.txt | head -3
 
 Expected: exit **1**, `Msg 2812` — "USP_HC_SELECT_공통업무상태 저장 프로시저를 찾을 수 없습니다".
 
-- [ ] **Step 2: 구현 (전체 SP 본문 — 이후 SP의 기준 패턴)**
+- [x] **Step 2: 구현 (전체 SP 본문 — 이후 SP의 기준 패턴)**
 
 ```sql
 SET NOCOUNT ON;
@@ -264,7 +264,7 @@ GO
 
 `[X]` **`WithinHours` 를 `WorkCode` 로 역산하면 안 된다.** TVF의 `WorkCode` 는 `TodayBiz=0 → 308` 이 `WithinHours=0 → 309` 보다 **먼저** 걸리므로, 휴무일이나 일요일에는 시각과 무관하게 `308` 이 나온다. 초안의 `CASE WHEN s.WorkCode = 309 THEN 0 ELSE 1 END` 는 **`2026-12-25`(금, 휴무일) 새벽 3시에 `WithinHours=1`** 을 보고한다. `CanWorkNow=0` 이라 업무는 막히지만 화면에 표시되는 값이 거짓이다. **SP 가 `@ServerTime` 으로 직접 계산한다.**
 
-- [ ] **Step 3: GREEN 실행**
+- [x] **Step 3: GREEN 실행**
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -280,7 +280,7 @@ echo "exit=$?"
 
 Expected: 배포·시나리오 둘 다 exit 0. `rs_01.txt` 에 RS 2개(5컬럼 + 10컬럼)가 보인다.
 
-- [ ] **Step 4: RS0 메타데이터 확인**
+- [x] **Step 4: RS0 메타데이터 확인**
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W -Q "
@@ -300,7 +300,7 @@ Expected 정확히 5줄:
 5 | ServerTime | datetime2(7)
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -329,7 +329,7 @@ git commit -m "feat(phase4): USP_HC_SELECT_공통업무상태 구현 및 RS0 패
 
 **Parameter (05 §7.2 그대로 5개):** `@ChartNo NVARCHAR(100)`, `@Name NVARCHAR(100)`, `@SocialNumber VARCHAR(13)`, `@Birthday VARCHAR(8)`, `@MobilePhone VARCHAR(13)` — 전부 NULL 허용.
 
-- [ ] **Step 1: RED — 테스트 4건 추가**
+- [x] **Step 1: RED — 테스트 4건 추가**
 
 | Test ID | 인자 | 기대 RS0 `Code` | 설명 |
 |---|---|---:|---|
@@ -354,7 +354,7 @@ EXEC [dbo].[USP_HC_SELECT_수검자목록] NULL, NULL, NULL, NULL, NULL;
 "05_수검자목록_주민번호형식": { "sp": "USP_HC_SELECT_수검자목록", "rs0Success": 0, "rs0Code": 101 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
 ```
 
-- [ ] **Step 2: 구현 명세**
+- [x] **Step 2: 구현 명세**
 
 정규화 → 검증 → 조회 순서:
 
@@ -387,7 +387,9 @@ MobilePhone ← CelNumber     Phone ← TelNumber        Email ← EMail
 Zipcode ← Zipcode           Address ← Address
 ```
 
-- [ ] **Step 3: GREEN 실행 + 4건 PASS 확인**
+- [x] **Step 3: GREEN 실행 + 4건 PASS 확인**
+
+`[X 실측]` 계획서는 `tests/04_Select_SP_Tests.sql` 에서 4건 PASS 를 센다고 했으나 그 파일은 `FIX-RO-01` 하나만 출력한다 ― 4건 계약 판정은 `T22` 검증기가 하고 증거는 `artifacts/reports/contract-verify.txt` 의 `02`~`05` 다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i deploy/04_Procedures_Select.sql
@@ -396,7 +398,7 @@ sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
 echo "exit=$?"
 ```
 
-- [ ] **Step 4: Commit** — `feat(phase4): USP_HC_SELECT_수검자목록 구현`
+- [x] **Step 4: Commit** — `feat(phase4): USP_HC_SELECT_수검자목록 구현`
 
 **완료조건:** SP 배포 exit 0 + 시나리오 4개 단독 실행 exit 0. 계약 판정은 `T22` 다.
 
@@ -416,7 +418,7 @@ echo "exit=$?"
 
 **허용 Code:** `0, 100, 200` (`05` §13).
 
-- [ ] **Step 1: RED**
+- [x] **Step 1: RED**
 
 | Test ID | 인자 | 기대 RS0 `Code` | 설명 |
 |---|---|---:|---|
@@ -439,7 +441,7 @@ EXEC [dbo].[USP_HC_SELECT_수검자상세] NULL;
 "08_수검자상세_정상": { "sp": "USP_HC_SELECT_수검자상세", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
 ```
 
-- [ ] **Step 2: 구현 명세**
+- [x] **Step 2: 구현 명세**
 
 ```text
 1. @PatientId IS NULL       → 100 MissingValue, Field='PatientId'
@@ -449,7 +451,7 @@ EXEC [dbo].[USP_HC_SELECT_수검자상세] NULL;
 
 RS1 컬럼: `PatientId, ChartNo, Name, SocialNumber, Birthday, Gender, MobilePhone(←CelNumber), Phone(←TelNumber), Email(←EMail), Zipcode, Address, AddressDetail, Memo, LastEditDate`
 
-- [ ] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_SELECT_수검자상세 구현`
+- [x] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_SELECT_수검자상세 구현`
 
 **완료조건:** SP 배포 exit 0 + 시나리오 3개 단독 실행 exit 0. 계약 판정은 `T22` 다.
 
@@ -469,7 +471,7 @@ RS1 컬럼: `PatientId, ChartNo, Name, SocialNumber, Birthday, Gender, MobilePho
 
 **허용 Code:** `0, 100, 200, 701`
 
-- [ ] **Step 1: RED — 손상 데이터로 701 을 검증한다**
+- [x] **Step 1: RED — 손상 데이터로 701 을 검증한다**
 
 | Test ID | 인자 | 기대 RS0 `Code` | 설명 |
 |---|---|---:|---|
@@ -490,7 +492,7 @@ EXEC [dbo].[USP_HC_SELECT_수검자유효업무] @P0;
 "10_수검자유효업무_2건701": { "sp": "USP_HC_SELECT_수검자유효업무", "rs0Success": 0, "rs0Code": 701 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
 ```
 
-- [ ] **Step 2: 구현 명세**
+- [x] **Step 2: 구현 명세**
 
 ```sql
 -- 조회범위
@@ -508,7 +510,7 @@ StatusName  RSV=N'예약' / RCP=N'접수완료' / CNR=N'예약취소' / CNC=N'�
 IsToday     CASE WHEN ReservationDate = @Today THEN 1 ELSE 0 END
 ```
 
-- [ ] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_SELECT_수검자유효업무 구현`
+- [x] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_SELECT_수검자유효업무 구현`
 
 **완료조건:** SP 배포 exit 0 + 시나리오 2개 단독 실행 exit 0. `10_수검자유효업무_2건701` 의 RS0 에 `701` 이 실제로 보여야 한다. 계약 판정은 `T22` 다.
 
@@ -528,7 +530,7 @@ IsToday     CASE WHEN ReservationDate = @Today THEN 1 ELSE 0 END
 
 **허용 Code:** `0, 101, 103, 104`
 
-- [ ] **Step 1: RED**
+- [x] **Step 1: RED**
 
 | Test ID | 인자 | 기대 RS0 `Code` | 설명 |
 |---|---|---:|---|
@@ -551,7 +553,7 @@ EXEC [dbo].[USP_HC_SELECT_예약접수목록] '2026-12-01', '2026-11-01', NULL, 
 "13_예약접수목록_날짜범위": { "sp": "USP_HC_SELECT_예약접수목록", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
 ```
 
-- [ ] **Step 2: 구현 명세**
+- [x] **Step 2: 구현 명세**
 
 ```text
 1. 문자열 정규화, @Status 는 UPPER
@@ -573,7 +575,7 @@ WHERE (@FromDate IS NULL OR w.[예약일] >= @FromDate)
 ORDER BY w.[예약일], w.[시간대코드], p.[성명], w.[업무ID];
 ```
 
-- [ ] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_SELECT_예약접수목록 구현`
+- [x] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_SELECT_예약접수목록 구현`
 
 **완료조건:** SP 배포 exit 0 + 시나리오 3개 단독 실행 exit 0. 계약 판정은 `T22` 다.
 
@@ -595,7 +597,7 @@ ORDER BY w.[예약일], w.[시간대코드], p.[성명], w.[업무ID];
 
 **금지사항:** `RS4` 를 5행이 아닌 개수로 반환하지 않는다. 업무시간 밖이라고 실패시키지 않는다 — `Allowed=0` 으로 반환한다.
 
-- [ ] **Step 1: RED**
+- [x] **Step 1: RED**
 
 | Test ID | 인자 | 기대 RS0 `Code` | 설명 |
 |---|---|---:|---|
@@ -618,7 +620,7 @@ EXEC [dbo].[USP_HC_SELECT_예약접수상세] -1;
 "16_예약접수상세_정상": { "sp": "USP_HC_SELECT_예약접수상세", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
 ```
 
-- [ ] **Step 2: 구현 명세**
+- [x] **Step 2: 구현 명세**
 
 ```text
 1. @WorkId IS NULL                                  → 100
@@ -669,7 +671,7 @@ WHERE w.[업무ID] = @WorkId
 | `EDIT_EXTRA` | `RCP` + 공통 업무 가능 | `502` → `308`/`309` |
 | `CANCEL_RECEPTION` | `RCP` + 공통 업무 가능 | `502` → `308`/`309` |
 
-- [ ] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_SELECT_예약접수상세 구현 (RS0~RS4)`
+- [x] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_SELECT_예약접수상세 구현 (RS0~RS4)`
 
 **완료조건:** SP 배포 exit 0 + 시나리오 3개 단독 실행 exit 0. `RS4` 5행은 `T22` 파서가 검증한다.
 
@@ -693,7 +695,7 @@ WHERE w.[업무ID] = @WorkId
 
 **금지사항:** 휴무일·정원마감·TGT 비대상을 SP 실패로 만들지 않는다 — `RS0.Success=1, Code=0` + `RS1.CanSave=0` + `BlockCode` 로 반환한다 (`05` §3.3). `Scope=NONE` 에 `Code=1` 을 쓰지 않는다 (`Code=1` 은 Write SP No-op 전용).
 
-- [ ] **Step 1: RED — NULL 조합 오류 6종 + Scope Cardinality**
+- [x] **Step 1: RED — NULL 조합 오류 6종 + Scope Cardinality**
 
 | Test ID | 인자 | 기대 RS0 `Code` | 설명 |
 |---|---|---:|---|
@@ -718,7 +720,9 @@ EXEC [dbo].[USP_HC_SELECT_예약가능정보] @Pn, NULL, 0x0000000000000001, 'NO
 "20_예약가능정보_휴무일": { "sp": "USP_HC_SELECT_예약가능정보", "rs0Success": 1, "rs0Code": 0 },   // resultSets 는 T22 Step 2 스키마에 SP 계약대로 채운다
 ```
 
-- [ ] **Step 2: 구현 — `05` §9.13 평가순서를 그대로 따른다**
+- [x] **Step 2: 구현 — `05` §9.13 평가순서를 그대로 따른다**
+
+`[X 실측]` 계획서 순서표는 `05` §9.3 오류조합 6종을 4단계에서 한 번에 판정하는데, 구현은 5종만 4단계에 두고 `기존 날짜 유지 + TimeSlot NULL` 1종을 6단계(존재·소유·상태·동시성) 뒤로 미뤘다 ― 그 조합은 Work 행이 있어야 판정할 수 있다.
 
 ```text
  1. @ServerTime 캡처
@@ -802,7 +806,7 @@ Scope별 RS Cardinality (`05` §9.11) — 반드시 지킨다:
 
 0행을 반환할 때도 **동일한 컬럼 Schema** 를 유지해야 한다. `WHERE 1 = 0` 을 붙이거나 `TOP (0)` 을 사용한다.
 
-- [ ] **Step 3: GREEN 실행**
+- [x] **Step 3: GREEN 실행**
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i deploy/04_Procedures_Select.sql
@@ -819,7 +823,9 @@ done
 
 Expected: 배포 exit 0, 시나리오 4개 전부 exit 0.
 
-- [ ] **Step 4: 회귀 — `SCH-014` 는 아직 FAIL (SP 7개)**
+- [x] **Step 4: 회귀 — `SCH-014` 는 아직 FAIL (SP 7개)**
+
+`[X 실측]` 계획서 Expected 는 `SP=7` 인데 지금 실측은 `SP=16` 이다 ― `T22b`~`T35` 가 SELECT 1개와 Write SP 8개를 더 배포했다. 당시의 `SP=7` 관측은 커밋 `3ec9721` 본문에 있다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W \
@@ -828,7 +834,7 @@ sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -
 
 Expected: `SP=7`
 
-- [ ] **Step 5: Commit** — `feat(phase4): USP_HC_SELECT_예약가능정보 구현 (RS0~RS5)`
+- [x] **Step 5: Commit** — `feat(phase4): USP_HC_SELECT_예약가능정보 구현 (RS0~RS5)`
 
 **완료조건:** SELECT SP 7개 배포 완료 + 시나리오 4개 단독 실행 exit 0. 스펙 §45.2 의 `SEL` 전건 계약 판정은 `T22` 의 완료조건이다.
 
@@ -853,7 +859,7 @@ Expected: `SP=7`
 
 **금지사항:** npm 패키지를 설치하지 않는다. node 표준 `fs` 만 사용한다. 검증을 통과시키려고 SP의 Result Set을 바꾸지 않는다.
 
-- [ ] **Step 1: 시나리오 SQL 작성**
+- [x] **Step 1: 시나리오 SQL 작성**
 
 각 파일은 SP를 한 번 호출하기만 한다. `01`~`20` 은 `T15`~`T21` 이 이미 만들었으므로 여기서는 Scope 전용 `21`~`25` 만 만든다. 예: `tests/contract/01_공통업무상태.sql`
 
@@ -865,7 +871,7 @@ GO
 
 `SELECT_예약가능정보` 는 Scope별로 5개 파일을 더 만든다 (`ALL` / `SLOT` / `EXTRA` / `SLOT_EXTRA` / `NONE`) — `05` §9.11 Cardinality 전용이라 Test ID 가 없다.
 
-- [ ] **Step 2: `tools/expected-contracts.json` 작성**
+- [x] **Step 2: `tools/expected-contracts.json` 작성**
 
 ```json
 {
@@ -892,7 +898,7 @@ GO
 
 **`T22` 에서는 SELECT SP 7개 분만 작성한다.** Write SP 분은 `T36` 에서 추가한다 — `T22` 시점에는 Write SP 가 아직 없다. `rows` 는 정확값, `rowsMin`/`rowsMax` 는 범위다.
 
-- [ ] **Step 3: `tools/verify-contract.js` 작성**
+- [x] **Step 3: `tools/verify-contract.js` 작성**
 
 `[X]` 파서는 컬럼명·RS 개수·행수뿐 아니라 **RS0 첫 행의 `Success`·`Code` 값을 읽어야 한다.** 스펙 §36.4 가 요구하는 것은 형상 일치가 아니라 *"관측 `Code` = 기대값"* 과 *"관측 `Code` ∈ `05` §13 허용집합"* 두 가지다. `expected-contracts.json` 의 각 항목은 `sp`·`rs0Success`·`rs0Code` 를 갖고, 허용집합은 `tools/allowed-codes.json` 에서 읽는다(`T36` Step 5).
 
@@ -994,7 +1000,7 @@ if (fail === 0) say(`PASS ${key} Result Set 계약 일치 (${sets.length}개 RS 
 process.exit(fail === 0 ? 0 : 1);
 ```
 
-- [ ] **Step 4: RED — 기대값을 일부러 틀리게 두고 실패를 확인**
+- [x] **Step 4: RED — 기대값을 일부러 틀리게 두고 실패를 확인**
 
 `expected-contracts.json` 의 `01_공통업무상태` RS1 컬럼에서 `Today` 를 `Todayx` 로 바꾼 뒤 실행한다.
 
@@ -1007,7 +1013,7 @@ echo "exit=$?"
 
 Expected: exit **1**, `FAIL … RS1 컬럼 불일치`. 파서가 실제로 동작함을 증명한다.
 
-- [ ] **Step 5: GREEN — 기대값을 되돌리고 7개 SELECT SP 전부 검증**
+- [x] **Step 5: GREEN — 기대값을 되돌리고 7개 SELECT SP 전부 검증**
 
 재사용을 위해 **`scripts/verify-contract-all.sh`** 로 만든다. `test.sh` 가 이 스크립트를 호출한다(스펙 §8.4).
 
@@ -1071,7 +1077,7 @@ echo "exit=$?"
 
 Expected: 전부 `PASS`, `exit=0`. 특히 `21_예약가능정보_Scope_ALL` 은 **RS 6개**, `16_예약접수상세_정상` 은 **RS 5개 + RS4 정확히 5행**이어야 한다.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -1119,7 +1125,9 @@ git commit -m "test(phase4): 후속 Result Set 계약 검증기 도입 (node, �
 기간·조작자 전체 검색      계약에 없다. 대상 행 1개 단위 조회만 제공한다
 ```
 
-- [ ] **Step 1: RED — 계약 시나리오 4건**
+- [x] **Step 1: RED — 계약 시나리오 4건**
+
+`[X 실측]` 계획서는 `SEL-021` 이 Write SP 가 남긴 `변경이력` 최초 `수검자` 행을 읽고 행수를 `rowsMin`/`rowsMax` 로 잡는다고 했으나, 구현은 시나리오가 sentinel 대상키 `-9001` 에 2행을 직접 심고 `rows: 2` 로 확정한다 ― Write SP 가 SKIP 되는 업무시간 밖에서 FAIL 했기 때문이다.
 
 | Test ID | 인자 | 기대 RS0 | 설명 |
 |---|---|---|---|
@@ -1130,7 +1138,7 @@ git commit -m "test(phase4): 후속 Result Set 계약 검증기 도입 (node, �
 
 `[!]` **`SEL-021` 의 행수는 `rowsMin`/`rowsMax` 로 잡는다.** 대상키가 Fixture 가 아니라 Write SP 가 만든 값이라 회차마다 다르고, 그 행의 감사 행수도 어떤 Write SP 가 먼저 돌았느냐에 따라 달라진다. 계약이 요구하는 것은 *"정상 조회는 기록을 낸다"* 이므로 `rowsMin: 1` 이 그 계약이다.
 
-- [ ] **Step 2: 구현**
+- [x] **Step 2: 구현**
 
 ```text
 정규화       @TargetTable LTRIM/RTRIM, 빈 문자열 → NULL. 한글 값이라 UPPER 하지 않는다
@@ -1142,7 +1150,7 @@ RS1          대상테이블·대상키로 집고 기록일시 DESC, 이력ID DE
 
 읽기 전용이므로 `XACT_ABORT`·Transaction·`applock` 을 쓰지 않는다 (스펙 §31).
 
-- [ ] **Step 3: GREEN 실행**
+- [x] **Step 3: GREEN 실행**
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \

@@ -63,7 +63,9 @@ Code 판정은 `tests/contract/OFF-308-01`·`OFF-309-01`·`OFF-309-02` 가 한�
 
 **금지사항:** 테스트를 통과시키려고 SP의 실패 조건을 완화하지 않는다.
 
-- [ ] **Step 1: 스냅샷 → 실패 유도 → 비교 패턴**
+- [x] **Step 1: 스냅샷 → 실패 유도 → 비교 패턴**
+
+`[X 실측]` **창 밖에서 `RETURN` 하지 않고 분기한다.** `tests/08_Rollback_Tests.sql` 이 창 밖에서는 `RBK-OFF`(창 안이면 성공했을 인자로 Write SP 를 부른 뒤 DB 지문 불변 + `@@TRANCOUNT = 0`)를 판정하고 `NOT RUN RBK-001~008` 을 남긴다. `RBK-008`(실패 응답 RS 개수)은 `INSERT … EXEC` 금지와 DMV `Msg 11520` 때문에 T-SQL 로 셀 수 없어 `tools/verify-docs.js` 의 `V18` 정적 판정으로 옮겼다(스펙 §45.2 카탈로그가 `RBK` 산출 파일에 `verify-docs.js` 를 함께 적는다).
 
 **계약 시나리오**: `RBK-001` = `EXEC [dbo].[USP_HC_INSERT_예약] @P, 'NORMAL', '2026-11-17', 'AM', 0,0,1,0,0,0,0;` (남성 `T009` + OPT03) → 기대 RS0 `Code=411`.
 
@@ -131,7 +133,9 @@ DECLARE @Same BIT =
 
 `[X]` **초안은 `FOR XML PATH` 를 쓰면서 "SQL Server 2005부터 있으므로 허용목록에 부합한다"고 적었다.** 허용목록 방식은 *"아래에 없는 기능은 쓰지 않는다"* 이고 `FOR XML PATH` 는 목록에 없다. 버전이 오래된 것은 허용 근거가 아니다. index 문서의 절대 금지 목록에도 `XML` 이 있다.
 
-- [ ] **Step 2: 실행**
+- [x] **Step 2: 실행**
+
+`[X 실측]` **단독 실행이 아니라 `scripts/test.sh` 가 `artifacts/logs/test_08.log` 로 돌린다.** 창 안 회차(2026-09-07 13:58) exit 0 · `RBK-001`~`007` 전건 PASS(`RBK-003` 사전조건 줄 포함 8줄) · `RBK-008` 은 `V18` PASS. 창 밖 회차(20:14)는 `RBK-OFF` PASS + `NOT RUN`. 증거: `artifacts/logs/full_test_run.log:364-388` · `full_test_run_off.log:160-165`.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -142,7 +146,9 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_08.log | grep -E '^(PASS|FAIL)'
 
 Expected: exit 0, 8건 PASS.
 
-- [ ] **Step 3: Commit** — `test(phase4): Rollback 부분저장 0건 검증 8건 추가`
+- [x] **Step 3: Commit** — `test(phase4): Rollback 부분저장 0건 검증 8건 추가`
+
+`[X 실측]` **커밋 `d7634dd` `test(phase4): T33 Rollback 부분저장 0건 · V18 · test.sh 최초 완주`** — 계획한 메시지와 다르고 `V18` 신설·`test.sh` 최초 완주를 함께 담았다.
 
 **완료조건:** 스펙 §45.2 의 `RBK` 전건 PASS. 하나라도 FAIL 이면 해당 SP 의 Transaction 경계를 고친다. 업무시간 밖 실행이면 `SKIP` 이며 `PASS` 로 승격하지 않는다.
 
@@ -399,7 +405,9 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/conc_A.log artifacts/logs/conc_B.log 2>/
 
 `50001`(applock timeout)이 나오면 5000ms 안에 상대 세션이 끝나지 않은 것이다. 정상 시나리오에서는 0이어야 한다.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
+
+`[X 실측]` **커밋 `5639669` `test(phase4): 동시성 8종 신설 · CON-001~004·006·007 실측 통과 · 판정 공허화 가드`.** 시각 창이 필요한 `CON-005`·`008` 은 이 커밋에서 닫히지 않았고 뒤의 `5d79acd`·`a998cc9`(`scripts/run-con-window.sh`)가 8/8 을 완성했다.
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -427,7 +435,9 @@ git commit -m "test(phase4): 동시성 시나리오 8종 및 barrier 실행 스�
 
 **Files:** Create `deploy/09_Verify.sql`, `tests/14_Clean_Rebuild_Verify.sql`
 
-- [ ] **Step 1: `deploy/09_Verify.sql` — 배포 말미 자동 검증**
+- [x] **Step 1: `deploy/09_Verify.sql` — 배포 말미 자동 검증**
+
+`[X 실측]` **R3 반영으로 두 단언이 넓어졌다.** `VER-005` 는 `PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5`, `VER-007` 은 `CHECK 24 / DEFAULT 8 / Seed Exam 19 / Holiday 2` 를 함께 센다. 계획 초안의 `NCI 4` 는 `IX_변경이력_TARGET` 신설로 5 가 됐다.
 
 ```sql
 SET NOCOUNT ON;
@@ -471,7 +481,9 @@ PRINT '=== 09_Verify 완료 ===';
 GO
 ```
 
-- [ ] **Step 2: 전체 배포 실행 (G03)**
+- [x] **Step 2: 전체 배포 실행 (G03)**
+
+`[X 실측]` **`test.sh` 가 매 회차 머리에서 `rebuild.sh` 를 부르므로 별도 `deploy_full.log` 가 없다.** 두 회차 모두 `VER-001`~`VER-007` 7건 PASS · exit 0 (`artifacts/logs/full_test_run.log:23-29` · `full_test_run_off.log:23-29`).
 
 ```bash
 ./scripts/rebuild.sh
@@ -481,7 +493,9 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/deploy_full.log | grep -E '^(PASS|FAIL|I
 
 Expected: exit 0, `VER-001`~`VER-007` 7건 PASS.
 
-- [ ] **Step 3: `tests/14_Clean_Rebuild_Verify.sql` — 인벤토리 지문 비교**
+- [x] **Step 3: `tests/14_Clean_Rebuild_Verify.sql` — 인벤토리 지문 비교**
+
+`[X 실측]` **회차 사이 비교는 `scripts/clean-rebuild-verify.sh` 로 옮겼다**(파일 머리 `[R3]`). `tests/14` 는 한 회차의 `RBD-004` 지문 + `RBD-006`(Seed 역할 분포) + `RBD-010`(DB 안 credential·대칭키·Login 0건) 단언과 `OBJECTS`·`COLUMNS`·`INDEXES`·`PARAMETERS`·`GRANTS`·`SEED` 정렬 덤프를 낸다. `INDEXES` 는 `is_included_column` 까지 펼치고, `PARAMETERS` 구획은 계획에 없던 것이다.
 
 `[X]` **개수 문자열 지문을 쓰지 않는다.** 객체명·컬럼·정의·권한·Seed 값이 달라도 개수만 같으면 동일 지문이 되어, **잘못된 배포가 두 번 반복되어도 G14 가 PASS** 한다. 정렬된 메타데이터·Seed 덤프를 그대로 출력해 `diff` 한다.
 
@@ -560,7 +574,9 @@ PRINT '=== 14_Clean_Rebuild_Verify 완료 ===';
 GO
 ```
 
-- [ ] **Step 4: 연속 2회 rebuild 후 지문 비교 (G14)**
+- [x] **Step 4: 연속 2회 rebuild 후 지문 비교 (G14)**
+
+`[X 실측]` **`clean-rebuild-verify.sh` 가 `RBD-005` 로 판정한다** — PASS · 지문 `INVENTORY|6|4|16|1|6|2|2|1|5|24|8|0|0|19|2`. `artifacts/reports/object-inventory.txt` 는 `run2` 가 아니라 `run4`(Procedure 단독 재실행 뒤) 사본이며 `inventory_run1`~`run4` 는 스크립트가 지운다.
 
 ```bash
 ./scripts/rebuild.sh >/dev/null
@@ -579,7 +595,9 @@ cp artifacts/reports/inventory_run2.txt artifacts/reports/object-inventory.txt
 
 Expected: `PASS RBD-005`, 지문 = `INVENTORY|6|4|16|1|6|2|2|1|5|24|8|0|0|19|2`
 
-- [ ] **Step 5: 안전가드 음성 검증 — `RBD-002` 만 (RBD-001 은 `NOT RUN`)**
+- [x] **Step 5: 안전가드 음성 검증 — `RBD-002` 만 (RBD-001 은 `NOT RUN`)**
+
+`[X 실측]` **`clean-rebuild-verify.sh` 안이다.** `PASS RBD-002 대상 DB 컨텍스트의 Rebuild 가 Msg 50021 로 중단됐다 (exit=1)` · `NOT RUN RBD-001` (`artifacts/reports/clean-rebuild.txt`).
 
 ```bash
 RC=0
@@ -594,7 +612,9 @@ echo "NOT RUN RBD-001 잘못된 서버명(50020) — 인스턴스가 1개뿐이�
 
 `[X]` **초안은 이 한 번의 실행으로 `RBD-001`·`RBD-002` 두 Gate 를 모두 검증한 것처럼 적었다.** 실제로 관측되는 것은 `50012`(당시 번호) 하나뿐이고 `50010`·`50011` 은 발화하지 않았다. 게다가 `50011` 가드는 `DECLARE @TargetDb = N'…'; IF @TargetDb <> N'…'` 라는 **항진 명제**여서 원리적으로 발화 불가능했다. 가드 번호대를 `50020~50024` 로 분리하고(스펙 §8.3), `RBD-001` 은 정직하게 `NOT RUN` 으로 남긴다.
 
-- [ ] **Step 5b: 나머지 Clean Rebuild 계약 (`RBD-003`·`RBD-006`·`RBD-007`·`RBD-008`·`RBD-010`)**
+- [x] **Step 5b: 나머지 Clean Rebuild 계약 (`RBD-003`·`RBD-006`·`RBD-007`·`RBD-008`·`RBD-010`)**
+
+`[X 실측]` **다섯 건이 두 곳으로 나뉘었고 판정 방식도 셋이 다르다.** `RBD-003`·`RBD-007`·`RBD-008` 은 `clean-rebuild-verify.sh`, `RBD-006`·`RBD-010` 은 `tests/14`. `RBD-006` 은 `seed_first.txt` diff 가 아니라 Seed 역할 분포(NEX 13 / AEX 7 / 겸용 1 / AEX Active 7) 판정이고 값 동일성은 `RBD-005` 정렬 덤프의 `SEED` 구획이 본다. `RBD-008` 의 GRANT 기대는 15건이 아니라 0건이며(Security 범위 밖 · 파일 머리 `[R3]`) 덤프의 `GRANTS` 구획이 재실행 전후로 같은지로 판정한다. `RBD-010` 은 DB 객체 스캔(`tests/14`)과 파일 스캔(`verify-no-secret.sh` = `SEC-010`)으로 갈랐다. 전건 PASS.
 
 `[X]` 초안은 `RBD-001`·`002`·`004`·`005`·`009` 만 명시 판정했다. 스펙 §40 은 10건이고, 특히 `RBD-007`(Deploy 단독 재실행)·`RBD-008`(Procedure 파일만 재실행 후 GRANT 유지)은 **재배포 안전성**을 보는 유일한 시험이라 빠지면 G14 가 성립하지 않는다.
 
@@ -645,7 +665,9 @@ exit $RC
 
 `[I]` `seed_first.txt`·`dump_second.txt` 는 `Step 4`(2회 Rebuild 비교)에서 만든 파일을 그대로 쓴다.
 
-- [ ] **Step 6: 타 DB 무사 확인 (`RBD-009`)**
+- [x] **Step 6: 타 DB 무사 확인 (`RBD-009`)**
+
+`[X 실측]` **`clean-rebuild-verify.sh` 말미가 `T04` 와 같은 명령·같은 컬럼으로 `otherdb_after.txt` 를 찍어 `diff` 한다.** `PASS RBD-009 타 DB 메타데이터가 rebuild 전후로 동일` · 두 파일 diff 0줄(재확인).
 
 아래 명령은 `T04` Step 7 과 **한 글자도 다르지 않아야 한다.** 출력 파일 이름만 `_after` 다.
 
@@ -665,7 +687,9 @@ Expected: `PASS RBD-009`. `otherdb_before.txt` 는 **`T04` Step 7 이 만든다*
 
 `[X]` 초안은 `SELECT name FROM sys.databases` 로 **이름 존재만** 확인하고 "변경 0건" 이라고 적었다. DB 가 존재한다는 사실은 상태·옵션·접근모드가 안 바뀌었다는 증거가 아니다. 다만 `DROP DATABASE` 식별자가 과제 DB 로 하드코딩되어 있어 `Net461MvpSample` 을 직접 삭제하는 경로는 존재하지 않는다 — 표현을 **"존재 및 관찰한 메타데이터 불변"** 으로 제한한다.
 
-- [ ] **Step 7: Commit** — `test(phase4): 배포 검증 및 Clean Rebuild 재현성 확인 추가`
+- [x] **Step 7: Commit** — `test(phase4): 배포 검증 및 Clean Rebuild 재현성 확인 추가`
+
+`[X 실측]` **커밋 `4db86b8` `feat(phase4): T35·T36 배포 검증 · Clean Rebuild · secret 스캔 · V17`** 이 `T35` 와 `T36` 를 한 커밋에 담았다.
 
 **완료조건:** `VER-001`~`VER-007` PASS, 2회 rebuild 지문 동일, `Net461MvpSample` 무사.
 
@@ -681,7 +705,9 @@ Expected: `PASS RBD-009`. `otherdb_before.txt` 는 **`T04` Step 7 이 만든다*
 
 **Files:** Modify `tools/expected-contracts.json`, Create `tests/contract/12_*.sql` ~ `20_*.sql`
 
-- [ ] **Step 1: Write SP 시나리오 추가**
+- [x] **Step 1: Write SP 시나리오 추가**
+
+`[X 실측]` **파일명이 `12_`~`22_` 가 아니라 `PWR-`·`RWR-`·`CWR-` 이고(추가로 `OFF-`·`SEL-`) 11개가 아니라 110 시나리오다.** `tools/expected-contracts.json` 이 SP 16/16 을 덮는다 — 계획의 15 에 R3 이 신설한 `USP_HC_SELECT_변경이력`(SP-LOG-01)이 더해졌다. 성공/실패 경로는 계획 의도대로 SP 마다 짝으로 있다.
 
 Write SP는 **성공 경로와 실패 경로를 각각** 호출한다. 실패 경로는 RS0 1개만 나와야 한다.
 
@@ -701,7 +727,9 @@ Write SP는 **성공 경로와 실패 경로를 각각** 호출한다. 실패 �
 
 `[X]` **초안은 15개가 아니라 13개 SP 만 검증했다.** `T22` 의 SELECT 7종 + 위 목록의 Write 6종 = 13이고, `UPDATE_예약취소`·`UPDATE_접수취소` 가 빠져 있었다. 스펙 §42 G09 의 *"15/15 SP"* 가 계획대로 실행해도 충족되지 않는다. 두 시나리오를 추가해 15/15 로 채운다.
 
-- [ ] **Step 2: Parameter 계약 검증 (SQL만)**
+- [x] **Step 2: Parameter 계약 검증 (SQL만)**
+
+`[X 실측]` **`tests/01_Schema_Tests.sql` 의 `SCH-019` 가 SP 별 Parameter 개수를 `EXCEPT` 양방향 대조한다** — 합계는 계획 본문의 95 도 아래 표의 87 도 아닌 99 다(R3 이 Write SP 8개에 `@OperatorName` 을, 목록에 SP-LOG-01 을 더했다). 다만 이름·순서·타입의 기대값 대조는 없다. 그 셋은 `tests/14` 의 `--- PARAMETERS ---` 99행으로 덤프되어 커밋된 `artifacts/reports/object-inventory.txt` 에 남고, 회차 사이 `diff`(`RBD-005`·`007`·`008`)와 git 이력으로만 드리프트를 잡는다.
 
 ```sql
 -- [X] 초안은 SELECT 로 덤프만 하고 눈으로 보라고 했다. 이름·순서·타입이 틀려도 조회는 정상 종료하므로
@@ -868,7 +896,9 @@ END
 | `USP_HC_UPDATE_접수취소` | 2 |
 | **합계** | **87** |
 
-- [ ] **Step 3: RS0 메타데이터 15/15 검증 (SQL만)**
+- [x] **Step 3: RS0 메타데이터 15/15 검증 (SQL만)**
+
+`[X 실측]` **`CTR-RS0-A`·`B`·`C` 는 구현하지 않았다** — DMV 가 `sp_getapplock` 을 부르는 Write SP 8개에서 `Msg 11520` 이라 16/16 이 원리적으로 불가능하다(파일 머리 `[R3]` · 스펙 §36). 스펙이 나눈 세 경로 중 타입은 `verify-docs.js` 의 `V17`(배포 SQL 의 RS0 블록 42개 전부 5컬럼 명시 `CAST`)이, 컬럼명·RS 개수·행수는 `tools/verify-contract.js` 가 실측 출력으로 판정한다.
 
 ```sql
 DECLARE @Rs0 TABLE (SpName SYSNAME, Ordinal INT NULL, ColName SYSNAME NULL,
@@ -915,7 +945,9 @@ ELSE BEGIN PRINT 'FAIL CTR-RS0-C RS0 스키마 불일치 SP 존재'; SET @Fail +
 
 `[X]` **초안의 `CROSS APPLY` + `WHERE NOT (…)` 는 거짓 양성이었다.** DMV가 결과셋을 결정하지 못하면 `name`/`column_ordinal` 이 `NULL` 인 error 행을 돌려주는데, `NULL` 비교가 `UNKNOWN` → `NOT UNKNOWN = UNKNOWN` 이라 `COUNT(*)` 에 잡히지 않는다. `CROSS APPLY` 라 0행을 내는 SP 는 아예 사라진다. **SP 가 14개여도, RS0 이 완전히 깨져 있어도 `@Bad = 0` → PASS** 했다. `OUTER APPLY` + 총 행수 75 + `error_number` + `EXCEPT` 양방향 세 단계로 교체한다.
 
-- [ ] **Step 4: 후속 RS 전체 검증 실행**
+- [x] **Step 4: 후속 RS 전체 검증 실행**
+
+`[X 실측]` **`scripts/verify-contract-all.sh` 가 한다**(계획 주석이 예고한 그대로). 창 안 회차 108건 전건 PASS · `contract-verify FAILED=0` · exit 0. 창 밖 회차는 32 시나리오 PASS + `OFF-308-CLEAN` PASS / 78 SKIP 이며 SKIP 은 PASS 가 아니다 — 그 78건은 창 안 회차가 판정한다.
 
 ```bash
 : > artifacts/reports/contract-verify.txt
@@ -934,11 +966,15 @@ grep -c '^PASS' artifacts/reports/contract-verify.txt
 
 Expected: 전부 `PASS`, exit 0.
 
-- [ ] **Step 5: Commit** — `test(phase4): 16개 SP 전체 Result Set·Parameter 계약 검증`
+- [x] **Step 5: Commit** — `test(phase4): 16개 SP 전체 Result Set·Parameter 계약 검증`
+
+`[X 실측]` **`T35` Step 7 과 같은 커밋 `4db86b8` 이다.**
 
 **완료조건:** Parameter 95행 `EXCEPT` 차집합 0, RS0 메타 75행 + `error_number` 0건, **15/15 SP** 의 후속 RS 시나리오 전부 PASS, 관측 RS0 `Code` 가 전건 `tools/allowed-codes.json` 의 해당 SP 허용집합 안. **G09 충족.**
 
-- [ ] **Step 5: `tools/allowed-codes.json` 생성 및 미관측 Code 보고**
+- [x] **Step 5: `tools/allowed-codes.json` 생성 및 미관측 Code 보고**
+
+`[X 실측]` **파일은 앞선 커밋 `c8fc6d9` 에서 신설됐고 16 SP 를 담는다**(`USP_HC_SELECT_변경이력` 포함). `verify-contract.js` 가 `rs0Code` 일치와 허용집합 포함을 함께 판정하고, 파일이 없으면 `NOT RUN` 을 남기도록 돼 있다. **다만 회차마다 미관측 Code 목록을 보고서에 남기는 집계는 없다** — 06 §33.2a 에 일회 실측(Catalog 38개 중 미관측 7개에 `308`·`309` 가 있었고 `OFF-*` 신설로 해소)만 기록됐다.
 
 `[X]` 스펙 §36.4 가 요구한 **`allowed-codes.json` 이 계획 전체에 한 번도 없었다.** 이것이 없으면 `verify-contract.js` 는 컬럼명·RS 개수·행수만 보고 **RS0 의 `Success`·`Code` 를 한 번도 읽지 않는다** — G09 의 절반이 비어 있다.
 
@@ -1144,7 +1180,9 @@ Expected: `PASS G13-b` 2줄. `(c)` 는 보고서에 **`REVIEWED`** 로만 적는
 7. Phase 5 인계사항  (App.config 의 HealthCheckupDb 키 추가, HC_APP_ROLE 에 login 매핑 절차)
 ```
 
-- [ ] **Step 7: 최종 Commit**
+- [x] **Step 7: 최종 Commit**
+
+`[X 실측]` **커밋 `23f8f97` `docs(phase4): 06 을 FINAL v1.0 으로 · T37 완료 · 회귀가 놓치던 게이트 4종 편입`.** `docs/phase4/` 와 `database/artifacts/reports/` 를 함께 담았고, `SCH-019` 신설과 `G00`·`G01`·`G05` 의 회귀 편입도 이 커밋이다.
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -1153,7 +1191,9 @@ git commit -m "docs(phase4): 06 FINAL 후보 및 Phase 4 실행 보고서 작성
 git log --oneline baseline-HC-RSV-RCP-20260904-R3..HEAD | head -50
 ```
 
-- [ ] **Step 8: 완료 보고**
+- [x] **Step 8: 완료 보고**
+
+`[X 실측]` **보고 내용은 `artifacts/reports/phase4-report.md` §1 실행 요약 · §2 Gate 판정표로 남았다.** 아래 텍스트 블록 형식 그대로는 아니며 `Verdict` 줄은 저장소에 없다 — 커밋 `23f8f97` 메시지가 `판정: FINAL / GO (v1.0). 잔여 결함 0건.` 으로 남겼다.
 
 다음 형식으로 사용자에게 보고한다.
 

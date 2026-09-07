@@ -85,7 +85,11 @@ BEGIN SET @Code = 101; SET @Field = 'SocialNumber'; END
 
 **금지사항:** `202`/`203` 이외의 실패에서 후속 Result Set을 출력하지 않는다. `2601`/`2627` Unique 위반을 업무코드로 변환하지 않는다 — applock으로 사전 예방하고, 그래도 발생하면 `THROW` 한다.
 
-- [ ] **Step 1: RED — 결과표 6종을 테스트로 옮긴다**
+- [x] **Step 1: RED — 결과표 6종을 테스트로 옮긴다**
+
+`[X 실측]` `PWR-013` 은 계획서가 `Code=101` 을 기대했으나 구현·계약은 `Code=2` 다 — `@SocialNumber VARCHAR(13)` 경계에서 14자리가 절단되어 `PWR-001` 이 만든 행과 같은 값이 된다(`tests/contract/PWR-013_주민번호_14자리_경계절단.sql`).
+
+`[X 실측]` 업무시간 가드는 `[Active]` 가 아니라 `[사용여부]` 이고, 창 밖에서 `SKIP` + `RETURN` 하는 대신 `PWR-OFF`(창 밖 호출이 DB 를 바꾸지 않는다)를 실제로 판정한다.
 
 `[X]` **`INSERT … EXEC` 는 쓸 수 없다.** `INSERT_수검자` 는 성공 시 RS0 + RS1 을 반환하므로 `Msg 213` 이다(스펙 §33.1a). RS0 `Code` 판정은 **계약 시나리오**로, DB 에 실제로 남은 결과 판정은 **이 파일**로 나눈다.
 
@@ -186,7 +190,11 @@ echo "exit=$?"
 
 Expected: exit **1**, `Msg 2812`.
 
-- [ ] **Step 2: 구현 — 검증순서 (`05` §10.1 그대로)**
+- [x] **Step 2: 구현 — 검증순서 (`05` §10.1 그대로)**
+
+`[X 실측]` Parameter 는 12개가 아니라 14개다 — R3 이 `@HepatitisBExcluded` 와 맨 끝 `@OperatorName` 을 더했다.
+
+`[X 실측]` 1번의 "MobilePhone/Phone 에서 '-' 제거" 는 구현하지 않았다 — `05` §2.2 는 '-' 제거를 검색값으로 한정했고 `04` §8.1.2 는 표시값 그대로 저장한다.
 
 ```text
 [Transaction 밖]
@@ -219,7 +227,7 @@ Expected: exit **1**, `Msg 2812`.
 
 `202`/`203` 은 **실패지만 RS1을 동반하는 유일한 예외**다 (`05` §3.5).
 
-- [ ] **Step 3: 자동 ChartNo 발급 루프**
+- [x] **Step 3: 자동 ChartNo 발급 루프**
 
 **`NEXT VALUE FOR` 는 Transaction 밖(`[2]` 사전조회 구간)에서 확보한다.** `SET XACT_ABORT ON` 트랜잭션 안에서 `Msg 11728`(MAXVALUE 도달)이 나면 `TRY/CATCH` 로 잡아도 트랜잭션이 **doomed**(`XACT_STATE() = -1`)가 되어 이후 `COMMIT` 이 `Msg 3930` 으로 실패한다. Sequence 값은 롤백과 무관하게 소비되므로(`04` §3.6 결번 허용) 밖으로 빼도 계약에 어긋나지 않는다.
 
@@ -292,7 +300,9 @@ IF @Exhausted = 1 BEGIN SET @Code = 206; SET @Field = 'ChartNo'; END
 2. **`NEXT VALUE FOR` 를 트랜잭션 안에 두었다.** `Msg 11728` → doomed → `Msg 3930`.
 3. **자동발급 경로가 `HC|CHART|` 를 잡지 않았다.** 세션 A가 자동으로 `C000123` 후보를 만들고, 세션 B가 수동으로 같은 값을 입력하면 둘 다 `NOT EXISTS` 를 통과해 `2627` 이 난다. 스펙 §20은 *"applock 으로 사전 직렬화했으므로 2627 발생 시 설계 위반"* 이라고 못박았다.
 
-- [ ] **Step 4: GREEN 실행**
+- [x] **Step 4: GREEN 실행**
+
+`[X 실측]` 창 안 증거는 `artifacts/logs/t_05_Patient_Write_Tests.log`(PASS 23 · FAIL 0)와 `artifacts/logs/full_test_run.log` 의 계약 판정 `PWR-001`~`PWR-028` 전건 PASS 다. `artifacts/reports/contract-verify.txt` 는 창 밖 회차라 PWR 전건이 SKIP 이다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -306,7 +316,9 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_05.log | grep -E '^(PASS|FAIL)'
 
 Expected: 둘 다 exit 0. `tests/05` 의 DB 상태 단언이 전부 PASS 이고 `./scripts/verify-contract-all.sh` 가 `PWR-001`~`PWR-014` 계약을 전건 PASS 로 판정한다 (스펙 §45.2).
 
-- [ ] **Step 5: Transaction 잔여 확인**
+- [x] **Step 5: Transaction 잔여 확인**
+
+`[X 실측]` 별도 sqlcmd 대신 `tests/05_Patient_Write_Tests.sql` 의 `FIX-PWR-TRAN` 단언으로 흡수했다 — 업무실패 5건 뒤 `@@TRANCOUNT = 0` 을 창 안 회귀에서 PASS 로 확인했다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W -Q "
@@ -316,7 +328,9 @@ SELECT 'trancount=' + CONVERT(varchar(5), @@TRANCOUNT);"
 
 Expected: `trancount=0` — 업무실패 후에도 열린 Transaction이 남지 않는다.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
+
+`[X 실측]` 커밋은 T23·T24 를 묶은 `8a9aad5 feat(phase4): T23·T24 수검자 Write SP 2개 구현 · PWR 시험 25건` 하나다 — Task 별로 나누지 않았다.
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -354,7 +368,9 @@ git commit -m "feat(phase4): USP_HC_INSERT_수검자 구현 및 등록 경계 �
 
 **금지사항:** 주민번호 변경으로 기존 Work의 TGT/NEX/AEX를 자동 재판정하거나 취소하지 않는다. Birthday/Gender를 Parameter로 받지 않는다.
 
-- [ ] **Step 1: RED**
+- [x] **Step 1: RED**
+
+`[X 실측]` `PWR-023`·`PWR-027` 의 새 주민번호는 체크디지트 산출식이 아니라 무효 상수(`8001011999998`·`7010011999997`)를 그대로 썼다.
 
 주민번호 상수를 손으로 적지 않는다. **저장된 값을 그대로 읽어서 전달**하면 체크디지트를 계산할 필요가 없고 Fixture 가 바뀌어도 테스트가 깨지지 않는다.
 
@@ -482,7 +498,9 @@ IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
 PRINT '=== 05_Patient_Write_Tests 완료 ===';
 ```
 
-- [ ] **Step 2: 구현 — 검증순서 (`05` §10.2 그대로)**
+- [x] **Step 2: 구현 — 검증순서 (`05` §10.2 그대로)**
+
+`[X 실측]` Parameter 12개 → 14개(`@HepatitisBExcluded`·`@OperatorName`)이고, 9번 No-op 의 NULL-safe INTERSECT 비교도 `B형간염제외여부` 를 포함한다.
 
 ```text
 [Transaction 밖]
@@ -523,7 +541,7 @@ PRINT '=== 05_Patient_Write_Tests 완료 ===';
 15. COMMIT → RS0 + RS1
 ```
 
-- [ ] **Step 3: `LastEditDate` 단조증가 + 조건부 UPDATE**
+- [x] **Step 3: `LastEditDate` 단조증가 + 조건부 UPDATE**
 
 ```sql
 DECLARE @NewEdit DATETIME = CONVERT(DATETIME, @ServerTime);
@@ -556,7 +574,9 @@ IF @@ROWCOUNT = 0 BEGIN SET @Code = 600; SET @Field = 'LastEditDate'; END
 `@MobilePhone` 검색은 `REPLACE(p.[휴대전화],'-','') = @MobilePhone` 으로 하며 인덱스 seek 이 아니다
 (`plans/09` §4.2 의 받아들인 대가).
 
-- [ ] **Step 4: GREEN 실행**
+- [x] **Step 4: GREEN 실행**
+
+`[X 실측]` 창 안 PASS 는 19건이 아니라 23건이다 — 이 파일은 DB 상태 단언만 세고 RS0 계약 22건은 `verify-contract.js` 가 따로 판정한다(`artifacts/logs/t_05_Patient_Write_Tests.log`).
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i deploy/05_Procedures_Patient_Write.sql
@@ -569,6 +589,8 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_05.log | grep -cE '^PASS'
 Expected: exit 0, PASS 개수 **19건** (`PWR-001`~`012` + `PWR-020`~`026`).
 
 - [ ] **Step 5: 4ms 단조증가 실증**
+
+`[미이행]` `4MS-001`(최초값을 1회만 읽고 5회 연속 수정한 뒤 최종 > 최초) 이 저장소 어디에도 없다 — `PWR-022` 의 1회 변경 단조증가 단언만 있다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -h -1 -W -Q "
@@ -594,7 +616,9 @@ Expected: `PASS 4MS-001`, 최종 `LastEditDate` > 최초.
 
 `[X]` **초안의 루프는 보정 유무를 구분하지 못했다.** 매 회 `LastEditDate` 를 **다시 읽어서** 전달했으므로, `+4ms` 보정이 없어 `@NewEdit = @OldEdit` 이 되어도 조건부 `UPDATE` 는 `@@ROWCOUNT=1` 로 성공하고 `600` 이 나지 않는다. 통과해도 아무 증거가 아니었다. **최초 값을 한 번만 읽고, SP 가 갱신한 값을 이어받으며, 최종 > 최초를 단언**해야 단조증가를 실증한다.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
+
+`[X 실측]` T23 Step 6 과 같은 커밋 `8a9aad5` 다 — 별도 커밋이 아니다.
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception

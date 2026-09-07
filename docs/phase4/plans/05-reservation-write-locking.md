@@ -86,7 +86,11 @@ DECLARE @ResSlot NVARCHAR(255) =
 
 **금지사항:** 조회 SP의 결과를 신뢰하지 않는다 — 모든 조건을 Transaction 안에서 다시 검증한다. NEX 없이 AEX만 저장하지 않는다.
 
-- [ ] **Step 1: RED — 경계 테스트**
+- [x] **Step 1: RED — 경계 테스트**
+
+`[X 실측]` 업무시간 가드는 `[Active]` 가 아니라 `[사용여부]` 이고, 창 밖에서 `SKIP` + `RETURN` 하는 대신 `RWR-OFF`(창 밖 호출이 DB 를 바꾸지 않는다)를 실제로 판정한다.
+
+`[X 실측]` `RWR-006` 의 `T017` 은 `2026-11-17` 에 만 18세라 구현의 변수명은 `@P18` 이다 — 표의 `@P19` 는 옛 이름이다.
 
 `[X]` **`INSERT … EXEC` 는 쓸 수 없다**(스펙 §33.1a). RS0 `Code` 판정은 계약 시나리오로, DB 결과 판정은 이 파일로 나눈다.
 
@@ -214,7 +218,9 @@ UPDATE [dbo].[예약접수] SET [상태코드] = 'CNR'
 
 `[I]` `RWR-043`(예약취소)이 취소할 Work 는 `ORDER BY WorkId` 로 `F001` 을 고정한다 — `F020` 을 건드리지 않는다.
 
-- [ ] **Step 2: 구현 — 검증순서 (`05` §11.1 그대로)**
+- [x] **Step 2: 구현 — 검증순서 (`05` §11.1 그대로)**
+
+`[X 실측]` 7번 검사 Master 확인은 "Exam 19행" 이 아니라 `국가검사규칙코드 IS NOT NULL` 8행 이상 + `추가검사코드 IS NOT NULL` 정확히 7종을 본다 — `검사항목` 삭제 뒤 19행은 검사 기준이 아니다.
 
 ```text
 [Transaction 밖]
@@ -254,7 +260,9 @@ UPDATE [dbo].[예약접수] SET [상태코드] = 'CNR'
 
 `RowVersion` 은 `COMMIT` **이후** `SELECT [행버전] FROM 예약접수 WHERE WorkId=@WorkId` 로 다시 읽어 반환한다.
 
-- [ ] **Step 3: GREEN 실행**
+- [x] **Step 3: GREEN 실행**
+
+`[X 실측]` 창 안 증거는 `artifacts/logs/t_06_Reservation_Write_Tests.log`(PASS 25 · FAIL 0)와 `artifacts/logs/full_test_run.log` 의 계약 판정 `RWR-001`~`RWR-043` 전건 PASS 다. `artifacts/reports/contract-verify.txt` 는 창 밖 회차라 RWR 전건이 SKIP 이다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -267,7 +275,9 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_06.log | grep -E '^(PASS|FAIL)'
 
 Expected: exit 0, `RWR-001`~`RWR-012` 12건 PASS.
 
-- [ ] **Step 4: 요일 사전확인**
+- [x] **Step 4: 요일 사전확인**
+
+`[X 실측]` `artifacts/logs/dow.log` 가 `2026-11-21 dow=5`·`2026-11-22 dow=6` 을 남겼고, 이번에 읽기 전용 재조회로 `11-16 dow=0`·`11-17 dow=1`·`11-18 dow=2` 까지 확인했다.
 
 테스트가 쓰는 날짜의 요일을 먼저 확인하고, 다르면 날짜를 조정한다.
 
@@ -280,7 +290,9 @@ FROM (VALUES (CONVERT(DATE,'2026-11-16')),(CONVERT(DATE,'2026-11-17')),(CONVERT(
 
 Expected: `2026-11-21 dow=5`(토), `2026-11-22 dow=6`(일), 나머지는 평일(0~4).
 
-- [ ] **Step 5: Commit** — `feat(phase4): USP_HC_INSERT_예약 구현 및 예약 경계 테스트 12건`
+- [x] **Step 5: Commit** — `feat(phase4): USP_HC_INSERT_예약 구현 및 예약 경계 테스트 12건`
+
+`[X 실측]` 커밋은 T25~T27 을 묶은 `3351109 feat(phase4): T25~T27 예약 Write SP 3개 구현 · RWR 시험 35건` 하나다 — Task 별로 나누지 않았다.
 
 **회귀시험:** `tests/00`~`06`
 
@@ -326,7 +338,7 @@ ELSE BEGIN PRINT 'FAIL RWR-050 변경기록 불일치'; SET @Fail += 1; END
 
 **금지사항:** C#이 전달한 변경구분을 신뢰하지 않는다. 시간대만 변경할 때 TGT/NEX/AEX를 재평가하거나 검사구성을 재조립하지 않는다.
 
-- [ ] **Step 1: RED — 변경 Matrix 5분기 + 경합**
+- [x] **Step 1: RED — 변경 Matrix 5분기 + 경합**
 
 ```sql
 -- RWR-020 변경 없음 → Code=1, RowVersion 불변
@@ -418,7 +430,9 @@ BEGIN
 END
 ```
 
-- [ ] **Step 2: 구현 — Scope 계산**
+- [x] **Step 2: 구현 — Scope 계산**
+
+`[X 실측]` `@CurrentAex`·`@RequestAex` 테이블 대신 요청 7 BIT 를 `@Req` 에 담고, `예약접수.추가검사항목` CSV 를 `검사코드` 에 양끝 패딩 `LIKE` 로 편 집합과 EXCEPT 양방향 비교한다.
 
 ```sql
 DECLARE @DateChanged  BIT = CASE WHEN @CurDate <> @ReservationDate THEN 1 ELSE 0 END;
@@ -431,7 +445,9 @@ DECLARE @ExtraChanged BIT = CASE
 
 `[R3]` `@CurrentAex` 는 `예약접수.추가검사항목` CSV 를 `검사코드` 에 양끝 패딩 `LIKE` 로 조인해 편 집합이다. `검사항목` 테이블은 없다.
 
-- [ ] **Step 3: 구현 — 검증순서 (`05` §11.2 그대로)**
+- [x] **Step 3: 구현 — 검증순서 (`05` §11.2 그대로)**
+
+`[X 실측]` 6번의 "사전조회 PatientId 와 재조회 PatientId 가 다르면 THROW" 는 구현에서 `THROW` 가 아니라 `Code=701` 이다 — 손상은 RS0 계약 안에서 돌려준다.
 
 ```text
 [Transaction 밖]
@@ -479,7 +495,7 @@ DECLARE @ExtraChanged BIT = CASE
 18. COMMIT → RS0 + RS1 (새 RowVersion 재조회)
 ```
 
-- [ ] **Step 4: `AfterCount` 계산 (스펙 §30.1)**
+- [x] **Step 4: `AfterCount` 계산 (스펙 §30.1)**
 
 ```sql
 DECLARE @CurrentCount INT =
@@ -493,7 +509,7 @@ IF @AfterCount > 20 BEGIN SET @Code = 305; SET @Field = 'TimeSlot'; END
 
 현재 Work가 이미 20/20 Slot에 있고 같은 Slot을 유지하면 `@CurrentCount = 19`, `@AfterCount = 20` 이 되어 통과한다. **21로 계산하면 안 된다.**
 
-- [ ] **Step 5: Slot 자원 정렬 획득**
+- [x] **Step 5: Slot 자원 정렬 획득**
 
 **`CURSOR` 를 쓰지 않는다** — 스펙 §9.2 허용목록에 없고, applock 실패로 `THROW` 하면 `CLOSE`/`DEALLOCATE` 없이 커서가 남는다. 자원이 최대 2개이므로 분기 몇 줄로 충분하다.
 
@@ -513,7 +529,9 @@ END
 
 **핵심은 자원명 오름차순 획득이며 이것이 교차이동 교착을 없앤다.** `HC|SLOT|yyyyMMdd|AM/PM` 형식이라 문자열 정렬이 곧 (날짜, 시간대) 정렬이다.
 
-- [ ] **Step 6: GREEN 실행 + Commit**
+- [x] **Step 6: GREEN 실행 + Commit**
+
+`[X 실측]` 창 안 PASS 는 23건이 아니라 25건이고(`artifacts/logs/t_06_Reservation_Write_Tests.log`), 커밋은 T25~T27 을 묶은 `3351109` 하나다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i deploy/06_Procedures_Reservation_Write.sql
@@ -571,7 +589,7 @@ ELSE BEGIN PRINT 'FAIL RWR-051 변경기록 불일치'; SET @Fail += 1; END
 
 **금지사항:** 검사구성 두 컬럼을 지우지 않는다. 예약 마감시각을 취소 가능조건으로 쓰지 않는다. `CNR → RSV` 복원 경로를 만들지 않는다.
 
-- [ ] **Step 1: RED**
+- [x] **Step 1: RED**
 
 ```sql
 -- RWR-040 미존재 WorkId → 500
@@ -608,7 +626,7 @@ IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
 PRINT '=== 06_Reservation_Write_Tests 완료 ===';
 ```
 
-- [ ] **Step 2: 구현 — 검증순서 (`05` §11.3)**
+- [x] **Step 2: 구현 — 검증순서 (`05` §11.3)**
 
 ```text
 [Transaction 밖]  필수값 (@WorkId, @RowVersion) → 100
@@ -625,7 +643,9 @@ PRINT '=== 06_Reservation_Write_Tests 완료 ===';
  7. COMMIT → RS0 + RS1 (새 RowVersion)
 ```
 
-- [ ] **Step 3: GREEN + Commit**
+- [x] **Step 3: GREEN + Commit**
+
+`[X 실측]` 창 안 PASS 는 28건이 아니라 25건이다 — 이 파일은 DB 상태 단언만 세고 RS0 계약은 `verify-contract.js` 가 따로 판정한다. 커밋도 `3351109` 하나로 묶였다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i deploy/06_Procedures_Reservation_Write.sql

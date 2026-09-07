@@ -63,7 +63,9 @@ Parameter 2 / 9 / 2                                    -> 3 / 10 / 3. R3 이 Wri
 
 **금지사항:** 접수 성공 시 `ReservationDate`·`TimeSlotCode`·NEX·AEX를 변경하지 않는다. 직접접수용 신규 Work를 만들지 않는다.
 
-- [ ] **Step 1: RED**
+- [x] **Step 1: RED**
+
+`[X 실측]` `tests/07`·`tests/contract/CWR-001`~`011` 로 이행했다. 창 밖은 `RETURN` 대신 `CWR-OFF` 분기 + `NOT RUN` 이고, `CWR-010` 은 `CWR-004` 와 한 줄이며, `CWR-006`·`CWR-009` 는 Slot 을 갈라(PM 성공 / AM 마감경과) 배타성을 없앴다 — 창 안 회귀에서 둘 다 PASS.
 
 **계약 시나리오** — `UPDATE_접수완료`. Parameter(`05` §11.1): `@WorkId, @RowVersion`
 
@@ -221,7 +223,9 @@ BEGIN
 END
 ```
 
-- [ ] **Step 2: 구현 — 검증순서 (`05` §12.1 그대로)**
+- [x] **Step 2: 구현 — 검증순서 (`05` §12.1 그대로)**
+
+`[X 실측]` 검증순서는 그대로이나, 재조회 수검자ID 불일치는 `THROW` 가 아니라 계약 안 `701` 로 끝난다.
 
 ```text
 [Transaction 밖]
@@ -283,7 +287,9 @@ READ COMMITTED 스캔이 `'RCP'` 구간을 지난 뒤 `'RSV'` 에서 X 잠금에
 
 `예약일`·`시간대코드`·검사구성 두 컬럼은 **UPDATE 대상에서 제외**한다.
 
-- [ ] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_UPDATE_접수완료 구현 및 접수 경계 테스트 7건`
+- [x] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_UPDATE_접수완료 구현 및 접수 경계 테스트 7건`
+
+`[X 실측]` 커밋은 `96d5d96 feat(phase4): T28~T30 접수 Write SP 3개 구현 · SP 16/16 · SCH-014 green` 하나로 T28~T30 을 함께 담았다.
 
 `[R3]` 이 SP 는 Parameter 목록 **맨 끝**에 `@OperatorName NVARCHAR(50)` 을 받는다(`05` §19.2). 아래 시험의 모든 호출은 마지막 인자로 `@OperatorName = N'TEST'` 를 명시 전달한다 — `05` §2.1 이 선택 Parameter 의 생략을 금지한다.
 
@@ -323,7 +329,9 @@ ELSE BEGIN PRINT 'FAIL CWR-050 변경기록 불일치'; SET @Fail += 1; END
 
 **금지사항:** 예약일·시간대·TGT·NEX를 변경하거나 재평가하지 않는다. No-op에서 Master 비활성·성별·중복 Rule을 재평가하지 않는다.
 
-- [ ] **Step 1: RED — No-op 과 실제 변경을 구분한다**
+- [x] **Step 1: RED — No-op 과 실제 변경을 구분한다**
+
+`[X 실측]` `CWR-020`~`026` 전건 이행·창 안 PASS. 다만 `CWR-022` 는 “NEX Detail 불변” 이 아니라 “AEX 전체 해제 시 빈 문자열이 아닌 `NULL` 저장”(`04` §8.2.2)으로 바뀌었다.
 
 RCP 상태 Work 는 **`T14b` 가 만든 `tests/00b_Test_Harness_RCP.sql`** 의 것을 쓴다 (`ChartNo='T014'`, NEX 11행 + AEX `OPT01` 1행). 업무시간과 무관하게 존재한다.
 
@@ -434,7 +442,26 @@ IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
 PRINT '=== 07_Reception_Write_Tests 완료 ===';
 ```
 
-- [ ] **Step 2: 구현 — 검증순서 (`05` §12.2 그대로)**
+- [x] **Step 2: 구현 — 검증순서 (`05` §12.2 그대로)**
+
+`[X 계약 확인 2026-09-07]` **구현이 맞고 이 Step 의 문구가 틀렸다.** 기준선 `05` §12.2 검증순서가 결론을 정한다 —
+
+```text
+→ 현재 AEX와 요청 AEX 비교
+→ 동일집합이면 Code=1, UPDATE 없음                        ← No-op 이 여기서 끝난다
+→ 실제 변경이면 저장 NEX 무결성과 AEX Master 구성 확인      ← 무결성은 그 **뒤**다
+```
+
+무결성 3종을 No-op 판정 뒤에 두는 `deploy/07_Procedures_Reception_Write.sql` 이 기준선 그대로다.
+CLAUDE.md §4 의 Source of Truth 는 `00 → 01 → 02 → 03 → 04 → 05 → 06 → SQL` 이며 계획서는 그 사슬에
+있지도 않다. 아래 8번 항목이 스스로 "실제 변경이면" 아래에 두고서 "No-op 판정보다 먼저 한다" 고
+적은 것은 자기모순이며, 그 구절과 그 아래 `[X]` 주석 두 줄은 **무효다.**
+
+남는 질문 — "손상 Work 에 동일집합을 호출하면 701 대신 Code=1 이 나오지 않는가?" 는 사실이지만 설계다.
+`RCP` 상태는 `USP_HC_UPDATE_접수완료` 를 통과해야만 도달하고, 그 SP 가 전이 **전에** 무결성 3종을
+판정한다(`NexN NOT BETWEEN 8 AND 11` → `701`). 즉 무결성은 `RCP` 를 만드는 전이에서 이미 걸러지고,
+이미 `RCP` 인 Work 의 No-op 경로에서 다시 따지지 않는다. 손상 `RCP` Work 는 테이블 직접 조작으로만
+생기며 그것은 `CORRUPT` fixture 의 영역이다.
 
 ```text
 [Transaction 밖]  필수값 (AEX 7 BIT NULL 불허) → 100
@@ -469,7 +496,9 @@ PRINT '=== 07_Reception_Write_Tests 완료 ===';
 
 **핵심:** `UPDATE` 는 `추가검사항목` 만 건드린다. `국가검사항목`·`예약일`·`시간대코드` 는 SET 목록에 없다.
 
-- [ ] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_UPDATE_접수추가검사 구현 및 No-op·RowVersion 테스트 7건`
+- [x] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_UPDATE_접수추가검사 구현 및 No-op·RowVersion 테스트 7건`
+
+`[X 실측]` 별도 커밋이 아니라 `96d5d96` 에 T28~T30 이 함께 들어 있다.
 
 `[R3]` 이 SP 는 Parameter 목록 **맨 끝**에 `@OperatorName NVARCHAR(50)` 을 받는다(`05` §19.2). 아래 시험의 모든 호출은 마지막 인자로 `@OperatorName = N'TEST'` 를 명시 전달한다 — `05` §2.1 이 선택 Parameter 의 생략을 금지한다.
 
@@ -509,7 +538,9 @@ ELSE BEGIN PRINT 'FAIL CWR-051 변경기록 불일치'; SET @Fail += 1; END
 
 **금지사항:** `RSV` 로 복원하지 않는다. 검사구성 두 컬럼을 지우지 않는다. 접수 마감시각을 취소 조건으로 쓰지 않는다.
 
-- [ ] **Step 1: RED**
+- [x] **Step 1: RED**
+
+`[X 실측]` `CWR-040`~`044` 이행·창 안 전건 PASS. 감사 단언 `CWR-052` 를 함께 판정한다.
 
 ```sql
 -- CWR-040 RSV 상태에서 접수취소 호출 → 502
@@ -519,7 +550,7 @@ ELSE BEGIN PRINT 'FAIL CWR-051 변경기록 불일치'; SET @Fail += 1; END
 -- CWR-044 취소 후 CNC → RSV 복원 경로가 없음을 확인 (예약변경 호출 시 502)
 ```
 
-- [ ] **Step 2: 구현 — 검증순서 (`05` §12.3)**
+- [x] **Step 2: 구현 — 검증순서 (`05` §12.3)**
 
 ```text
 [Transaction 밖]  필수값 → 100
@@ -534,7 +565,9 @@ ELSE BEGIN PRINT 'FAIL CWR-051 변경기록 불일치'; SET @Fail += 1; END
  7. COMMIT → RS0 + RS1
 ```
 
-- [ ] **Step 3: GREEN 실행**
+- [x] **Step 3: GREEN 실행**
+
+`[X 실측]` 실행 증거는 `artifacts/logs/07_rcp.log` 와 `artifacts/logs/full_test_run.log`(2026-09-07 14:02 창 안) — `tests/07` 구간 PASS **43건** 이다(계획의 19건은 `CWR-022` 재정의·`CWR-050`~`052` 감사·창 밖 분기 추가 이전 값이다). 로그명도 `07_reception.log` 가 아니다.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -547,7 +580,9 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_07.log | grep -cE '^PASS'
 
 Expected: exit 0, PASS **19건** (`CWR-001`~`007` + `CWR-020`~`026` + `CWR-040`~`044`).
 
-- [ ] **Step 4: 회귀 — SP 15개 완성 확인**
+- [x] **Step 4: 회귀 — SP 15개 완성 확인**
+
+`[X 실측]` `PASS SCH-013 Inline TVF 4개` 는 그대로이나 `PASS SCH-014 Stored Procedure` 는 15개가 아니라 **16개** 다 — F-COM-008 변경기록 열람 SP 가 늘었다. `tests/01` 은 `SCH-001`~`018` 18건 전건 PASS.
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -558,7 +593,9 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_01.log | grep -E 'SCH-013|SCH-014'
 
 Expected: exit **0**, `PASS SCH-013 Inline TVF 4개`, `PASS SCH-014 Stored Procedure 15개`. 이 시점에 `01_Schema_Tests.sql` 이 **16/16 전부 PASS** 해야 한다.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
+
+`[X 실측]` `96d5d96` 단일 커밋이며, `tests/07` 후속 보강은 `d02627d`·`5d79acd` 다.
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception

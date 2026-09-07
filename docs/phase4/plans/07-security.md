@@ -29,6 +29,8 @@
 
 - [ ] **Step 1: `deploy/08_Security.sql` 작성 (UTF-8 with BOM)**
 
+`[범위 밖]` 2026-09-07 사용자 결정 — User·GRANT 미구현 (06 §32 · §43-7)
+
 ```sql
 SET NOCOUNT ON;
 PRINT '--- 08_Security 시작 ---';
@@ -71,6 +73,8 @@ GO
 
 - [ ] **Step 2: 실행**
 
+`[범위 밖]` 2026-09-07 사용자 결정 — User·GRANT 미구현 (06 §32 · §43-7)
+
 ```bash
 head -c 3 deploy/08_Security.sql | od -An -tx1
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
@@ -85,6 +89,8 @@ Expected: exit 0, `PASS SEC-DEPLOY Role/User/GRANT 15건`.
 
 - [ ] **Step 3: 재실행 가능성 확인**
 
+`[범위 밖]` 2026-09-07 사용자 결정 — User·GRANT 미구현 (06 §32 · §43-7)
+
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i deploy/08_Security.sql
 echo "exit=$?"
@@ -93,6 +99,8 @@ echo "exit=$?"
 Expected: exit 0. `DROP USER`/`DROP ROLE` 선행 덕분에 두 번째 실행도 성공한다.
 
 - [ ] **Step 4: `CREATE OR ALTER` 가 권한을 유지하는지 확인**
+
+`[범위 밖]` 2026-09-07 사용자 결정 — User·GRANT 미구현 (06 §32 · §43-7)
 
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u -i deploy/04_Procedures_Select.sql
@@ -106,6 +114,8 @@ WHERE pr.name = N'HC_APP_ROLE' AND dp.permission_name='EXECUTE' AND dp.state='G'
 Expected: `grants=15` — `CREATE OR ALTER` 로 SP를 다시 배포해도 `GRANT` 가 살아남는다. `DROP`+`CREATE` 였다면 15 − 7 = **8건**으로 줄었을 것이다. 이것이 `D4-004b` 를 채택한 실질적 이유다.
 
 - [ ] **Step 5: Commit**
+
+`[범위 밖]` 2026-09-07 사용자 결정 — User·GRANT 미구현 (06 §32 · §43-7)
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
@@ -141,6 +151,8 @@ git commit -m "feat(phase4): Database Role 및 15개 SP GRANT EXECUTE 추가"
 
 - [ ] **Step 1: RED — 컨텍스트 전환이 실제로 권한을 제한하는지 먼저 확인**
 
+`[범위 밖]` 2026-09-07 사용자 결정 — User·GRANT 미구현 (06 §32 · §43-7)
+
 ```sql
 SET NOCOUNT ON;
 DECLARE @Fail INT = 0;
@@ -164,6 +176,8 @@ ELSE BEGIN PRINT 'FAIL SEC-002 sysadmin 권한이 남아 있어 보안 테스트
 `SEC-002` 가 FAIL이면 **이후 모든 보안 테스트가 무의미하므로 즉시 중단**하고 원인을 조사한다.
 
 - [ ] **Step 2: 거부되어야 하는 접근 검증 (`SEC-004`~`SEC-007`)**
+
+`[범위 밖]` 2026-09-07 사용자 결정 — User·GRANT 미구현 (06 §32 · §43-7)
 
 **대상 목록을 `EXECUTE AS` 밖에서 확정한다.** SQL Server 2005 이후 **메타데이터 가시성** 규칙상 권한 없는 주체에게 `sys.tables` 는 **0행**이다(실측: `sys.tables 보이는 개수 = 0`). 초안처럼 impersonation 안에서 커서를 열면 한 번도 돌지 않아 `@Total=0` 이 되고, 판정식에 따라 무조건 FAIL 하거나 **아무것도 시험하지 않고 PASS** 한다. 후자가 더 위험하다.
 
@@ -290,6 +304,8 @@ ELSE BEGIN PRINT 'FAIL SEC-007 거부되지 않았다'; SET @Fail += 1; END
 
 - [ ] **Step 3: 허용되어야 하는 접근 검증 (`SEC-003`)**
 
+`[범위 밖]` 2026-09-07 사용자 결정 — User·GRANT 미구현 (06 §32 · §43-7)
+
 `[X]` **빈 `CATCH` 는 권한거부(`229`)와 업무 `THROW`(`50001` 등)를 구분하지 못한다.** `SEC-004`~`SEC-007` 에는 `ERROR_NUMBER() = 229` 판정을 강제해 놓고 `SEC-003` 만 빈 `CATCH` 였다 — 같은 오판의 거울상이다. **`229` 만 실패로 센다.**
 
 `[X]` **Write SP 8개를 실호출하므로 트랜잭션으로 감싸고 무조건 `ROLLBACK` 한다.** `SEC-005` 에 요구한 것과 같은 이유다 — 권한이 잘못 부여된 상황이 검수 대상인데, 그때 DML 이 성공하면 실데이터가 바뀐다.
@@ -348,6 +364,8 @@ Write SP는 인자 조합에 따라 업무 실패(`100`/`500` 등)를 반환할 
 
 - [ ] **Step 4: 나머지 3건**
 
+`[범위 밖]` 2026-09-07 사용자 결정 — User·GRANT 미구현 (06 §32 · §43-7)
+
 ```sql
 -- SEC-008 Ownership chaining: SEC-003 이 성공했다는 사실 자체가 증명이다
 IF @Ok = 15 PRINT 'PASS SEC-008 소유권 체인으로 SP 내부 테이블 접근 성공';
@@ -372,6 +390,8 @@ GO
 
 - [ ] **Step 5: GREEN 실행**
 
+`[범위 밖]` 2026-09-07 사용자 결정 — User·GRANT 미구현 (06 §32 · §43-7)
+
 ```bash
 sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
        -i tests/13_Security_Tests.sql -o artifacts/logs/test_13.log
@@ -382,7 +402,9 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/test_13.log | grep -E '^(PASS|FAIL|INFO)
 Expected: exit 0, SQL 소관 `SEC-001`~`SEC-009`·`SEC-011` PASS + `INFO EXECUTE AS 컨텍스트: HC_APP_TEST / sysadmin=0`.
 (`SEC-010` 은 SQL 이 아니라 `scripts/verify-no-secret.sh` 가 판정한다 — 스펙 §45.2)
 
-- [ ] **Step 6: 로그에 secret 이 없는지 확인**
+- [x] **Step 6: 로그에 secret 이 없는지 확인**
+
+`[X 실측]` `scripts/verify-no-secret.sh` 가 구현돼 `scripts/test.sh` 가 매 회귀에서 호출한다 — `artifacts/reports/no-secret.txt` 에 `PASS SEC-010 배포 원본·로그·보고서에 secret 0건`. 초안과 달리 값을 동반한 할당 패턴(`PAT`·`PAT2`)만 보므로 자기 제외 없이 6개 범위를 훑고 결과를 파일로 남긴다.
 
 **`SEC-010` 을 자동 판정으로 만든다.** 초안은 결과를 눈으로 보라고만 해서 Gate 증거가 되지 못했다.
 
@@ -457,6 +479,8 @@ echo "exit=$?"
 Expected: `PASS SEC-010 로그·보고서에 secret 0건`, `exit=0`.
 
 - [ ] **Step 7: Commit**
+
+`[범위 밖]` 2026-09-07 사용자 결정 — User·GRANT 미구현 (06 §32 · §43-7)
 
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
