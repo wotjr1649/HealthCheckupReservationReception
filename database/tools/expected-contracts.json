@@ -195,6 +195,7 @@
           "Address",
           "AddressDetail",
           "Memo",
+          "HepatitisBExcluded",
           "LastEditDate"
         ],
         "rows": 1

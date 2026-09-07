@@ -61,6 +61,12 @@ BEGIN
     -- 1. 정규화 — 공백 제거, 빈 문자열은 NULL, 전화·주민번호의 '-' 제거
     SET @ChartNo      = NULLIF(LTRIM(RTRIM(@ChartNo)), N'');
     SET @Name         = NULLIF(LTRIM(RTRIM(@Name)), N'');
+    -- [X] @Name 을 LIKE 에 그대로 이어 붙이면 접두검색이 아니다. '%' 한 글자면 조건이 '있는'
+    --     것으로 103 가드를 통과하고 수검자 전건이 주민번호와 함께 반환된다 (실측).
+    --     04 §11.3 과 이 파일 머리 주석이 '조건 없는 전체조회는 금지' 라고 못박은 그 상태다.
+    --     메타문자 세 개를 대괄호로 이스케이프한다. '[' 를 먼저 바꿔야 뒤 치환이 낳는 괄호를 안 건드린다.
+    --     변수로 올려 IX_수검자_NAME_BIRTHDAY seek 을 잃지 않게 한다.
+    DECLARE @NameLike NVARCHAR(200) = CASE WHEN @Name IS NULL THEN NULL ELSE REPLACE(REPLACE(REPLACE(@Name, N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%' END;
     SET @SocialNumber = NULLIF(REPLACE(LTRIM(RTRIM(@SocialNumber)), '-', ''), '');
     SET @Birthday     = NULLIF(LTRIM(RTRIM(@Birthday)), '');
     SET @MobilePhone  = NULLIF(REPLACE(LTRIM(RTRIM(@MobilePhone)), '-', ''), '');
@@ -127,7 +133,7 @@ BEGIN
         , Address      = CAST(p.[주소]      AS NVARCHAR(200))
     FROM [dbo].[수검자] p
     WHERE (@ChartNo      IS NULL OR p.[차트번호]      =  @ChartNo)
-      AND (@Name         IS NULL OR p.[성명]         LIKE @Name + N'%')
+      AND (@Name         IS NULL OR p.[성명]         LIKE @NameLike       )
       AND (@SocialNumber IS NULL OR p.[주민번호] =  @SocialNumber)
       AND (@Birthday     IS NULL OR p.[생년월일]     =  @Birthday)
       AND (@MobilePhone  IS NULL OR REPLACE(p.[휴대전화], '-', '') = @MobilePhone)
@@ -173,7 +179,7 @@ BEGIN
         , CAST(NULL AS VARCHAR(50))         AS Field
         , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
 
-    -- RS1 (14컬럼, 정확히 1행)
+    -- RS1 (15컬럼, 정확히 1행)
     SELECT
           PatientId     = CAST(p.[수검자ID]     AS BIGINT)
         , ChartNo       = CAST(p.[차트번호]       AS NVARCHAR(100))
@@ -188,6 +194,11 @@ BEGIN
         , Address       = CAST(p.[주소]       AS NVARCHAR(200))
         , AddressDetail = CAST(p.[상세주소] AS NVARCHAR(200))
         , Memo          = CAST(p.[비고]          AS NVARCHAR(MAX))
+        -- [X] 15컬럼이다. R3 이 05 §9.2 RS1 에 HepatitisBExcluded 를 넣었는데 SQL 이 따라오지 않았고,
+        --     expected-contracts.json 도 14컬럼으로 같이 틀려 있어 게이트가 영원히 못 잡았다.
+        --     DLG-PAT-01 수정 화면이 현재값을 못 받으면 @HepatitisBExcluded(NULL 불가)에
+        --     체크박스 초기값 0 이 실려 제외 플래그가 조용히 1->0 이 된다 (05 §9.2 명문).
+        , HepatitisBExcluded = CAST(p.[B형간염제외여부] AS BIT)
         , LastEditDate  = CAST(p.[최종수정일시]  AS DATETIME)
     FROM [dbo].[수검자] p
     WHERE p.[수검자ID] = @PatientId;
@@ -287,6 +298,12 @@ BEGIN
     SET @Status  = NULLIF(UPPER(LTRIM(RTRIM(@Status))), '');
     SET @ChartNo = NULLIF(LTRIM(RTRIM(@ChartNo)), N'');
     SET @Name    = NULLIF(LTRIM(RTRIM(@Name)), N'');
+    -- [X] @Name 을 LIKE 에 그대로 이어 붙이면 접두검색이 아니다. '%' 한 글자면 조건이 '있는'
+    --     것으로 103 가드를 통과하고 수검자 전건이 주민번호와 함께 반환된다 (실측).
+    --     04 §11.3 과 이 파일 머리 주석이 '조건 없는 전체조회는 금지' 라고 못박은 그 상태다.
+    --     메타문자 세 개를 대괄호로 이스케이프한다. '[' 를 먼저 바꿔야 뒤 치환이 낳는 괄호를 안 건드린다.
+    --     변수로 올려 IX_수검자_NAME_BIRTHDAY seek 을 잃지 않게 한다.
+    DECLARE @NameLike NVARCHAR(200) = CASE WHEN @Name IS NULL THEN NULL ELSE REPLACE(REPLACE(REPLACE(@Name, N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%' END;
 
     -- 2. 허용값
     IF @Status IS NOT NULL AND @Status NOT IN ('RSV','RCP','CNR','CNC')
@@ -356,7 +373,7 @@ BEGIN
       AND (@ToDate   IS NULL OR w.[예약일] <= @ToDate)
       AND (@Status   IS NULL OR w.[상태코드]      =  @Status)
       AND (@ChartNo  IS NULL OR p.[차트번호]         =  @ChartNo)
-      AND (@Name     IS NULL OR p.[성명]            LIKE @Name + N'%')
+      AND (@Name     IS NULL OR p.[성명]            LIKE @NameLike       )
     ORDER BY w.[예약일] ASC, w.[시간대코드] ASC, p.[성명] ASC, w.[업무ID] ASC;
 END
 GO
@@ -530,6 +547,12 @@ BEGIN
     DECLARE @OtherWorkId  BIGINT = NULL;
     DECLARE @Req TABLE (OptionCode VARCHAR(10) PRIMARY KEY);
 
+    -- 1. 문자열 정규화 (05 §2.2)
+    -- [X] 16개 SP 중 이 하나만 정규화가 없었다. 그래서 ' NORMAL'(앞 공백)이 여기서는 101 인데
+    --     같은 값을 USP_HC_INSERT_예약 은 정규화해 성공시켰다 - 사전조회와 저장의 판정이 갈렸다.
+    SET @ReservationType = NULLIF(UPPER(LTRIM(RTRIM(@ReservationType))), '');
+    SET @TimeSlot        = NULLIF(UPPER(LTRIM(RTRIM(@TimeSlot))), '');
+
     -- 2. 필수값 (05 §5: 필수값 → 값 형식·허용값 순서)
     --    ReservationType·ReservationDate 가 빠지면 NOT IN 이 UNKNOWN 이라 101 도 안 나고
     --    NULL 이 Scope 계산까지 흘러들어간다. 여기서 막는다.
@@ -539,18 +562,42 @@ BEGIN
        OR @AexOpt07Selected IS NULL
        OR (@WorkId IS NOT NULL AND @RowVersion IS NULL)
     BEGIN
+    -- [X] Field 식을 SELECT 안에 인라인으로 두면 RS0 블록이 길어져 V17(5컬럼 명시 CAST)의
+    --     검사 창 밖으로 ServerTime 이 밀린다. 변수로 올려 RS0 블록을 5줄로 유지한다.
+    DECLARE @F100 VARCHAR(50) =
+        CASE WHEN @PatientId        IS NULL THEN 'PatientId'
+             WHEN @ReservationType  IS NULL THEN 'ReservationType'
+             WHEN @ReservationDate  IS NULL THEN 'ReservationDate'
+             WHEN @WorkId IS NOT NULL AND @RowVersion IS NULL THEN 'RowVersion'
+             WHEN @AexOpt01Selected IS NULL THEN 'AexOpt01Selected'
+             WHEN @AexOpt02Selected IS NULL THEN 'AexOpt02Selected'
+             WHEN @AexOpt03Selected IS NULL THEN 'AexOpt03Selected'
+             WHEN @AexOpt04Selected IS NULL THEN 'AexOpt04Selected'
+             WHEN @AexOpt05Selected IS NULL THEN 'AexOpt05Selected'
+             WHEN @AexOpt06Selected IS NULL THEN 'AexOpt06Selected'
+             WHEN @AexOpt07Selected IS NULL THEN 'AexOpt07Selected'
+             ELSE 'RowVersion' END;
         SELECT CAST(0 AS BIT) AS Success, CAST(100 AS INT) AS Code
              , CAST(N'필수값을 입력하십시오.' AS NVARCHAR(300)) AS Message
-             , CAST(CASE WHEN @PatientId IS NULL THEN 'PatientId'
-                         WHEN @ReservationType IS NULL THEN 'ReservationType'
-                         WHEN @ReservationDate IS NULL THEN 'ReservationDate'
-                         WHEN @WorkId IS NOT NULL AND @RowVersion IS NULL THEN 'RowVersion'
-                         ELSE 'AexOptSelected' END AS VARCHAR(50)) AS Field
+             , CAST(@F100 AS VARCHAR(50)) AS Field
              , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
         RETURN;
     END
 
     -- 3. 허용값
+    -- [X] @TimeSlot 허용값 검증이 없었다. 'XX' 를 넣으면 @SelBlock 이 NULL 이 되고
+    --     NULL <> 0 이 UNKNOWN 이라 우선순위 CASE 를 그대로 통과해
+    --     RS0 Success=1 Code=0 · RS1 CanSave=0 BlockCode=0 BlockMessage='' 가 나갔다.
+    --     화면은 저장 버튼이 죽어 있는데 사유를 표시할 수 없다. 101 로 잘라낸다 (05 §5 2단계).
+    IF @TimeSlot IS NOT NULL AND @TimeSlot NOT IN ('AM','PM')
+    BEGIN
+        SELECT CAST(0 AS BIT) AS Success, CAST(101 AS INT) AS Code
+             , CAST(N'입력값이 올바르지 않습니다.' AS NVARCHAR(300)) AS Message
+             , CAST('TimeSlot' AS VARCHAR(50)) AS Field
+             , CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        RETURN;
+    END
+
     IF @ReservationType NOT IN ('NORMAL','WALKIN')
     BEGIN
         SELECT CAST(0 AS BIT) AS Success, CAST(101 AS INT) AS Code

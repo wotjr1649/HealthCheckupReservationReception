@@ -69,7 +69,13 @@ BEGIN
     ELSE IF @AexOpt01Selected IS NULL OR @AexOpt02Selected IS NULL OR @AexOpt03Selected IS NULL
          OR @AexOpt04Selected IS NULL OR @AexOpt05Selected IS NULL OR @AexOpt06Selected IS NULL
          OR @AexOpt07Selected IS NULL
-    BEGIN SET @Code = 100; SET @Field = 'AexOptSelected'; END
+    BEGIN SET @Code = 100; SET @Field = CASE WHEN @AexOpt01Selected IS NULL THEN 'AexOpt01Selected'
+                  WHEN @AexOpt02Selected IS NULL THEN 'AexOpt02Selected'
+                  WHEN @AexOpt03Selected IS NULL THEN 'AexOpt03Selected'
+                  WHEN @AexOpt04Selected IS NULL THEN 'AexOpt04Selected'
+                  WHEN @AexOpt05Selected IS NULL THEN 'AexOpt05Selected'
+                  WHEN @AexOpt06Selected IS NULL THEN 'AexOpt06Selected'
+                  ELSE 'AexOpt07Selected' END; END
     ELSE IF @OperatorName IS NULL
     BEGIN SET @Code = 100; SET @Field = 'OperatorName'; END
     ELSE IF @ReservationType NOT IN ('NORMAL', 'WALKIN')
@@ -381,7 +387,13 @@ BEGIN
     ELSE IF @AexOpt01Selected IS NULL OR @AexOpt02Selected IS NULL OR @AexOpt03Selected IS NULL
          OR @AexOpt04Selected IS NULL OR @AexOpt05Selected IS NULL OR @AexOpt06Selected IS NULL
          OR @AexOpt07Selected IS NULL
-    BEGIN SET @Code = 100; SET @Field = 'AexOptSelected'; END
+    BEGIN SET @Code = 100; SET @Field = CASE WHEN @AexOpt01Selected IS NULL THEN 'AexOpt01Selected'
+                  WHEN @AexOpt02Selected IS NULL THEN 'AexOpt02Selected'
+                  WHEN @AexOpt03Selected IS NULL THEN 'AexOpt03Selected'
+                  WHEN @AexOpt04Selected IS NULL THEN 'AexOpt04Selected'
+                  WHEN @AexOpt05Selected IS NULL THEN 'AexOpt05Selected'
+                  WHEN @AexOpt06Selected IS NULL THEN 'AexOpt06Selected'
+                  ELSE 'AexOpt07Selected' END; END
     ELSE IF @OperatorName IS NULL
     BEGIN SET @Code = 100; SET @Field = 'OperatorName'; END
     ELSE IF @TimeSlot NOT IN ('AM', 'PM')

@@ -32,7 +32,7 @@ erDiagram
 | `검사코드` | 기준 Master | 검사 19종 + NEX/AEX 역할 통합 (12 NEX · 6 AEX · 1 겸용) | Seed 고정 |
 | `휴무일` | 기준 Master | 공휴일·센터 휴진일 | Seed 고정 |
 | `완료이력` | Rule 입력 | 일반검진 완료일 + 그때의 검사구성. TGT 판정 입력 | Seed/Test · 복사 스크립트 |
-| `변경이력` | 변경 기록 | 성공한 데이터 변경을 컬럼 단위로 (`00` CP-06) | Write SP. 읽는 SP 없음 |
+| `변경이력` | 변경 기록 | 성공한 데이터 변경을 컬럼 단위로 (`00` CP-06) | Write SP 8개가 쓰고 `USP_HC_SELECT_변경이력` 이 읽는다 (F-COM-008 · DLG-LOG-01) |
 
 검사구성은 `검사항목코드`를 오름차순 쉼표로 이은 문자열이다. 전개는 `검사코드` 를 JOIN 하고
 양끝을 쉼표로 감싼 `LIKE` 로 하며 파서가 필요 없다 (`../docs/phase4/plans/10-schema-consolidation.md` §2.1).

@@ -106,7 +106,10 @@ CREATE TABLE [dbo].[검사코드]
     -- [X] 정렬이 CI 라 [A-Z0-9] 가 소문자까지 포함한다 - 'ex001' 은 이 제약을 통과한다(실측 확인).
     --     DATALENGTH = LEN 이 전각 영숫자만 닫고, 소문자는 COLLATE 없이 못 막는다.
     --     COLLATE 는 06 §9.2 허용목록 밖이다. 검사코드는 Seed 19행 고정이고 관리자 CRUD 가
-    --     없으므로(04 §8.3.1) 남는 위험은 저장 SP 를 우회한 직접 DML 뿐이고 SEC-004·005 가 막는다.
+    --     없으므로(04 §8.3.1) 남는 위험은 저장 SP 를 우회한 직접 DML 뿐이다.
+    --     [X] 여기 'SEC-004·005 가 막는다' 라고 적혀 있었으나 그 방어는 존재하지 않는다 —
+    --         User·GRANT 는 2026-09-07 사용자 결정으로 범위 밖이다(06 §32 · §43-7).
+    --         같은 파일 CK_예약접수_EXAM_PAIR 주석은 이미 그렇게 갱신돼 있었고 여기만 누락됐다.
     CONSTRAINT [CK_검사코드_CODE_FORMAT]    CHECK ([검사항목코드] NOT LIKE '%[^A-Z0-9]%'
                                                    AND DATALENGTH([검사항목코드]) = LEN([검사항목코드])),
     CONSTRAINT [CK_검사코드_NAME_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([검사항목명]))) > 0),
