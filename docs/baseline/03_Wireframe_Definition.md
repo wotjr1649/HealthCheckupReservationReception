@@ -308,7 +308,6 @@ E-mail
 제외:
 
 - PatientId
-- CelNumberS
 - CreationDate / LastEditDate
 - 과제 미사용 컬럼
 
@@ -320,7 +319,7 @@ E-mail
 - Double Click 업무 Action 없음
 - 재조회 시 SelectedRow 해제와 상세 Clear
 
-## 5.6 `수검자` 17개 컬럼 UI·저장 계약
+## 5.6 `수검자` 16개 컬럼 UI·저장 계약
 
 | No | 컬럼 | UI 노출 / 편집 | 값 생성·저장 기준 |
 |---:|---|---|---|
@@ -331,16 +330,15 @@ E-mail
 | 5 | Birthday | ReadOnly | SocialNumber에서 `yyyyMMdd` 자동산출 |
 | 6 | Gender | ReadOnly | SocialNumber에서 M/F 자동산출; UI 남/여 |
 | 7 | EMail | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
-| 8 | CelNumberS | 화면 미표시 | CelNumber에서 `-` 제거하여 동시 갱신 |
-| 9 | CelNumber | 등록/수정, 조회/Grid/상세 | 선택, 미입력 NULL |
-| 10 | TelNumber | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
-| 11 | Zipcode | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
-| 12 | Address | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
-| 13 | AddressDetail | 등록/수정, 상세 | 선택, 미입력 NULL |
-| 14 | Memo | 등록/수정, 상세 | 선택, 미입력 NULL |
-| 15 | HepatitisBExcluded | UI 미사용 | 신규 기본값 0; NEX-03 제외 판정 입력이며 Seed/Test Data로만 설정한다 |
-| 16 | CreationDate | 화면 미표시 | INSERT 시 DB 서버시각 |
-| 17 | LastEditDate | 화면 미표시 | INSERT 시 생성시각, UPDATE 성공 시 DB 서버시각; 수정 동시성 기준 |
+| 8 | CelNumber | 등록/수정, 조회/Grid/상세 | 선택, 미입력 NULL |
+| 9 | TelNumber | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
+| 10 | Zipcode | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
+| 11 | Address | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
+| 12 | AddressDetail | 등록/수정, 상세 | 선택, 미입력 NULL |
+| 13 | Memo | 등록/수정, 상세 | 선택, 미입력 NULL |
+| 14 | HepatitisBExcluded | UI 미사용 | 신규 기본값 0; NEX-03 제외 판정 입력이며 Seed/Test Data로만 설정한다 |
+| 15 | CreationDate | 화면 미표시 | INSERT 시 DB 서버시각 |
+| 16 | LastEditDate | 화면 미표시 | INSERT 시 생성시각, UPDATE 성공 시 DB 서버시각; 수정 동시성 기준 |
 
 - UI 미사용 NOT NULL 컬럼은 DB Default 또는 저장 SP가 보장한다.
 - `PatientId`는 내부 연결키이며 화면에 표시하지 않는다.
@@ -1281,7 +1279,7 @@ CNR · CNC → 복원 없음 / 재진행 신규예약
 | Birthday/Gender | 입력·변경 자동산출, 실패 시 저장차단 | PASS |
 | ChartNo New/Edit | New 자동/수동, Edit 수동수정 | PASS |
 | 중복 후보 | 재입력/별도등록/중단 분기 | PASS |
-| 수검자 | 17/17 컬럼 입력·파생·기본값·내부관리 계약 | PASS |
+| 수검자 | 16/16 컬럼 입력·파생·기본값·내부관리 계약 | PASS |
 | 검색계약 | 최소조건, AND, 정확/접두검색, 정규화 확정 | PASS |
 | Single Instance | Dirty Confirm/Reset/Targeted Navigation | PASS |
 | WalkIn | 오늘 ReadOnly, 접수마감 전 저장 | PASS |
@@ -1304,7 +1302,7 @@ CNR · CNC → 복원 없음 / 재진행 신규예약
 | Single Instance 상태 오염 | 8.10, 9.1, 21.8 |
 | UI Enabled와 DB 성공 혼재 | 8.11, 15 |
 | Reception Matrix 현장 당일예약 누락 | 9.7~9.8, 14 |
-| 17개 컬럼 NOT NULL 값 출처 미정 | 5.6 |
+| 16개 컬럼 NOT NULL 값 출처 미정 | 5.6 |
 | WorkId Targeted Navigation 불명확 | 3, 9.1 |
 | 예약변경 자기 Work 오탐 가능성 | 10.3, 15.2 |
 | 과거 03 파일 중복 기준본 | 본 문서 파일명으로 단일화 |
