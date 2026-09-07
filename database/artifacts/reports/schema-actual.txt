@@ -24,8 +24,8 @@ C|수검자|9|전화번호|varchar|1
 C|수검자|10|우편번호|varchar|1
 C|수검자|11|주소|nvarchar|1
 C|수검자|12|상세주소|nvarchar|1
-C|수검자|13|비고|nvarchar|1
-C|수검자|14|B형간염제외여부|bit|0
+C|수검자|13|B형간염제외여부|bit|0
+C|수검자|14|비고|nvarchar|1
 C|수검자|15|생성일시|datetime|0
 C|수검자|16|최종수정일시|datetime|0
 C|예약접수|1|업무ID|bigint|0
@@ -33,11 +33,11 @@ C|예약접수|2|수검자ID|bigint|0
 C|예약접수|3|예약일|date|0
 C|예약접수|4|시간대코드|char|0
 C|예약접수|5|상태코드|char|0
-C|예약접수|6|생성일시|datetime2|0
-C|예약접수|7|최종수정일시|datetime2|0
-C|예약접수|8|행버전|timestamp|0
-C|예약접수|9|국가검사항목|nvarchar|0
-C|예약접수|10|추가검사항목|nvarchar|1
+C|예약접수|6|국가검사항목|nvarchar|0
+C|예약접수|7|추가검사항목|nvarchar|1
+C|예약접수|8|생성일시|datetime2|0
+C|예약접수|9|최종수정일시|datetime2|0
+C|예약접수|10|행버전|timestamp|0
 C|완료이력|1|수검자ID|bigint|0
 C|완료이력|2|완료일자|date|0
 C|완료이력|3|국가검사항목|nvarchar|1

@@ -974,5 +974,459 @@
         "rows": 0
       }
     ]
+  },
+  "PWR-000_fixture": {
+    "sp": "(fixture)",
+    "resultSets": []
+  },
+  "PWR-001_신규등록_자동차트": {
+    "sp": "USP_HC_INSERT_수검자",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "PatientId",
+          "ChartNo",
+          "Name",
+          "SocialNumber",
+          "Birthday",
+          "Gender",
+          "MobilePhone",
+          "LastEditDate"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-002_동일주민_동일이름": {
+    "sp": "USP_HC_INSERT_수검자",
+    "rs0Success": 1,
+    "rs0Code": 2,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "PatientId",
+          "ChartNo",
+          "Name",
+          "SocialNumber",
+          "Birthday",
+          "Gender",
+          "MobilePhone",
+          "LastEditDate"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-003_동일주민_다른이름": {
+    "sp": "USP_HC_INSERT_수검자",
+    "rs0Success": 0,
+    "rs0Code": 202,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "PatientId",
+          "ChartNo",
+          "Name",
+          "SocialNumber",
+          "Birthday",
+          "Gender",
+          "MobilePhone",
+          "LastEditDate"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-004_주민번호_12자리": {
+    "sp": "USP_HC_INSERT_수검자",
+    "rs0Success": 0,
+    "rs0Code": 101,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-005_주민번호_없는날짜": {
+    "sp": "USP_HC_INSERT_수검자",
+    "rs0Success": 0,
+    "rs0Code": 101,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-007_수동차트_NULL": {
+    "sp": "USP_HC_INSERT_수검자",
+    "rs0Success": 0,
+    "rs0Code": 102,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-008_수동차트_중복": {
+    "sp": "USP_HC_INSERT_수검자",
+    "rs0Success": 0,
+    "rs0Code": 201,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-009_유사후보_미확인": {
+    "sp": "USP_HC_INSERT_수검자",
+    "rs0Success": 0,
+    "rs0Code": 203,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "PatientId",
+          "ChartNo",
+          "Name",
+          "SocialNumber",
+          "Birthday",
+          "Gender",
+          "MobilePhone",
+          "LastEditDate"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-010_유사후보_확인후등록": {
+    "sp": "USP_HC_INSERT_수검자",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "PatientId",
+          "ChartNo",
+          "Name",
+          "SocialNumber",
+          "Birthday",
+          "Gender",
+          "MobilePhone",
+          "LastEditDate"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-013_주민번호_14자리_경계절단": {
+    "sp": "USP_HC_INSERT_수검자",
+    "rs0Success": 1,
+    "rs0Code": 2,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "PatientId",
+          "ChartNo",
+          "Name",
+          "SocialNumber",
+          "Birthday",
+          "Gender",
+          "MobilePhone",
+          "LastEditDate"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-014_주민번호_비숫자": {
+    "sp": "USP_HC_INSERT_수검자",
+    "rs0Success": 0,
+    "rs0Code": 101,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-020_수정_Noop": {
+    "sp": "USP_HC_UPDATE_수검자정보",
+    "rs0Success": 1,
+    "rs0Code": 1,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "PatientId",
+          "ChartNo",
+          "LastEditDate"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-021_수정_stale_LastEditDate": {
+    "sp": "USP_HC_UPDATE_수검자정보",
+    "rs0Success": 0,
+    "rs0Code": 600,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-022_수정_이름변경": {
+    "sp": "USP_HC_UPDATE_수검자정보",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "PatientId",
+          "ChartNo",
+          "LastEditDate"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-023_주민번호변경_RSV보유": {
+    "sp": "USP_HC_UPDATE_수검자정보",
+    "rs0Success": 0,
+    "rs0Code": 205,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-024_차트번호변경_RSV보유": {
+    "sp": "USP_HC_UPDATE_수검자정보",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "PatientId",
+          "ChartNo",
+          "LastEditDate"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-025_주민번호_타수검자사용중": {
+    "sp": "USP_HC_UPDATE_수검자정보",
+    "rs0Success": 0,
+    "rs0Code": 204,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-026_수정_미존재_PatientId": {
+    "sp": "USP_HC_UPDATE_수검자정보",
+    "rs0Success": 0,
+    "rs0Code": 200,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-027_주민번호변경_RCP보유": {
+    "sp": "USP_HC_UPDATE_수검자정보",
+    "rs0Success": 0,
+    "rs0Code": 205,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "PWR-028_차트번호변경_RCP보유": {
+    "sp": "USP_HC_UPDATE_수검자정보",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "PatientId",
+          "ChartNo",
+          "LastEditDate"
+        ],
+        "rows": 1
+      }
+    ]
   }
 }
