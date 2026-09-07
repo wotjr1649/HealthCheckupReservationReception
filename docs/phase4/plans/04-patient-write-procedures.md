@@ -8,7 +8,7 @@
 # Stage 6 — Patient Write Stored Procedure 2개
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
-**Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md`
+**Spec:** `../06_DB_Transaction_Security_Seed.md`
 **Tasks:** `T23` ~ `T24`
 
 두 SP 모두 index 문서의 **Write SP 공통 Template**(§21.1)과 **applock 획득 블록**을 그대로 사용한다. 생성 파일은 `deploy/05_Procedures_Patient_Write.sql`, 테스트는 `tests/05_Patient_Write_Tests.sql` 하나다.

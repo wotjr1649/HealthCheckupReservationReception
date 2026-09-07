@@ -1,9 +1,9 @@
-# 검진 예약·접수 관리 프로그램 — DB Transaction·잠금·보안·Seed 구현 계약서 (후보본)
+# 검진 예약·접수 관리 프로그램 — DB Transaction·잠금·보안·Seed 구현 계약서
 
-- **문서명:** `06_DB_Transaction_Security_Seed_CANDIDATE.md`
-- **상태:** `CANDIDATE / IMPLEMENTATION READY` — SQL 실행검증 전이므로 FINAL이 아니다
-- **문서 버전:** v0.4  (v0.3 → R3 재봉인 반영: 테이블 이름 한글 교체 · 검사항목 흡수로 6개 · 상태 4값 · `변경이력` 신설, §44.7)
-- **기준일:** 2026-09-04
+- **문서명:** `06_DB_Transaction_Security_Seed.md`
+- **상태:** `FINAL / GO` — SQL 실행검증 완료 (2026-09-07). §42 Gate 판정은 전부 실측이다
+- **문서 버전:** v1.0  (v0.4 → 배포·시험 실행검증 완료로 CANDIDATE 해제. §42 실측 · §43·§44 갱신)
+- **기준일:** 2026-09-04  ·  **실행검증일:** 2026-09-07
 - **기준선 ID:** `HC-RSV-RCP-20260904-R3`
 - **대상 SQL Server:** `.\SQLEXPRESS` — Microsoft SQL Server 2025 Express `17.0.1125.2` (RTM), 로컬 전용
 - **Database:** `HealthCheckupReservationReceptionDb`
@@ -32,10 +32,10 @@
 
 | 항목 | 값 |
 |---|---|
-| 문서명 | `06_DB_Transaction_Security_Seed_CANDIDATE.md` |
-| 상태 | `CANDIDATE / IMPLEMENTATION READY` |
-| 버전 | v0.2 |
-| 기준일 | 2026-09-04 |
+| 문서명 | `06_DB_Transaction_Security_Seed.md` |
+| 상태 | `FINAL / GO` |
+| 버전 | v1.0 |
+| 기준일 | 2026-09-04 (실행검증 2026-09-07) |
 | 기준선 ID | `HC-RSV-RCP-20260904-R3` |
 | 대상 SQL Server | SQL Server 2025 Express 17.0.1125.2 / 인스턴스 `.\SQLEXPRESS` |
 | 선행 문서 | `04_DB_Design.md`(Phase 2), `05_DB_Rule_SP_Contract.md`(Phase 3) |
@@ -2264,27 +2264,46 @@ artifacts/
 
 **`PASS`는 실제 실행 증거가 있을 때만 사용한다.** 실행 전에는 `PLANNED` / `NOT RUN` / `BLOCKED` 중 하나를 사용한다.
 
-| Gate | 검증내용 | 필수 결과 | 현재 |
-|---|---|---|---|
-| G00 | Baseline Hash | 6/6 일치 (또는 `D4-001` 승인된 실측값 기준 6/6) | `PLANNED` |
-| G01 | WinForms 보호 | 변경 0건 (git diff + hash manifest 이중 증거) | `PLANNED` |
-| G02 | Preflight | `00_Preflight.sql` 가드 6종(`50010~50015`) 통과 · KST 540 · Version >= 11. `Rebuild.sql` 가드는 `50020~50024` 별도 | `PLANNED` |
-| G03 | Clean Deploy | 빈 DB 전체 배포 성공 (exit 0) | `PLANNED` |
-| G04 | Object Inventory | Table 6 / TVF 4 / SP 16 / Sequence 1 | `PLANNED` |
-| G05 | Schema | PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 **+ 48컬럼·제약 24·Default 8·NCI Key 를 `EXCEPT` 양방향 차집합 0** | `PLANNED` |
-| G06 | 금지 객체 | Trigger 0 / TVP 0 / DELETE SP 0 / 추가 Table 0 | `PLANNED` |
-| G07 | Seed | Exam **19행 전건 값 일치**(`EXCEPT` 양방향) / NEX 역할 13 / AEX 역할 7 / `추가검사사용여부` 7건 모두 1 / Holiday 2 | `PLANNED` |
-| G08 | Rule | TGT/NEX/AEX/HOL 경계 전건 통과 + `CORRUPT-3` 재검증금지 확인 | `PLANNED` |
-| G09 | SP Contract | Parameter 99 `EXCEPT` 양방향 · RS0 **80행·`error_number` 0건** · **16/16 SP** 후속 RS 순서·컬럼·Cardinality · RS0 Code 가 `05` §13 허용집합 내 | `PLANNED` |
-| G10 | Rollback | 부분저장 0건 | `PLANNED` |
-| G11 | Concurrency | `CON-001`~`CON-008` 통과 **+ `rc=1` 경합 증거 1건 이상 + `Msg 1205`·`50002` 각 0건** | `PLANNED` |
-| G12 | Security | `SEC-001`~`SEC-011`. `sysadmin=0` 확인 후에만 유효. 거부는 `Msg 229` 만 인정 | `PLANNED` |
-| **G13** | **SQL Server 호환성** `[D4-004]` | (a) 대상 2025 인스턴스 전체 배포·테스트 성공 → `PASS`/`FAIL` · (b) 블랙리스트 grep 0건 → `PASS`/`FAIL` · (c) §9.2 허용목록 준수 → **`REVIEWED`**(자동 판정 불가, §9.3) | `PLANNED` |
-| G14 | Repeatability | Rebuild 2회 후 **정렬된 객체·Seed 덤프 `diff` 차이 0줄** (개수 비교 금지) | `PLANNED` |
-| G15 | Evidence | 실행명령 · exit code · 로그 · 보고서 존재 **+ 각 회귀 실행의 run ID·시각·업무시간 여부 기록** | `PLANNED` |
-| G16 | 06 문서 | 실제 구현과 일치하는 FINAL 후보 작성 | `PLANNED` |
+아래는 **전부 실측**이다. 근거 회차는 둘이며, 시각 의존 경로가 서로 배타적이라 둘 다 필요하다.
 
-`[I]` **`SKIP` 은 `PASS` 가 아니다.** 업무시간 밖 실행으로 `SKIP` 된 Gate는 `NOT RUN` 으로 남기고, `PHASE 4 COMPLETE` 를 선언하려면 **업무시간 내 실행 로그가 반드시 하나 있어야 한다.**
+| 회차 | 시각 | 업무시간 | 결과 |
+|---|---|---|---|
+| `A` 창 안 | 2026-09-07 13:58 | 안 (월 13:58, 비휴무일) | `artifacts/logs/full_test_run.log` |
+| `B` 창 밖 | 2026-09-07 20:09 | 밖 (월 20:09) | `artifacts/logs/full_test_run_off.log` |
+
+`[I]` 회차 `A` 는 사용자가 머신 시각을 6시간 뒤로 옮겨 만든 창이다. **코드는 한 글자도 바꾸지 않았다** —
+`SYSDATETIME()` 이 시각의 유일한 입구이므로 SP·TVF·게이트가 전부 출하될 그대로 돌았다. 끝난 뒤 같은 크기로 되돌렸다.
+
+| Gate | 검증내용 | 필수 결과 | 결과 | 근거 |
+|---|---|---|---|---|
+| G00 | Baseline Hash | 6/6 일치 | **PASS** | `verify-baseline.sh` `=== 6/6 ===` · `test.sh` 안에서 매 회차 실행 |
+| G01 | WinForms 보호 | 변경 0건 (git diff + hash manifest 이중 증거) | **PASS** | `PASS WinForms 변경 0건` · `git diff --stat <R3 태그> -- winforms` **0줄** |
+| G02 | Preflight | 가드 6종 통과 · KST 540 · Version >= 11 | **PASS** | `PRE-001`~`PRE-006` (인스턴스·DB·호스트 `DESKTOP-DP7KRE4`·KST +09:00·`17.0.1125.2`·RCSI OFF) |
+| G03 | Clean Deploy | 빈 DB 전체 배포 성공 (exit 0) | **PASS** | `PASS RBD-003 빈 DB 에서 Deploy 전체 실행 exit 0` |
+| G04 | Object Inventory | Table 6 / TVF 4 / SP 16 / Sequence 1 | **PASS** | `VER-001`~`VER-004` · `RBD-004` 지문 `INVENTORY|6|4|16|1|6|2|2|1|5|24|8|0|0|19|2` |
+| G05 | Schema | PK 6 / FK 2 / UQ 2 / UX 1 / **NCI 5** + 48컬럼·제약 24·Default 8·NCI Key `EXCEPT` 양방향 0 | **PASS** | `SCH-001`~`SCH-019` (19건) · `DOC-001`~`DOC-005` 양방향 대조 |
+| G06 | 금지 객체 | Trigger 0 / TVP 0 / DELETE SP 0 / 추가 Table 0 | **PASS** | `VER-006` · `SCH-010`·`SCH-011`·`SCH-012` |
+| G07 | Seed | Exam 19행 전건 값 일치 / NEX 13 / AEX 7 / Holiday 2 | **PASS** | `VER-007` · `RBD-006 Seed 역할 분포 NEX 13 / AEX 7 / 겸용 1 / AEX Active 7` |
+| G08 | Rule | TGT/NEX/AEX/HOL 경계 전건 + `CORRUPT-3` 재검증금지 | **PASS** | `tests/03_Rule_Tests.sql` 51건 |
+| G09 | SP Contract | Parameter 99 `EXCEPT` 양방향 · 16/16 SP 후속 RS · RS0 Code 가 `05` §13 허용집합 내 | **PASS** | 계약 **108건** 전건 일치 · `SCH-019` Parameter 99 `EXCEPT` 양방향 · `V17`(RS0 42블록 5컬럼 CAST) · `V18`(실패 67건 RS0 1개) |
+| G10 | Rollback | 부분저장 0건 | **PASS** | `RBK-001`~`RBK-007` · `RBK-008` 은 T-SQL 로 RS 개수를 셀 수 없어 `V18` 이 정적으로 판정 |
+| G11 | Concurrency | `CON-001`~`008` + `rc=1` 1건 이상 + `Msg 1205`·`50002` 각 0건 | **PASS** | **8/8** · `applock rc=1` 시나리오마다 1~2건 · `1205`·`50002`·`50001`·`2627`·`Code 100` 각 **0건** (회차 `A`) |
+| G12 | Security | `SEC-001`~`011` | **NOT RUN (범위 밖)** | 2026-09-07 사용자 결정으로 User·GRANT 를 구현하지 않는다 (§32). `SEC-010`(secret 스캔)만 범위 안이며 **PASS** |
+| **G13** | **SQL Server 호환성** `[D4-004]` | (a) 배포·시험 성공 · (b) 블랙리스트 0건 · (c) §9.2 준수 | **(a) PASS · (b) PASS · (c) REVIEWED** | (a) 회차 `A`·`B` exit 0 · (b) `verify-tsql-allowlist.sh` `.sql` 137개 0건 + `CREATE OR ALTER` 는 배포 안에만 · (c) 자동 판정 불가 (§9.3) |
+| G14 | Repeatability | Rebuild 2회 후 정렬 덤프 `diff` 0줄 | **PASS** | `RBD-005` 덤프 완전 동일 · `RBD-007`(Deploy 단독) · `RBD-008`(Procedure 단독) 도 동일 |
+| G15 | Evidence | 실행명령·exit code·로그·보고서 + run ID·시각·업무시간 | **PASS** | `conc_<RUN>_<SCEN>_*.log` · `artifacts/reports/test-summary.txt`(회차 시각 포함) · `phase4-report.md` |
+| G16 | 06 문서 | 실제 구현과 일치하는 FINAL | **PASS** | 본 문서 v1.0 `FINAL / GO` |
+
+`[I]` **`SKIP` 은 `PASS` 가 아니다.** 회차 `A` 의 `SKIP` 은 `OFF-309-01`·`02` 둘뿐이고,
+이는 업무시간 안에서 `309` 가 나올 수 없다는 **정의상의 배타성**이다. 회차 `B` 에서 `PASS` 로 판정됐다.
+두 회차를 합치면 시각 의존 경로에 빈 구멍이 없다.
+
+`[X 실측]` **G05 의 `NCI 4` 는 오기였다.** R3 재봉인이 인덱스를 하나 늘려 실측은 **5** 다
+(`SCH-008`·`VER-005`·`RBD-004` 지문 모두 5). 표를 실측에 맞췄다.
+
+`[X 실측]` **G00·G01·G05 는 회귀 밖에 있었다.** `test.sh` 가 `verify-baseline.sh`·
+`verify-winforms-unchanged.sh`·`verify-schema-doc.sh` 를 부르지 않아, 이 표를 채우려면 손으로 돌려야 했다.
+손으로 돌린 증거는 다음 회차에 썩는다 — `G13-b` 와 같은 실패 방식이다. 셋 다 `test.sh` 에 넣었다.
 
 `[I]` **`./scripts/test.sh` 는 `tests/01`~`14` 뿐 아니라 동시성 `09`~`12` 와 `verify-contract.js` 까지 실행해야 "전체 회귀"다.** 초안은 `01`~`08`·`13`·`14` 만 돌고 `"=== 전체 테스트 통과 ==="` 를 출력해, G09·G11 이 실행되지 않아도 T37의 회귀가 exit 0 이었다.
 
@@ -2294,17 +2313,20 @@ artifacts/
 
 | # | 한계 | 영향 | 완화 |
 |---:|---|---|---|
-| 1 | **업무시간 밖 Write SP 통합테스트 불가** | 09:00~18:00 월~토 밖에서는 Write SP가 `308`/`309`로 끝나 계약을 완전히 검증할 수 없다 | Rule TVF 테스트가 `@ServerTime` 주입으로 시간 경계 12건을 결정적으로 전수 검증한다. production SP에 **테스트용 시간 주입 backdoor를 넣지 않는다** |
+| 1 | **업무시간 밖 Write SP 성공 경로 검증 불가** `[X 완화됨]` | 창 밖에서는 Write SP가 `308`/`309`로 끝나 성공 경로를 볼 수 없다 | 세 겹으로 덮었다. ① Rule TVF 가 `@ServerTime` 주입으로 시간 경계를 결정적으로 전수 검증한다. ② `tests/05`~`08` 이 창 밖에서 **분기**로 "창 밖 호출이 DB 를 바꾸지 않았다"(`PWR/RWR/CWR/RBK-OFF`)를 단언하고 `OFF-309-*` 가 `309` 를 계약으로 판정한다 — SKIP 이 아니라 판정이다. ③ 성공 경로가 필요하면 **머신 시각을 옮긴다**(§43-14). production SP 에 시간 주입 backdoor 를 넣지 않는다 |
 | 2 | **SQL Server 2012 실기 검증 없음** `[D4-004]` | 허용목록 준수는 코드리뷰로 확인하며 2012 인스턴스에서 실제 실행하지는 않는다 | 사용자 결정으로 대상이 SQL Server 2025로 고정되었다. 허용목록이 사용자 규칙보다 엄격하다 |
 | 3 | **`03` baseline hash 불일치** `[D4-001]` | 인계문서 기대값과 실측값이 다르며 원인을 규명하지 못했다 | Phase 4가 소비하는 `04`·`05`는 byte 일치. `03`은 UI 계약이라 DB 객체계약에 영향이 없다 |
 | 4 | 다중 Result Set의 Snapshot 일관성 | `SELECT_예약가능정보`·`SELECT_예약접수상세`에서 RS 간 미세한 시점 차이가 가능 | 조회값은 사전안내이며 Write SP가 Transaction 안에서 전부 재검증한다 (`04` §1.2) |
 | 5 | **취소 SP만** `SLOT` 잠금 미획득 | 미커밋 취소로 정원이 실제보다 **많아** 보여 `305`가 나올 수 있다 | 오차 방향이 보수적(과대)이라 무결성 위반이 아니다(§24.2 표). **접수완료는 과소집계가 가능해 잠금을 확장했다** |
 | 6 | `verify-contract.js`의 구분자 의존 | 데이터에 `\|`가 포함되면 파싱이 흔들릴 수 있다 | 검사명·상태명에 `\|`가 없음을 Seed 검수에서 확인한다. `-W -w 65535` 로 줄 접힘을 제거한다 |
-| 7 | Login 미생성 | 실제 애플리케이션 계정이 아직 role에 없다 | Phase 5 배포 절차로 문서화(§32.3). Phase 4 보안 테스트는 `USER WITHOUT LOGIN`으로 완결된다 |
+| 7 | **User·GRANT 미구현** `[사용자 결정]` | 2026-09-07 사용자가 "유저·GRANT 는 구현하지 않는다 — 과제이므로" 로 범위에서 뺐다. `SEC-001`~`009`·`011` 이 `NOT RUN` 이다 | `deploy/08_Security.sql` 은 placeholder 로 남는다. `SEC-010`(secret 스캔)만 범위 안이며 매 회귀에서 `PASS`. Phase 5 배포 절차는 §32.3 에 남아 있다 |
 | 8 | **`RBD-001`(잘못된 서버명) 음성 시험 불가** | 인스턴스가 1개뿐이라 `50020` 경로를 실제로 발화시킬 수 없다 | `NOT RUN` 으로 기록한다. `PASS` 로 쓰지 않는다 |
-| 9 | **§24.2 과소집계 시나리오 미실측** | 논리 분석으로 도출했고 2세션 실측을 하지 않았다 | `CON-008`(§38.5)로 구현 단계에서 실증한다. 그전까지 `PLANNED` |
+| 9 | ~~**§24.2 과소집계 시나리오 미실측**~~ `[해소 2026-09-07]` | — | `CON-008` 실측 완료. B 가 `접수완료`로 `RSV → RCP` 를 옮기는 사이 A 의 `WalkIn` 신규가 정원 20 을 보고 `305` 로 막혔다. 최종 20 (21 이면 결함 재발). `SLOT` 잠금 확장이 실제로 필요했음이 확인됐다 |
 | 10 | **G13 (c) 허용목록 준수는 자동 판정 불가** | 블랙리스트 grep 0건이 허용목록 준수를 증명하지 않는다 | `REVIEWED` 로만 기록한다(§9.3) |
 | 11 | **`05` §17.6 "허용되지 않은 7번째 자리" 는 구성 불가** | `05` §10.1 표가 숫자 `0~9` 열 개를 전부 매핑하므로 "미정의 숫자"가 존재하지 않는다 | 기준선을 고치지 않는다. §44.6에 Deviation 으로 기록하고, 비숫자 7번째 자리는 형식검사(`101`)로 흡수됨을 명시한다 |
+| 12 | **`OFF-309-01`·`02` 는 창 밖에서만 판정된다** | 창 안 회차에서는 `SKIP` 이고, `SKIP` 은 `PASS` 가 아니다 | **정의상의 배타성**이다 — 업무시간 안에서 `309` 는 나올 수 없다. 창 밖 회차에서 `PASS` 로 판정되며, 두 회차를 합치면 빈 구멍이 없다. §42 가 두 회차를 함께 근거로 든다 |
+| 13 | **`G09` 의 RS0 개수는 정적 검사로 판정한다** | `INSERT … EXEC` 가 금지(2개 이상 RS 에서 `Msg 213`)라 실행 중에 RS 개수를 셀 수 없다 | `V17`(RS0 42블록 5컬럼 CAST)·`V18`(실패 67건 RS0 1개)이 배포 원본을 정적으로 판정한다. 실행 판정은 `tests/contract/*` 가 sqlcmd 출력으로 한다 |
+| 14 | **시각 의존 경로 검증은 사람이 시계를 옮겨야 한다** | `CON-005`·`CON-008`·`CWR-006`·`CWR-009` 등 성공 경로는 특정 시각창에서만 성립한다 | 시각은 `SYSDATETIME()` 하나로만 들어오므로 **OS 시각을 옮기면 코드를 한 글자도 안 바꾸고** 창을 만들 수 있다. 상대 이동(`Set-Date -Adjust`)으로 옮기고 같은 크기로 되돌리면 오차가 0 이다. **자동화하지 않는다** — 되돌리지 못한 채 죽는 스크립트를 남기지 않는다. TVF 상수를 고치는 우회는 금지다: `rebuild` 가 매 시나리오마다 되돌리므로 성립하지 않고, 배포 원본을 고치면 **다른 제품을 시험한 `PASS`** 가 된다 |
 
 ---
 
@@ -2453,6 +2475,27 @@ PWR-013  14자리 표시값은 VARCHAR(13) 경계에서 절단된다
 
 ---
 
+## 44.8 실행검증 단계에서 새로 발견한 이탈 `[신설 2026-09-07]`
+
+**Table/Column/SP/TVF/Parameter/Result Set/ResultCode 계약은 하나도 바뀌지 않았다.** 아래는 전부
+**시험·게이트 설계**의 결함이며, 공통점은 *"게이트가 green 인데 아무것도 검증하지 않고 있었다"* 이다.
+
+| # | 이탈 | 어떻게 green 이었나 | 조치 |
+|---:|---|---|---|
+| 1 | `OFF-308` 이 **한 번도 실행된 적이 없다** | 일요일·활성 휴무일을 기다리는 구성이라 평일 회차마다 `SKIP`. `SKIP` 은 집계에서 실패가 아니다 | 휴무일은 **데이터**다. 시험이 오늘을 활성 휴무일로 심고 지운다 → 아무 날 아무 시각에나 성립. 게이트가 루프 뒤에 잔여 0건·Seed 2건을 확인 |
+| 2 | `CWR-006`·`CWR-009` 를 "배타적" 으로 단언 | 둘 다 **PM Work** 를 써서 그렇게 보였을 뿐이다. 마감은 Slot 마다 다르다 | `CWR-009` 를 **AM Work**(마감 11:00)로 옮겼다. `11:10~15:50` 에 둘 다 판정된다. 이전엔 `CWR-009` 가 `16:00~18:00` 에만 돌아 일반 회귀가 닿지 못했다 |
+| 3 | `G09` 의 "Parameter 99 `EXCEPT` 양방향" 을 **아무도 판정하지 않았다** | 계약 시험은 RS0 만 본다. 개수는 문서에만 있었다 | `SCH-019` 신설 — SP 별 Parameter 를 `EXCEPT` 양방향으로 맞추고 합계 99 를 확인한다. 합계만 세면 한 SP 에서 늘고 다른 SP 에서 준 드리프트를 놓친다 |
+| 4 | `G00`·`G01`·`G05` 가 **회귀 밖**에 있었다 | `test.sh` 가 세 스크립트를 부르지 않아 손으로 돌려야 했다 | 셋 다 `test.sh` 에 넣었다. 결과와 무관하게 `PASS` 를 찍지 않도록 셋 다 성공했을 때만 한 줄을 남긴다 |
+| 5 | `G13-b` 블랙리스트 grep 이 **항상 FAIL** | 실측 27건이 전부 오탐 — 금지를 *설명하는* 주석과 JavaScript 의 `.trim(` 이 `TRIM(` 에 걸렸다 | `verify-tsql-allowlist.sh` 로 옮겨 `.sql` 만, 주석을 지운 뒤 검사. `CREATE DATABASE … COLLATE` 는 DB 정렬 지정이라 제외 |
+| 6 | `CON-004` 가 **공허하게 PASS** | `@LastEditDate`·`@ChartNo` 를 NULL 로 넘겨 `100` 으로 끝났는데, 최종 상태가 "아무것도 안 바뀜" 이라 판정이 통과였다 | 인자를 채워 실제 경로에 닿게 했다(A 는 `205`, EP-08). 그리고 **로그에 `Code 100` 이 1건이라도 있으면 FAIL** — 전 시나리오 공통 가드다 |
+| 7 | `sqlcmd -v` 가 값의 콜론에서 인수를 자른다 | 착수 전에는 보이지 않는다. `-v BarrierTime=13:00:00` 이 접속 전에 죽는다 | barrier 를 `HHMMSS` 로 넘기고 `STUFF` 로 콜론을 끼운다. `WAITFOR TIME` 은 `TIME` 형을 거부한다(`Msg 9815`) → `VARCHAR(8)` |
+| 8 | 회귀 요약이 **다른 회차의 로그를 센다** | `artifacts/logs/` 는 누적된다. 옛 RED 회차의 `test_01_red.log` 가 와일드카드에 걸렸다 | `test.sh` 가 자기가 쓴 로그를 `_manifest.txt` 에 남기고 요약은 그것만 읽는다. mtime 비교는 쓸 수 없다 — 회귀 로그가 끝까지 쓰여 가장 새 파일이 되므로 모든 시험 로그가 걸러진다 |
+
+`[I]` **공통 교훈.** `SKIP`·`NOT RUN`·"오탐이라 무시" 는 전부 *검증하지 않음*의 다른 이름이고,
+집계에서 실패로 세지 않으므로 게이트를 green 으로 유지한다. 이 여덟 건은 모두 그 형태였다.
+
+---
+
 # 45. 구현 승인 판정
 
 | 판정 항목 | 결과 |
@@ -2473,7 +2516,26 @@ PWR-013  14자리 표시값은 VARCHAR(13) 경계에서 절단된다
 | 00~05 변경 | **0건** |
 | WinForms 변경 | **0건** |
 
-> **판정: `IMPLEMENTATION READY (v0.2)`** — 본 문서는 SQL 실행검증 전이므로 `CANDIDATE`이며, 실제 배포·테스트 완료 후에만 `06_DB_Transaction_Security_Seed.md`로 최종화한다.
+| **실행검증** | **완료 (2026-09-07)** — §42 Gate 16종 전부 실측. `G12` 만 사용자 결정으로 범위 밖 |
+| 배포 | `Deploy.sql` 전체 exit 0 · 빈 DB 에서도 exit 0 (`RBD-003`) |
+| 재현성 | 연속 2회 Rebuild 정렬 덤프 **diff 0줄** (`RBD-005`) · Deploy 단독·Procedure 단독 재실행도 동일 |
+| 객체 | Table 6 / TVF 4 / SP 16 / Sequence 1 / PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5 / CHECK 24 / Default 8 |
+| 계약 | Parameter **99** `EXCEPT` 양방향 (`SCH-019`) · Result Set 계약 **108건** 전건 일치 |
+| 동시성 | `CON-001`~`008` **8/8** · `applock rc=1` 실측 · `Msg 1205`·`50002`·`50001`·`2627` 각 0건 |
+| 기준선·WinForms | 실행검증 기간 중 변경 **0건** (`verify-baseline.sh` 6/6 · WinForms 태그 diff 0줄) |
+
+> **판정: `FINAL / GO (v1.0)`** — SQL 실행검증을 마쳤다. §42 의 Gate 판정은 전부 실제 실행 증거를 근거로 하며,
+> 실행하지 않은 것은 `NOT RUN` 으로 남겼다(`G12` Security · `RBD-001` · `G13(c)`). `SKIP` 을 `PASS` 로 승격하지 않았다.
+>
+> **남은 `NOT RUN` 은 셋이며 모두 이유가 기록돼 있다.**
+>
+> ```text
+> G12 Security      2026-09-07 사용자 결정으로 범위 밖 (§32 · §43-7). SEC-010 만 범위 안이며 PASS
+> RBD-001           인스턴스가 1개뿐이라 잘못된 서버명(50020) 음성 시험이 구조적으로 불가 (§43-8)
+> G13 (c)           §9.2 허용목록 준수는 자동 판정 불가 — REVIEWED 로만 기록 (§9.3 · §43-10)
+> ```
+>
+> Phase 5 는 §32.3 의 배포 절차(App.config 키 · login 매핑)를 인수한다.
 
 ## 44.7 v0.2 → v0.3 — 재검토 3종이 찾은 결함 `[X 수정 2차]`
 
@@ -2492,7 +2554,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | `SED` | 11 | 10 | 11 |
 | `SEC` | 11 | 10 | 11 |
 | `CON` | 8 | 7 | 8 |
-| `SCH` | 18 | 16 | 18 |
+| `SCH` | 19 | 16 | 19 |
 
 → **§45.2 카탈로그를 유일한 출처로 삼고, 계획은 건수를 다시 적지 않는다.** `tools/verify-docs.js`(§45.3)가 기계적으로 강제한다.
 
@@ -2567,7 +2629,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | Prefix | 범위 | 건수 | 산출 파일 | 검증 대상 | Gate |
 |---|---|---:|---|---|---|
 | `PRE` | `001`~`006` | 6 | `deploy/00_Preflight.sql` | 배포 안전가드 `50010`~`50015` (§8.3) | G03 |
-| `SCH` | `001`~`018` | 18 | `tests/01_Schema_Tests.sql` | 6 Table · PK/FK/UQ/UX/NCI · 48컬럼 · 제약 24 · Default 8 · NCI Key (§34) | G05 |
+| `SCH` | `001`~`019` | 19 | `tests/01_Schema_Tests.sql` | 6 Table · PK/FK/UQ/UX/NCI · 48컬럼 · 제약 24 · Default 8 · NCI Key · **SP 별 Parameter(합계 99)** (§34) | G05 |
 | `SED` | `001`~`011` | 11 | `tests/02_Seed_Tests.sql` | `검사코드` 19행 · `휴무일` 2행 · AEX 7건 Active (§13·§14) | G07 |
 | `SSN` | `001`~`006` | 6 | `tests/02_Seed_Tests.sql` | 실제 주민등록번호 미사용 — 체크디지트 전건 무효 (§16.2) | G12 |
 | `RUL` | `T01`~`T12` `N01`~`N12` `A01`~`A10` `G01`~`G08` `D01`~`D09` | 51 | `tests/03_Rule_Tests.sql` | 4개 TVF 결정적 경계 — 마감시각 · NEX 술어 · AEX 판정순서 · 휴무일 · `DATEFIRST` 불변 (§35) | G08 |
@@ -2582,7 +2644,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | `OFF` | `308`~`309` | 2 | `tests/contract/OFF-*` | `309` 는 업무시간 밖에서만 — `PWR`/`RWR`/`CWR` 과 배타적이라 어느 시각에 돌려도 한쪽이 판정된다. `308` 은 시험이 휴무일을 심어 **언제나** 판정된다 (§33.2a) | G09 |
 | `VER` | `001`~`007` | 7 | `deploy/09_Verify.sql` | 배포 직후 객체 수량 자체검증 | G03 |
 | `RBD` | `001`~`010` | 10 | `tests/14_Clean_Rebuild_Verify.sql` | Clean Rebuild 재현성 (§40) | G14 |
-| **합계** | | **248** | | | |
+| **합계** | | **249** | | | |
 
 `[I]` 범위가 전부 **연속**이다. 결번이 생기면 그 자체가 결함이다 — 계획에서 ID를 폐기할 때는 이 표에서도 지우고 뒤를 당기지 말고, 폐기 사유를 §45.4에 적는다.
 

@@ -16,7 +16,7 @@ Parameter 11 / 11 / 2                      -> 12 / 12 / 3. R3 이 Write SP 8개�
 # Stage 7 — 예약 Write Stored Procedure 3개 · Slot 잠금
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
-**Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md`
+**Spec:** `../06_DB_Transaction_Security_Seed.md`
 **Tasks:** `T25` ~ `T27`
 
 생성 파일은 `deploy/06_Procedures_Reservation_Write.sql`, 테스트는 `tests/06_Reservation_Write_Tests.sql` 하나다. 세 SP 모두 index 문서의 Write SP 공통 Template을 사용한다.

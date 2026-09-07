@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..', 'docs');
-const SPEC = path.join(ROOT, 'phase4', '06_DB_Transaction_Security_Seed_CANDIDATE.md');
+const SPEC = path.join(ROOT, 'phase4', '06_DB_Transaction_Security_Seed.md');
 const PLANDIR = path.join(ROOT, 'phase4', 'plans');
 const BASE04 = path.join(ROOT, 'baseline', '04_DB_Design.md');
 const BASE05 = path.join(ROOT, 'baseline', '05_DB_Rule_SP_Contract.md');

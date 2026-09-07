@@ -1460,7 +1460,7 @@ docs/baseline/02_Function_Definition.xlsx  10 곳
 
 `[!]` 그래도 §13.1a 의 *"열리지 않는다"* 목록에는 **`SELECT SP 7개의 Parameter 이름·타입·NULL`** 이라고 정확히 적는다. d0.1 은 *"SELECT SP 7개의 Parameter"* 라고만 적어 허용값까지 닫힌 것처럼 읽혔다.
 
-## 13.2 `06_DB_Transaction_Security_Seed_CANDIDATE.md`
+## 13.2 `06_DB_Transaction_Security_Seed.md`
 
 | 위치 | 현행 | R3 |
 |---|---|---|

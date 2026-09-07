@@ -4,7 +4,7 @@
 # Stage 5 — SELECT Stored Procedure 8개 · Result Set 계약 검증기
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
-**Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md`
+**Spec:** `../06_DB_Transaction_Security_Seed.md`
 **Tasks:** `T15` ~ `T22` · `T22b`
 
 ## 공통 규칙 (T15~T21 전부에 적용)

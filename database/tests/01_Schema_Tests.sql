@@ -252,6 +252,50 @@ BEGIN
     SET @Fail += 1;
 END
 
+-- SCH-019 SP 별 Parameter 개수 전건 일치 (합계 99)
+-- [X] G09 는 "Parameter 99 EXCEPT 양방향" 을 요구하는데 그것을 판정하는 검사가 없었다.
+--     합계만 세면 한 SP 에서 늘고 다른 SP 에서 줄어든 드리프트를 놓친다 — SP 별로 짝을 맞춘다.
+--     기대값 출처는 06 §18 SP Matrix 다 (Write 14/14/12/12/3/3/10/3 + SELECT 8종).
+DECLARE @ExpP TABLE (SpName SYSNAME PRIMARY KEY, N INT);
+INSERT INTO @ExpP (SpName, N) VALUES
+   (N'USP_HC_SELECT_공통업무상태',    0)
+ , (N'USP_HC_SELECT_수검자목록',      5)
+ , (N'USP_HC_SELECT_수검자상세',      1)
+ , (N'USP_HC_SELECT_수검자유효업무',  1)
+ , (N'USP_HC_SELECT_예약가능정보',   13)
+ , (N'USP_HC_SELECT_예약접수목록',    5)
+ , (N'USP_HC_SELECT_예약접수상세',    1)
+ , (N'USP_HC_SELECT_변경이력',        2)
+ , (N'USP_HC_INSERT_수검자',         14)
+ , (N'USP_HC_UPDATE_수검자정보',     14)
+ , (N'USP_HC_INSERT_예약',           12)
+ , (N'USP_HC_UPDATE_예약변경',       12)
+ , (N'USP_HC_UPDATE_예약취소',        3)
+ , (N'USP_HC_UPDATE_접수완료',        3)
+ , (N'USP_HC_UPDATE_접수추가검사',   10)
+ , (N'USP_HC_UPDATE_접수취소',        3);
+
+DECLARE @ActP TABLE (SpName SYSNAME PRIMARY KEY, N INT);
+INSERT INTO @ActP (SpName, N)
+SELECT o.name, COUNT(pa.parameter_id)
+  FROM sys.procedures o
+  LEFT JOIN sys.parameters pa ON pa.object_id = o.object_id
+ WHERE o.name LIKE 'USP[_]HC[_]%'
+ GROUP BY o.name;
+
+DECLARE @SumP INT = (SELECT SUM(N) FROM @ActP);
+IF NOT EXISTS (SELECT SpName, N FROM @ExpP EXCEPT SELECT SpName, N FROM @ActP)
+   AND NOT EXISTS (SELECT SpName, N FROM @ActP EXCEPT SELECT SpName, N FROM @ExpP)
+   AND @SumP = 99
+    PRINT 'PASS SCH-019 SP 별 Parameter 전건 일치 (합계 99)';
+ELSE
+BEGIN
+    PRINT 'FAIL SCH-019 Parameter 불일치 (합계 ' + CONVERT(VARCHAR(5), ISNULL(@SumP, -1)) + ')';
+    SELECT '기대에만 있음' AS Side, * FROM (SELECT SpName, N FROM @ExpP EXCEPT SELECT SpName, N FROM @ActP) a;
+    SELECT '실측에만 있음' AS Side, * FROM (SELECT SpName, N FROM @ActP EXCEPT SELECT SpName, N FROM @ExpP) b;
+    SET @Fail += 1;
+END
+
 IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
 PRINT '=== 01_Schema_Tests 완료 ===';
 GO

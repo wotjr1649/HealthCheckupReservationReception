@@ -5,7 +5,7 @@
 # Stage 0~2 — Repository 보호 · Preflight · Physical Schema
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
-**Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md`
+**Spec:** `../06_DB_Transaction_Security_Seed.md`
 **Tasks:** `T01` ~ `T07`
 
 작업 디렉터리는 항상 `D:\AIDEV\HealthCheckupReservationReception\database` 다. 아래의 모든 상대경로는 이 디렉터리 기준이다.
@@ -1346,6 +1346,31 @@ IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
 PRINT '=== 01_Schema_Tests 완료 ===';
 GO
 ```
+
+`[X 실측 2026-09-07]` **`SCH-019` 신설 — `G09` 의 "Parameter 99 EXCEPT 양방향" 을 판정하는 검사가 없었다.**
+`T37` 에서 §42 를 채우다 발견했다. 합계만 세면 한 SP 에서 늘고 다른 SP 에서 줄어든 드리프트를 놓치므로
+**SP 별로 짝을 맞춘다.** 기대값 출처는 `06` §18 SP Matrix 다.
+
+```text
+SELECT  공통업무상태 0 · 수검자목록 5 · 수검자상세 1 · 수검자유효업무 1
+        예약가능정보 13 · 예약접수목록 5 · 예약접수상세 1 · 변경이력 2
+Write   INSERT_수검자 14 · UPDATE_수검자정보 14 · INSERT_예약 12 · UPDATE_예약변경 12
+        UPDATE_예약취소 3 · UPDATE_접수완료 3 · UPDATE_접수추가검사 10 · UPDATE_접수취소 3
+합계    99
+```
+
+```sql
+-- SCH-019 SP 별 Parameter 개수 전건 EXCEPT 양방향 + 합계 99  (06 §18)
+DECLARE @ExpP TABLE (SpName SYSNAME PRIMARY KEY, N INT);   -- 위 표를 그대로 적는다
+DECLARE @ActP TABLE (SpName SYSNAME PRIMARY KEY, N INT);
+INSERT INTO @ActP (SpName, N)
+SELECT o.name, COUNT(pa.parameter_id) FROM sys.procedures o
+  LEFT JOIN sys.parameters pa ON pa.object_id = o.object_id
+ WHERE o.name LIKE 'USP[_]HC[_]%' GROUP BY o.name;
+-- EXCEPT 양방향 + SUM = 99 일 때만 PASS
+```
+
+`[실측]` `PASS SCH-019 SP 별 Parameter 전건 일치 (합계 99)`
 
 `[X]` **초안 오류**: `SCH-015` 는 55개 컬럼 중 **2개**만 `EXISTS` 로 확인했고 `SCH-016` 은 `COUNT(*) >= 20` 이었다. 제약 하나가 사라져도 PASS 하고 제약 **이름**은 대조하지 않았다. 스펙 §34가 "전건 일치"를 약속했으므로 개수 비교를 증거로 쓸 수 없다. **`EXCEPT` 양방향 + 불일치 시 차집합 출력**으로 교체한다.
 

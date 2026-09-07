@@ -47,7 +47,7 @@ docs/baseline/output/**      쓴다 · 커밋하지 않는다 (ROOT .gitignore �
 ## 4. Source of Truth 우선순위
 
 ```text
-00 → 01 → 02 → 03 → 04 → 05 → 06 CANDIDATE → SQL
+00 → 01 → 02 → 03 → 04 → 05 → 06 → SQL
 ```
 
 앞 문서가 뒤 문서를 이긴다. SQL 과 기준선이 어긋나면 SQL 을 고친다.

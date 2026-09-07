@@ -1,7 +1,7 @@
 # Stage 10 ― 검사구성 흡수 · 검사항목 삭제 · 변경이력 EAV 전환
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
-**Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md`
+**Spec:** `../06_DB_Transaction_Security_Seed.md`
 **Tasks:** `T50` ~ `T57`
 **전제:** `plans/09` `T40`~`T46` 완료(컬럼명 한글화). `plans/04`~`08` 미착수.
 

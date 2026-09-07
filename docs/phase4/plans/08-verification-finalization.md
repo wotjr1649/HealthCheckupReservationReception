@@ -29,7 +29,7 @@ Code 판정은 `tests/contract/OFF-308-01`·`OFF-309-01`·`OFF-309-02` 가 한�
 # Stage 10~12 — Rollback · Concurrency · Clean Rebuild · 문서 최종화
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
-**Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md` §37·§38·§40·§41·§42
+**Spec:** `../06_DB_Transaction_Security_Seed.md` §37·§38·§40·§41·§42
 **Tasks:** `T33` ~ `T37`
 
 ---
@@ -981,7 +981,7 @@ Expected: 전부 `PASS`, exit 0.
 
 **금지사항:** 실행하지 않은 검증을 `PASS` 로 기록하지 않는다. 실패한 항목을 숨기지 않는다.
 
-- [ ] **Step 1: 전체 회귀 실행**
+- [x] **Step 1: 전체 회귀 실행**
 
 ```bash
 ./scripts/test.sh > artifacts/logs/full_test_run.log 2>&1; RC=$?; cat artifacts/logs/full_test_run.log
@@ -1110,9 +1110,16 @@ Expected: `PASS G13-b` 2줄. `(c)` 는 보고서에 **`REVIEWED`** 로만 적는
 `[실측 2026-09-07]` `PASS G13-b 허용목록 밖 T-SQL 0건 (.sql 137 개 · 주석 제외)` ·
 `PASS G13-b2 CREATE OR ALTER 는 배포 원본 안에만 있다` · exit 0.
 
-- [ ] **Step 5: `06_DB_Transaction_Security_Seed.md` FINAL 후보 작성**
+- [x] **Step 5: `06_DB_Transaction_Security_Seed.md` FINAL 후보 작성**
 
-`06_DB_Transaction_Security_Seed_CANDIDATE.md` 를 기반으로 다음을 갱신한다.
+`[X 실측]` **"Create" 가 아니라 `git mv` 다.** 문서 자신이 §45 에서 *"실제 배포·테스트 완료 후에만
+`06_DB_Transaction_Security_Seed.md` 로 **최종화한다**"* 고 적어 두었다. 2600줄을 복사하면 두 사본이
+갈라진다 — CANDIDATE 를 rename 하고 살아 있는 참조 15개를 따라 고쳤다(`tools/verify-docs.js` 의
+`SPEC` 상수 포함). `docs/prompts/*` 는 그때의 기록이므로 손대지 않았다.
+
+`[실측]` 버전을 v1.0 으로 올리자 `V06` 이 계획 색인의 `v0.4, CANDIDATE` 선언을 즉시 잡아냈다.
+
+`06_DB_Transaction_Security_Seed.md` 를 기반으로 다음을 갱신한다.
 
 ```text
 - 상태          CANDIDATE → FINAL / GO (실행 검증 완료)
@@ -1125,7 +1132,7 @@ Expected: `PASS G13-b` 2줄. `(c)` 는 보고서에 **`REVIEWED`** 로만 적는
   (반대로 문서에 맞추려고 SQL 을 바꾸지 않는다 — 계약 위반이 아니면 실제 구현이 기준이다)
 ```
 
-- [ ] **Step 6: `phase4-report.md` 작성**
+- [x] **Step 6: `phase4-report.md` 작성**
 
 ```text
 1. 실행 요약        수행 Task 수 / 총 테스트 건수 / PASS·FAIL·SKIP

@@ -1,7 +1,7 @@
 # Stage 3~4 — Master Seed · Test Fixture · Rule TVF 4개
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
-**Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md`
+**Spec:** `../06_DB_Transaction_Security_Seed.md`
 **Tasks:** `T08` ~ `T14`, `T14b`
 
 ---

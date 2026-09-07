@@ -1,7 +1,7 @@
 # Stage 9 ― 컬럼명 한글화 · `CelNumberS` 계산열 전환
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
-**Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md`
+**Spec:** `../06_DB_Transaction_Security_Seed.md`
 **Tasks:** `T40` ~ `T48`
 **전제:** `plans/01`~`03` 완료 (`phase4-r3-t22-complete`). `plans/04`~`08` 미착수.
 

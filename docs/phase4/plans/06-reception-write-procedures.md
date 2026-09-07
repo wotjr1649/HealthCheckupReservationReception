@@ -21,7 +21,7 @@ Parameter 2 / 9 / 2                                    -> 3 / 10 / 3. R3 이 Wri
 # Stage 8 — 접수 Write Stored Procedure 3개
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
-**Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md`
+**Spec:** `../06_DB_Transaction_Security_Seed.md`
 **Tasks:** `T28` ~ `T30`
 
 생성 파일은 `deploy/07_Procedures_Reception_Write.sql`, 테스트는 `tests/07_Reception_Write_Tests.sql` 하나다.

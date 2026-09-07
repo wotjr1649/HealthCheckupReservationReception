@@ -1,7 +1,7 @@
 # Stage 9 — Security
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
-**Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md` §32 · §39
+**Spec:** `../06_DB_Transaction_Security_Seed.md` §32 · §39
 **Tasks:** `T31` ~ `T32`
 
 ---

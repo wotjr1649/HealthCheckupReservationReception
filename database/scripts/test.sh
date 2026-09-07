@@ -73,6 +73,20 @@ fi
 # 항상 FAIL 했다 — 반복 가능한 게이트로 옮겼다 (스펙 §9.2 · plans/08 T37 Step 4).
 ./scripts/verify-tsql-allowlist.sh > /dev/null || { ./scripts/verify-tsql-allowlist.sh; FAILED=1; }
 
+# 기준선·WinForms·스키마 대조 (G00·G01·G05).
+# [X] 셋 다 회귀 밖에 있었다. §42 를 채우려고 손으로 돌린 증거는 다음 회차에 썩는다 —
+#     G13-b 와 같은 실패 방식이다. 회귀가 매번 판정하게 한다.
+# [X] 결과와 무관하게 PASS 를 찍지 않는다. 셋 다 성공했을 때만 한 줄을 남긴다.
+G0=0
+./scripts/verify-baseline.sh           > /dev/null || { ./scripts/verify-baseline.sh;           G0=1; }
+./scripts/verify-winforms-unchanged.sh > /dev/null || { ./scripts/verify-winforms-unchanged.sh; G0=1; }
+./scripts/verify-schema-doc.sh         > /dev/null || { ./scripts/verify-schema-doc.sh;         G0=1; }
+if [ "$G0" -eq 0 ]; then
+  echo "PASS G00 기준선 6/6 · G01 WinForms 변경 0건 · G05 스키마↔04 양방향 대조 (상세는 각 보고서)"
+else
+  echo "FAIL G00/G01/G05 중 하나 이상 실패 — 위 출력을 보라"; FAILED=1
+fi
+
 # 문서 정합성 게이트 (스펙 §45.3)
 node tools/verify-docs.js || FAILED=1
 

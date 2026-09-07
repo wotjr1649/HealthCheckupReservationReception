@@ -8,7 +8,7 @@
 
 **Tech Stack:** Microsoft SQL Server 2025 Express (`.\SQLEXPRESS`, `17.0.1125.2`) / T-SQL / `sqlcmd 15.0.1300.359` / Git Bash / `node v24.19.0` (표준 라이브러리만) / `git 2.55.0`
 
-**Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md` (v0.4, `CANDIDATE / IMPLEMENTATION READY`)
+**Spec:** `../06_DB_Transaction_Security_Seed.md` (v1.0, `FINAL / GO`)
 
 **Test ID 는 이 계획에 없다.** 스펙 **§45.2 카탈로그**가 유일한 출처다(242건). 완료조건은 건수를 다시 적지 않고 *"§45.2 의 `SEL` 전건 PASS"* 로 쓴다. `node tools/verify-docs.js` 가 카탈로그↔배치를 양방향 대조한다(§45.3).
 
