@@ -162,6 +162,31 @@ Expected: exit 0, 8건 PASS.
 
 **금지사항:** Extended Events 세션이나 trace flag 를 만들지 않는다. `WAITFOR DELAY` 로 경합을 흉내내지 않는다 — 두 세션이 **같은 절대시각**에 진입해야 한다.
 
+`[R3]` **착수 차단 결함 4건 (2026-09-07 점검).**
+
+```text
+1  $(LockResource)          Step 3 의 선점 코드가 이 sqlcmd 변수를 쓰는데 concurrency-test.sh 가
+                            넘기지 않는다. 정의되지 않은 변수는 sqlcmd 가 즉시 실패시킨다.
+                            -> 자원명은 시나리오 번호로 **세션 스크립트 안에서** 만든다.
+                               CON-001 은 HASHBYTES 로 SSN 해시까지 그 안에서 계산한다.
+2  EXEC 예시의 인자 개수      R3 이 Write SP 8개에 @OperatorName 을 더했다. Step 2 의 예시는
+                            그 전 형태라 그대로 쓰면 Msg 201 이다. 12/12/3/3/10/3/14/14 개다.
+3  CON-004 판정식            "둘 다 성공 금지" 는 정상 직렬 결과를 FAIL 시킨다. 스펙 §38.6 으로 교체.
+4  CON-005·CON-008 시각      접수완료 성공이 필요해 접수마감 전이어야 한다. PM Slot 으로 구성해
+                            11:00~15:50 창을 쓴다 (스펙 §38.7). AM 은 09:00~10:50 뿐이다.
+```
+
+`[R3]` **`CON-006` 의 Session A 는 반드시 *실제 변경* 이어야 한다.** 동일 AEX 집합을 주면 A 가
+No-op(`Code=1`)으로 끝나 `RowVersion` 이 그대로 남고, B 도 No-op 이 되어 **`601` 이 영영 나오지 않는다.**
+A 는 AEX 를 실제로 바꾸고 B 는 그 전에 읽은(이제 stale 인) `RowVersion` 으로 또 다른 변경을 요청한다.
+
+`[R3]` **`CON-001` 은 `Msg 2627` 0건을 함께 본다.** `UQ_수검자_SOCIAL_NUMBER` 가 applock 이 없어도
+두 번째 INSERT 를 막아 주므로 "행 1건" 만으로는 잠금이 동작했는지 알 수 없다. 스펙 §20 은 `2627` 을
+"applock 으로 사전 직렬화했으므로 발생 시 설계 위반" 으로 못박았다.
+
+`[R3]` **`CON-007` 은 `rc=1` 을 함께 본다.** 경합이 실제로 일어나지 않으면 "교착 0건" 은 공허하다 —
+자원 정렬 획득을 통째로 지워도 우연한 직렬 실행이면 PASS 한다.
+
 - [ ] **Step 1: `scripts/concurrency-test.sh` 작성**
 
 ```bash
@@ -237,13 +262,15 @@ PRINT 'INFO A 진입 ' + CONVERT(VARCHAR(30), SYSDATETIME(), 121);
 
 IF @Scen = 1
 BEGIN
+    -- R3: @HepatitisBExcluded · @ConfirmSimilarPatient · @OperatorName 을 포함해 14개다.
     EXEC [dbo].[USP_HC_INSERT_수검자] 1, NULL, N'동시등록', '9505051000019',
-         NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0;
+         NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, N'CONC-A';
 END
 ELSE IF @Scen = 2
 BEGIN
     DECLARE @P BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='CONC1');   -- 09_Concurrency_Setup.sql 이 심는 전용 수검자
-    EXEC [dbo].[USP_HC_INSERT_예약] @P, 'NORMAL', '2026-11-16', 'AM', 0,0,0,0,0,0,0;
+    -- R3: @OperatorName 을 포함해 12개다.
+    EXEC [dbo].[USP_HC_INSERT_예약] @P, 'NORMAL', '2026-11-16', 'AM', 0,0,0,0,0,0,0, N'CONC-A';
 END
 -- … 시나리오 3~7
 GO
@@ -258,11 +285,11 @@ GO
 | 1 | `CON-001` | 동일 SocialNumber 동시등록 | `INSERT_수검자` | 동일 SSN | `SELECT COUNT(*) FROM 수검자 WHERE SocialNumber=…` = **1** |
 | 2 | `CON-002` | 19/20 Slot 동시 신규예약 | `INSERT_예약` | 다른 Patient, 같은 Slot | 해당 Slot `RSV+RCP` = **20** |
 | 3 | `CON-003` | 동일 Patient 다른 Slot 동시예약 | `INSERT_예약`(AM) | `INSERT_예약`(PM) | 해당 Patient 유효업무 = **1** |
-| 4 | `CON-004` | 주민번호 변경 vs 신규예약 | `UPDATE_수검자정보`(SSN 변경) | `INSERT_예약`(동일 Patient) | (SSN 변경됨 ∧ Work 0건) 또는 (SSN 불변 ∧ Work 1건). **둘 다 성공 금지** |
-| 5 | `CON-005` | 접수완료 vs 예약취소 | `UPDATE_접수완료` | `UPDATE_예약취소` | Work `StatusCode` ∈ {`RCP`,`CNC`} 이고 **정확히 하나만** 전이 |
+| 4 | `CON-004` | 주민번호 변경 vs 신규예약 | `UPDATE_수검자정보`(만 46 -> 만 56 이 되는 SSN) | `INSERT_예약`(동일 Patient, 미래 예약일) | 저장된 `국가검사항목` 코드 집합 = 최종 수검자 상태 기준 `UFN_HC_국가검사구성` 결과 (`EXCEPT` 양방향 0). 스펙 §38.6 |
+| 5 | `CON-005` | 접수완료 vs 예약취소 (**오늘 PM Slot · 16:00 전**) | `UPDATE_접수완료` | `UPDATE_예약취소` | Work `상태코드` ∈ {`RCP`,`CNC`} 이고 **정확히 하나만** 전이. 패자 로그에 `502` |
 | 6 | `CON-006` | 같은 Work AEX 동시변경 | `UPDATE_접수추가검사` | 동일 stale `RowVersion` | 로그 중 하나에 **`601`** |
 | 7 | `CON-007` | 예약 교차이동 | `UPDATE_예약변경` S1→S2 | `UPDATE_예약변경` S2→S1 | **`Msg 1205` 및 `Msg 50002` 각 0건** |
-| **8** | **`CON-008`** | **접수완료 동시 실행** (스펙 §24.2·§38.5) | `INSERT_예약`(오늘 AM, `WALKIN`) | `UPDATE_접수완료`(같은 Slot 의 RSV 하나) | 해당 Slot `RSV+RCP` = **정확히 20**. 21이면 §24.2 결함 재발 |
+| **8** | **`CON-008`** | **접수완료 동시 실행** (스펙 §24.2·§38.5) **오늘 PM Slot · 16:00 전** | `INSERT_예약`(오늘 PM, `WALKIN`) | `UPDATE_접수완료`(같은 Slot 의 RSV 하나) | 해당 Slot `RSV+RCP` = **정확히 20**. 21이면 §24.2 결함 재발 |
 
 `[I]` **`09_Concurrency_Setup.sql` 은 유효업무 없는 전용 수검자 `CONC1`·`CONC2` 를 심는다.** `F001`~`F019` 는 이미 유효업무를 가져 `306` 이 나오고, `T001`~`T017` 은 Rule 테스트가 쓰므로 오염시키면 안 된다. 주민번호는 `T10` 의 무효화 식으로 계산한 값을 쓴다.
 
@@ -283,7 +310,20 @@ WAITFOR TIME '$(BarrierTime)';
 BEGIN TRAN;
     -- 대상 자원을 SP 보다 먼저 잡아 B 가 반드시 대기하게 만든다 (rc=1 을 결정적으로 만든다)
     DECLARE @rc INT;
-    EXEC @rc = sp_getapplock @Resource = '$(LockResource)', @LockMode = 'Exclusive',
+    -- [X] $(LockResource) 를 쓰지 않는다. concurrency-test.sh 가 그 변수를 넘기지 않아
+    --     sqlcmd 가 정의되지 않은 변수로 즉시 실패한다. 시나리오 번호로 여기서 만든다.
+    DECLARE @Res NVARCHAR(255) =
+        CASE @Scen
+            WHEN 1 THEN N'HC|SSN|' + CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @Ssn), 2)
+            WHEN 2 THEN N'HC|SLOT|20261116|AM'
+            WHEN 3 THEN N'HC|PAT|' + CONVERT(NVARCHAR(20), @P)
+            WHEN 4 THEN N'HC|PAT|' + CONVERT(NVARCHAR(20), @P)
+            WHEN 5 THEN N'HC|WORK|' + CONVERT(NVARCHAR(20), @W)
+            WHEN 6 THEN N'HC|WORK|' + CONVERT(NVARCHAR(20), @W)
+            WHEN 7 THEN N'HC|SLOT|' + CONVERT(CHAR(8), @D, 112) + N'|' + @S
+            WHEN 8 THEN N'HC|SLOT|' + CONVERT(CHAR(8), CONVERT(DATE, SYSDATETIME()), 112) + N'|PM'
+        END;
+    EXEC @rc = sp_getapplock @Resource = @Res, @LockMode = 'Exclusive',
                              @LockOwner = 'Transaction', @LockTimeout = 5000;
     PRINT 'INFO applock rc=' + CONVERT(VARCHAR(4), @rc);
     WAITFOR DELAY '00:00:03';        -- B 가 이 자원을 기다리는 구간
@@ -352,7 +392,7 @@ git commit -m "test(phase4): 동시성 시나리오 8종 및 barrier 실행 스�
 
 **Rollback/Cleanup:** 각 시나리오가 rebuild로 시작하므로 cleanup이 필요 없다.
 
-**완료조건:** 스펙 §45.2 의 `CON` 전건(`CON-001`~`CON-008`) PASS + **`applock rc=1` 이 최소 1건** + `Msg 1205`·`Msg 50002` **각 0건** (스펙 §42 G11). 시나리오별 로그 8세트가 `artifacts/logs/` 에 남아 있어야 한다.
+**완료조건:** 스펙 §45.2 의 `CON` 전건(`CON-001`~`CON-008`) PASS + `CON-001`~`005`·`007` 각각에서 **`applock rc=1` 최소 1건** + `Msg 1205`·`Msg 50002`·`Msg 2627`·`Msg 50001` **각 0건** (스펙 §38.4·§42 G11). 시나리오별 로그 8세트가 `artifacts/logs/conc_${RUN}_${SCEN}_*.log` 로 남아 있어야 한다.
 
 ---
 
