@@ -1,3 +1,10 @@
+`[!]` **이 계획서의 스키마 참조는 `plans/09`·`plans/10` 이 교체했다** ― 컬럼명 한글화,
+검사구성의 `예약접수`·`완료이력` 흡수, `검사항목` 삭제, `변경이력` EAV 전환. 당시 구조는 git 이력에 있다.
+
+`[!]` **`수검자.생년월일`·`성별` 은 그 뒤 `PERSISTED` 계산열이 되었다**(`04` §8.1.2). 아래 §공통 블록은
+후보검색용 파생을 위해 그대로 필요하지만, `INSERT`/`UPDATE` 의 컬럼 목록에서는 두 컬럼을 빼야 한다 ―
+명시하면 `Msg 271` 이다. 구현의 기준은 이 계획서의 SQL 본문이 아니라 `05` 계약과 `06` 스펙이다.
+
 # Stage 6 — Patient Write Stored Procedure 2개
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
@@ -13,14 +20,16 @@
 ```sql
 -- @SocialNumber 는 이미 정규화(13자리 숫자)되었다고 가정
 DECLARE @C7 CHAR(1) = SUBSTRING(@SocialNumber, 7, 1);
+-- [X] 1800년대(@C7 IN ('9','0')) 분기를 두면 안 된다. CK_수검자_SOCIAL_FORMAT 이 7번째 자리를
+--     1~8 로 묶으므로(04 §8.1.3) SP 가 통과시켜도 저장 단계에서 계산열 NOT NULL 이 Msg 515 를
+--     내며 죽는다. ResultCode 가 아니라 예외로 튀어 RS0 계약이 깨진다. 여기서 101 로 거부한다.
 DECLARE @Century VARCHAR(2) =
-    CASE WHEN @C7 IN ('9','0')         THEN '18'
-         WHEN @C7 IN ('1','2','5','6') THEN '19'
+    CASE WHEN @C7 IN ('1','2','5','6') THEN '19'
          WHEN @C7 IN ('3','4','7','8') THEN '20'
          ELSE NULL END;
 DECLARE @Gender CHAR(1) =
-    CASE WHEN @C7 IN ('9','1','3','5','7') THEN 'M'
-         WHEN @C7 IN ('0','2','4','6','8') THEN 'F'
+    CASE WHEN @C7 IN ('1','3','5','7') THEN 'M'
+         WHEN @C7 IN ('2','4','6','8') THEN 'F'
          ELSE NULL END;
 DECLARE @Birthday VARCHAR(8) = @Century + SUBSTRING(@SocialNumber, 1, 6);
 
@@ -31,7 +40,11 @@ BEGIN SET @Code = 101; SET @Field = 'SocialNumber'; END
 ```
 
 - 체크디지트와 실제 행정번호 존재 여부는 **검증하지 않는다** (`00` §2.1, `04` §3.5).
-- UI가 계산한 Birthday/Gender를 Parameter로 받지 않는다. DB가 산출한 값이 최종이다.
+- UI가 계산한 Birthday/Gender를 Parameter로 받지 않는다.
+- `[!]` **이 블록의 `@Birthday` 는 저장용이 아니라 후보검색용이다.** *"이름 + 산출 Birthday 동일 후보"* 판정은
+  아직 존재하지 않는 행의 생년월일을 필요로 하므로 SP 가 변수로 파생한다. **저장값은 계산열이 만든다** ―
+  `INSERT`/`UPDATE` 컬럼 목록에 `[생년월일]`·`[성별]` 을 넣지 않는다(`Msg 271`).
+- `@Gender` 는 검증용이다. 저장에도 검색에도 쓰지 않는다.
 
 ---
 
@@ -518,7 +531,7 @@ IF @NewEdit <= @OldEdit SET @NewEdit = DATEADD(MILLISECOND, 4, @OldEdit);
 
 UPDATE [dbo].[수검자]
    SET [차트번호] = @ChartNo, [성명] = @Name, [주민번호] = @SocialNumber
-     , [생년월일] = @Birthday, [성별] = @Gender
+     -- [생년월일]·[성별] 은 계산열이라 여기에 쓸 수 없다. @SocialNumber 를 바꾸면 자동으로 다시 유도된다.
      , [휴대전화] = @MobilePhone
      , [전화번호] = @Phone
      , [이메일] = @Email, [우편번호] = @Zipcode, [주소] = @Address
