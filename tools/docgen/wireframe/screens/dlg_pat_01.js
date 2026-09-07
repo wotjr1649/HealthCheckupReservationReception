@@ -6,7 +6,7 @@ const K = require('../kit');
 
 function draw(c) {
   const m = K.modal(c, {
-    w: 6.20, h: 5.24, title: '수검자 신규등록  /  정보수정',
+    w: 6.20, h: 5.54, title: '수검자 신규등록  /  정보수정',
     buttons: [{ t: '저장', primary: true }, { t: '닫기' }],
     parent: '수검자 관리 (WF-PAT-01)  ·  수검자 선택 (DLG-PAT-02)',
   });
@@ -38,6 +38,11 @@ function draw(c) {
   sect('주소');
   row('우편번호 / 주소'); row('상세주소');
 
+  // [검사 제외] — 원문 §6.1 레이아웃은 영역 라벨과 체크박스를 한 줄에 둔다.
+  c.text(i.x, y, 1.30, K.FIELD_H, '[ 검사 제외 ]', { size: S.TEXT.small, align: 'left', bold: true, color: S.C.hint });
+  c.box(i.x + 1.30, y, 1.60, K.FIELD_H, '☐  B형간염 검사 제외', { size: S.TEXT.gridData, color: S.C.data });
+  const hbxY = y; y += 0.285;
+
   sect('메모');
   const memoH = Math.max(0.32, i.y + i.h - y - 0.02);
   c.rect(i.x, y, i.w, memoH, { stroke: S.C.ink });
@@ -47,7 +52,8 @@ function draw(c) {
   c.markLeft(i.x + 1.30, nameY, K.FIELD_H, '3');
   c.markLeft(i.x + 1.30, rrnY, K.FIELD_H, '4');
   c.markLeft(i.x + 1.30, birY, 0.60, '5');
-  c.markLeft(m.buttons[0].x, m.buttons[0].y, m.buttons[0].h, '6');
+  c.markLeft(i.x + 1.30, hbxY, K.FIELD_H, '6');
+  c.markLeft(m.buttons[0].x, m.buttons[0].y, m.buttons[0].h, '7');
 }
 
 const desc = [
@@ -58,8 +64,11 @@ const desc = [
   { n: '3', text: '이름·주민등록번호가 필수. 미입력이면 저장 비활성 (EP-04)' },
   { n: '4', text: '전체값 표시. `-` 제거 후 숫자 13자리로 정규화하여 저장 (§6.2)' },
   { n: '5', text: '주민등록번호에서 자동 산출. 형식·날짜·파생 실패 시 Clear + 저장 차단' },
-  { n: '6', text: '주민번호·차트번호 고유성은 저장 SP가 최종 재검증한다 (EP-03, EP-05)' },
+  { n: '6', text: '체크 = 제외. 신규 기본값은 해제 (NEX-03)' },
+  { n: '7', text: '주민번호·차트번호 고유성은 저장 SP가 최종 재검증한다 (EP-03, EP-05)' },
   { n: '', text: '주민등록번호 변경은 해당 수검자에게 예약(RSV)·접수완료(RCP) 업무가 하나라도 있으면 차단된다. 차트번호 변경에는 이 조건을 적용하지 않는다 (EP-08).' },
+  { n: '', text: '저장된 예약·접수의 검사구성은 다시 만들지 않는다. 다음 예약부터 적용된다' },
+  { n: '', text: '제외 사유는 입력받지 않는다 (§6.2a)' },
 ];
 
 module.exports = { title: '수검자 등록 · 정보수정', draw, desc };

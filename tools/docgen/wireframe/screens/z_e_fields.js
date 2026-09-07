@@ -17,7 +17,7 @@ const ROWS = [
   ['11', 'Address', '등록/수정, 상세/선택 컬럼', '선택, 미입력 NULL'],
   ['12', 'AddressDetail', '등록/수정, 상세', '선택, 미입력 NULL'],
   ['13', 'Memo', '등록/수정, 상세', '선택, 미입력 NULL'],
-  ['14', 'HepatitisBExcluded', 'UI 미사용', '신규 기본값 0; NEX-03 제외 판정 입력이며 Seed/Test Data로만 설정한다'],
+  ['14', 'HepatitisBExcluded', '등록/수정 Editor', '신규 기본값 0; NEX-03 제외 판정 입력이며 1이 제외다. Grid·조회조건에는 제공하지 않는다 (§6.2a)'],
   ['15', 'CreationDate', '화면 미표시', 'INSERT 시 DB 서버시각'],
   ['16', 'LastEditDate', '화면 미표시', 'INSERT 시 생성시각, UPDATE 성공 시 DB 서버시각; 수정 동시성 기준'],
 ];

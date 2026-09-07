@@ -1,5 +1,5 @@
 'use strict';
-// 화면 흐름도 — 원문 03 §3 Navigation. 12개 화면 전부와 전달키(PatientId / WorkId)를 한 장에.
+// 화면 흐름도 — 원문 03 §3 Navigation. 본문 화면 전부와 전달키(PatientId / WorkId)를 한 장에.
 // 경로는 노드·그룹 박스를 관통하지 않도록 전용 통로(corridor)로만 우회시킨다.
 const S = require('../spec');
 const { F } = require('../canvas');

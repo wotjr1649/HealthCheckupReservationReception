@@ -20,7 +20,7 @@ Node 18+ / `pptxgenjs@4` / `exceljs@4`.
 ```
 node tools/docgen/wireframe/build.js "docs/baseline/output" \
   a0_list,a1_flow,wf_00,wf_pat_01,dlg_pat_02,dlg_pat_01,dlg_pat_03,wf_rsv_01,wf_wrk_01,\
-dlg_rsv_01,cnf_rsv_01,dlg_rcp_01,dlg_rcp_02,cnf_rcp_01,\
+dlg_rsv_01,cnf_rsv_01,dlg_rcp_01,dlg_rcp_02,cnf_rcp_01,dlg_log_01,\
 z_a_rules,z_b_search,z_c_validation,z_d_ribbon,z_e_fields,z_f_impl \
   "03_검진_예약접수_화면설계서.pptx"
 ```
