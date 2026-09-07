@@ -26,7 +26,7 @@
 
 ## 0.1 목적
 
-본 문서는 `04_DB_Design.md`에서 확정한 7개 테이블을 변경하지 않고 다음 구현계약을 확정한다.
+본 문서는 `04_DB_Design.md`에서 확정한 6개 테이블을 변경하지 않고 다음 구현계약을 확정한다.
 
 ```text
 Rule Function 이름·입력·출력·책임
@@ -47,7 +47,7 @@ Phase 4 Transaction·잠금·권한·Seed 구현 인계
 다음은 `04_DB_Design.md` 기준을 그대로 사용한다.
 
 ```text
-물리 테이블 7개와 전체 컬럼
+물리 테이블 6개와 전체 컬럼
 PK / FK / UQ / CK / DF / Sequence
 수검자.SocialNumber = 숫자 13자리 임의 테스트값
 상태코드 RSV / RCP / CNR / CNC
@@ -1053,7 +1053,7 @@ SeatsLeft=MAX(0, 20-CurrentCount)
 | `ExamType` | `VARCHAR(12)` | X |
 | `RuleCode` | `VARCHAR(10)` | X |
 
-실제 저장된 `ExamSourceCode='NEX'`만 반환한다.
+`예약접수.국가검사항목`에 실제로 저장된 코드만 반환한다.
 
 ### RS3 추가검사항목
 
@@ -1063,7 +1063,7 @@ SeatsLeft=MAX(0, 20-CurrentCount)
 | `ExamCode` | `VARCHAR(10)` | X |
 | `ExamName` | `NVARCHAR(100)` | X |
 
-실제 저장된 `ExamSourceCode='AEX'`만 반환한다.
+`예약접수.추가검사항목`에 실제로 저장된 코드만 반환한다.
 
 ### RS4 가능한업무
 
@@ -1186,7 +1186,7 @@ ExtraChanged
 
 `Scope=NONE`은 조회 SP의 정상 결과이므로 `RS0.Success=1`, `RS0.Code=0`으로 반환한다. `Code=1`은 실제 Write SP의 No-op에만 사용한다.
 
-시간대만 변경하는 경우 현재 AEX 코드는 `ExtraChanged` 집합 비교에만 사용한다. TGT/NEX/AEX Rule을 재평가하지 않고 NEX/AEX Detail을 재작성하지 않는다.
+시간대만 변경하는 경우 현재 AEX 코드는 `ExtraChanged` 집합 비교에만 사용한다. TGT/NEX/AEX Rule을 재평가하지 않고 검사구성 두 컬럼을 재조립하지 않는다.
 
 다른 유효업무 조회조건은 다음과 같이 고정한다.
 
@@ -1458,20 +1458,20 @@ C# 전달값: '-'가 제거된 숫자 13자리
 → SP에서 길이·숫자 여부 재검증
 → 6자리 생년월일 실제 날짜 검증
 → 7번째 자리의 출생세기·성별 코드 해석
-→ Birthday(yyyyMMdd) / Gender(M,F) 산출
+→ Birthday(yyyyMMdd) / Gender(M,F) 는 DB 가 유도한다 (04 §8.1.2 계산열)
 ```
 
 | 7번째 자리 | 출생세기 | Gender | UI 표시 |
 |---|---:|:---:|---|
-| `9` | 1800년대 | M | 남 |
-| `0` | 1800년대 | F | 여 |
 | `1`, `5` | 1900년대 | M | 남 |
 | `2`, `6` | 1900년대 | F | 여 |
 | `3`, `7` | 2000년대 | M | 남 |
 | `4`, `8` | 2000년대 | F | 여 |
 
+- `9`·`0`(1800년대생)은 저장하지 않는다. `04` §8.1.3의 `CK_수검자_SOCIAL_FORMAT`이 7번째 자리를 `1`~`8`로 묶는다.
 - 실제 행정번호 존재 여부와 마지막 검증번호 계산은 수행하지 않는다.
-- 위 산출계약은 `INSERT_수검자`와 `UPDATE_수검자정보`에 동일하게 적용한다.
+- SP는 위 코드를 **검증만** 한다. `Birthday`·`Gender` 값 자체는 `04` §8.1.2의 `PERSISTED` 계산열이 만들며
+  `INSERT`/`UPDATE`에 그 두 컬럼을 명시하면 `Msg 271`이다. 이 계약은 `INSERT_수검자`와 `UPDATE_수검자정보`에 동일하게 적용한다.
 
 ### Result Set
 
@@ -1522,7 +1522,7 @@ RS1 Schema:
 - `ConfirmSimilarPatient=1`은 현재 요청의 Name+산출 Birthday+SocialNumber 조합에만 유효하다.
 - C#은 세 값 중 하나가 바뀌면 확인값을 0으로 초기화한다.
 - DB는 주민번호와 차트번호 고유성을 항상 다시 확인한다.
-- UI가 계산한 Birthday/Gender를 입력 Parameter로 받지 않으며 DB가 산출한 값을 저장한다.
+- UI가 계산한 Birthday/Gender를 입력 Parameter로 받지 않으며 계산열이 유도한 값이 유일한 기준이다.
 
 ## 10.2 `[dbo].[USP_HC_UPDATE_수검자정보]`
 
@@ -1587,7 +1587,7 @@ RS1:
 
 - No-op에서는 DB 행을 갱신하지 않고 기존 `LastEditDate`를 반환한다.
 - 주민번호 변경으로 기존 Work의 TGT/NEX/AEX를 자동 재판정하거나 취소하지 않는다.
-- Birthday/Gender는 요청값을 받지 않고 변경된 SocialNumber에서 다시 산출한다.
+- Birthday/Gender는 요청값을 받지 않는다. SocialNumber를 바꾸면 계산열이 자동으로 다시 유도한다.
 
 # 11. 예약 Write SP 계약
 
@@ -1647,7 +1647,7 @@ RS1 Work결과
 → TGT
 → NEX
 → AEX
-→ Work(RSV)+Exam Detail 같은 Transaction 저장
+→ Work(RSV) 1행 저장 — 검사구성이 그 행의 컬럼이다
 ```
 
 저장:
@@ -1702,7 +1702,7 @@ RS1 Work결과
 → 예약일 변경이면 일정·현재 Work 제외 중복(2건 이상 701, 1건 306)·정원·TGT·NEX·AEX 검증
 → 시간대만 변경이면 일정·현재 Work 제외 중복(2건 이상 701, 1건 306)·정원만 검증
 → AEX 변경이면 성별·저장 NEX 중복 검증
-→ Work+영향 Detail 같은 Transaction 저장
+→ Work 1행 UPDATE — 영향 범위가 검사구성 컬럼이면 함께 재조립한다
 ```
 
 ### 변경 Matrix
@@ -1720,7 +1720,7 @@ RS1 Work결과
 ### 시간대만 변경
 
 ```text
-현재 AEX 코드는 변경 여부 집합 비교에만 읽는다. TGT/NEX/AEX Rule 재평가와 NEX/AEX Detail 재작성은 하지 않는다.
+현재 AEX 코드는 변경 여부 집합 비교에만 읽는다. TGT/NEX/AEX Rule 재평가와 검사구성 재조립은 하지 않는다.
 ```
 
 ### AEX 실제 변경
@@ -1775,7 +1775,7 @@ RS1 Work결과
 → RSV→CNR
 ```
 
-- Detail은 삭제하지 않는다.
+- 검사구성 두 컬럼은 지우지 않는다.
 - 예약 마감시각은 취소 가능조건이 아니다.
 - CNR에서 RSV로 복원하지 않는다.
 
@@ -1864,7 +1864,7 @@ RS1 Work결과
 → 실제 변경이면 저장 NEX 무결성과 AEX Master 구성 확인
 → 현재 공통 업무 가능
 → 저장 NEX 기준 AEX 성별·중복 Rule
-→ AEX Detail 변경 + Work LastEditDate 갱신
+→ 추가검사항목 컬럼 변경 + Work LastEditDate 갱신
 ```
 
 No-op에서는 현재 Master 비활성·성별·중복 Rule을 재평가하지 않으며 기존 RowVersion을 유지한다.
@@ -1902,7 +1902,7 @@ RS1 Work결과
 ```
 
 - RSV로 복원하지 않는다.
-- Detail은 보존한다.
+- 검사구성 두 컬럼은 보존한다.
 - 접수 마감시각은 접수취소 가능조건이 아니다.
 
 ---
@@ -1947,11 +1947,11 @@ RS1 Work결과
 |---|---|---|
 | INSERT_수검자 | 수검자 | ChartNo, SocialNumber |
 | UPDATE_수검자정보 | 수검자 | PatientId, 변경 ChartNo/SocialNumber |
-| INSERT_예약 | Work + NEX/AEX Detail | PatientId, 대상 Date+Slot |
-| UPDATE_예약변경 | Work + 영향 Detail | WorkId, PatientId, 기존/신규 Slot |
+| INSERT_예약 | Work 1행 (검사구성 컬럼 포함) | PatientId, 대상 Date+Slot |
+| UPDATE_예약변경 | Work 1행 (검사구성 컬럼 포함) | WorkId, PatientId, 기존/신규 Slot |
 | UPDATE_예약취소 | Work | WorkId |
 | UPDATE_접수완료 | Work | WorkId |
-| UPDATE_접수추가검사 | AEX Detail + Work | WorkId |
+| UPDATE_접수추가검사 | Work 1행 (추가검사항목 컬럼) | WorkId |
 | UPDATE_접수취소 | Work | WorkId |
 
 `변경이력` INSERT는 위 표의 Transaction 대상이 아니다. 항상 `@@TRANCOUNT = 0` 지점에서 자동커밋으로 수행하므로 논리 잠금영역을 넓히지 않고, 실패해도 업무 Transaction을 되돌리지 않는다.

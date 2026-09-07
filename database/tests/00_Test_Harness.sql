@@ -10,8 +10,10 @@ GO
 -- Prefix12 = YYMMDD(6) + 세기·성별(1) + 순번(5)
 -- 정상 체크디지트 = (11 - (가중합 % 11)) % 10   /   무효 체크디지트 = (정상 + 1) % 10
 -- 주민번호를 손으로 계산하지 않는다. 13번째 자리는 SQL 이 만든다. SSN-006 이 무효임을 증명한다.
+-- 생년월일·성별은 계산열이라 INSERT 에 넣을 수 없다 (Msg 271). 주민번호에서 DB 가 유도한다.
+-- 아래 VALUES 의 Birthday·Gender 는 그 유도 결과의 기대값으로 남겨 FIX-DERIVE 가 대조한다.
 INSERT INTO [dbo].[수검자]
-    ([차트번호], [성명], [주민번호], [생년월일], [성별], [휴대전화])
+    ([차트번호], [성명], [주민번호], [휴대전화])
 SELECT
       p.ChartNo
     , p.Name
@@ -24,8 +26,6 @@ SELECT
               + CAST(SUBSTRING(p.Prefix12, 9,1) AS INT)*2 + CAST(SUBSTRING(p.Prefix12,10,1) AS INT)*3
               + CAST(SUBSTRING(p.Prefix12,11,1) AS INT)*4 + CAST(SUBSTRING(p.Prefix12,12,1) AS INT)*5
               ) % 11 ) ) % 10 + 1 ) % 10 ) )   -- 마지막 ) 가 CONVERT(CHAR(1), … 를 닫는다
-    , p.Birthday
-    , p.Gender
     , NULL
 FROM (VALUES
       ('T001', N'테스트일구', '061002300001', '20061002', 'M')
@@ -54,7 +54,7 @@ GO
 -- 2026-11-16 AM 슬롯을 19/20 으로 채우는 데만 19명이 필요하고, F020 은 RWR-012 가
 -- CNR → RSV 로 뒤집어 20/20 을 만들 예비 1명이다.
 -- ROW_NUMBER() OVER (ORDER BY (SELECT 1)) FROM sys.all_objects 를 쓰지 않는다 — n 이 1..20 이라는 보장이 없다.
-INSERT INTO [dbo].[수검자] ([차트번호], [성명], [주민번호], [생년월일], [성별])
+INSERT INTO [dbo].[수검자] ([차트번호], [성명], [주민번호])
 SELECT
       'F' + RIGHT('000' + CONVERT(VARCHAR(3), n.n), 3)
     , N'정원채움' + CONVERT(NVARCHAR(3), n.n)
@@ -67,8 +67,6 @@ SELECT
               + CAST(SUBSTRING(x.Prefix12, 9,1) AS INT)*2 + CAST(SUBSTRING(x.Prefix12,10,1) AS INT)*3
               + CAST(SUBSTRING(x.Prefix12,11,1) AS INT)*4 + CAST(SUBSTRING(x.Prefix12,12,1) AS INT)*5
               ) % 11 ) ) % 10 + 1 ) % 10 ) )   -- 마지막 ) 가 CONVERT(CHAR(1), … 를 닫는다
-    , '19800101'
-    , 'M'
 FROM (VALUES (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),
              (11),(12),(13),(14),(15),(16),(17),(18),(19),
              (20)) n(n)
@@ -176,9 +174,19 @@ SELECT p.[수검자ID], '2026-11-17', 'AM', 'RSV', @Basic, NULL FROM [dbo].[수�
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드], [국가검사항목], [추가검사항목])
 SELECT p.[수검자ID], '2026-11-18', 'PM', 'RSV', @Basic, NULL FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T012';
 
--- CORRUPT-2: 저장 NEX 가 빈 Work  → 701. 빈 문자열이 손상의 유일한 표현이다 (plans/10 §1).
+-- CORRUPT-2: 저장 NEX 가 빈 Work  → 701. 빈 문자열이 손상의 유일한 표현이다 (04 §8.2.2).
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드], [국가검사항목], [추가검사항목])
 SELECT p.[수검자ID], '2026-11-19', 'AM', 'RSV', N'', NULL FROM [dbo].[수검자] p WHERE p.[차트번호] = 'T013';
+GO
+-- FIX-DERIVE  생년월일·성별 계산열이 주민번호에서 기대값을 만들어 내는가 (04 §8.1.2).
+--   19xx/20xx 와 M/F 네 조합을 표본으로 짚는다. 유도가 틀리면 만나이 Rule 이 통째로 흔들린다.
+DECLARE @DFail INT = 0;
+IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [차트번호]='T001' AND [생년월일]='20061002' AND [성별]='M') SET @DFail += 1;
+IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [차트번호]='T005' AND [생년월일]='19981001' AND [성별]='M') SET @DFail += 1;
+IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [차트번호]='T006' AND [생년월일]='19871001' AND [성별]='F') SET @DFail += 1;
+IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [차트번호]='F001' AND [생년월일]='19800101' AND [성별]='M') SET @DFail += 1;
+IF @DFail = 0 PRINT 'PASS FIX-DERIVE 계산열 유도값이 기대 생년월일·성별과 일치';
+ELSE BEGIN PRINT 'FAIL FIX-DERIVE 계산열 유도값 불일치'; THROW 51900, N'계산열 유도값이 기대와 다릅니다.', 1; END
 GO
 PRINT 'PASS FIX-DEPLOY Fixture 배치 완료';
 PRINT '=== 00_Test_Harness 완료 ===';

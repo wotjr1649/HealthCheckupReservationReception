@@ -2,7 +2,7 @@
 
 - **문서명:** `06_DB_Transaction_Security_Seed_CANDIDATE.md`
 - **상태:** `CANDIDATE / IMPLEMENTATION READY` — SQL 실행검증 전이므로 FINAL이 아니다
-- **문서 버전:** v0.4  (v0.3 → R3 재봉인 반영: 테이블 7개 이름 교체 · 상태 4값 · `변경이력` 신설, §44.7)
+- **문서 버전:** v0.4  (v0.3 → R3 재봉인 반영: 테이블 이름 한글 교체 · 검사항목 흡수로 6개 · 상태 4값 · `변경이력` 신설, §44.7)
 - **기준일:** 2026-09-04
 - **기준선 ID:** `HC-RSV-RCP-20260904-R3`
 - **대상 SQL Server:** `.\SQLEXPRESS` — Microsoft SQL Server 2025 Express `17.0.1125.2` (RTM), 로컬 전용
@@ -321,15 +321,16 @@ database/
 ```
 
 - `01_Schema.sql`은 **FK 역순 `DROP IF EXISTS` 후 `CREATE`** 한다. 즉 실행할 때마다 기존 테이블·데이터가 초기화된다.
-- 보존할 운영 데이터가 없으므로 손실이 없고, `IF NOT EXISTS` 가드 보일러플레이트가 전부 사라진다.
+- `[X]` **`변경이력`은 예외다.** 이 문서 초안이 clean-create 의 근거로 든 *"보존할 운영 데이터가 없다"* 가 그 테이블에는 성립하지 않는다. 감사 기록은 배포로 지워지지 않아야 하므로 `DROP` 대상에서 빼고 `IF OBJECT_ID(...) IS NULL` 가드로 만든다(`04` §8.6.3). 물리 테이블 6개 중 유일한 예외이고, 나머지 5개에는 `IF NOT EXISTS` 가드를 두지 않는다.
+- 나머지 다섯 테이블은 보존할 운영 데이터가 없으므로 손실이 없고, 가드 보일러플레이트가 사라진다.
 - Function·Procedure는 `CREATE OR ALTER`이므로 **DB를 초기화하지 않고 `03~07`만 단독 재실행**할 수 있다.
 
 Drop 역순 (생성 순서 `04` §9.2의 역):
 
 ```text
-변경이력 → 완료이력 → 예약접수
-→ 휴무일 → 검사코드 → 수검자
+완료이력 → 예약접수 → 휴무일 → 검사코드 → 수검자
 → SEQ_HC_CHART_NO
+(변경이력은 Drop 하지 않는다)
 ```
 
 ## 8.2 `Rebuild.sql` (진입점 2)
@@ -416,7 +417,7 @@ shell script는 역할에 따라 두 가지를 쓴다.
 ## 9.1 재정의 근거
 
 - `04` §3.9: *"SEQUENCE, TRY_CONVERT, THROW, ROWVERSION 및 filtered index를 사용하므로 **SQL Server 2012 이상을 최소 기준으로 한다**"* — **하한선** 선언이다.
-- `04` §3.9: *"실제 DB Script 작성 전에 서버 버전과 Database Compatibility Level을 **확인하되**, 이 확인은 7개 테이블 논리모델을 변경하는 사유가 아니다"* — 확인을 요구했을 뿐 110 강제를 요구하지 않는다.
+- `04` §3.9: *"실제 DB Script 작성 전에 서버 버전과 Database Compatibility Level을 **확인하되**, 이 확인은 6개 테이블 논리모델을 변경하는 사유가 아니다"* — 확인을 요구했을 뿐 110 강제를 요구하지 않는다.
 - `05` header: *"Microsoft SQL Server 2012 이상"* — 동일.
 - 따라서 SQL Server 2025에서 운영하는 것은 **기준선 위반이 아니다.**
 - Compatibility Level 110 강제와 원안 G13은 **인계 프롬프트가 추가한 조건**이며 00~05에 근거가 없다.
@@ -433,6 +434,7 @@ shell script는 역할에 따라 두 가지를 쓴다.
 | `THROW` | 예상치 못한 오류 전달 |
 | `ROWVERSION` | Work Aggregate 동시성 |
 | Filtered Index | `UX_검사코드_AEX_CODE` |
+| `PERSISTED` 계산열 | `수검자.생년월일`·`수검자.성별` 을 `주민번호` 에서 유도. 세 값의 모순을 표현 불가능하게 만든다 (`04` §8.1.2). 인덱스 키로 쓸 수 있음을 실측 확인 |
 | `sp_getapplock` / `sp_releaseapplock` | 논리 자원 직렬화 |
 | `HASHBYTES('SHA2_256', …)` | 잠금 자원명 마스킹 (SHA2는 2012부터) |
 | `EXCEPT` / `INTERSECT` | AEX·수검자 필드 NULL-safe 집합 비교, 인벤토리 양방향 대조 |
@@ -465,7 +467,7 @@ shell script는 역할에 따라 두 가지를 쓴다.
 
 ## 9.3 별도 lint script 미작성 · G13 증거의 한계 `[D4-004]` `[X 수정]`
 
-규칙이 허용목록이고 대상 객체가 26개(Table 7 + TVF 4 + SP 15)뿐이므로 별도 정적검사 script를 만들지 않는다. 객체 수가 크게 늘거나 다수 인원이 SQL을 추가하게 되면 그때 도입한다.
+규칙이 허용목록이고 대상 객체가 25개(Table 6 + TVF 4 + SP 15)뿐이므로 별도 정적검사 script를 만들지 않는다. 객체 수가 크게 늘거나 다수 인원이 SQL을 추가하게 되면 그때 도입한다.
 
 `[X]` **다만 블랙리스트 `grep` 0건을 "허용목록 준수 PASS"로 승격하지 않는다.** 초안의 `T37` Step 4는 알려진 신기능 문자열 일부만 `grep` 하고 그 결과 0건을 G13 증거로 삼았다. 논리적으로 성립하지 않는다 — grep 목록에 없는 2012 이후 기능은 그대로 통과하고, 주석·문자열 안의 금지 단어는 오탐한다.
 
@@ -513,7 +515,7 @@ Isolation          기본 READ COMMITTED. SET TRANSACTION ISOLATION LEVEL 문을
 
 ---
 
-# 11. 7개 Table 구현 계약 `[B]`
+# 11. 6개 Table 구현 계약 `[B]`
 
 `04` §8의 정의를 그대로 구현한다. 컬럼명·타입·NULL을 **한 글자도 바꾸지 않는다.**
 
@@ -543,60 +545,50 @@ Isolation          기본 READ COMMITTED. SET TRANSACTION ISOLATION LEVEL 문을
 
 | 구분 | 수량 |
 |---|---:|
-| Primary Key | 7 |
-| Foreign Key | 4 (전부 `NO ACTION`) |
+| Primary Key | 6 |
+| Foreign Key | 2 (전부 `NO ACTION`) |
 | 일반 Unique Constraint | 2 |
 | Filtered Unique Index | 1 |
-| 업무/조회 Nonclustered Index | 5 |
+| 업무/조회 Nonclustered Index | 4 |
 | Sequence | 1 |
 | Trigger | **0** |
 | 사용자 정의 Table Type | **0** |
 
-## 12.2 Foreign Key 4개
+## 12.2 Foreign Key 2개
 
 | # | 이름 | 자식 | 부모 |
 |---:|---|---|---|
-| 1 | `FK_예약접수_수검자` | `예약접수.PatientId` | `수검자.PatientId` |
-| 2 | `FK_검사항목_예약접수` | `검사항목.WorkId` | `예약접수.WorkId` |
-| 3 | `FK_검사항목_검사코드` | `검사항목.ExamItemCode` | `검사코드.ExamItemCode` |
-| 4 | `FK_완료이력_수검자` | `완료이력.PatientId` | `수검자.PatientId` |
+| 1 | `FK_예약접수_수검자` | `예약접수.수검자ID` | `수검자.수검자ID` |
+| 2 | `FK_완료이력_수검자` | `완료이력.수검자ID` | `수검자.수검자ID` |
+
+검사구성이 `예약접수`·`완료이력`의 컬럼이 되면서 `검사코드`를 가리키던 FK 2개가 사라졌다 (`04` §9.1).
 
 ## 12.3 Unique 3종
 
 | 구분 | 이름 | 대상 |
 |---|---|---|
-| UQ | `UQ_수검자_CHART_NO` | `ChartNo` |
-| UQ | `UQ_수검자_SOCIAL_NUMBER` | `SocialNumber` |
-| UX | `UX_검사코드_AEX_CODE` | `AdditionalExamCode` `WHERE AdditionalExamCode IS NOT NULL` |
+| UQ | `UQ_수검자_CHART_NO` | `차트번호` |
+| UQ | `UQ_수검자_SOCIAL_NUMBER` | `주민번호` |
+| UX | `UX_검사코드_AEX_CODE` | `추가검사코드` `WHERE 추가검사코드 IS NOT NULL` |
 
-## 12.4 Nonclustered Index 5개
+## 12.4 Nonclustered Index 4개
 
 | 이름 | Key | INCLUDE / Filter |
 |---|---|---|
-| `IX_수검자_NAME_BIRTHDAY` | `Name, Birthday` | `PatientId, ChartNo, Gender, CelNumber` |
-| `IX_수검자_BIRTHDAY` | `Birthday` | `PatientId, ChartNo, Name, Gender, CelNumber` |
-| `IX_수검자_CEL_NUMBER_S` | `CelNumberS` | `PatientId, ChartNo, Name, Birthday, Gender, CelNumber` / `WHERE CelNumberS IS NOT NULL` |
-| `IX_예약접수_SLOT` | `ReservationDate, TimeSlotCode, StatusCode` | `PatientId` |
-| `IX_예약접수_PATIENT_STATE_DATE` | `PatientId, StatusCode, ReservationDate` | `TimeSlotCode` |
+| `IX_수검자_NAME_BIRTHDAY` | `성명, 생년월일` | `수검자ID, 차트번호, 성별, 휴대전화` |
+| `IX_수검자_BIRTHDAY` | `생년월일` | `수검자ID, 차트번호, 성명, 성별, 휴대전화` |
+| `IX_예약접수_SLOT` | `예약일, 시간대코드, 상태코드` | `수검자ID` |
+| `IX_예약접수_PATIENT_STATE_DATE` | `수검자ID, 상태코드, 예약일` | `시간대코드` |
+
+`IX_수검자_CEL_NUMBER_S`는 `CelNumberS` 컬럼과 함께 사라졌다 (`04` §8.1.5).
 
 성능 목적의 보조 Index는 추가하지 않는다 (`04` §0.4.2 / §11.2).
 
 ## 12.5 CHECK 제약
 
-`04` §8.1.3 / §8.2.3 / §8.3.3 / §8.4.3 / §8.5.2를 그대로 구현한다. 주요 항목:
+`04` §8.1.3 / §8.2.3 / §8.3.3 / §8.4.2 / §8.5.3 / §8.6.3의 제약표를 **그대로** 구현한다.
 
-```text
-수검자       CHART_NO_NOT_BLANK / NAME_NOT_BLANK / SOCIAL_FORMAT(13자리 숫자)
-                    BIRTHDAY(TRY_CONVERT(DATE,…,112)) / GENDER IN ('M','F')
-                    CEL_NORMALIZED / TEL_NORMALIZED / CEL_DIGIT / TEL_DIGIT
-                    EDIT_DATE (LastEditDate >= CreationDate)
-예약접수  TIME_SLOT IN ('AM','PM') / STATUS IN ('RSV','RCP','CNR','CNC') / EDIT_DATE
-WORK_EXAMS          SOURCE IN ('NEX','AEX')
-검사코드      CODE_NOT_BLANK / NAME_NOT_BLANK / ROLE_REQUIRED
-                    NEX_RULE(NULL 또는 NEX-01~06) / AEX_CODE(NULL 또는 OPT01~07)
-                    AEX_GROUP(역할별 NULL 조합) / AEX_GENDER(NULL 또는 A/M/F)
-휴무일        NAME_NOT_BLANK
-```
+이름과 정의를 여기에 옮겨 적지 않는다. 사본이 곧 드리프트의 발생원이고, 실제로 R2 이름 사본이 R3 재봉인을 통과해 남아 있었다. 수치 판정은 `G05`가 `04` 실측과 `EXCEPT` 양방향으로 대조하며, `V08`이 문서의 선언 수치를 `04` §8의 실측과 다시 대조한다.
 
 ## 12.6 Sequence
 
@@ -626,9 +618,9 @@ CREATE SEQUENCE [dbo].[SEQ_HC_CHART_NO]
 
 # 13. `검사코드` Seed 19행 `[B]`
 
-`04` §4.6을 그대로 구현한다. `AdditionalActive`는 AEX 역할이 있으면 `1`, 없으면 `0`(`00` §7.3.1 "사용여부 기본값 Y").
+`04` §4.6을 그대로 구현한다. `추가검사사용여부`는 AEX 역할이 있으면 `1`, 없으면 `0`(`00` §7.3.1 "사용여부 기본값 Y").
 
-| ExamItemCode | ExamItemName | NexRuleCode | AdditionalExamCode | AdditionalGenderCode | AdditionalActive |
+| 검사항목코드 | 검사항목명 | 국가검사규칙코드 | 추가검사코드 | 추가검사성별코드 | 추가검사사용여부 |
 |---|---|---|---|:---:|:---:|
 | `EX001` | 문진/진찰 | `NEX-01` | NULL | NULL | 0 |
 | `EX002` | 신체계측 | `NEX-01` | NULL | NULL | 0 |
@@ -652,11 +644,11 @@ CREATE SEQUENCE [dbo].[SEQ_HC_CHART_NO]
 
 검산: NEX 역할 13행(`EX001`~`EX013`) + AEX 역할 7행(`EX012`, `EX014`~`EX019`) − 공통 `EX012` 1행 = **19행**.
 
-`[I]` **Seed 검수는 위 19행 전체를 기대 `VALUES` 로 두고 `EXCEPT` 양방향 대조한다.** 개수·일부 표본 확인으로는 어떤 행의 `NexRuleCode`·`AdditionalExamCode`·성별·`AdditionalActive` 가 틀려도 통과한다 — AEX/NEX 판정이 조용히 왜곡된다. `04` §14가 *"검사 Master가 정확히 19/13/7종 → Seed 검수 Script"* 로 위임한 항목이다.
+`[I]` **Seed 검수는 위 19행 전체를 기대 `VALUES` 로 두고 `EXCEPT` 양방향 대조한다.** 개수·일부 표본 확인으로는 어떤 행의 `국가검사규칙코드`·`추가검사코드`·`추가검사성별코드`·`추가검사사용여부` 가 틀려도 통과한다 — AEX/NEX 판정이 조용히 왜곡된다. `04` §14가 *"검사 Master가 정확히 19/13/7종 → Seed 검수 Script"* 로 위임한 항목이다.
 
 `[I]` **`deploy/02_Seed.sql` 에 선행 `DELETE` 를 두지 않는다.** clean-create(`01_Schema.sql` 이 `DROP`→`CREATE`)이므로 테이블이 항상 비어 있어 `DELETE` 는 효과가 없고, Fixture 배치 후 이 파일만 단독 재실행하면 `검사항목` 의 FK 때문에 `Msg 547` 로 실패한다. **멱등성은 "clean-create 직후 한정"으로 명시**하고 단독 재실행을 요구하지 않는다.
 
-`EX012` 한 행이 NEX 골밀도와 AEX `OPT04` 역할을 동시에 가진다. `검사항목`의 Composite PK `(WorkId, ExamItemCode)`가 NEX 골밀도와 `OPT04` 동시 저장을 구조적으로 차단한다.
+`EX012` 한 행이 NEX 골밀도와 AEX `OPT04` 역할을 동시에 가진다. 검사구성이 코드 문자열이므로 같은 `EX012` 가 `국가검사항목`과 `추가검사항목`에 동시에 나타나는 저장을 구조적으로 차단한다.
 
 Deploy가 clean-create이므로 Seed는 **단순 `INSERT`**만 사용한다. `MERGE`·존재검사가 필요 없다.
 
@@ -704,20 +696,20 @@ Deploy가 clean-create이므로 Seed는 **단순 `INSERT`**만 사용한다. `ME
 
 ```text
 CORRUPT-1  동일 Patient에 유효업무 2건            → 701 WorkDataError
-CORRUPT-2  Work에 ExamSourceCode='NEX' 0행        → 701
-CORRUPT-3  AdditionalActive=0인 AEX가 저장된 Work → "재검증하지 않는다" 계약 검증
-CORRUPT-4  AEX 전용 Master 행이 ExamSourceCode='NEX' 로 저장됨 → 701 (역할 불일치)
+CORRUPT-2  Work의 국가검사항목이 빈 문자열 (저장 NEX 0개)  → 701
+CORRUPT-3  추가검사사용여부=0인 AEX가 저장된 Work        → "재검증하지 않는다" 계약 검증
+CORRUPT-4  AEX 전용 Master 코드가 국가검사항목에 저장됨    → 701 (역할 불일치)
 CORRUPT-5  NEX 12행이 저장된 Work                 → 701 (상한 11 초과)
 ```
 
 ### CORRUPT-3 구현 — Master Seed 를 오염시키지 않는다 `[X 수정]`
 
-Seed 19행은 AEX 7종을 전부 `AdditionalActive=1` 로 만들므로(`00` §7.3.1) 어떤 입력으로도 `410 ExamOff` 가 발생하지 않는다. 그렇다고 `deploy/02_Seed.sql` 을 고치면 `04` §8.4.2 계약 위반이다.
+Seed 19행은 AEX 7종을 전부 `추가검사사용여부=1` 로 만들므로(`00` §7.3.1) 어떤 입력으로도 `410 ExamOff` 가 발생하지 않는다. 그렇다고 `deploy/02_Seed.sql` 을 고치면 `04` §8.4.2 계약 위반이다.
 
 ```sql
 -- tests/03_Rule_Tests.sql 안에서만, 트랜잭션으로 감싸고 즉시 되돌린다
 BEGIN TRANSACTION;
-    UPDATE [dbo].[검사코드] SET [AdditionalActive] = 0 WHERE [AdditionalExamCode] = 'OPT06';
+    UPDATE [dbo].[검사코드] SET [추가검사사용여부] = 0 WHERE [추가검사코드] = 'OPT06';
     -- RUL-A06 : 비활성 AEX 요청 → 410 ExamOff 확인
     -- CORRUPT-3 : 이 AEX 가 이미 저장된 Work 에 대해
     --             시간대만 변경 / RCP AEX 동일집합 호출이 성공하고 RowVersion·Detail 이 불변인지 확인
@@ -801,8 +793,8 @@ TGT 완료이력 경계: 완료일 `2024-05-01`(2년 → 대상), `2025-05-01`(1
 |---|---|---|
 | `[dbo].[UFN_HC_일정확인]` | 정확히 1행 (11컬럼) | `휴무일` `LEFT JOIN` + `DATEDIFF(DAY,0,@ReservationDate)%7` 요일 판정 + `CASE` 중첩으로 `ReasonCode` 우선순위 `300→301→302→303→304` 구현. 마감표는 `VALUES` 행 생성자로 인라인 |
 | `[dbo].[UFN_HC_검진대상확인]` | Patient 존재 시 1행, 없으면 0행 | `수검자` + `OUTER APPLY (SELECT TOP 1 CompletionDate FROM 완료이력 WHERE PatientId=@PatientId AND CompletionDate < @ReservationDate ORDER BY CompletionDate DESC)` |
-| `[dbo].[UFN_HC_국가검사구성]` | TGT 비대상 0행 / 대상 **8~11행** | `검사코드 WHERE NexRuleCode IS NOT NULL` + `CROSS APPLY UFN_HC_검진대상확인` + 조건부 5종 `WHERE` 술어. 정렬 `ExamCode ASC` |
-| `[dbo].[UFN_HC_추가검사확인]` | Master 정상 시 정확히 **7행** | `검사코드 WHERE AdditionalExamCode IS NOT NULL` + 요청 7 BIT를 `VALUES` 행집합으로 변환해 `JOIN`. `@UseSavedExams`에 따라 NEX 출처를 `UFN_HC_국가검사구성` 또는 `검사항목(NEX)`로 분기. 정렬 `OptionCode ASC` |
+| `[dbo].[UFN_HC_국가검사구성]` | TGT 비대상 0행 / 대상 **8~11행** | `검사코드 WHERE 국가검사규칙코드 IS NOT NULL` + `CROSS APPLY UFN_HC_검진대상확인` + 조건부 5종 `WHERE` 술어. 정렬 `ExamCode ASC` |
+| `[dbo].[UFN_HC_추가검사확인]` | Master 정상 시 정확히 **7행** | `검사코드 WHERE 추가검사코드 IS NOT NULL` + 요청 7 BIT를 `VALUES` 행집합으로 변환해 `JOIN`. `@UseSavedExams`에 따라 NEX 출처를 `UFN_HC_국가검사구성` 또는 `검사항목(NEX)`로 분기. 정렬 `OptionCode ASC` |
 
 ## 17.1 마감시각 인라인 테이블 (`04` §3장 / `05` §2.4)
 
@@ -830,7 +822,7 @@ NEX-06  EX013  Age IN (56,66)
 
 ## 17.2a `412 ExamDuplicate` 의 도달 가능 조건 `[X 수정 2차]`
 
-`[X]` **§13 Seed 19행 중 `NexRuleCode` 와 `AdditionalExamCode` 를 동시에 가진 행은 `EX012`(골밀도검사) 하나뿐이다.** `OPT01`·`02`·`03`·`05`·`06`·`07` 이 가리키는 `EX014`~`EX019` 는 `NexRuleCode` 가 `NULL` 이라 국가검사에 **절대** 나타나지 않는다.
+`[X]` **§13 Seed 19행 중 `국가검사규칙코드` 와 `추가검사코드` 를 동시에 가진 행은 `EX012`(골밀도검사) 하나뿐이다.** `OPT01`·`02`·`03`·`05`·`06`·`07` 이 가리키는 `EX014`~`EX019` 는 `NexRuleCode` 가 `NULL` 이라 국가검사에 **절대** 나타나지 않는다.
 
 따라서:
 
@@ -850,8 +842,8 @@ NEX-06  EX013  Age IN (56,66)
 ## 17.3 AEX 판정순서 (`05` §6.4.3)
 
 ```text
-새 예약일 기준(@UseSavedExams=0)  TGT 비대상 → AdditionalActive=0 → 성별 불충족 → NEX 동일 ExamCode
-저장 NEX 기준(@UseSavedExams=1)   AdditionalActive=0 → 성별 불충족 → 저장 NEX 동일 ExamCode
+새 예약일 기준(@UseSavedExams=0)  TGT 비대상 → 추가검사사용여부=0 → 성별 불충족 → NEX 동일 ExamCode
+저장 NEX 기준(@UseSavedExams=1)   추가검사사용여부=0 → 성별 불충족 → 저장 NEX 동일 ExamCode
 ```
 
 선택하지 않은 무효 항목은 사유만 표시하고 저장을 차단하지 않는다. `Requested=1`인 무효 항목만 Write를 차단한다.
@@ -1084,30 +1076,42 @@ END CATCH
 
 `INSERT_예약`·`UPDATE_예약변경`·`UPDATE_접수완료`·`UPDATE_접수추가검사`가 저장 NEX/AEX를 읽을 때 **세 가지를 모두** 확인한다.
 
+`[!]` 검사구성은 `예약접수` 행의 컬럼 2개다(`04` §8.2.2). 개수는 쉼표를 세고, 코드 존재·역할은
+양끝 패딩 `LIKE` 로 `검사코드` 를 조인해 확인한다(`§9.2` 허용목록). **빈 문자열은 0개다** —
+`LEN - LEN(REPLACE) + 1` 만 쓰면 빈 문자열을 1개로 세어 `CORRUPT-2` 를 놓친다.
+
 ```sql
+DECLARE @Nex NVARCHAR(100), @Aex NVARCHAR(50);
+SELECT @Nex = [국가검사항목], @Aex = [추가검사항목]
+  FROM [dbo].[예약접수] WHERE [업무ID] = @WorkId;
+
+DECLARE @NexN INT = CASE WHEN LEN(ISNULL(@Nex, N'')) = 0 THEN 0
+                         ELSE LEN(@Nex) - LEN(REPLACE(@Nex, N',', N'')) + 1 END;
+DECLARE @AexN INT = CASE WHEN LEN(ISNULL(@Aex, N'')) = 0 THEN 0
+                         ELSE LEN(@Aex) - LEN(REPLACE(@Aex, N',', N'')) + 1 END;
+
 -- (1) NEX 개수가 8~11 범위인가            04 §2.3 / 05 §6.3.2
-IF (SELECT COUNT(*) FROM [dbo].[검사항목]
-     WHERE [WorkId] = @WorkId AND [ExamSourceCode] = 'NEX') NOT BETWEEN 8 AND 11
+IF @NexN NOT BETWEEN 8 AND 11
     SET @Code = 701;
 
--- (2) ExamSourceCode 가 Master 의 역할과 일치하는가   04 §8.3.3 / §14
-IF EXISTS (
-    SELECT 1
-      FROM [dbo].[검사항목] d
-      JOIN [dbo].[검사코드] m ON m.[ExamItemCode] = d.[ExamItemCode]
-     WHERE d.[WorkId] = @WorkId
-       AND (   (d.[ExamSourceCode] = 'NEX' AND m.[NexRuleCode]        IS NULL)
-            OR (d.[ExamSourceCode] = 'AEX' AND m.[AdditionalExamCode] IS NULL) ))
+-- (2) 저장된 코드가 Master 에 실재하며 역할이 맞는가   04 §8.2.3 / §14
+--     FK 가 없으므로(04 §9.1) 이 확인이 그 자리를 대신한다.
+--     역할이 맞는 코드만 세어 개수가 일치하지 않으면 손상이다.
+IF ((SELECT COUNT(*) FROM [dbo].[검사코드] m
+      WHERE m.[국가검사규칙코드] IS NOT NULL
+        AND N',' + ISNULL(@Nex, N'') + N',' LIKE N'%,' + m.[검사항목코드] + N',%') <> @NexN
+ OR (SELECT COUNT(*) FROM [dbo].[검사코드] m
+      WHERE m.[추가검사코드] IS NOT NULL
+        AND N',' + ISNULL(@Aex, N'') + N',' LIKE N'%,' + m.[검사항목코드] + N',%') <> @AexN)
     SET @Code = 701;
 
 -- (3) AEX 개수가 0~6 범위인가                       04 §2.3
-IF (SELECT COUNT(*) FROM [dbo].[검사항목]
-     WHERE [WorkId] = @WorkId AND [ExamSourceCode] = 'AEX') > 6
+IF @AexN > 6
     SET @Code = 701;
 ```
 
 `[X]` **초안 오류 2건**
-1. `04` §14의 *"ExamSource와 Master 역할 일치 → NEX/AEX 저장검증"* 항목에 대응하는 검증이 스펙에도 계획에도 **없었다.** AEX 전용 Master 행을 `ExamSourceCode='NEX'` 로 저장한 손상 Work는 NEX 행수가 1 이상이라 접수완료를 그대로 통과한다.
+1. `04` §14의 *"검사구성 코드가 `검사코드`에 실재 → NEX/AEX 저장검증"* 항목에 대응하는 검증이 스펙에도 계획에도 **없었다.** AEX 전용 Master 행을 `ExamSourceCode='NEX'` 로 저장한 손상 Work는 NEX 행수가 1 이상이라 접수완료를 그대로 통과한다.
 2. NEX 검증이 `< 8` 만 확인했다. `05` §17.4가 *"모든 TGT 대상 결과가 8~11행 범위인지 검증"* 이라고 명시했는데 상한을 버려, TVF나 Master가 손상되어 12행을 반환해도 저장이 계속된다. `NOT BETWEEN 8 AND 11` 로 교체한다.
 
 ## 21.3 부분저장 차단
@@ -1324,7 +1328,9 @@ C#은 이를 `SqlException`으로 받아 재시도 안내를 표시한다. **Num
 
 # 26. `수검자.LastEditDate` 단조증가 `[B]` `[I]`
 
-`04` §8.1.3: *"수정 SP는 행을 잠근 뒤 새 시각이 기존값보다 크지 않으면 기존값에 최소 4ms를 더해 단조 증가시킨다."*
+`[X]` **이 규칙의 소재지는 이 문서다.** 초안은 `04` §8.1.3 을 출처로 인용했으나 그런 문장은 `04`·`05`·`00` 어디에도 없다(`단조`·`4ms`·`3.33` 전체 검색 0건). `04` 가 고정한 것은 `수검자` 시각의 타입이 `DATETIME` 이라는 것뿐이고(§8.1.2), 단조증가 구현은 그 타입 위에서 이 절이 정한다.
+
+> 수정 SP 는 행을 잠근 뒤 새 시각이 기존값보다 크지 않으면 기존값에 최소 4ms 를 더해 단조 증가시킨다.
 
 ```sql
 DECLARE @NewEdit DATETIME = CONVERT(DATETIME, @ServerTime);
@@ -1788,7 +1794,7 @@ END
 | `RUL-A03` | 남성 + `OPT03`(유방초음파) 요청 | `CanSelect=0`, `Selected=0`, `411` |
 | `RUL-A04` | 여성 + `OPT05`(PSA) 요청 | `411` |
 | `RUL-A05` | 남성 + `OPT07`(HPV) 요청 | `411` |
-| `RUL-A06` | `AdditionalActive=0`인 항목 요청 | `410` |
+| `RUL-A06` | `추가검사사용여부=0`인 항목 요청 | `410` |
 | `RUL-A07` | NEX에 `EX012` 있고 `OPT04` 요청 | `412` |
 | `RUL-A08` | TGT 비대상 (`@UseSavedExams=0`) | 7행 전부 `CanSelect=0`, `Selected=0`, `400`/`401` |
 | `RUL-A09` | `@UseSavedExams=1` + 저장 NEX 기준 | 저장 NEX와만 중복 판정 |
@@ -1982,7 +1988,7 @@ Extended Events 세션이나 trace flag 1222를 만들지 않는다. `CON-007` �
 -- dbo 컨텍스트에서 먼저 목록을 담는다
 DECLARE @Obj TABLE (Kind VARCHAR(10), Name SYSNAME PRIMARY KEY);
 INSERT INTO @Obj VALUES
- ('TABLE', N'수검자'), ('TABLE', N'예약접수'), ('TABLE', N'검사항목'),
+ ('TABLE', N'수검자'), ('TABLE', N'예약접수'),
  ('TABLE', N'검사코드'), ('TABLE', N'휴무일'),
  ('TABLE', N'완료이력'), ('TABLE', N'변경이력'),
  ('TVF',   N'UFN_HC_일정확인'), ('TVF', N'UFN_HC_검진대상확인'),
@@ -2019,8 +2025,8 @@ END CATCH
 | `SEC-001` | `EXECUTE AS USER` 컨텍스트에서 `USER_NAME()` | `HC_APP_TEST` (실측 확인) |
 | `SEC-002` | 동일 컨텍스트의 `IS_SRVROLEMEMBER('sysadmin')` | **`0`** (실측 확인) — dbo/sysadmin 오인 방지 증거. **FAIL이면 이후 전 항목 무의미하므로 즉시 중단** |
 | `SEC-003` | 15개 SP 실행 | 전부 성공 (`Msg 229` 만 실패로 계산) |
-| `SEC-004` | 7개 테이블 직접 `SELECT` | 전부 `Msg 229` |
-| `SEC-005` | 7개 테이블 `INSERT`/`UPDATE`/`DELETE` (Transaction + `ROLLBACK`) | 전부 `Msg 229`, 데이터 변경 0 |
+| `SEC-004` | 6개 테이블 직접 `SELECT` | 전부 `Msg 229` |
+| `SEC-005` | 6개 테이블 `INSERT`/`UPDATE`/`DELETE` (Transaction + `ROLLBACK`) | 전부 `Msg 229`, 데이터 변경 0 |
 | `SEC-006` | 4개 TVF 직접 `SELECT` | 전부 `Msg 229` |
 | `SEC-007` | `NEXT VALUE FOR [dbo].[SEQ_HC_CHART_NO]` | `Msg 229` (실측 확인) |
 | `SEC-008` | Ownership chaining — SP 내부의 테이블·Sequence 접근 | 정상 동작. **Sequence 에도 체인이 적용됨을 실측 확인** → `GRANT UPDATE ON SEQUENCE` 불필요 |
@@ -2114,10 +2120,10 @@ artifacts/
 | G01 | WinForms 보호 | 변경 0건 (git diff + hash manifest 이중 증거) | `PLANNED` |
 | G02 | Preflight | `00_Preflight.sql` 가드 6종(`50010~50015`) 통과 · KST 540 · Version >= 11. `Rebuild.sql` 가드는 `50020~50024` 별도 | `PLANNED` |
 | G03 | Clean Deploy | 빈 DB 전체 배포 성공 (exit 0) | `PLANNED` |
-| G04 | Object Inventory | Table 7 / TVF 4 / SP 15 / Sequence 1 | `PLANNED` |
-| G05 | Schema | PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 **+ 48컬럼·제약 22·Default 8·NCI Key 를 `EXCEPT` 양방향 차집합 0** | `PLANNED` |
+| G04 | Object Inventory | Table 6 / TVF 4 / SP 15 / Sequence 1 | `PLANNED` |
+| G05 | Schema | PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 **+ 48컬럼·제약 23·Default 8·NCI Key 를 `EXCEPT` 양방향 차집합 0** | `PLANNED` |
 | G06 | 금지 객체 | Trigger 0 / TVP 0 / DELETE SP 0 / 추가 Table 0 | `PLANNED` |
-| G07 | Seed | Exam **19행 전건 값 일치**(`EXCEPT` 양방향) / NEX 역할 13 / AEX 역할 7 / `AdditionalActive` 7건 모두 1 / Holiday 2 | `PLANNED` |
+| G07 | Seed | Exam **19행 전건 값 일치**(`EXCEPT` 양방향) / NEX 역할 13 / AEX 역할 7 / `추가검사사용여부` 7건 모두 1 / Holiday 2 | `PLANNED` |
 | G08 | Rule | TGT/NEX/AEX/HOL 경계 전건 통과 + `CORRUPT-3` 재검증금지 확인 | `PLANNED` |
 | G09 | SP Contract | Parameter 95 `EXCEPT` 양방향 · RS0 **75행·`error_number` 0건** · **15/15 SP** 후속 RS 순서·컬럼·Cardinality · RS0 Code 가 `05` §13 허용집합 내 | `PLANNED` |
 | G10 | Rollback | 부분저장 0건 | `PLANNED` |
@@ -2163,7 +2169,7 @@ artifacts/
 | 개행 원인 여부 | **아님.** raw / LF변환 / CR제거 / CRLF변환 / 후행개행 정리 / BOM 제거 6변형 전부 불일치 |
 | 내부 메타데이터 | 정상 — 문서명·`FINAL / GO / READ-ONLY`·`v1.2`·`2026-09-03`·`HC-RSV-RCP-20260904-R3` |
 | 금지 marker | `암호화`·`복호화`·`HMAC`·`SEC_PATIENT_IDENTIFIERS`·`MST_NATIONAL_EXAMS`·`MST_ADDITIONAL_EXAMS` **0건** → 인계문서 §4.2-5 즉시중단 조건 미해당 |
-| 내용 정합성 | 문서 완결(23장, 말미 "최종 판정: GO"). 정원 20 / NEX 8~11 / AEX 7종 / SocialNumber 13자리 / `수검자` 17컬럼 / 예약변경 자기 Work 오탐 방지 / 취소 복원 없음 — 전부 `04`·`05`와 모순 없음 |
+| 내용 정합성 | 문서 완결(23장, 말미 "최종 판정: GO"). 정원 20 / NEX 8~11 / AEX 7종 / SocialNumber 13자리 / `수검자` 16컬럼 / 예약변경 자기 Work 오탐 방지 / 취소 복원 없음 — 전부 `04`·`05`와 모순 없음 |
 | 사본 존재 | `docs` 전체에서 0건 |
 | **판정** | 사용자 결정으로 **현재 파일을 기준본으로 확정**. 원인은 규명되지 않은 채로 본 항목에 기록한다 |
 | 영향 | Phase 4 DB 객체계약에 **영향 없음** — `04`·`05`가 byte 일치이며 `03`은 우선순위 4위 UI 계약서다 |
@@ -2351,7 +2357,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | 4 | `SEC-005` 의 `UPDATE … SET [테이블명] = NULL` | 실측: 없는 컬럼 → **`Msg 207`**(컴파일), 없는 테이블 → `Msg 208`. 둘 다 실행시점 권한검사(`229`)보다 **먼저** 난다 → 권한이 올바로 막혀 있어도 `SEC-005` 가 FAIL | 실존 컬럼명을 `EXECUTE AS` **밖**에서 확보해 쓴다 |
 | 5 | `T01` 의 `git add docs/baseline` | 다른 세션이 `docs/baseline/output/` 에 xlsx·pptx 를 쓰는 중이다. 디렉터리를 통째로 add 하면 기준선 tag 에 진행중 파일이 섞이고 **쓰기 도중의 blob** 이 봉인될 수 있다. `verify-baseline.sh` 는 6개 파일만 대조하므로 그 손상을 잡지 못한다 | 기준선 6개 파일만 경로로 명시 + `.gitignore` 에 `docs/baseline/output/` |
 
-`[I]` 1~3은 전부 **같은 오해**에서 나왔다 — *"OPT0n 을 요청하면 중복 판정이 일어난다"*. 실제로는 §13 Seed 19행 중 `NexRuleCode` 와 `AdditionalExamCode` 를 동시에 가진 행이 `EX012` **하나뿐**이라 `412` 는 그 조합으로만 발생한다(§17.2a). `V13` 이 이 부류를 기계적으로 막는다.
+`[I]` 1~3은 전부 **같은 오해**에서 나왔다 — *"OPT0n 을 요청하면 중복 판정이 일어난다"*. 실제로는 §13 Seed 19행 중 `국가검사규칙코드` 와 `추가검사코드` 를 동시에 가진 행이 `EX012` **하나뿐**이라 `412` 는 그 조합으로만 발생한다(§17.2a). `V13` 이 이 부류를 기계적으로 막는다.
 
 `[I]` `INSERT … DEFAULT VALUES` 는 바인딩할 컬럼명이 없어 컴파일을 통과하므로 실행시점 `229` 가 먼저 난다 — `SEC-005` 의 `INSERT`·`DELETE` 경로는 안전하고 `UPDATE` 만 문제였다.
 
@@ -2386,7 +2392,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | Prefix | 범위 | 건수 | 산출 파일 | 검증 대상 | Gate |
 |---|---|---:|---|---|---|
 | `PRE` | `001`~`006` | 6 | `deploy/00_Preflight.sql` | 배포 안전가드 `50010`~`50015` (§8.3) | G03 |
-| `SCH` | `001`~`018` | 18 | `tests/01_Schema_Tests.sql` | 6 Table · PK/FK/UQ/UX/NCI · 48컬럼 · 제약 22 · Default 8 · NCI Key (§34) | G05 |
+| `SCH` | `001`~`018` | 18 | `tests/01_Schema_Tests.sql` | 6 Table · PK/FK/UQ/UX/NCI · 48컬럼 · 제약 23 · Default 8 · NCI Key (§34) | G05 |
 | `SED` | `001`~`011` | 11 | `tests/02_Seed_Tests.sql` | `검사코드` 19행 · `휴무일` 2행 · AEX 7건 Active (§13·§14) | G07 |
 | `SSN` | `001`~`006` | 6 | `tests/02_Seed_Tests.sql` | 실제 주민등록번호 미사용 — 체크디지트 전건 무효 (§16.2) | G12 |
 | `RUL` | `T01`~`T12` `N01`~`N12` `A01`~`A10` `G01`~`G08` `D01`~`D09` | 51 | `tests/03_Rule_Tests.sql` | 4개 TVF 결정적 경계 — 마감시각 · NEX 술어 · AEX 판정순서 · 휴무일 · `DATEFIRST` 불변 (§35) | G08 |
@@ -2444,6 +2450,6 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 셸·도구 결함   6건  iconv BOM / set -e / tee / grep -c / sqlcmd -w. 전부 실측 확인 후 §41.1 에 관용구로 고정.
 ```
 
-계약 자체(객체명 15/4/7/1, Parameter 95, Result Set, ResultCode 38, Seed 19행, 스키마 17컬럼)는 두 검토자가 독립적으로 기준선 전건 일치를 확인했고 변경이 없다.
+계약 자체(객체명 15/4/7/1, Parameter 95, Result Set, ResultCode 38, Seed 19행, 스키마 48컬럼)는 두 검토자가 독립적으로 기준선 전건 일치를 확인했고 변경이 없다.
 
 다음 단계는 구현계획(`plans/`)의 동일 수정이며, 실제 SQL 구현은 사용자의 별도 실행 승인 이후에 시작한다.

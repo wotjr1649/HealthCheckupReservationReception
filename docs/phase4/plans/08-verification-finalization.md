@@ -87,22 +87,19 @@ ELSE BEGIN PRINT 'FAIL RBK-001 부분저장 발생'; SET @Fail += 1; END
 `RBK-002` 의 불변 비교는 실패 전후의 `RowVersion` 을 직접 비교한다.
 
 ```sql
--- Detail 스냅샷을 테이블 변수에 담고 EXCEPT 양방향으로 비교한다.
+-- 검사구성 스냅샷. 검사구성이 예약접수 행의 컬럼 2개이므로 문자열 하나로 비교한다 (04 §8.2.2).
+--   코드 오름차순 정규 순서로 조립되므로 집합 동일 판정이 문자열 비교다 (05 §11.2).
 --   FOR XML PATH 는 쓰지 않는다 — 스펙 §9.2 허용목록에 없고 index 금지 목록에 XML 이 있다.
 DECLARE @RvBefore BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID]=@W);
-DECLARE @Before TABLE (ExamItemCode VARCHAR(10) PRIMARY KEY, ExamSourceCode CHAR(3));
-INSERT INTO @Before SELECT [검사항목코드], [ExamSourceCode]
-  FROM [dbo].[예약접수] WHERE [업무ID] = @W;
+DECLARE @Before NVARCHAR(160) =
+    (SELECT ISNULL([국가검사항목], N'') + N'|' + ISNULL([추가검사항목], N'')
+       FROM [dbo].[예약접수] WHERE [업무ID] = @W);
 
 -- … 실패 유도 …
 
 DECLARE @Same BIT =
-    CASE WHEN NOT EXISTS (SELECT ExamItemCode, ExamSourceCode FROM @Before
-                          EXCEPT SELECT [검사항목코드], [ExamSourceCode]
-                                   FROM [dbo].[예약접수] WHERE [업무ID] = @W)
-          AND NOT EXISTS (SELECT [검사항목코드], [ExamSourceCode]
-                            FROM [dbo].[예약접수] WHERE [업무ID] = @W
-                          EXCEPT SELECT ExamItemCode, ExamSourceCode FROM @Before)
+    CASE WHEN @Before = (SELECT ISNULL([국가검사항목], N'') + N'|' + ISNULL([추가검사항목], N'')
+                           FROM [dbo].[예약접수] WHERE [업무ID] = @W)
          THEN 1 ELSE 0 END;
 -- @Same = 1 이고 RowVersion 이 @RvBefore 와 같아야 한다
 ```
@@ -355,7 +352,7 @@ git commit -m "test(phase4): 동시성 시나리오 8종 및 barrier 실행 스�
 SET NOCOUNT ON;
 DECLARE @Fail INT = 0;
 
-IF ((SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped=0) = 7) PRINT 'PASS VER-001 Table 7';
+IF ((SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped=0) = 6) PRINT 'PASS VER-001 Table 6';
 ELSE BEGIN PRINT 'FAIL VER-001 Table'; SET @Fail += 1; END
 IF ((SELECT COUNT(*) FROM sys.objects WHERE type='IF' AND name LIKE 'UFN[_]HC[_]%') = 4) PRINT 'PASS VER-002 TVF 4';
 ELSE BEGIN PRINT 'FAIL VER-002 TVF'; SET @Fail += 1; END
@@ -363,11 +360,11 @@ IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 15) P
 ELSE BEGIN PRINT 'FAIL VER-003 SP'; SET @Fail += 1; END
 IF ((SELECT COUNT(*) FROM sys.sequences) = 1) PRINT 'PASS VER-004 Sequence 1';
 ELSE BEGIN PRINT 'FAIL VER-004 Sequence'; SET @Fail += 1; END
-IF ((SELECT COUNT(*) FROM sys.key_constraints WHERE type='PK') = 7
-    AND (SELECT COUNT(*) FROM sys.foreign_keys) = 4
+IF ((SELECT COUNT(*) FROM sys.key_constraints WHERE type='PK') = 6
+    AND (SELECT COUNT(*) FROM sys.foreign_keys) = 2
     AND (SELECT COUNT(*) FROM sys.key_constraints WHERE type='UQ') = 2
     AND (SELECT COUNT(*) FROM sys.indexes WHERE is_unique=1 AND has_filter=1) = 1)
-    PRINT 'PASS VER-005 PK7/FK4/UQ2/UX1';   -- 사용자 테이블 한정(is_ms_shipped=0). SCH-007·RBD-004 와 같은 기준을 쓴다.
+    PRINT 'PASS VER-005 PK6/FK2/UQ2/UX1';   -- 사용자 테이블 한정(is_ms_shipped=0). SCH-007·RBD-004 와 같은 기준을 쓴다.
 ELSE BEGIN PRINT 'FAIL VER-005 제약 수'; SET @Fail += 1; END
 IF ((SELECT COUNT(*) FROM sys.triggers WHERE is_ms_shipped=0) = 0
     AND (SELECT COUNT(*) FROM sys.table_types) = 0)
@@ -1022,7 +1019,7 @@ git log --oneline baseline-HC-RSV-RCP-20260904-R3..HEAD | head -50
 ```text
 Baseline integrity   VERIFIED (6/6)
 WinForms 변경         0건
-Object Inventory      Table 7 / TVF 4 / SP 15 / Sequence 1
+Object Inventory      Table 6 / TVF 4 / SP 15 / Sequence 1
 Gate 판정             G00~G16 실제 결과
 총 테스트             PASS n / FAIL n / SKIP n
 Deviation             n건

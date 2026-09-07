@@ -84,12 +84,12 @@ IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 15)
     PRINT 'PASS SCH-014 Stored Procedure 15개';
 ELSE BEGIN PRINT 'FAIL SCH-014 SP 수 불일치 (T30 이전이면 정상)'; SET @Fail += 1; END
 
--- SCH-015 컬럼 47개 전건 EXCEPT 양방향  (04 §8)
+-- SCH-015 컬럼 48개 전건 EXCEPT 양방향  (04 §8)
 DECLARE @ExpCol TABLE (T SYSNAME, C SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, C));
 INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
- -- 47행 전건. 기준선 04 §8 의 컬럼 표에서 기계 생성했다(개수·타입·길이·NULL 모두 그 표가 출처다).
+ -- 48행 전건. 기준선 04 §8 의 컬럼 표에서 기계 생성했다(개수·타입·길이·NULL 모두 그 표가 출처다).
  -- Len 은 문자·이진형만 채운다. nvarchar/nchar 는 문자 수, MAX 는 -1, 그 밖은 NULL.
- -- 수검자 17행
+ -- 수검자 16행
  (N'수검자', N'수검자ID',              N'bigint',    NULL,  0),
  (N'수검자', N'차트번호',              N'nvarchar',  100,   0),
  (N'수검자', N'성명',                  N'nvarchar',  100,   0),
@@ -141,7 +141,7 @@ INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
  (N'변경이력', N'기록일시',             N'datetime2', NULL,  0),
  (N'변경이력', N'조작자명',             N'nvarchar',  50,    1),
  (N'변경이력', N'대상테이블',           N'nvarchar',  10,    0),
- (N'변경이력', N'대상키',               N'bigint',    NULL,  1),
+ (N'변경이력', N'대상키',               N'bigint',    NULL,  0),
  (N'변경이력', N'컬럼명',               N'nvarchar',  30,    0),
  (N'변경이력', N'변경전',               N'nvarchar',  4000,  1),
  (N'변경이력', N'변경후',               N'nvarchar',  4000,  1);
@@ -160,7 +160,7 @@ WHERE t.is_ms_shipped = 0;
 
 IF NOT EXISTS (SELECT T,C,Ty,Len,Nul FROM @ExpCol EXCEPT SELECT T,C,Ty,Len,Nul FROM @ActCol)
    AND NOT EXISTS (SELECT T,C,Ty,Len,Nul FROM @ActCol EXCEPT SELECT T,C,Ty,Len,Nul FROM @ExpCol)
-    PRINT 'PASS SCH-015 컬럼 47개 전건 일치';
+    PRINT 'PASS SCH-015 컬럼 48개 전건 일치';
 ELSE
 BEGIN
     PRINT 'FAIL SCH-015 컬럼 불일치';
@@ -169,7 +169,7 @@ BEGIN
     SET @Fail += 1;
 END
 
--- SCH-016 CHECK 제약 이름 23개 EXCEPT 양방향  (04 §8.1.3 8 + §8.2.3 3 + §8.3.3 1 + §8.4.3 7 + §8.5.2 1 + §8.7.3 3)
+-- SCH-016 CHECK 제약 이름 23개 EXCEPT 양방향  (04 §8.1.3 7 + §8.2.3 4 + §8.3.3 8 + §8.4.2 1 + §8.5.3 1 + §8.6.3 2)
 DECLARE @ExpCk TABLE (N SYSNAME PRIMARY KEY);
 INSERT INTO @ExpCk (N) VALUES
  (N'CK_수검자_CHART_NO_NOT_BLANK'), (N'CK_수검자_NAME_NOT_BLANK'),
@@ -179,7 +179,8 @@ INSERT INTO @ExpCk (N) VALUES
  (N'CK_예약접수_TIME_SLOT'),        (N'CK_예약접수_STATUS'),
  (N'CK_예약접수_EDIT_DATE'),        (N'CK_예약접수_EXAM_FORMAT'),
  (N'CK_완료이력_EXAM_FORMAT'),
- (N'CK_검사코드_CODE_NOT_BLANK'),   (N'CK_검사코드_NAME_NOT_BLANK'),
+ (N'CK_검사코드_CODE_NOT_BLANK'),   (N'CK_검사코드_CODE_FORMAT'),
+ (N'CK_검사코드_NAME_NOT_BLANK'),
  (N'CK_검사코드_ROLE_REQUIRED'),    (N'CK_검사코드_NEX_RULE'),
  (N'CK_검사코드_AEX_CODE'),         (N'CK_검사코드_AEX_GENDER'),
  (N'CK_검사코드_AEX_GROUP'),        (N'CK_휴무일_NAME_NOT_BLANK'),
@@ -190,7 +191,7 @@ IF NOT EXISTS (SELECT N FROM @ExpCk EXCEPT SELECT name FROM sys.check_constraint
     PRINT 'PASS SCH-016 CHECK 제약 이름 전건 일치';
 ELSE BEGIN PRINT 'FAIL SCH-016 CHECK 제약 집합 불일치'; SET @Fail += 1; END
 
--- SCH-017 Default 제약 이름 8개 EXCEPT 양방향  (04 §8.1.4 3 + §8.2.3 2 + §8.4.3 1 + §8.5.2 1 + §8.7.3 1)
+-- SCH-017 Default 제약 이름 8개 EXCEPT 양방향  (04 §8.1.4 3 + §8.2.3 2 + §8.3.3 1 + §8.4.2 1 + §8.6.3 1)
 -- [X] 초안의 14개 이름은 기준선 04 §8 의 것이 아니었다(`DF_수검자_JOB` 은 존재하지 않는 Job 컬럼을
 --     가리켰고 `..._GENDER`·`..._MEMO`·`..._ADDRESS` 등은 04 §8.1.4 에 없다). T06 의 DDL 이 기준선과 일치하므로
 --     틀린 쪽은 이 기대값이다. 04 §8.1.4 / §8.2.3 / §8.4.3 / §8.5.2 의 이름을 그대로 옮겨 적는다.
@@ -206,12 +207,12 @@ IF NOT EXISTS (SELECT N FROM @ExpDf EXCEPT SELECT name FROM sys.default_constrai
     PRINT 'PASS SCH-017 Default 제약 이름 전건 일치';
 ELSE BEGIN PRINT 'FAIL SCH-017 Default 제약 집합 불일치'; SET @Fail += 1; END
 
--- SCH-018 Nonclustered Index 5개 이름 + Key 컬럼 순서 EXCEPT 양방향  (04 §8.1.5 / §8.2.4)
---   COUNT 로는 (Name, Birthday) 가 (Name, Gender) 로 바뀐 것을 못 잡는다. 행 단위로 펼쳐 대조한다.
+-- SCH-018 Nonclustered Index 4개 이름 + Key 컬럼 순서 EXCEPT 양방향  (04 §8.1.5 / §8.2.4)
+--   COUNT 로는 (성명, 생년월일) 이 (성명, 성별) 로 바뀐 것을 못 잡는다. 행 단위로 펼쳐 대조한다.
 -- [X] 초안의 기대값은 존재하지 않는 Index 를 가리켰다(`IX_수검자_CHART_NO` 는 UQ 이지 NCI 가 아니고,
 --     `IX_예약접수_DATE_SLOT_STATUS`·`..._PATIENT_STATUS`·`IX_검사항목_WORK` 는
---     04 §8 에 없는 이름이다). 04 §8.1.5 / §8.2.4 의 NCI 5개 · Key 10행이 실제 계약이다.
---     `검사항목` 는 04 §8.3.3 이 "별도 Nonclustered Index 를 만들지 않는다"고 못박았다.
+--     04 §8 에 없는 이름이다). 04 §8.1.5 / §8.2.4 의 NCI 4개 · Key 9행이 실제 계약이다.
+--     `IX_수검자_CEL_NUMBER_S` 는 `CelNumberS` 컬럼과 함께 사라졌다 (04 §8.1.5).
 DECLARE @ExpIx TABLE (IxName SYSNAME, Ord TINYINT, ColName SYSNAME, PRIMARY KEY (IxName, Ord));
 INSERT @ExpIx (IxName, Ord, ColName) VALUES
  (N'IX_수검자_NAME_BIRTHDAY',              1, N'성명'),

@@ -611,7 +611,7 @@ BEGIN
                      N'휴무일', N'완료이력', N'변경이력');
 
     -- 빈 DB(배포 실패 잔해) 또는 정확한 R3 집합만 허용한다
-    IF NOT (@Total = 0 OR (@Total = 7 AND @R3 = 7))
+    IF NOT (@Total = 0 OR (@Total = 6 AND @R3 = 6))
         THROW 50022, N'Rebuild: 대상 DB 가 Phase 4 계약 집합과 다릅니다. 동명 DB 를 삭제하려는 것일 수 있습니다.', 1;
     PRINT N'INFO 50022 가드 통과 — Total=' + CONVERT(NVARCHAR(5), @Total)
         + N' R3=' + CONVERT(NVARCHAR(5), @R3);
@@ -805,9 +805,11 @@ git commit -m "feat(phase4): Deploy/Rebuild 진입점 및 실행 스크립트 �
 - Create: `deploy/01_Schema.sql`
 
 **Interfaces:**
-- Produces: 7 Table / PK 7 / FK 4 / UQ 2 / UX 1 / NCI 5 / Sequence 1. Trigger 0 / TVP 0.
+- Produces: 6 Table / PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 / Sequence 1. Trigger 0 / TVP 0.
+- `[!]` 이 계획은 R2 시점 초안이다. `plans/10` 이 `검사항목` 을 흡수해 테이블을 6개로 줄였고, 실제 배포·검증본은 `deploy/01_Schema.sql` 과 `tests/01_Schema_Tests.sql` 이다.
 
 **금지사항:** 컬럼 추가·삭제·이름변경·타입변경 금지. Trigger·FK Cascade·추가 Index 금지. `IF NOT EXISTS` 가드를 넣지 않는다 (clean-create).
+- `[!]` 후속 개정으로 `변경이력` 한 테이블만 이 금지의 예외가 되었다. 감사 기록은 배포로 지워지지 않는다 (`CLAUDE.md` §8 · `04` §8.6.3).
 
 - [ ] **Step 1: RED — 아직 아무 객체도 없음을 확인**
 
@@ -834,7 +836,7 @@ DROP SEQUENCE IF EXISTS [dbo].[SEQ_HC_CHART_NO];
 GO
 ```
 
-- [ ] **Step 3: `수검자` — 17 컬럼**
+- [ ] **Step 3: `수검자` — 16 컬럼**
 
 ```sql
 CREATE TABLE [dbo].[수검자]
@@ -1034,7 +1036,7 @@ Expected: exit 0. 두 번째 실행도 성공해야 한다 (`DROP IF EXISTS` →
 ```bash
 cd /d/AIDEV/HealthCheckupReservationReception
 git add database/deploy/01_Schema.sql
-git commit -m "feat(phase4): 7개 물리 테이블 스키마 배포 스크립트 추가"
+git commit -m "feat(phase4): 6개 물리 테이블 스키마 배포 스크립트 추가"
 ```
 
 **회귀시험:** `T07` 의 `01_Schema_Tests.sql`.
@@ -1094,13 +1096,13 @@ DECLARE @Fail INT = 0;
 
 DECLARE @Expected TABLE (Name SYSNAME PRIMARY KEY);
 INSERT INTO @Expected (Name) VALUES
- ('수검자'),('예약접수'),('검사항목'),
+ ('수검자'),('예약접수'),
  ('검사코드'),('휴무일'),
  ('완료이력'),('변경이력');
 
 -- SCH-001 테이블 수
-IF ((SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0) = 7)
-    PRINT 'PASS SCH-001 사용자 테이블 7개';
+IF ((SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0) = 6)
+    PRINT 'PASS SCH-001 사용자 테이블 6개';
 ELSE BEGIN PRINT 'FAIL SCH-001 사용자 테이블 수 불일치'; SET @Fail += 1; END
 
 -- SCH-002 테이블 이름 집합 정확 일치
@@ -1109,20 +1111,20 @@ IF NOT EXISTS (SELECT Name FROM @Expected EXCEPT SELECT name FROM sys.tables WHE
     PRINT 'PASS SCH-002 테이블 이름 집합 일치';
 ELSE BEGIN PRINT 'FAIL SCH-002 테이블 이름 집합 불일치'; SET @Fail += 1; END
 
--- SCH-003 수검자 컬럼 17개
-IF ((SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[수검자]')) = 17)
-    PRINT 'PASS SCH-003 수검자 17컬럼';
+-- SCH-003 수검자 컬럼 16개
+IF ((SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[수검자]')) = 16)
+    PRINT 'PASS SCH-003 수검자 16컬럼';
 ELSE BEGIN PRINT 'FAIL SCH-003 수검자 컬럼 수 불일치'; SET @Fail += 1; END
 
--- SCH-004 PK 7
-IF ((SELECT COUNT(*) FROM sys.key_constraints WHERE type = 'PK') = 7)
-    PRINT 'PASS SCH-004 PK 7개';
+-- SCH-004 PK 6
+IF ((SELECT COUNT(*) FROM sys.key_constraints WHERE type = 'PK') = 6)
+    PRINT 'PASS SCH-004 PK 6개';
 ELSE BEGIN PRINT 'FAIL SCH-004 PK 수 불일치'; SET @Fail += 1; END
 
--- SCH-005 FK 4 + 전부 NO ACTION
-IF ((SELECT COUNT(*) FROM sys.foreign_keys) = 4
+-- SCH-005 FK 2 + 전부 NO ACTION
+IF ((SELECT COUNT(*) FROM sys.foreign_keys) = 2
     AND NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE delete_referential_action <> 0 OR update_referential_action <> 0))
-    PRINT 'PASS SCH-005 FK 4개 / 전부 NO ACTION';
+    PRINT 'PASS SCH-005 FK 2개 / 전부 NO ACTION';
 ELSE BEGIN PRINT 'FAIL SCH-005 FK 수 또는 Cascade 설정 불일치'; SET @Fail += 1; END
 
 -- SCH-006 일반 UQ 2
@@ -1137,11 +1139,11 @@ IF ((SELECT COUNT(*) FROM sys.indexes i
     PRINT 'PASS SCH-007 Filtered Unique Index 1개';
 ELSE BEGIN PRINT 'FAIL SCH-007 Filtered Unique Index 수 불일치'; SET @Fail += 1; END
 
--- SCH-008 업무/조회 NCI 5 (PK/UQ/UX 제외)
+-- SCH-008 업무/조회 NCI 4 (PK/UQ/UX 제외)
 IF ((SELECT COUNT(*) FROM sys.indexes i
       JOIN sys.tables t ON t.object_id = i.object_id AND t.is_ms_shipped = 0
-     WHERE i.type = 2 AND i.is_primary_key = 0 AND i.is_unique_constraint = 0 AND i.is_unique = 0) = 5)
-    PRINT 'PASS SCH-008 업무/조회 Nonclustered Index 5개';
+     WHERE i.type = 2 AND i.is_primary_key = 0 AND i.is_unique_constraint = 0 AND i.is_unique = 0) = 4)
+    PRINT 'PASS SCH-008 업무/조회 Nonclustered Index 4개';
 ELSE BEGIN PRINT 'FAIL SCH-008 Nonclustered Index 수 불일치'; SET @Fail += 1; END
 
 -- SCH-009 Sequence 1 / MAXVALUE 999999
@@ -1175,65 +1177,67 @@ IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 15)
     PRINT 'PASS SCH-014 Stored Procedure 15개';
 ELSE BEGIN PRINT 'FAIL SCH-014 SP 수 불일치 (T30 이전이면 정상)'; SET @Fail += 1; END
 
--- SCH-015 컬럼 47개 전건 EXCEPT 양방향  (04 §8)
+-- SCH-015 컬럼 48개 전건 EXCEPT 양방향  (04 §8)
 DECLARE @ExpCol TABLE (T SYSNAME, C SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, C));
 INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
- -- 47행 전건. 기준선 04 §8 의 컬럼 표에서 기계 생성했다(개수·타입·길이·NULL 모두 그 표가 출처다).
+ -- 48행 전건. 기준선 04 §8 의 컬럼 표에서 기계 생성했다(개수·타입·길이·NULL 모두 그 표가 출처다).
  -- Len 은 문자·이진형만 채운다. nvarchar/nchar 는 문자 수, MAX 는 -1, 그 밖은 NULL.
- -- 수검자 17행
- (N'수검자', N'PatientId',            N'bigint',    NULL,  0),
- (N'수검자', N'ChartNo',              N'nvarchar',  100,   0),
- (N'수검자', N'Name',                 N'nvarchar',  100,   0),
- (N'수검자', N'SocialNumber',         N'varchar',   13,    0),
- (N'수검자', N'Birthday',             N'varchar',   8,     0),
- (N'수검자', N'Gender',               N'char',      1,     0),
- (N'수검자', N'EMail',                N'varchar',   200,   1),
- (N'수검자', N'CelNumberS',           N'varchar',   13,    1),
- (N'수검자', N'CelNumber',            N'varchar',   13,    1),
- (N'수검자', N'TelNumber',            N'varchar',   13,    1),
- (N'수검자', N'Zipcode',              N'varchar',   10,    1),
- (N'수검자', N'Address',              N'nvarchar',  200,   1),
- (N'수검자', N'AddressDetail',        N'nvarchar',  200,   1),
- (N'수검자', N'Memo',                 N'nvarchar',  -1,    1),
- (N'수검자', N'HepatitisBExcluded',   N'bit',       NULL,  0),
- (N'수검자', N'CreationDate',         N'datetime',  NULL,  0),
- (N'수검자', N'LastEditDate',         N'datetime',  NULL,  0),
+ -- 수검자 16행
+ (N'수검자', N'수검자ID',              N'bigint',    NULL,  0),
+ (N'수검자', N'차트번호',              N'nvarchar',  100,   0),
+ (N'수검자', N'성명',                  N'nvarchar',  100,   0),
+ (N'수검자', N'주민번호',              N'varchar',   13,    0),
+ (N'수검자', N'생년월일',              N'varchar',   8,     0),
+ (N'수검자', N'성별',                  N'char',      1,     0),
+ (N'수검자', N'이메일',                N'varchar',   200,   1),
+ (N'수검자', N'휴대전화',              N'varchar',   13,    1),
+ (N'수검자', N'전화번호',              N'varchar',   13,    1),
+ (N'수검자', N'우편번호',              N'varchar',   10,    1),
+ (N'수검자', N'주소',                  N'nvarchar',  200,   1),
+ (N'수검자', N'상세주소',              N'nvarchar',  200,   1),
+ (N'수검자', N'비고',                  N'nvarchar',  -1,    1),
+ (N'수검자', N'B형간염제외여부',        N'bit',       NULL,  0),
+ (N'수검자', N'생성일시',              N'datetime',  NULL,  0),
+ (N'수검자', N'최종수정일시',          N'datetime',  NULL,  0),
  -- 예약접수 8행
- (N'예약접수', N'WorkId',               N'bigint',    NULL,  0),
- (N'예약접수', N'PatientId',            N'bigint',    NULL,  0),
- (N'예약접수', N'ReservationDate',      N'date',      NULL,  0),
- (N'예약접수', N'TimeSlotCode',         N'char',      2,     0),
- (N'예약접수', N'StatusCode',           N'char',      3,     0),
- (N'예약접수', N'CreationDate',         N'datetime2', NULL,  0),
- (N'예약접수', N'LastEditDate',         N'datetime2', NULL,  0),
- (N'예약접수', N'RowVersion',           N'timestamp', NULL,  0),
+ (N'예약접수', N'업무ID',                N'bigint',    NULL,  0),
+ (N'예약접수', N'수검자ID',              N'bigint',    NULL,  0),
+ (N'예약접수', N'예약일',                N'date',      NULL,  0),
+ (N'예약접수', N'시간대코드',            N'char',      2,     0),
+ (N'예약접수', N'상태코드',              N'char',      3,     0),
+ (N'예약접수', N'생성일시',              N'datetime2', NULL,  0),
+ (N'예약접수', N'최종수정일시',          N'datetime2', NULL,  0),
+ (N'예약접수', N'행버전',                N'timestamp', NULL,  0),
+ (N'예약접수', N'국가검사항목',          N'nvarchar',  100,   0),
+ (N'예약접수', N'추가검사항목',          N'nvarchar',  50,    1),
  -- 검사항목 3행
- (N'검사항목', N'WorkId',               N'bigint',    NULL,  0),
- (N'검사항목', N'ExamItemCode',         N'varchar',   10,    0),
- (N'검사항목', N'ExamSourceCode',       N'char',      3,     0),
+
  -- 검사코드 6행
- (N'검사코드', N'ExamItemCode',         N'varchar',   10,    0),
- (N'검사코드', N'ExamItemName',         N'nvarchar',  100,   0),
- (N'검사코드', N'NexRuleCode',          N'varchar',   10,    1),
- (N'검사코드', N'AdditionalExamCode',   N'varchar',   10,    1),
- (N'검사코드', N'AdditionalGenderCode', N'char',      1,     1),
- (N'검사코드', N'AdditionalActive',     N'bit',       NULL,  0),
+ (N'검사코드', N'검사항목코드',           N'varchar',   10,    0),
+ (N'검사코드', N'검사항목명',             N'nvarchar',  100,   0),
+ (N'검사코드', N'국가검사규칙코드',       N'varchar',   10,    1),
+ (N'검사코드', N'추가검사코드',           N'varchar',   10,    1),
+ (N'검사코드', N'추가검사성별코드',       N'char',      1,     1),
+ (N'검사코드', N'추가검사사용여부',       N'bit',       NULL,  0),
  -- 휴무일 4행
- (N'휴무일', N'HolidayDate',          N'date',      NULL,  0),
- (N'휴무일', N'HolidayName',          N'nvarchar',  100,   0),
- (N'휴무일', N'Active',               N'bit',       NULL,  0),
- (N'휴무일', N'Memo',                 N'nvarchar',  500,   1),
+ (N'휴무일', N'휴무일자',              N'date',      NULL,  0),
+ (N'휴무일', N'휴무일명',              N'nvarchar',  100,   0),
+ (N'휴무일', N'사용여부',              N'bit',       NULL,  0),
+ (N'휴무일', N'비고',                  N'nvarchar',  500,   1),
  -- 완료이력 2행
- (N'완료이력', N'PatientId',            N'bigint',    NULL,  0),
- (N'완료이력', N'CompletionDate',       N'date',      NULL,  0),
- -- 변경이력 7행
- (N'변경이력', N'HistoryId',            N'bigint',    NULL,  0),
- (N'변경이력', N'CreationDate',         N'datetime2', NULL,  0),
- (N'변경이력', N'OperatorName',         N'nvarchar',  50,    1),
- (N'변경이력', N'OperationCode',        N'varchar',   20,    0),
- (N'변경이력', N'TargetTable',          N'nvarchar',  10,    0),
- (N'변경이력', N'TargetKey',            N'bigint',    NULL,  1),
- (N'변경이력', N'ResultCode',           N'int',       NULL,  0);
+ (N'완료이력', N'수검자ID',             N'bigint',    NULL,  0),
+ (N'완료이력', N'완료일자',             N'date',      NULL,  0),
+ (N'완료이력', N'국가검사항목',         N'nvarchar',  100,   1),
+ (N'완료이력', N'추가검사항목',         N'nvarchar',  50,    1),
+ -- 변경이력 8행 (EAV)
+ (N'변경이력', N'이력ID',               N'bigint',    NULL,  0),
+ (N'변경이력', N'기록일시',             N'datetime2', NULL,  0),
+ (N'변경이력', N'조작자명',             N'nvarchar',  50,    1),
+ (N'변경이력', N'대상테이블',           N'nvarchar',  10,    0),
+ (N'변경이력', N'대상키',               N'bigint',    NULL,  1),
+ (N'변경이력', N'컬럼명',               N'nvarchar',  30,    0),
+ (N'변경이력', N'변경전',               N'nvarchar',  4000,  1),
+ (N'변경이력', N'변경후',               N'nvarchar',  4000,  1);
 
 DECLARE @ActCol TABLE (T SYSNAME, C SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, C));
 INSERT INTO @ActCol (T, C, Ty, Len, Nul)
@@ -1249,7 +1253,7 @@ WHERE t.is_ms_shipped = 0;
 
 IF NOT EXISTS (SELECT T,C,Ty,Len,Nul FROM @ExpCol EXCEPT SELECT T,C,Ty,Len,Nul FROM @ActCol)
    AND NOT EXISTS (SELECT T,C,Ty,Len,Nul FROM @ActCol EXCEPT SELECT T,C,Ty,Len,Nul FROM @ExpCol)
-    PRINT 'PASS SCH-015 컬럼 47개 전건 일치';
+    PRINT 'PASS SCH-015 컬럼 48개 전건 일치';
 ELSE
 BEGIN
     PRINT 'FAIL SCH-015 컬럼 불일치';
@@ -1258,28 +1262,29 @@ BEGIN
     SET @Fail += 1;
 END
 
--- SCH-016 제약 이름 22종 EXCEPT 양방향  (04 §8.1.3 8 + §8.2.3 3 + §8.3.3 1 + §8.4.3 7 + §8.5.2 1 + §8.7.3 3)
+-- SCH-016 CHECK 제약 이름 23개 EXCEPT 양방향  (04 §8.1.3 7 + §8.2.3 4 + §8.3.3 8 + §8.4.2 1 + §8.5.3 1 + §8.6.3 2)
 DECLARE @ExpCk TABLE (N SYSNAME PRIMARY KEY);
 INSERT INTO @ExpCk (N) VALUES
  (N'CK_수검자_CHART_NO_NOT_BLANK'), (N'CK_수검자_NAME_NOT_BLANK'),
  (N'CK_수검자_SOCIAL_FORMAT'),      (N'CK_수검자_BIRTHDAY'),
- (N'CK_수검자_GENDER'),             (N'CK_수검자_CEL_NORMALIZED'),
- (N'CK_수검자_CEL_DIGIT'),          (N'CK_수검자_EDIT_DATE'),
+ (N'CK_수검자_GENDER'),             (N'CK_수검자_CEL_DIGIT'),
+ (N'CK_수검자_EDIT_DATE'),
  (N'CK_예약접수_TIME_SLOT'),        (N'CK_예약접수_STATUS'),
- (N'CK_예약접수_EDIT_DATE'),        (N'CK_검사항목_SOURCE'),
- (N'CK_검사코드_CODE_NOT_BLANK'),   (N'CK_검사코드_NAME_NOT_BLANK'),
+ (N'CK_예약접수_EDIT_DATE'),        (N'CK_예약접수_EXAM_FORMAT'),
+ (N'CK_완료이력_EXAM_FORMAT'),
+ (N'CK_검사코드_CODE_NOT_BLANK'),   (N'CK_검사코드_CODE_FORMAT'),
+ (N'CK_검사코드_NAME_NOT_BLANK'),
  (N'CK_검사코드_ROLE_REQUIRED'),    (N'CK_검사코드_NEX_RULE'),
  (N'CK_검사코드_AEX_CODE'),         (N'CK_검사코드_AEX_GENDER'),
  (N'CK_검사코드_AEX_GROUP'),        (N'CK_휴무일_NAME_NOT_BLANK'),
- (N'CK_변경이력_OPERATION'),        (N'CK_변경이력_RESULT_CODE'),
- (N'CK_변경이력_TARGET_KEY');
+ (N'CK_변경이력_TARGET_TABLE'),     (N'CK_변경이력_COLUMN_NOT_BLANK');
 
 IF NOT EXISTS (SELECT N FROM @ExpCk EXCEPT SELECT name FROM sys.check_constraints)
    AND NOT EXISTS (SELECT name FROM sys.check_constraints EXCEPT SELECT N FROM @ExpCk)
     PRINT 'PASS SCH-016 CHECK 제약 이름 전건 일치';
 ELSE BEGIN PRINT 'FAIL SCH-016 CHECK 제약 집합 불일치'; SET @Fail += 1; END
 
--- SCH-017 Default 제약 이름 8개 EXCEPT 양방향  (04 §8.1.4 3 + §8.2.3 2 + §8.4.3 1 + §8.5.2 1 + §8.7.3 1)
+-- SCH-017 Default 제약 이름 8개 EXCEPT 양방향  (04 §8.1.4 3 + §8.2.3 2 + §8.3.3 1 + §8.4.2 1 + §8.6.3 1)
 -- [X] 초안의 14개 이름은 기준선 04 §8 의 것이 아니었다(`DF_수검자_JOB` 은 존재하지 않는 Job 컬럼을
 --     가리켰고 `..._GENDER`·`..._MEMO`·`..._ADDRESS` 등은 04 §8.1.4 에 없다). T06 의 DDL 이 기준선과 일치하므로
 --     틀린 쪽은 이 기대값이다. 04 §8.1.4 / §8.2.3 / §8.4.3 / §8.5.2 의 이름을 그대로 옮겨 적는다.
@@ -1295,24 +1300,23 @@ IF NOT EXISTS (SELECT N FROM @ExpDf EXCEPT SELECT name FROM sys.default_constrai
     PRINT 'PASS SCH-017 Default 제약 이름 전건 일치';
 ELSE BEGIN PRINT 'FAIL SCH-017 Default 제약 집합 불일치'; SET @Fail += 1; END
 
--- SCH-018 Nonclustered Index 5개 이름 + Key 컬럼 순서 EXCEPT 양방향  (04 §8.1.5 / §8.2.4)
---   COUNT 로는 (Name, Birthday) 가 (Name, Gender) 로 바뀐 것을 못 잡는다. 행 단위로 펼쳐 대조한다.
+-- SCH-018 Nonclustered Index 4개 이름 + Key 컬럼 순서 EXCEPT 양방향  (04 §8.1.5 / §8.2.4)
+--   COUNT 로는 (성명, 생년월일) 이 (성명, 성별) 로 바뀐 것을 못 잡는다. 행 단위로 펼쳐 대조한다.
 -- [X] 초안의 기대값은 존재하지 않는 Index 를 가리켰다(`IX_수검자_CHART_NO` 는 UQ 이지 NCI 가 아니고,
 --     `IX_예약접수_DATE_SLOT_STATUS`·`..._PATIENT_STATUS`·`IX_검사항목_WORK` 는
---     04 §8 에 없는 이름이다). 04 §8.1.5 / §8.2.4 의 NCI 5개 · Key 10행이 실제 계약이다.
---     `검사항목` 는 04 §8.3.3 이 "별도 Nonclustered Index 를 만들지 않는다"고 못박았다.
+--     04 §8 에 없는 이름이다). 04 §8.1.5 / §8.2.4 의 NCI 4개 · Key 9행이 실제 계약이다.
+--     `IX_수검자_CEL_NUMBER_S` 는 `CelNumberS` 컬럼과 함께 사라졌다 (04 §8.1.5).
 DECLARE @ExpIx TABLE (IxName SYSNAME, Ord TINYINT, ColName SYSNAME, PRIMARY KEY (IxName, Ord));
 INSERT @ExpIx (IxName, Ord, ColName) VALUES
- (N'IX_수검자_NAME_BIRTHDAY',              1, N'Name'),
- (N'IX_수검자_NAME_BIRTHDAY',              2, N'Birthday'),
- (N'IX_수검자_BIRTHDAY',                   1, N'Birthday'),
- (N'IX_수검자_CEL_NUMBER_S',               1, N'CelNumberS'),
- (N'IX_예약접수_SLOT',                  1, N'ReservationDate'),
- (N'IX_예약접수_SLOT',                  2, N'TimeSlotCode'),
- (N'IX_예약접수_SLOT',                  3, N'StatusCode'),
- (N'IX_예약접수_PATIENT_STATE_DATE',    1, N'PatientId'),
- (N'IX_예약접수_PATIENT_STATE_DATE',    2, N'StatusCode'),
- (N'IX_예약접수_PATIENT_STATE_DATE',    3, N'ReservationDate');
+ (N'IX_수검자_NAME_BIRTHDAY',              1, N'성명'),
+ (N'IX_수검자_NAME_BIRTHDAY',              2, N'생년월일'),
+ (N'IX_수검자_BIRTHDAY',                   1, N'생년월일'),
+ (N'IX_예약접수_SLOT',                  1, N'예약일'),
+ (N'IX_예약접수_SLOT',                  2, N'시간대코드'),
+ (N'IX_예약접수_SLOT',                  3, N'상태코드'),
+ (N'IX_예약접수_PATIENT_STATE_DATE',    1, N'수검자ID'),
+ (N'IX_예약접수_PATIENT_STATE_DATE',    2, N'상태코드'),
+ (N'IX_예약접수_PATIENT_STATE_DATE',    3, N'예약일');
 
 -- [X] 초안은 `;WITH Act AS (…) IF NOT EXISTS …` 였다. CTE 뒤에는 SELECT/INSERT/UPDATE/DELETE/MERGE 만
 --     올 수 있어 `IF` 는 구문오류이고, 설령 통과해도 CTE 는 IF 본문까지 유효범위가 미치지 않는다.

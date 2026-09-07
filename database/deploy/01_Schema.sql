@@ -6,7 +6,9 @@ GO
 SET NOCOUNT ON;
 PRINT N'--- 01_Schema 시작 ---';
 GO
-DROP TABLE IF EXISTS [dbo].[변경이력];
+-- [변경이력] 은 이 목록에 없다. 감사 기록은 배포로 지워지지 않는다 (CLAUDE.md §8 의 유일한 예외).
+-- 수검자가 새로 만들어지면 [대상키] 는 사라진 행을 가리키게 되는데, 그것이 04 §8.6.3 이 정한
+-- "감사 기록은 대상 행보다 오래 산다" 의 의미다.
 DROP TABLE IF EXISTS [dbo].[완료이력];
 DROP TABLE IF EXISTS [dbo].[예약접수];
 DROP TABLE IF EXISTS [dbo].[휴무일];
@@ -20,8 +22,18 @@ CREATE TABLE [dbo].[수검자]
     [차트번호]        NVARCHAR(100)   NOT NULL,
     [성명]            NVARCHAR(100)   NOT NULL,
     [주민번호]        VARCHAR(13)     NOT NULL,
-    [생년월일]        VARCHAR(8)      NOT NULL,
-    [성별]            CHAR(1)         NOT NULL,
+    -- 생년월일·성별은 주민번호에서 DB 가 유도한다. 저장 SP 가 산출해 넣지 않는다 (04 §8.1.2).
+    -- 세 값이 서로 어긋난 상태를 표현할 수 없게 만드는 것이 목적이다.
+    -- INSERT/UPDATE 에 이 두 컬럼을 명시하면 Msg 271 로 거부된다.
+    -- [X] CONVERT 로 감싸지 않으면 LEFT 의 폭 전파로 varchar(14) 가 되어 계약 타입이 깨진다(실측 확인).
+    --     PERSISTED 만 쓰면 is_nullable = 1 이 되므로 NOT NULL 을 함께 붙인다.
+    [생년월일] AS CONVERT(VARCHAR(8),
+        CASE WHEN SUBSTRING([주민번호], 7, 1) IN ('1','2','5','6') THEN '19'
+             WHEN SUBSTRING([주민번호], 7, 1) IN ('3','4','7','8') THEN '20' END
+        + LEFT([주민번호], 6)) PERSISTED NOT NULL,
+    [성별] AS CONVERT(CHAR(1),
+        CASE WHEN SUBSTRING([주민번호], 7, 1) IN ('1','3','5','7') THEN 'M'
+             WHEN SUBSTRING([주민번호], 7, 1) IN ('2','4','6','8') THEN 'F' END) PERSISTED NOT NULL,
     [이메일]          VARCHAR(200)    NULL,
     [휴대전화]        VARCHAR(13)     NULL,
     [전화번호]        VARCHAR(13)     NULL,
@@ -39,12 +51,23 @@ CREATE TABLE [dbo].[수검자]
 
     CONSTRAINT [CK_수검자_CHART_NO_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([차트번호]))) > 0),
     CONSTRAINT [CK_수검자_NAME_NOT_BLANK]     CHECK (LEN(LTRIM(RTRIM([성명]))) > 0),
-    CONSTRAINT [CK_수검자_SOCIAL_FORMAT]      CHECK (LEN([주민번호]) = 13 AND [주민번호] NOT LIKE '%[^0-9]%'),
+    -- 7번째 자리 1~8 은 생년월일·성별 계산열의 전제다. 9·0(1800년대생)은 유도 결과가 NULL 이 된다.
+    -- [X] 이 CHECK 가 Msg 547 로 먼저 걸리기를 의도했으나 실제로는 계산열의 NOT NULL 이 먼저
+    --     평가되어 Msg 515 가 나온다(실측 확인). 제약 평가 순서는 보장되지 않는다.
+    --     그래도 허용 도메인을 여기에 적어 두는 값어치는 남는다 - 스키마만 읽어도 범위를 알 수 있다.
+    -- 04 §1.5 가 실제 주민등록번호를 저장하지 않는다고 못박았으므로 임의 테스트값의 범위에 맞다.
+    CONSTRAINT [CK_수검자_SOCIAL_FORMAT]      CHECK (LEN([주민번호]) = 13 AND [주민번호] NOT LIKE '%[^0-9]%'
+                                                    AND SUBSTRING([주민번호], 7, 1) IN ('1','2','3','4','5','6','7','8')),
+    -- 계산열이라 8자리 숫자는 구조적으로 보장된다. 이 CHECK 가 실제로 잡는 것은
+    -- 주민번호 앞 6자리가 달력에 없는 날짜인 경우다(예: 991332 -> 19991332).
     CONSTRAINT [CK_수검자_BIRTHDAY]           CHECK (LEN([생년월일]) = 8 AND [생년월일] NOT LIKE '%[^0-9]%' AND TRY_CONVERT(DATE, [생년월일], 112) IS NOT NULL),
     CONSTRAINT [CK_수검자_GENDER]             CHECK ([성별] IN ('M','F')),
-    -- CelNumberS 를 제거했으므로 CK_수검자_CEL_NORMALIZED 는 지킬 대상이 없어 사라진다.
-    -- 숫자 보증은 잃지 않는다 - 표시값에서 '-' 를 뺀 결과를 직접 검사한다.
-    CONSTRAINT [CK_수검자_CEL_DIGIT]          CHECK ([휴대전화] IS NULL OR REPLACE([휴대전화], '-', '') NOT LIKE '%[^0-9]%'),
+    -- [X] 하이픈을 뺀 결과만 검사하면 빈 문자열·하이픈만인 값이 전부 통과한다(실측 확인).
+    --     빈 문자열은 어떤 LIKE 패턴에도 걸리지 않기 때문이다. 자릿수를 함께 본다.
+    --     표시값 그대로 저장하므로(04 §8.1.2) 하이픈을 뺀 자릿수가 10~11 이어야 한다.
+    CONSTRAINT [CK_수검자_CEL_DIGIT]          CHECK ([휴대전화] IS NULL
+                                                    OR (REPLACE([휴대전화], '-', '') NOT LIKE '%[^0-9]%'
+                                                        AND LEN(REPLACE([휴대전화], '-', '')) BETWEEN 10 AND 11)),
     CONSTRAINT [CK_수검자_EDIT_DATE]          CHECK ([최종수정일시] >= [생성일시])
 );
 GO
@@ -67,6 +90,10 @@ CREATE TABLE [dbo].[검사코드]
 
     CONSTRAINT [PK_검사코드] PRIMARY KEY CLUSTERED ([검사항목코드]),
     CONSTRAINT [CK_검사코드_CODE_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([검사항목코드]))) > 0),
+    -- Master 의 코드 도메인을 검사구성 문자열의 도메인과 맞춘다. 이것이 없으면 'EX-001' 이나
+    -- '검사01' 이 Master 에는 들어가는데 예약접수 검사구성에는 저장할 수 없는 코드가 된다(실측 확인).
+    -- 선행공백 코드가 별개 PK 행이 되는 것도 함께 막힌다.
+    CONSTRAINT [CK_검사코드_CODE_FORMAT]    CHECK ([검사항목코드] NOT LIKE '%[^A-Z0-9]%'),
     CONSTRAINT [CK_검사코드_NAME_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([검사항목명]))) > 0),
     CONSTRAINT [CK_검사코드_ROLE_REQUIRED]  CHECK ([국가검사규칙코드] IS NOT NULL OR [추가검사코드] IS NOT NULL),
     CONSTRAINT [CK_검사코드_NEX_RULE]       CHECK ([국가검사규칙코드] IS NULL OR [국가검사규칙코드] IN ('NEX-01','NEX-02','NEX-03','NEX-04','NEX-05','NEX-06')),
@@ -104,9 +131,9 @@ CREATE TABLE [dbo].[예약접수]
     [생성일시]     DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_CREATION_DATE]  DEFAULT (SYSDATETIME()),
     [최종수정일시] DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_LAST_EDIT_DATE] DEFAULT (SYSDATETIME()),
     [행버전]       ROWVERSION   NOT NULL,
-    -- 검사구성. 검사항목코드를 오름차순으로 쉼표로 잇는다 (plans/10 §1).
-    -- [X] NOT NULL 은 "국가검사가 반드시 있다" 를 보증하지 않는다. CORRUPT-2(저장 NEX 0행)를
-    --     만들 수 있어야 하므로 빈 문자열이 통과한다. 빈 문자열이 검사구성 손상의 유일한
+    -- 검사구성. 검사항목코드를 오름차순으로 쉼표로 잇는다 (04 §8.2.2).
+    -- [X] NOT NULL 은 "국가검사가 반드시 있다" 를 보증하지 않는다. 저장 NEX 가 0 인 손상 상태를
+    --     표현할 수 있어야 하므로 빈 문자열이 통과한다. 빈 문자열이 검사구성 손상의 유일한
     --     표현이고 판정식은 LEN([국가검사항목]) = 0 이다. NULL 과 빈 문자열이 둘 다 손상을
     --     뜻하는 상태를 만들지 않으려고 NOT NULL 을 건다.
     [국가검사항목] NVARCHAR(100) NOT NULL,
@@ -118,11 +145,24 @@ CREATE TABLE [dbo].[예약접수]
     CONSTRAINT [CK_예약접수_TIME_SLOT] CHECK ([시간대코드] IN ('AM','PM')),
     CONSTRAINT [CK_예약접수_STATUS]    CHECK ([상태코드] IN ('RSV','RCP','CNR','CNC')),
     CONSTRAINT [CK_예약접수_EDIT_DATE] CHECK ([최종수정일시] >= [생성일시]),
-    -- 코드 존재는 보증하지 못한다(FK_검사항목_검사코드 를 잃은 대가). 형식만 막는다.
+    -- 코드 존재·중복·정렬은 보증하지 못한다(검사코드 FK 를 잃은 대가, 04 §8.2.3). 문법만 막는다.
+    -- [X] 문자 집합만 보면 빈 토큰과 선행·후행 쉼표가 전부 통과한다(실측 확인).
+    --     빈 문자열은 손상 표현이라 계속 통과해야 하는데, 아래 세 패턴은 빈 문자열에 걸리지 않는다.
+    -- [X] DB 정렬이 Korean_Wansung_CI_AS 라 [A-Z0-9] 범위가 소문자·악센트 라틴·전각 영숫자까지
+    --     포함한다(실측 확인). 이 CHECK 는 "A-Z0-9 만" 을 뜻하지 않는다. 정렬 무관 판정에는
+    --     COLLATE 가 필요한데 06 §9.2 허용목록 밖이라 여기서는 닫지 않는다.
     CONSTRAINT [CK_예약접수_EXAM_FORMAT] CHECK
     (
         [국가검사항목] NOT LIKE '%[^A-Z0-9,]%'
-    AND ([추가검사항목] IS NULL OR [추가검사항목] NOT LIKE '%[^A-Z0-9,]%')
+    AND [국가검사항목] NOT LIKE '%,,%'
+    AND [국가검사항목] NOT LIKE ',%'
+    AND [국가검사항목] NOT LIKE '%,'
+    AND ([추가검사항목] IS NULL
+         OR (LEN([추가검사항목]) > 0
+         AND [추가검사항목] NOT LIKE '%[^A-Z0-9,]%'
+         AND [추가검사항목] NOT LIKE '%,,%'
+         AND [추가검사항목] NOT LIKE ',%'
+         AND [추가검사항목] NOT LIKE '%,'))
     )
 );
 GO
@@ -138,8 +178,10 @@ CREATE TABLE [dbo].[완료이력]
 (
     [수검자ID]     BIGINT        NOT NULL,
     [완료일자]     DATE          NOT NULL,
-    -- 검사구성. 예약접수와 같은 형식이다 (plans/10 §1 · §4.3).
+    -- 검사구성. 예약접수와 같은 형식이다 (04 §8.5.2).
     -- 외부 기관 검진은 검사 내용을 모를 수 있으므로 둘 다 NULL 을 허용한다.
+    -- 예약접수와 달리 빈 문자열은 막는다. 여기서는 "모름" 이 NULL 하나로 고정이고
+    -- 손상 상태를 표현할 이유가 없다.
     [국가검사항목] NVARCHAR(100) NULL,
     [추가검사항목] NVARCHAR(50)  NULL,
 
@@ -148,29 +190,51 @@ CREATE TABLE [dbo].[완료이력]
         REFERENCES [dbo].[수검자] ([수검자ID]) ON DELETE NO ACTION ON UPDATE NO ACTION,
     CONSTRAINT [CK_완료이력_EXAM_FORMAT] CHECK
     (
-        ([국가검사항목] IS NULL OR [국가검사항목] NOT LIKE '%[^A-Z0-9,]%')
-    AND ([추가검사항목] IS NULL OR [추가검사항목] NOT LIKE '%[^A-Z0-9,]%')
+        ([국가검사항목] IS NULL
+         OR (LEN([국가검사항목]) > 0
+         AND [국가검사항목] NOT LIKE '%[^A-Z0-9,]%'
+         AND [국가검사항목] NOT LIKE '%,,%'
+         AND [국가검사항목] NOT LIKE ',%'
+         AND [국가검사항목] NOT LIKE '%,'))
+    AND ([추가검사항목] IS NULL
+         OR (LEN([추가검사항목]) > 0
+         AND [추가검사항목] NOT LIKE '%[^A-Z0-9,]%'
+         AND [추가검사항목] NOT LIKE '%,,%'
+         AND [추가검사항목] NOT LIKE ',%'
+         AND [추가검사항목] NOT LIKE '%,'))
     )
 );
 GO
-CREATE TABLE [dbo].[변경이력]
-(
-    -- 성공한 데이터 변경만 기록한다. 바뀐 컬럼 1개당 1행이다 (plans/10 §4.5, 00 CP-06).
-    -- 실패한 호출은 데이터를 바꾸지 않으므로 남기지 않는다.
-    [이력ID]     BIGINT         IDENTITY(1,1) NOT NULL,
-    [기록일시]   DATETIME2(0)   NOT NULL CONSTRAINT [DF_변경이력_CREATION_DATE] DEFAULT (SYSDATETIME()),
-    [조작자명]   NVARCHAR(50)   NULL,
-    [대상테이블] NVARCHAR(10)   NOT NULL,
-    [대상키]     BIGINT         NULL,
-    [컬럼명]     NVARCHAR(30)   NOT NULL,
-    -- 감사 기록은 복원 근거가 아니라 열람용이라 4000자에서 자른다 (00 CP-06).
-    [변경전]     NVARCHAR(4000) NULL,
-    [변경후]     NVARCHAR(4000) NULL,
+-- 감사 기록은 배포로 지워지지 않는다. 이 테이블만 clean-create 대상이 아니며
+-- CLAUDE.md §8 의 유일한 예외다. 06 §8.1 이 clean-create 의 근거로 든
+-- "보존할 운영 데이터가 없다" 가 이 테이블에는 성립하지 않는다.
+-- 이 가드가 옛 구조를 조용히 유지하는 드리프트는 verify-schema-doc 의
+-- DOC-001~005 양방향 대조가 잡는다. 그래서 별도 검사를 추가하지 않는다.
+IF OBJECT_ID(N'[dbo].[변경이력]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[변경이력]
+    (
+        -- 성공한 데이터 변경만 기록한다. 바뀐 컬럼 1개당 1행이다 (04 §8.6.1, 00 CP-06).
+        -- 실패한 호출은 데이터를 바꾸지 않으므로 남기지 않는다.
+        [이력ID]     BIGINT         IDENTITY(1,1) NOT NULL,
+        [기록일시]   DATETIME2(0)   NOT NULL CONSTRAINT [DF_변경이력_CREATION_DATE] DEFAULT (SYSDATETIME()),
+        [조작자명]   NVARCHAR(50)   NULL,
+        [대상테이블] NVARCHAR(10)   NOT NULL,
+        -- 대상 테이블 둘 다 BIGINT 단일 PK 이고 성공한 변경만 기록하므로 키를 모르는 경로가 없다.
+        [대상키]     BIGINT         NOT NULL,
+        [컬럼명]     NVARCHAR(30)   NOT NULL,
+        -- 감사 기록은 복원 근거가 아니라 열람용이라 4000자에서 자른다 (00 CP-06).
+        [변경전]     NVARCHAR(4000) NULL,
+        [변경후]     NVARCHAR(4000) NULL,
 
-    CONSTRAINT [PK_변경이력] PRIMARY KEY CLUSTERED ([이력ID]),
-    CONSTRAINT [CK_변경이력_TARGET_TABLE] CHECK ([대상테이블] IN (N'수검자', N'예약접수', N'완료이력')),
-    CONSTRAINT [CK_변경이력_COLUMN_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([컬럼명]))) > 0)
-);
+        CONSTRAINT [PK_변경이력] PRIMARY KEY CLUSTERED ([이력ID]),
+        -- 완료이력을 쓰는 Write SP 가 0개다. scripts/copy-completion.sql 은 사람이 돌리는
+        -- 스크립트라 변경이력을 남기지 않는다. 게다가 완료이력 PK 는 (수검자ID, 완료일자)
+        -- 복합키라 BIGINT 한 컬럼인 [대상키] 로는 그 행을 특정하지 못한다.
+        CONSTRAINT [CK_변경이력_TARGET_TABLE] CHECK ([대상테이블] IN (N'수검자', N'예약접수')),
+        CONSTRAINT [CK_변경이력_COLUMN_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([컬럼명]))) > 0)
+    );
+END
 GO
 CREATE SEQUENCE [dbo].[SEQ_HC_CHART_NO]
     AS BIGINT START WITH 1 INCREMENT BY 1

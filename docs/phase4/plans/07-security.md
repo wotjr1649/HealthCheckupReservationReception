@@ -198,8 +198,8 @@ END
 
 REVERT;
 
-IF @Denied = 7 AND @Total = 7
-    PRINT 'PASS SEC-004 7개 테이블 직접 SELECT 전부 Msg 229 거부';
+IF @Denied = 6 AND @Total = 6
+    PRINT 'PASS SEC-004 6개 테이블 직접 SELECT 전부 Msg 229 거부';
 ELSE BEGIN PRINT 'FAIL SEC-004 거부 ' + CONVERT(VARCHAR(5), @Denied) + '/' + CONVERT(VARCHAR(5), @Total); SET @Fail += 1; END
 ```
 
@@ -208,7 +208,7 @@ ELSE BEGIN PRINT 'FAIL SEC-004 거부 ' + CONVERT(VARCHAR(5), @Denied) + '/' + C
 `[X]` **`SEC-005`(DML)는 명시적 Transaction 안에서 시도하고 성공 여부와 무관하게 `ROLLBACK` 한다.** 권한이 잘못 부여된 상황이 바로 검수 대상인데, 그때 `INSERT`/`UPDATE`/`DELETE` 가 성공하면 초안에는 롤백이 없어 실제 데이터가 바뀐다. 전후 행수 지문도 비교한다.
 
 ```sql
--- SEC-005  7개 테이블 × INSERT/UPDATE/DELETE = 21건 전부 거부
+-- SEC-005  6개 테이블 × INSERT/UPDATE/DELETE = 18건 전부 거부
 --          권한이 잘못 부여됐다면 여기서 실제로 쓰이므로 트랜잭션으로 감싼다.
 DECLARE @Stmt NVARCHAR(400), @Tbl SYSNAME, @Col SYSNAME, @Op VARCHAR(10), @Prev SYSNAME = N'';
 DECLARE @D5 INT = 0, @T5 INT = 0;

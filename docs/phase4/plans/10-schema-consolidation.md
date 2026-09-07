@@ -299,7 +299,7 @@ verify-baseline.sh     해시 3개 교체 (00 · 04 · 05)
 ### `T57` 최종 검증
 
 - `./scripts/rebuild.sh` -> `./scripts/test.sh` 전건 · 계약 25건 · 게이트 4종 · `inspect.sh`
-- 실물 대조: 테이블 6 · 컬럼 42 · PK 6 · FK 2 · 영문 컬럼 0
+- 실물 대조: 테이블 6 · 컬럼 48 · PK 6 · FK 2 · 영문 컬럼 0
 - 태그 `phase4-r3-t57-schema-consolidation`
 
 ---

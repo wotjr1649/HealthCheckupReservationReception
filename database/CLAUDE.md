@@ -64,8 +64,8 @@ head -c 3 <파일> | od -An -tx1     # ef bb bf 가 나와야 한다
 exit code 가 유일한 자동 판정 근거다. `-b` 없이 실행하지 않는다.
 
 `-I`(`SET QUOTED_IDENTIFIER ON`)도 필수다. sqlcmd 는 SSMS 와 달리 **OFF** 로 접속하는데,
-`수검자`(`IX_수검자_CEL_NUMBER_S`)와 `검사코드`(`UX_검사코드_AEX_CODE`)에는 필터형 인덱스가 있어
-**그 두 테이블의 `INSERT`/`UPDATE`/`DELETE` 가 `Msg 1934` 로 실패한다**(실측 확인).
+`검사코드` 에 필터형 인덱스(`UX_검사코드_AEX_CODE`)가 있어
+**그 테이블의 `INSERT`/`UPDATE`/`DELETE` 가 `Msg 1934` 로 실패한다**(실측 확인).
 인덱스를 만들 때만이 아니라 데이터를 바꿀 때마다 요구된다.
 배포 `.sql` 은 자체적으로도 첫 배치에 `SET QUOTED_IDENTIFIER ON;` + `GO` 를 둔다 —
 `SET` 은 parse 시점에 적용되므로 같은 배치 안에서는 소급되지 않는다.
@@ -76,10 +76,18 @@ exit code 가 유일한 자동 판정 근거다. `-b` 없이 실행하지 않는
 목록 밖 기능을 쓰지 않는다. `CURSOR`·`STRING_SPLIT`·`FOR XML`·JSON·TVP·Trigger·동적 SQL 은 전부 밖이다.
 예외는 배포 배관 한정 `CREATE OR ALTER` 와 `DROP … IF EXISTS` 뿐이다.
 
-## 8. `Deploy.sql` 은 매번 초기화한다
+## 8. `Deploy.sql` 은 매번 초기화한다 — `변경이력` 하나만 빼고
 
 `01_Schema.sql` 이 FK 역순 `DROP IF EXISTS` 후 `CREATE` 하는 clean-create 방식이다.
-재실행하면 스키마와 데이터가 항상 같은 상태로 돌아간다.
+재실행하면 다섯 테이블의 스키마와 데이터가 항상 같은 상태로 돌아간다.
+
+**`변경이력` 은 예외다.** 감사 기록은 배포로 지워지지 않아야 하므로 `DROP` 대상에서 빼고
+`IF OBJECT_ID(...) IS NULL` 가드로 만든다(`04` §8.6.3 · `06` §8.1). 물리 테이블 6개 중
+이 하나뿐이며, 나머지 다섯에는 `IF NOT EXISTS` 가드를 넣지 않는다.
+
+이 가드가 옛 구조를 조용히 유지하는 드리프트는 `./scripts/verify-schema-doc.sh` 의
+`DOC-001`~`DOC-005` 양방향 대조가 잡는다. 별도 검사를 추가하지 않는 이유다.
+`Rebuild.sql` 은 DB 를 통째로 `DROP` 하므로 그 경로에서는 보존되지 않는다 — 개발 전용 진입점이다.
 
 ## 9. `DROP DATABASE` 는 `Rebuild.sql` 에만 있다
 

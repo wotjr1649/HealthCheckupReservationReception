@@ -8,8 +8,8 @@ const exp={
  "01_Process_Definition.md":"079891e98f69d40082d822b53ad50ba81f16d21ee74ce3e45fd5b499e80811a0",
  "02_Function_Definition.xlsx":"e4e6601d07cf86c23a1f30d5bd17e18f993949b30cfd769de239d1a50c83e41a",
  "03_Wireframe_Definition.md":"84c283d6f4c761b45362f91ce4f208a24389c0c38815dd5f59b71c45c476a5b8",
- "04_DB_Design.md":"0bed45c16696441d9191ce03eb9930a85e81021684ba9f27b51b73af448d484e",
- "05_DB_Rule_SP_Contract.md":"0cd0776011d7cb35d688139d0269c9e1287a876dd606e61692448892842a33ed"};
+ "04_DB_Design.md":"253e2cc43ae4a3afc04eecee490479681410d3936be71c98d928f30af6471653",
+ "05_DB_Rule_SP_Contract.md":"540e356a649dbeed4f13de453a3d77a07707e14577aba5a4ecce160d4e7308a3"};
 let ok=0;
 for(const [n,e] of Object.entries(exp)){
   const h=c.createHash("sha256").update(fs.readFileSync("../docs/baseline/"+n)).digest("hex");

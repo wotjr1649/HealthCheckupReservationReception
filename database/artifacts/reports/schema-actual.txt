@@ -8,7 +8,7 @@ C|변경이력|1|이력ID|bigint|0
 C|변경이력|2|기록일시|datetime2|0
 C|변경이력|3|조작자명|nvarchar|1
 C|변경이력|4|대상테이블|nvarchar|0
-C|변경이력|5|대상키|bigint|1
+C|변경이력|5|대상키|bigint|0
 C|변경이력|6|컬럼명|nvarchar|0
 C|변경이력|7|변경전|nvarchar|1
 C|변경이력|8|변경후|nvarchar|1
@@ -46,12 +46,12 @@ C|휴무일|1|휴무일자|date|0
 C|휴무일|2|휴무일명|nvarchar|0
 C|휴무일|3|사용여부|bit|0
 C|휴무일|4|비고|nvarchar|1
+O|PK|PK_완료이력
 O|PK|PK_변경이력
 O|PK|PK_수검자
 O|PK|PK_검사코드
 O|PK|PK_휴무일
 O|PK|PK_예약접수
-O|PK|PK_완료이력
 O|UQ|UQ_수검자_SOCIAL_NUMBER
 O|UQ|UQ_수검자_CHART_NO
 O|FK|FK_완료이력_수검자
@@ -67,6 +67,7 @@ O|CK|CK_수검자_GENDER
 O|CK|CK_수검자_CEL_DIGIT
 O|CK|CK_수검자_EDIT_DATE
 O|CK|CK_검사코드_CODE_NOT_BLANK
+O|CK|CK_검사코드_CODE_FORMAT
 O|CK|CK_검사코드_NAME_NOT_BLANK
 O|CK|CK_검사코드_ROLE_REQUIRED
 O|CK|CK_검사코드_NEX_RULE
