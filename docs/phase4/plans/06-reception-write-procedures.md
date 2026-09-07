@@ -1,6 +1,23 @@
 `[!]` **이 계획서의 스키마 참조는 `plans/09`·`plans/10` 이 교체했다** ― 컬럼명 한글화,
 검사구성의 `예약접수`·`완료이력` 흡수, `검사항목` 삭제, `변경이력` EAV 전환. 당시 구조는 git 이력에 있다.
 
+`[R3]` **`T28`~`T30` 착수 시점(2026-09-07)에 착수 차단 결함을 제거했다.** 아래가 실행을 막고 있었다.
+
+```text
+검사항목 Detail DELETE/INSERT (ExamSourceCode='AEX')  -> 검사구성은 예약접수 행의 컬럼 2개다 (04 §8.2.2).
+                                                       접수추가검사는 추가검사항목 한 컬럼만 UPDATE 한다.
+ExamSourceCode 로 NEX/AEX 역할 판정                    -> 그 컬럼이 없다. 스펙 §21.2a 의 양끝 패딩 LIKE 조인으로 센다.
+CORRUPT-4 를 검사항목 행으로 심음                       -> 추가검사항목 자리에 NEX 전용 코드(EX001)를 넣는다.
+업무시간 가드의 [Active]                                -> [사용여부]
+Parameter 2 / 9 / 2                                    -> 3 / 10 / 3. R3 이 Write SP 8개에 @OperatorName 을 더했다.
+```
+
+`[R3]` **접수완료는 업무시간 안에서도 접수마감(AM 11:00 / PM 16:00) 전이어야 성공한다.** production SP 에
+시각 주입 뒷문을 두지 않으므로 `CWR-006`(성공)과 `CWR-009`(마감경과)는 **배타적**이다. `tests/07` 과
+`verify-contract-all.sh` 가 현재 시각으로 갈라 하나만 판정하고 나머지는 `SKIP` 한다 — `SKIP` 은 `PASS` 가 아니다.
+
+구현의 기준은 이 계획서의 SQL 본문이 아니라 `05` 계약과 `06` 스펙이다. 나머지 서술은 그대로 두었다.
+
 # Stage 8 — 접수 Write Stored Procedure 3개
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
@@ -40,7 +57,7 @@
 - Create: `deploy/07_Procedures_Reception_Write.sql`
 - Create: `tests/07_Reception_Write_Tests.sql`
 
-**Interfaces:** Produces RS0 + RS1 `(WorkId, Status, RowVersion)`. Parameter 2개: `@WorkId BIGINT`, `@RowVersion BINARY(8)`.
+**Interfaces:** Produces RS0 + RS1 `(WorkId, Status, RowVersion)`. Parameter 3개: `@WorkId BIGINT`, `@RowVersion BINARY(8)`, `@OperatorName NVARCHAR(50)`.
 
 **허용 Code:** `0, 100, 304, 308~309, 500, 502~503, 601, 701`
 
@@ -62,7 +79,7 @@
 | `CWR-008` | `@Wpast, @Rpast` | `503` | **과거** 예약일 접수 (`05` §17, 스펙 §33.4) |
 | `CWR-009` | `@Wt, @Rt` (마감시각 경과) | `304` | 접수 마감 경계 |
 | `CWR-010` | `@Wcnl, @Rcnl` | `502` | `CNR` Work 접수 — `CWR-004` 와 같은 Code, 다른 진입 |
-| `CWR-011` | `@Wc4, @Rc4` (`CORRUPT-4`) | `701` | `ExamSourceCode` ↔ Master 역할 불일치 |
+| `CWR-011` | `@Wc4, @Rc4` (`CORRUPT-4`) | `701` | 추가검사항목 자리의 NEX 전용 코드 (Master 역할 불일치) |
 
 `[X]` **`CWR-002` 의 기대는 `503` 하나다.** 초안은 `IN (503, 308, 309)` 였는데, 그러면 업무시간 밖 실행에서 `308`/`309` 로도 PASS 해 **미래 예약일 검증이 실제로 일어났는지 알 수 없다.** 업무시간 가드가 파일 머리에 있으므로 `503` 만 인정한다.
 
@@ -77,7 +94,7 @@ IF NOT (DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
         AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
         AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
         AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
-                         WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [Active] = 1))
+                         WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [사용여부] = 1))
 BEGIN
     PRINT 'SKIP 07_Reception_Write_Tests 업무시간(월~토 09:00~18:00, 비휴무일) 밖';
     RETURN;
@@ -138,7 +155,7 @@ BEGIN
     ELSE BEGIN PRINT 'FAIL CWR-005 손상 Work 가 접수됐다'; SET @Fail += 1; END
 END
 
--- CWR-011  CORRUPT-4 (ExamSourceCode ↔ Master 역할 불일치) → 701
+-- CWR-011  CORRUPT-4 (추가검사항목에 NEX 전용 코드 EX001 → Master 역할 불일치) → 701
 DECLARE @Wc4 BIGINT = (SELECT TOP (1) w.[업무ID] FROM [dbo].[예약접수] w
                         JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
                        WHERE p.[차트번호] = 'T009' AND w.[상태코드] = 'RSV');
@@ -228,7 +245,7 @@ END
  7. RowVersion 불일치                             → 601
  8. Work 검사구성 무결성 3종 (스펙 §21.2a)
        (a) NEX 개수 NOT BETWEEN 8 AND 11          → 701
-       (b) ExamSourceCode 가 검사코드 역할과 불일치 → 701
+       (b) 저장 코드가 Master 에 실재하며 역할이 맞는가 (양끝 패딩 LIKE 조인 개수 대조) → 701
        (c) AEX 개수 > 6                           → 701
  9. UFN_HC_일정확인(@ServerTime, @Today, TimeSlot, 'NONE') CanWorkNow=0 → 308 / 309
 10. ReservationDate <> @Today                     → 503 NotToday, Field='WorkId'
@@ -264,7 +281,7 @@ READ COMMITTED 스캔이 `'RCP'` 구간을 지난 뒤 `'RSV'` 에서 X 잠금에
 
 `05` §14 의 논리 잠금영역 표는 **하한**이므로 잠금 확장은 계약 위반이 아니다. 전역 순서 3→4→5 를 그대로 지켜 교착 분석도 유지된다.
 
-`ReservationDate`·`TimeSlotCode`·Detail은 **UPDATE 대상에서 제외**한다.
+`예약일`·`시간대코드`·검사구성 두 컬럼은 **UPDATE 대상에서 제외**한다.
 
 - [ ] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_UPDATE_접수완료 구현 및 접수 경계 테스트 7건`
 
@@ -300,7 +317,7 @@ ELSE BEGIN PRINT 'FAIL CWR-050 변경기록 불일치'; SET @Fail += 1; END
 
 **선행조건:** `T28` 완료.
 
-**Interfaces:** Produces RS0 + RS1 `(WorkId, Status, RowVersion)`. Parameter 9개: `@WorkId`, `@RowVersion`, `@AexOpt01Selected`~`@AexOpt07Selected`.
+**Interfaces:** Produces RS0 + RS1 `(WorkId, Status, RowVersion)`. Parameter 10개: `@WorkId`, `@RowVersion`, `@AexOpt01Selected`~`@AexOpt07Selected`, `@OperatorName`.
 
 **허용 Code:** `0, 1, 100, 308~309, 410~412, 500, 502, 601, 700~701`
 
@@ -378,7 +395,7 @@ DECLARE @W11 BIGINT = (SELECT TOP (1) w.[업무ID] FROM [dbo].[예약접수] w
 IF @W11 IS NULL
 BEGIN PRINT N'FAIL CWR-024 사전조건 — T011 의 RCP Work 가 없다 (tests/00b)'; SET @Fail += 1; END
 ELSE IF NOT EXISTS (SELECT 1 FROM [dbo].[예약접수]
-                     WHERE [업무ID] = @W11 AND [ExamSourceCode] = 'NEX' AND [검사항목코드] = 'EX012')
+                     WHERE [업무ID] = @W11 AND N',' + [국가검사항목] + N',' LIKE N'%,EX012,%')
 BEGIN PRINT N'FAIL CWR-024 사전조건 — T011 저장 NEX 에 EX012 가 없다. 412 를 관측할 수 없다'; SET @Fail += 1; END
 ELSE
 BEGIN
@@ -433,7 +450,7 @@ PRINT '=== 07_Reception_Write_Tests 완료 ===';
  8. 실제 변경이면
       저장 Work 무결성 3종 (스펙 §21.2a) — No-op 판정보다 **먼저** 한다
        (a) NEX 개수 NOT BETWEEN 8 AND 11                        → 701
-       (b) ExamSourceCode 가 Master 의 NEX/AEX 역할과 불일치      → 701
+       (b) 저장 코드가 Master 에 실재하며 역할이 맞는가 (양끝 패딩 LIKE 조인 개수 대조) → 701
        (c) AEX 개수 > 6                                          → 701
     [X] 초안은 "저장 NEX 행수 < 1" 만 봤다. 그러면 NEX 12행·역할 불일치·AEX 7행이 통과한다.
         또한 No-op(Code=1)을 무결성 검사보다 먼저 반환하면 손상 Work 를 그대로 승인하게 된다.
@@ -443,14 +460,14 @@ PRINT '=== 07_Reception_Write_Tests 완료 ===';
       UFN_HC_추가검사확인(@PatientId, @WorkReservationDate, @WorkId, 1 /*@UseSavedExams*/, 7 BIT)
         — @PatientId 와 @WorkReservationDate 는 6번에서 읽은 Work 행의 값이다
         Requested=1 인데 CanSelect=0 → 410 / 411 / 412 (OptionCode ASC 첫 건)
- 9. AEX Detail DELETE (ExamSourceCode='AEX' 만) → INSERT (Selected=1)
+ 9. [R3] 추가검사항목 한 컬럼을 UPDATE 한다. Detail DELETE/INSERT 가 없다.
 10. UPDATE 예약접수 SET LastEditDate=@StoredNow
        WHERE WorkId=@WorkId AND StatusCode='RCP' AND RowVersion=@RowVersion
        @@ROWCOUNT=0 → 502 / 601
 11. COMMIT → RS0 + RS1 (새 RowVersion)
 ```
 
-**핵심:** `DELETE` 는 `ExamSourceCode='AEX'` 행만 지운다. NEX Detail은 절대 건드리지 않는다.
+**핵심:** `UPDATE` 는 `추가검사항목` 만 건드린다. `국가검사항목`·`예약일`·`시간대코드` 는 SET 목록에 없다.
 
 - [ ] **Step 3: GREEN + Commit** — `feat(phase4): USP_HC_UPDATE_접수추가검사 구현 및 No-op·RowVersion 테스트 7건`
 
@@ -486,11 +503,11 @@ ELSE BEGIN PRINT 'FAIL CWR-051 변경기록 불일치'; SET @Fail += 1; END
 
 **선행조건:** `T29` 완료.
 
-**Interfaces:** Produces RS0 + RS1 `(WorkId, Status, RowVersion)`. Parameter 2개.
+**Interfaces:** Produces RS0 + RS1 `(WorkId, Status, RowVersion)`. Parameter 3개(`@WorkId`, `@RowVersion`, `@OperatorName`).
 
 **허용 Code:** `0, 100, 308~309, 500, 502, 601`
 
-**금지사항:** `RSV` 로 복원하지 않는다. Detail을 삭제하지 않는다. 접수 마감시각을 취소 조건으로 쓰지 않는다.
+**금지사항:** `RSV` 로 복원하지 않는다. 검사구성 두 컬럼을 지우지 않는다. 접수 마감시각을 취소 조건으로 쓰지 않는다.
 
 - [ ] **Step 1: RED**
 

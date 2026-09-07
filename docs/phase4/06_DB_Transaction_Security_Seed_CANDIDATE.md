@@ -1535,6 +1535,14 @@ CREATE USER [HC_APP_TEST] WITHOUT LOGIN;
 ALTER ROLE [HC_APP_ROLE] ADD MEMBER [HC_APP_TEST];
 ```
 
+`[R3]` **위 `GRANT` 목록은 15건이라 `USP_HC_SELECT_변경이력`(SP-LOG-01)이 빠져 있다.** R3 재봉인으로
+SP 가 16개가 되었으므로 구현한다면 16건이어야 한다 — `05` §1.3 과 §18 SP 구현 Matrix 를 참조한다.
+
+`[사용자 결정 2026-09-07]` **Security(`T31`·`T32`)를 구현하지 않는다.** 과제 범위에서 권한 경계는
+요구되지 않고 개발 속도만 늦춘다는 판단이다. `deploy/08_Security.sql` 은 placeholder 로 남고
+`§45.2` 의 `SEC` 11건은 **범위 밖**이다 — `NOT RUN` 이며 `PASS` 로 승격하지 않는다.
+Ownership chaining 전제(§32.2)와 Phase 5 연결 방법(§32.3)은 문서로만 남긴다.
+
 ## 32.2 결정 사항
 
 | 항목 | 결정 | 근거 |

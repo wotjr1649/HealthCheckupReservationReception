@@ -2109,5 +2109,431 @@
   "RWR-099_cleanup": {
     "sp": "(fixture)",
     "resultSets": []
+  },
+  "CWR-000_fixture": {
+    "sp": "(fixture)",
+    "resultSets": []
+  },
+  "CWR-001_접수완료_미존재_WorkId": {
+    "sp": "USP_HC_UPDATE_접수완료",
+    "rs0Success": 0,
+    "rs0Code": 500,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-002_접수완료_미래예약일": {
+    "sp": "USP_HC_UPDATE_접수완료",
+    "rs0Success": 0,
+    "rs0Code": 503,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-003_접수완료_stale_RowVersion": {
+    "sp": "USP_HC_UPDATE_접수완료",
+    "rs0Success": 0,
+    "rs0Code": 601,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-004_접수완료_CNR_Work": {
+    "sp": "USP_HC_UPDATE_접수완료",
+    "rs0Success": 0,
+    "rs0Code": 502,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-005_접수완료_NEX0행": {
+    "sp": "USP_HC_UPDATE_접수완료",
+    "rs0Success": 0,
+    "rs0Code": 701,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-006_접수완료_성공": {
+    "sp": "USP_HC_UPDATE_접수완료",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-007_접수완료_이미_RCP": {
+    "sp": "USP_HC_UPDATE_접수완료",
+    "rs0Success": 0,
+    "rs0Code": 502,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-008_접수완료_과거예약일": {
+    "sp": "USP_HC_UPDATE_접수완료",
+    "rs0Success": 0,
+    "rs0Code": 503,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-009_접수완료_마감경과": {
+    "sp": "USP_HC_UPDATE_접수완료",
+    "rs0Success": 0,
+    "rs0Code": 304,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-011_접수완료_Master역할불일치": {
+    "sp": "USP_HC_UPDATE_접수완료",
+    "rs0Success": 0,
+    "rs0Code": 701,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-020_접수추가검사_동일집합": {
+    "sp": "USP_HC_UPDATE_접수추가검사",
+    "rs0Success": 1,
+    "rs0Code": 1,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-021_접수추가검사_실제변경": {
+    "sp": "USP_HC_UPDATE_접수추가검사",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-022_접수추가검사_전체해제": {
+    "sp": "USP_HC_UPDATE_접수추가검사",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-023_접수추가검사_성별불충족": {
+    "sp": "USP_HC_UPDATE_접수추가검사",
+    "rs0Success": 0,
+    "rs0Code": 411,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-024_접수추가검사_NEX중복": {
+    "sp": "USP_HC_UPDATE_접수추가검사",
+    "rs0Success": 0,
+    "rs0Code": 412,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-025_접수추가검사_RSV상태": {
+    "sp": "USP_HC_UPDATE_접수추가검사",
+    "rs0Success": 0,
+    "rs0Code": 502,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-026_접수추가검사_stale_RowVersion": {
+    "sp": "USP_HC_UPDATE_접수추가검사",
+    "rs0Success": 0,
+    "rs0Code": 601,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-040_접수취소_RSV상태": {
+    "sp": "USP_HC_UPDATE_접수취소",
+    "rs0Success": 0,
+    "rs0Code": 502,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-041_접수취소_stale_RowVersion": {
+    "sp": "USP_HC_UPDATE_접수취소",
+    "rs0Success": 0,
+    "rs0Code": 601,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-042_접수취소_성공": {
+    "sp": "USP_HC_UPDATE_접수취소",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "WorkId",
+          "Status",
+          "RowVersion"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-043_접수취소_이미_CNC": {
+    "sp": "USP_HC_UPDATE_접수취소",
+    "rs0Success": 0,
+    "rs0Code": 502,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-044_CNC_예약변경_불가": {
+    "sp": "USP_HC_UPDATE_예약변경",
+    "rs0Success": 0,
+    "rs0Code": 502,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "CWR-099_cleanup": {
+    "sp": "(fixture)",
+    "resultSets": []
+  },
+  "PWR-099_cleanup": {
+    "sp": "(fixture)",
+    "resultSets": []
   }
 }
