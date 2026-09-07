@@ -63,7 +63,7 @@ erDiagram
 ```text
 Deploy.sql / Rebuild.sql   진입점 2개
 deploy/                    00_Preflight → 01_Schema → 02_Seed → 03_Functions
-                           → 04~07_Procedures → 08_Security → 09_Verify
+                           → 04~07_Procedures → 08_Verify
 tests/                     00 Harness · 01~14 단계별 시험 · contract/ SP 호출 시나리오
 scripts/                   deploy · rebuild · test · concurrency-test
                            verify-baseline · verify-winforms-unchanged

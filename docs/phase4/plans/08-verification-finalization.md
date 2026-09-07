@@ -425,7 +425,7 @@ git commit -m "test(phase4): 동시성 시나리오 8종 및 barrier 실행 스�
 
 ---
 
-## Task T35: `deploy/09_Verify.sql` · `tests/14_Clean_Rebuild_Verify.sql`
+## Task T35: `deploy/08_Verify.sql` · `tests/14_Clean_Rebuild_Verify.sql`
 
 **목적:** 배포 직후 객체 인벤토리를 자동 검증하고, 연속 2회 rebuild가 동일 결과를 내는지 확인한다 (G03·G04·G14).
 
@@ -433,9 +433,9 @@ git commit -m "test(phase4): 동시성 시나리오 8종 및 barrier 실행 스�
 
 **선행조건:** `T34` 완료.
 
-**Files:** Create `deploy/09_Verify.sql`, `tests/14_Clean_Rebuild_Verify.sql`
+**Files:** Create `deploy/08_Verify.sql`, `tests/14_Clean_Rebuild_Verify.sql`
 
-- [x] **Step 1: `deploy/09_Verify.sql` — 배포 말미 자동 검증**
+- [x] **Step 1: `deploy/08_Verify.sql` — 배포 말미 자동 검증**
 
 `[X 실측]` **R3 반영으로 두 단언이 넓어졌다.** `VER-005` 는 `PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5`, `VER-007` 은 `CHECK 24 / DEFAULT 8 / Seed Exam 19 / Holiday 2` 를 함께 센다. 계획 초안의 `NCI 4` 는 `IX_변경이력_TARGET` 신설로 5 가 됐다.
 
@@ -477,7 +477,7 @@ PRINT 'INFO CompatibilityLevel = ' + @Compat;
 PRINT 'INFO Collation          = ' + CONVERT(VARCHAR(80), DATABASEPROPERTYEX(DB_NAME(), 'Collation'));
 
 IF @Fail > 0 THROW 51000, N'배포 검증 실패', 1;
-PRINT '=== 09_Verify 완료 ===';
+PRINT '=== 08_Verify 완료 ===';
 GO
 ```
 

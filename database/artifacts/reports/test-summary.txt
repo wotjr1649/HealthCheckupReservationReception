@@ -1,7 +1,7 @@
 === Phase 4 테스트 요약 ===
-생성시각: 2026-09-07T23:49:38+09:00
+생성시각: 2026-09-08T01:13:46+09:00
 회귀 로그: artifacts/logs/full_test_run_off.log
-회차 시각: === Deploy 시작 2026-09-07T23:46:54.7279720+09:00 ===
+회차 시각: === Deploy 시작 2026-09-08T01:11:07.1591016+09:00 ===
 
 --- 이 회차의 판정 (test.sh 출력 그대로) ---
 NOT RUN CON-001 업무시간(월~토 09:00~17:58, 비휴무일) 밖 — Write SP 가 308/309 를 낸다
@@ -155,17 +155,17 @@ PASS SEL-024_변경이력_TargetTable_NULL Result Set 계약 일치 (1개 RS · 
 PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 · 휴무일 Seed 2건
 
 --- artifacts/reports/no-secret.txt ---
-배포 원본 검사 12 개 · HIT 0
-실행 스크립트 검사 18 개 · HIT 0
+배포 원본 검사 11 개 · HIT 0
+실행 스크립트 검사 20 개 · HIT 0
 시험 원본 검사 125 개 · HIT 0
 도구 검사 6 개 · HIT 0
-로그 검사 443 개 · HIT 0
+로그 검사 475 개 · HIT 0
 보고서 검사 14 개 · HIT 0
 PASS SEC-010 배포 원본·로그·보고서에 secret 0건
 
 --- artifacts/reports/tsql-allowlist.txt ---
 PASS G13-b2 CREATE OR ALTER 는 배포 원본 안에만 있다
-PASS G13-b 허용목록 밖 T-SQL 0건 (.sql 137 개 · 주석 제외)
+PASS G13-b 허용목록 밖 T-SQL 0건 (.sql 136 개 · 주석 제외)
 INFO G13 은 세 갈래다 — (a) 배포·시험 성공 (b) 이 스캔 (c) §9.2 준수는 REVIEWED (자동 판정 불가)
 
 --- artifacts/reports/clean-rebuild.txt ---

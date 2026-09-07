@@ -306,6 +306,48 @@ IF @MFail = 0 AND @Mnow > @M0
 ELSE BEGIN PRINT 'FAIL PWR-029 LastEditDate 가 역행하거나 정체했다 (역행 '
         + CONVERT(VARCHAR(3), @MFail) + '회)'; SET @Fail += 1; END
 
+-- PWR-032  대소문자만 바꾼 수정이 저장되고 감사에도 남는가 (스펙 §28.2 · §43-17)
+-- [X] 정렬이 Korean_Wansung_CI_AS 라 No-op 판정의 INTERSECT 가 'a@B.com' 과 'a@b.com' 을
+--     같다고 봤다. Code=1 '변경된 내용이 없습니다' 가 돌아오고 사용자 편집이 조용히 사라졌다.
+--     감사 필터도 같은 CI 비교였으므로 **둘을 함께** 바이트 비교로 바꿨다 —
+--     하나만 고치면 저장은 되는데 변경이력에 한 줄도 안 남는다. 그래서 이 시험이 둘 다 본다.
+DECLARE @CiName NVARCHAR(100) = (SELECT [성명] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
+DECLARE @CiL DATETIME, @CiH0 INT, @CiH1 INT, @CiMail VARCHAR(200), @CiEdit DATETIME;
+
+-- 준비: 대문자가 섞인 이메일을 넣는다
+SET @CiL = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
+EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Bid, @CiL, @Cn, @CiName, @Ssn,
+     NULL, NULL, 'case@TEST.com', NULL, NULL, NULL, NULL, 0, N'TEST';
+
+-- 대소문자만 바꾼다
+SET @CiH0 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @Bid AND [컬럼명] = N'이메일');
+SET @CiL = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
+EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Bid, @CiL, @Cn, @CiName, @Ssn,
+     NULL, NULL, 'case@test.com', NULL, NULL, NULL, NULL, 0, N'TEST';
+SET @CiH1 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @Bid AND [컬럼명] = N'이메일');
+SET @CiMail = (SELECT [이메일] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
+
+-- 저장값 비교도 CI 라 = 로는 구분되지 않는다. 여기서도 바이트로 본다.
+IF (CONVERT(VARBINARY(400), @CiMail) = CONVERT(VARBINARY(400), 'case@test.com')
+    AND @CiH1 = @CiH0 + 1)
+    PRINT 'PASS PWR-032 대소문자만 바꾼 수정이 저장되고 감사 1행이 남았다';
+ELSE
+BEGIN
+    PRINT 'FAIL PWR-032 저장값=' + ISNULL(@CiMail, '(NULL)')
+        + ' 감사증가=' + CONVERT(VARCHAR(5), @CiH1 - @CiH0);
+    SET @Fail += 1;
+END
+
+-- 진짜 무변경은 여전히 No-op 이어야 한다. 바이트 비교로 바꾸면서 이것이 깨지면 안 된다.
+SET @CiEdit = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
+SET @CiH0 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @Bid);
+EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Bid, @CiEdit, @Cn, @CiName, @Ssn,
+     NULL, NULL, 'case@test.com', NULL, NULL, NULL, NULL, 0, N'TEST';
+IF ((SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid) = @CiEdit
+    AND (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @Bid) = @CiH0)
+    PRINT 'PASS PWR-032b 같은 값 재전송은 여전히 No-op (행·감사 불변)';
+ELSE BEGIN PRINT 'FAIL PWR-032b 무변경 재전송이 행을 갱신했다'; SET @Fail += 1; END
+
 -- 뒤 파일이 쓰는 Fixture 차트번호를 되돌린다. 이 파일이 만든 수검자 2명은 그대로 둔다 —
 -- tests/00 이 전건을 지우고 다시 만들기 때문이다.
 UPDATE [dbo].[수검자] SET [차트번호] = N'F001' WHERE [수검자ID] = @Fid;

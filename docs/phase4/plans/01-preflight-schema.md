@@ -553,8 +553,7 @@ GO
 :r $(DeployDir)\05_Procedures_Patient_Write.sql
 :r $(DeployDir)\06_Procedures_Reservation_Write.sql
 :r $(DeployDir)\07_Procedures_Reception_Write.sql
-:r $(DeployDir)\08_Security.sql
-:r $(DeployDir)\09_Verify.sql
+:r $(DeployDir)\08_Verify.sql
 GO
 PRINT '=== Deploy 완료 ===';
 GO
@@ -562,13 +561,13 @@ GO
 
 `:r` 은 sqlcmd 모드에서만 동작한다. `scripts/deploy.sh` 가 항상 sqlcmd로 실행하므로 문제없다. `:r` 가 UTF-8 BOM 파일을 정상 포함함은 실측 확인했다.
 
-**`01`~`09` 를 전부 빈 스텁으로 지금 만든다.** 그러지 않으면 `T34`(동시성 7회 rebuild)가 아직 없는 `09_Verify.sql` 을 `:r` 하다가 조용히 어긋난다. `>/dev/null` 로 출력을 버리는 루프라 아무도 눈치채지 못한다.
+**`01`~`09` 를 전부 빈 스텁으로 지금 만든다.** 그러지 않으면 `T34`(동시성 7회 rebuild)가 아직 없는 `08_Verify.sql` 을 `:r` 하다가 조용히 어긋난다. `>/dev/null` 로 출력을 버리는 루프라 아무도 눈치채지 못한다.
 
 ```bash
 mkdir -p deploy
 for f in 01_Schema 02_Seed 03_Functions 04_Procedures_Select \
          05_Procedures_Patient_Write 06_Procedures_Reservation_Write \
-         07_Procedures_Reception_Write 08_Security 09_Verify; do
+         07_Procedures_Reception_Write 08_Verify; do
   [ -f "deploy/${f}.sql" ] && continue
   printf '\xEF\xBB\xBF' > "deploy/${f}.sql"
   # [X] PRINT 리터럴에 N 접두사를 붙인다. 없으면 varchar 리터럴이 되어 Korean_Wansung(CP949) 에

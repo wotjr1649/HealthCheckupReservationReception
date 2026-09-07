@@ -10,8 +10,7 @@ GO
 :r $(DeployDir)\05_Procedures_Patient_Write.sql
 :r $(DeployDir)\06_Procedures_Reservation_Write.sql
 :r $(DeployDir)\07_Procedures_Reception_Write.sql
-:r $(DeployDir)\08_Security.sql
-:r $(DeployDir)\09_Verify.sql
+:r $(DeployDir)\08_Verify.sql
 GO
 PRINT '=== Deploy 완료 ===';
 GO

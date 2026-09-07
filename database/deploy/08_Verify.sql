@@ -1,5 +1,5 @@
 ﻿SET NOCOUNT ON;
-PRINT N'--- 09_Verify 시작 ---';
+PRINT N'--- 08_Verify 시작 ---';
 GO
 -- Deploy.sql 이 매 배포 끝에 부른다 (스펙 §42, VER-001~007).
 -- 수치의 출처는 04 §8·§9·§10 과 06 §12.1 이다. 이 파일은 그 수치를 실측과 대조만 한다.
@@ -60,5 +60,5 @@ PRINT 'INFO Collation          = ' + CONVERT(VARCHAR(80), DATABASEPROPERTYEX(DB_
 
 -- @Fail 은 이 배치에서만 산다. GO 뒤로 넘기면 Msg 137 이다 (CLAUDE.md §11).
 IF @Fail > 0 THROW 51000, N'배포 검증 실패', 1;
-PRINT N'=== 09_Verify 완료 ===';
+PRINT N'=== 08_Verify 완료 ===';
 GO

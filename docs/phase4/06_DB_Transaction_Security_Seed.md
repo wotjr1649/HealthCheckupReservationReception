@@ -264,8 +264,7 @@ database/
 │  ├─ 05_Procedures_Patient_Write.sql Patient Write SP 2개
 │  ├─ 06_Procedures_Reservation_Write.sql  예약 Write SP 3개
 │  ├─ 07_Procedures_Reception_Write.sql    접수 Write SP 3개
-│  ├─ 08_Security.sql                 Role / User WITHOUT LOGIN / GRANT EXECUTE 15
-│  └─ 09_Verify.sql                   객체 인벤토리 + 제약 수 검증
+│  └─ 08_Verify.sql                   객체 인벤토리 + 제약 수 검증
 │
 ├─ tests/
 │  ├─ 00_Test_Harness.sql             Fixture 직접 INSERT (수검자·완료이력·기존 예약)
@@ -323,7 +322,7 @@ database/
 
 ```text
 00_Preflight  → 01_Schema → 02_Seed → 03_Functions
-→ 04_Procedures_Select → 05~07_Procedures_*_Write → 08_Security → 09_Verify
+→ 04_Procedures_Select → 05~07_Procedures_*_Write → 08_Verify
 ```
 
 - `01_Schema.sql`은 **FK 역순 `DROP IF EXISTS` 후 `CREATE`** 한다. 즉 실행할 때마다 기존 테이블·데이터가 초기화된다.
@@ -1594,7 +1593,8 @@ ALTER ROLE [HC_APP_ROLE] ADD MEMBER [HC_APP_TEST];
 SP 가 16개가 되었으므로 구현한다면 16건이어야 한다 — `05` §1.3 과 §18 SP 구현 Matrix 를 참조한다.
 
 `[사용자 결정 2026-09-07]` **Security(`T31`·`T32`)를 구현하지 않는다.** 과제 범위에서 권한 경계는
-요구되지 않고 개발 속도만 늦춘다는 판단이다. `deploy/08_Security.sql` 은 placeholder 로 남고
+요구되지 않고 개발 속도만 늦춘다는 판단이다. `deploy/08_Security.sql` 은 **파일째 삭제했고**
+배포 사슬은 `…07_Procedures_Reception_Write → 08_Verify` 로 번호를 당겼다 (2026-09-08). 그리고
 `§45.2` 의 `SEC` 11건은 **범위 밖**이다 — `NOT RUN` 이며 `PASS` 로 승격하지 않는다.
 Ownership chaining 전제(§32.2)와 Phase 5 연결 방법(§32.3)은 문서로만 남긴다.
 
@@ -2333,8 +2333,8 @@ artifacts/
 
 | 회차 | 시각 | 업무시간 | 결과 |
 |---|---|---|---|
-| `A` 창 안 | 2026-09-07 11:23 | 안 (월, 비휴무일 · PM 창 11:10~15:50) | `artifacts/logs/full_test_run.log` — exit 0 · PASS 351 · FAIL 0 · SKIP 2 · NOT RUN 1 |
-| `B` 창 밖 | 2026-09-07 23:46 | 밖 | `artifacts/logs/full_test_run_off.log` — exit 0 · PASS 181 · FAIL 0 · SKIP 78 · NOT RUN 9 |
+| `A` 창 안 | 2026-09-07 12:49 | 안 (월, 비휴무일 · PM 창 11:10~15:50) | `artifacts/logs/full_test_run.log` — exit 0 · PASS 353 · FAIL 0 · SKIP 2 · NOT RUN 1 |
+| `B` 창 밖 | 2026-09-08 01:11 | 밖 | `artifacts/logs/full_test_run_off.log` — exit 0 · PASS 181 · FAIL 0 · SKIP 78 · NOT RUN 9 |
 
 `[I]` 회차 `A` 는 사용자가 머신 시각을 6시간 뒤로 옮겨 만든 창이다. **코드는 한 글자도 바꾸지 않았다** —
 `SYSDATETIME()` 이 시각의 유일한 입구이므로 SP·TVF·게이트가 전부 출하될 그대로 돌았다. 끝난 뒤 같은 크기로 되돌렸다.
@@ -2398,7 +2398,7 @@ artifacts/
 | 14 | **시각 의존 경로 검증은 사람이 시계를 옮겨야 한다** | `CON-005`·`CON-008`·`CWR-006`·`CWR-009` 등 성공 경로는 특정 시각창에서만 성립한다 | 시각은 `SYSDATETIME()` 하나로만 들어오므로 **OS 시각을 옮기면 코드를 한 글자도 안 바꾸고** 창을 만들 수 있다. 상대 이동(`Set-Date -Adjust`)으로 옮기고 같은 크기로 되돌리면 오차가 0 이다. **자동화하지 않는다** — 되돌리지 못한 채 죽는 스크립트를 남기지 않는다. TVF 상수를 고치는 우회는 금지다: `rebuild` 가 매 시나리오마다 되돌리므로 성립하지 않고, 배포 원본을 고치면 **다른 제품을 시험한 `PASS`** 가 된다 |
 | 15 | **접수취소 후 당일 재접수가 불가능한 시간창** | 접수취소는 마감을 보지 않아 09:00~18:00 언제든 되는데(`CutoffType=NONE`), 복구 경로인 WalkIn 신규예약은 PM 16:00 에 닫힌다. 16:00~18:00 취소분과 토요일 AM 11:00 이후 취소분은 그날 복구할 수 없다 | `00` CP-05·RCP-06 을 충실히 구현한 결과이고 계약 위반이 아니다. `CNC` 는 복원 불가이며 재진행은 신규예약뿐이라는 정책 그대로다. 실무라면 취소에 마감을 걸거나 `CNC → RSV` 되돌림을 허용해야 한다 |
 | 16 | **`변경이력.대상키` 가 재배포 후 다른 사람을 가리킨다** | `수검자`·`예약접수` 는 `DROP` 후 `IDENTITY(1,1)` 로 재생성되는데 `변경이력` 만 보존된다. 새 `수검자ID=1` 의 변경기록 화면에 이전 세대 1번의 주민번호 변경전/후가 그대로 보인다 | `04` §8.6.3 과 `01_Schema.sql` 주석은 **dangling(사라진 행을 가리킴)** 까지만 인정했고 **재사용에 의한 오귀속**은 어디에도 없었다. 여기서 인정한다. `00` §2.1 이 임의 테스트 주민번호만 쓰게 해 실피해가 없다. 실무라면 배포 세대 컬럼이나 `DBCC CHECKIDENT` 로 시드를 이어받아야 한다 |
-| 17 | **대소문자만 바꾼 수정이 조용히 버려진다** | `Korean_Wansung_CI_AS` 라 No-op 판정의 `INTERSECT` 가 `hong@GMAIL.com` 과 `hong@gmail.com` 을 같다고 본다(실측). `Code=1 변경된 내용이 없습니다` 가 돌아오고 편집이 사라진다 | 주민번호·차트번호(숫자/영숫자)·성명(한글)은 무영향이고 실질 영향은 **이메일·주소**뿐이다. 정렬 무관 비교는 `COLLATE` 를 요구하는데 §9.2 허용목록 밖이다 |
+| 17 | ~~**대소문자만 바꾼 수정이 조용히 버려진다**~~ `[해소 2026-09-07]` | — | No-op 판정과 감사 필터를 **함께** `CONVERT(VARBINARY(...))` 바이트 비교로 바꿨다. `COLLATE` 는 §9.2 밖이지만 VARBINARY 변환은 허용목록 안이고 정렬과 무관하다(실측: CI 는 같다고, VARBINARY 는 다르다고 본다). `INTERSECT` 의 NULL=NULL 성질은 유지된다. 한쪽만 고치면 저장은 되는데 이력에 안 남으므로 `PWR-032` 가 둘 다 본다 |
 | 18 | **RS1 을 트랜잭션·잠금 밖에서 재조회한다** | §21.1 `[6]` 이 그렇게 정했다. No-op 은 "기존 RowVersion 유지" 가 계약인데, 커밋 후 재조회라 그 사이 다른 세션이 바꾸면 **최신** RowVersion 이 나간다 | 창이 매우 좁다. 클라이언트가 그 값으로 다음 요청을 보내면 `601` 로 막혔어야 할 것이 통과할 수 있다. 잠금 안에서 RS 를 내면 §21.1 을 바꿔야 하므로 한계로 남긴다 |
 | 19 | **클라이언트가 Result Set 을 끝까지 읽지 않으면 감사행이 누락된다** | 감사 INSERT 가 RS1 **뒤**에 있다(§21.1 규칙 ③). 조기 `Dispose` 로 attention 이 나가면 업무는 커밋됐는데 감사만 없는 상태가 된다 | §21.1 ③ 은 반대 방향("RS1 이 실패하면 감사행도 없다")만 검토했다. Phase 5 호출 규약에 **"Result Set 을 끝까지 읽는다"** 를 못박아야 한다 |
 | 20 | **주민번호가 `변경이력` 에 평문으로 영구 보존된다** | §22 는 DMV 노출을 막으려 applock 자원명을 `SHA2_256` 으로 감쌌는데, 같은 주민번호가 감사 테이블에 평문으로 남고 전용 조회 SP 로 열람된다. `변경이력` 은 배포로도 지워지지 않는다 | 기준선 사이의 긴장이다 — `04` §8.6 이 "바뀐 컬럼마다 1행" 을 요구하고 §22 가 은폐를 요구한다. `00` §2.1 의 임의 테스트값 정책이 실피해를 막는다. 보존기간·삭제 정책은 없다 |
@@ -2682,7 +2682,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 
 | # | 결함 | 증상 | 조치 |
 |---:|---|---|---|
-| 1 | `plans/08` `VER-005` 가 Foreign Key 수를 R2 값으로 단언 | **실행되는 조건문**이다. `09_Verify.sql` 은 `Deploy.sql` 이 매 배포 마지막에 부르므로 R3 배포 검증이 무조건 FAIL 했을 것이다 | `4` 로 교체 |
+| 1 | `plans/08` `VER-005` 가 Foreign Key 수를 R2 값으로 단언 | **실행되는 조건문**이다. `08_Verify.sql`(당시 이름 `09_Verify.sql`)은 `Deploy.sql` 이 매 배포 마지막에 부르므로 R3 배포 검증이 무조건 FAIL 했을 것이다 | `4` 로 교체 |
 | 2 | `plans/01` `Produces:` 요약의 Foreign Key 수 | 서술이라 실행을 깨뜨리지 않지만 계획을 읽는 사람이 R2 수치를 믿는다 | `4` 로 교체 |
 | 3 | `plans/08` `@ExpParam` 주석의 행 수 | 표 자체는 `@OperatorName` 8행을 더해 옳은데 주석만 옛 수치였다 | `95행` 으로 교체 |
 | 4 | 이 문서 §44 "기준선에서 기계 생성한 값" 의 컬럼·DEFAULT·Parameter 수 | 초안 §13.2 가 명시적으로 지시한 항목인데 라인 지정 편집에서 빠졌다 | `47` / `8` / `95` 로 교체 |
@@ -2712,7 +2712,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | `SSN` | `001`~`006` | 6 | `tests/02_Seed_Tests.sql` | 실제 주민등록번호 미사용 — 체크디지트 전건 무효 (§16.2) | G12 |
 | `RUL` | `T01`~`T12` `N01`~`N12` `A01`~`A10` `G01`~`G08` `D01`~`D09` | 51 | `tests/03_Rule_Tests.sql` | 4개 TVF 결정적 경계 — 마감시각 · NEX 술어 · AEX 판정순서 · 휴무일 · `DATEFIRST` 불변 (§35) | G08 |
 | `SEL` | `001`~`024` | 24 | `tests/04_Select_SP_Tests.sql` + `tests/contract/` | 8개 SELECT SP — DB 상태 단언은 `tests/04`, RS0 Code·RS 형상은 `contract/` (§33.1a) | G09 |
-| `PWR` | `001`~`014` `020`~`029` `030`~`031` | 26 | `tests/05_Patient_Write_Tests.sql` | `INSERT_수검자` · `UPDATE_수검자정보` (§33.4) | G06·G09 |
+| `PWR` | `001`~`014` `020`~`029` `030`~`032` | 27 | `tests/05_Patient_Write_Tests.sql` | `INSERT_수검자` · `UPDATE_수검자정보` (§33.4) | G06·G09 |
 | `RWR` | `001`~`012` `020`~`034` `040`~`044` `050`~`052` | 35 | `tests/06_Reservation_Write_Tests.sql` | `INSERT_예약` · `UPDATE_예약변경` · `UPDATE_예약취소` (§33.4) | G06·G09 |
 | `CWR` | `001`~`011` `020`~`026` `040`~`044` `050`~`052` | 26 | `tests/07_Reception_Write_Tests.sql` | `UPDATE_접수완료` · `UPDATE_접수추가검사` · `UPDATE_접수취소` (§33.4) | G06·G09 |
 | `RBK` | `001`~`008` | 8 | `tests/08_Rollback_Tests.sql` + `tools/verify-docs.js` | 부분저장 차단 · `XACT_ABORT` · `@@TRANCOUNT` 복원 (§21.3). `RBK-008`(실패 응답 RS 개수)만 T-SQL 로 셀 수 없어 `V18` 이 `expected-contracts.json` 을 정적 대조한다 | G10 |
@@ -2720,9 +2720,9 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | `SEC` | `010` | 1 | `scripts/verify-no-secret.sh` | 배포 원본·로그·보고서 secret 0건 — **SQL 이 아니라 셸** | G12 |
 | `RED` | `001`~`004` | 4 | `scripts/verify-red.sh` | **음성시험** — 폐기용 DB 에서 "객체가 없거나 값이 틀리면 시험이 실제로 실패하는가" 를 판정한다 (§40a) | G15 |
 | `OFF` | `308`~`309` | 2 | `tests/contract/OFF-*` | `309` 는 업무시간 밖에서만 — `PWR`/`RWR`/`CWR` 과 배타적이라 어느 시각에 돌려도 한쪽이 판정된다. `308` 은 시험이 휴무일을 심어 **언제나** 판정된다 (§33.2a) | G09 |
-| `VER` | `001`~`007` | 7 | `deploy/09_Verify.sql` | 배포 직후 객체 수량 자체검증 | G03 |
+| `VER` | `001`~`007` | 7 | `deploy/08_Verify.sql` | 배포 직후 객체 수량 자체검증 | G03 |
 | `RBD` | `001`~`010` | 10 | `tests/14_Clean_Rebuild_Verify.sql` | Clean Rebuild 재현성 (§40) | G14 |
-| **합계** | | **244** | | | |
+| **합계** | | **245** | | | |
 
 `[I]` 범위가 전부 **연속**이다. 결번이 생기면 그 자체가 결함이다 — 계획에서 ID를 폐기할 때는 이 표에서도 지우고 뒤를 당기지 말고, 폐기 사유를 §45.4에 적는다.
 

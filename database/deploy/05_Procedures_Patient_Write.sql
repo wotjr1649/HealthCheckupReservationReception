@@ -528,14 +528,28 @@ BEGIN
             -- UNKNOWN 이라 "변경 없음" 이 되어 사용자 편집이 조용히 소실된다. INTERSECT 는
             -- NULL = NULL 을 참으로 다룬다. 비고만 NVARCHAR(MAX) 라 INTERSECT 피연산자가 될 수
             -- 없어 명시적 NULL-safe 비교로 분리한다.
+            --
+            -- [X] NULL-safe 만으로는 부족했다. 정렬이 Korean_Wansung_CI_AS 라 INTERSECT 가
+            --     'hong@GMAIL.com' 과 'hong@gmail.com' 을 **같다고** 본다(실측). 대소문자만 고친
+            --     이메일·주소·차트번호 수정이 Code=1 '변경된 내용이 없습니다' 로 돌아오고
+            --     편집이 조용히 사라졌다 — NULL 함정을 막으려던 그 자리에 정렬 함정이 남아 있었다.
+            --     COLLATE 는 06 §9.2 허용목록 밖이므로 VARBINARY 변환으로 바이트 비교한다.
+            --     INTERSECT 의 NULL = NULL 성질은 그대로 유지된다 (CONVERT(VARBINARY, NULL) 도 NULL).
             ELSE IF EXISTS (
-                        SELECT @OldChartNo, @OldName, @OldSsn, @OldMobile, @OldPhone
-                             , @OldEmail, @OldZip, @OldAddr, @OldAddrDetail, @OldHep
+                        SELECT CONVERT(VARBINARY(400), @OldChartNo), CONVERT(VARBINARY(400), @OldName)
+                             , CONVERT(VARBINARY(400), @OldSsn),     CONVERT(VARBINARY(400), @OldMobile)
+                             , CONVERT(VARBINARY(400), @OldPhone),   CONVERT(VARBINARY(400), @OldEmail)
+                             , CONVERT(VARBINARY(400), @OldZip),     CONVERT(VARBINARY(400), @OldAddr)
+                             , CONVERT(VARBINARY(400), @OldAddrDetail), CONVERT(VARBINARY(400), @OldHep)
                         INTERSECT
-                        SELECT @ChartNo, @Name, @SocialNumber, @MobilePhone, @Phone
-                             , @Email, @Zipcode, @Address, @AddressDetail, @HepatitisBExcluded
+                        SELECT CONVERT(VARBINARY(400), @ChartNo),    CONVERT(VARBINARY(400), @Name)
+                             , CONVERT(VARBINARY(400), @SocialNumber), CONVERT(VARBINARY(400), @MobilePhone)
+                             , CONVERT(VARBINARY(400), @Phone),      CONVERT(VARBINARY(400), @Email)
+                             , CONVERT(VARBINARY(400), @Zipcode),    CONVERT(VARBINARY(400), @Address)
+                             , CONVERT(VARBINARY(400), @AddressDetail), CONVERT(VARBINARY(400), @HepatitisBExcluded)
                     )
-                    AND ((@OldMemo IS NULL AND @Memo IS NULL) OR @OldMemo = @Memo)
+                    AND ((@OldMemo IS NULL AND @Memo IS NULL)
+                         OR CONVERT(VARBINARY(MAX), @OldMemo) = CONVERT(VARBINARY(MAX), @Memo))
             BEGIN
                 SET @Success = 1; SET @Code = 1; SET @Field = NULL;
                 SET @Msg = N'변경된 내용이 없습니다.';
@@ -658,7 +672,13 @@ BEGIN
                     , (N'비고',            CONVERT(NVARCHAR(4000), @OldMemo),       CONVERT(NVARCHAR(4000), @Memo))
                     , (N'B형간염제외여부', CONVERT(NVARCHAR(4000), @OldHep),        CONVERT(NVARCHAR(4000), @HepatitisBExcluded))
                    ) V([컬럼명], [변경전], [변경후])
-             WHERE ISNULL(V.[변경전], N'~NULL~') <> ISNULL(V.[변경후], N'~NULL~');
+             -- [X] No-op 판정과 **같은 기준**이어야 한다. 여기만 CI 로 두면 대소문자만 고친 수정이
+             --     저장은 되는데 변경이력에 한 줄도 남지 않는다. 바이트 비교로 맞춘다.
+             --     ISNULL 센티널 대신 NULL 경우를 명시한다 — VARBINARY 에는 안전한 센티널이 없다.
+             WHERE (V.[변경전] IS NULL     AND V.[변경후] IS NOT NULL)
+                OR (V.[변경전] IS NOT NULL AND V.[변경후] IS NULL)
+                OR (V.[변경전] IS NOT NULL AND V.[변경후] IS NOT NULL
+                    AND CONVERT(VARBINARY(MAX), V.[변경전]) <> CONVERT(VARBINARY(MAX), V.[변경후]));
         END TRY
         BEGIN CATCH
         END CATCH
