@@ -1428,5 +1428,96 @@
         "rows": 1
       }
     ]
+  },
+  "SEL-021_변경이력_정상": {
+    "sp": "USP_HC_SELECT_변경이력",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "LogId",
+          "RecordedAt",
+          "OperatorName",
+          "ColumnName",
+          "BeforeValue",
+          "AfterValue"
+        ],
+        "rowsMin": 1,
+        "rowsMax": 500
+      }
+    ]
+  },
+  "SEL-022_변경이력_기록0건": {
+    "sp": "USP_HC_SELECT_변경이력",
+    "rs0Success": 1,
+    "rs0Code": 0,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      },
+      {
+        "columns": [
+          "LogId",
+          "RecordedAt",
+          "OperatorName",
+          "ColumnName",
+          "BeforeValue",
+          "AfterValue"
+        ],
+        "rows": 0
+      }
+    ]
+  },
+  "SEL-023_변경이력_TargetTable_허용밖": {
+    "sp": "USP_HC_SELECT_변경이력",
+    "rs0Success": 0,
+    "rs0Code": 101,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "SEL-024_변경이력_TargetTable_NULL": {
+    "sp": "USP_HC_SELECT_변경이력",
+    "rs0Success": 0,
+    "rs0Code": 100,
+    "resultSets": [
+      {
+        "columns": [
+          "Success",
+          "Code",
+          "Message",
+          "Field",
+          "ServerTime"
+        ],
+        "rows": 1
+      }
+    ]
   }
 }

@@ -48,6 +48,10 @@ EXEC [dbo].[USP_HC_SELECT_예약가능정보] @P15, NULL, NULL, 'NORMAL', '2026-
 EXEC [dbo].[USP_HC_SELECT_예약가능정보] @P15, NULL, NULL, 'NORMAL', '2026-12-25', 'AM', 0,0,0,0,0,0,0;
 EXEC [dbo].[USP_HC_SELECT_예약가능정보] @P15, NULL, NULL, 'WALKIN', '2026-11-16', 'AM', 0,0,0,0,0,0,0;
 
+-- SP-LOG-01. 이 SP 는 변경이력을 남기지 않는다 (05 §8.3) — 지문에 그것이 걸린다.
+EXEC [dbo].[USP_HC_SELECT_변경이력] N'수검자', @P15;
+EXEC [dbo].[USP_HC_SELECT_변경이력] N'완료이력', 1;
+
 DECLARE @After VARCHAR(100) =
       CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[수검자]))   + '|'
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[예약접수])) + '|'

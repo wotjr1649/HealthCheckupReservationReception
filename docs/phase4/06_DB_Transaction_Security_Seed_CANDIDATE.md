@@ -260,7 +260,7 @@ database/
 │  ├─ 01_Schema.sql                   FK 역순 DROP IF EXISTS → 6 Table + 제약 + Index + Sequence
 │  ├─ 02_Seed.sql                     검사코드 19행 + 휴무일 2행
 │  ├─ 03_Functions.sql                Inline TVF 4개 (CREATE OR ALTER)
-│  ├─ 04_Procedures_Select.sql        SELECT SP 7개
+│  ├─ 04_Procedures_Select.sql        SELECT SP 8개 (SP-LOG-01 포함)
 │  ├─ 05_Procedures_Patient_Write.sql Patient Write SP 2개
 │  ├─ 06_Procedures_Reservation_Write.sql  예약 Write SP 3개
 │  ├─ 07_Procedures_Reception_Write.sql    접수 Write SP 3개
@@ -285,7 +285,7 @@ database/
 │  ├─ 13_Security_Tests.sql
 │  ├─ 14_Clean_Rebuild_Verify.sql
 │  └─ contract/                       SP별 호출 시나리오 — EXEC 한 번, DB 상태 단언 없음
-│     └─ 01_*.sql ~ 25_*.sql · PWR-* 등 Test ID 명 16개 SP 전건. RS0 Code·RS 형상 판정용 원본
+│     └─ 01_*.sql ~ 25_*.sql · PWR-*·SEL-02* 등 Test ID 명 16개 SP 전건. RS0 Code·RS 형상 판정용 원본
 │
 ├─ scripts/
 │  ├─ deploy.sh  rebuild.sh  test.sh  concurrency-test.sh
@@ -857,20 +857,25 @@ NEX-06  EX013  Age IN (56,66)
 | `USP_HC_SELECT_공통업무상태` | SELECT | 0 | 2 (RS0,RS1) | CP-01~04, HOL | X | X | `04_Select_SP_Tests.sql` |
 | `USP_HC_SELECT_수검자목록` | SELECT | 5 | 2 | EP-01, 검색계약 | X | X | `04_Select_SP_Tests.sql` |
 | `USP_HC_SELECT_수검자상세` | SELECT | 1 | 2 | EP-01~02 | X | X | `04_Select_SP_Tests.sql` |
-| `USP_HC_INSERT_수검자` | INSERT | 12 | 2 | EP-03~09 | **O** | `SSN` → `CHART` | `05_Patient_Write_Tests.sql` |
-| `USP_HC_UPDATE_수검자정보` | UPDATE | 12 | 2 | EP-04, EP-08, CP-06 | **O** | `SSN?` → `CHART?` → `PAT` | `05_Patient_Write_Tests.sql` |
+| `USP_HC_INSERT_수검자` | INSERT | 14 | 2 | EP-03~09 | **O** | `SSN` → `CHART` | `05_Patient_Write_Tests.sql` |
+| `USP_HC_UPDATE_수검자정보` | UPDATE | 14 | 2 | EP-04, EP-08, CP-06 | **O** | `SSN` → `CHART` → `PAT` | `05_Patient_Write_Tests.sql` |
 | `USP_HC_SELECT_수검자유효업무` | SELECT | 1 | 2 | RP-06 | X | X | `04_Select_SP_Tests.sql` |
 | `USP_HC_SELECT_예약가능정보` | SELECT | 13 | **6** (RS0~RS5) | RP-02~08, TGT/NEX/AEX/HOL | X | X | `04_Select_SP_Tests.sql` |
-| `USP_HC_INSERT_예약` | INSERT | 11 | 2 | RP-01~08 | **O** | `PAT` → `SLOT` | `06_Reservation_Write_Tests.sql` |
-| `USP_HC_UPDATE_예약변경` | UPDATE | 11 | 2 | RP-03·06·09 | **O** | `PAT` → `WORK` → `SLOT`×n | `06_Reservation_Write_Tests.sql` |
-| `USP_HC_UPDATE_예약취소` | UPDATE | 2 | 2 | RP-10, CP-05 | **O** | `WORK` | `06_Reservation_Write_Tests.sql` |
+| `USP_HC_INSERT_예약` | INSERT | 12 | 2 | RP-01~08 | **O** | `PAT` → `SLOT` | `06_Reservation_Write_Tests.sql` |
+| `USP_HC_UPDATE_예약변경` | UPDATE | 12 | 2 | RP-03·06·09 | **O** | `PAT` → `WORK` → `SLOT`×n | `06_Reservation_Write_Tests.sql` |
+| `USP_HC_UPDATE_예약취소` | UPDATE | 3 | 2 | RP-10, CP-05 | **O** | `WORK` | `06_Reservation_Write_Tests.sql` |
 | `USP_HC_SELECT_예약접수목록` | SELECT | 5 | 2 | CP-05, 검색계약 | X | X | `04_Select_SP_Tests.sql` |
 | `USP_HC_SELECT_예약접수상세` | SELECT | 1 | **5** (RS0~RS4) | CP-05, 상태 Matrix | X | X | `04_Select_SP_Tests.sql` |
-| `USP_HC_UPDATE_접수완료` | UPDATE | 2 | 2 | RCP-01~04 | **O** | **`PAT` → `WORK` → `SLOT`** | `07_Reception_Write_Tests.sql` |
-| `USP_HC_UPDATE_접수추가검사` | UPDATE | 9 | 2 | RCP-05, AEX | **O** | `WORK` | `07_Reception_Write_Tests.sql` |
-| `USP_HC_UPDATE_접수취소` | UPDATE | 2 | 2 | RCP-06, CP-05 | **O** | `WORK` | `07_Reception_Write_Tests.sql` |
+| `USP_HC_SELECT_변경이력` | SELECT | 2 | 2 | CP-06 | X | X | `04_Select_SP_Tests.sql` |
+| `USP_HC_UPDATE_접수완료` | UPDATE | 3 | 2 | RCP-01~04 | **O** | **`PAT` → `WORK` → `SLOT`** | `07_Reception_Write_Tests.sql` |
+| `USP_HC_UPDATE_접수추가검사` | UPDATE | 10 | 2 | RCP-05, AEX | **O** | `WORK` | `07_Reception_Write_Tests.sql` |
+| `USP_HC_UPDATE_접수취소` | UPDATE | 3 | 2 | RCP-06, CP-05 | **O** | `WORK` | `07_Reception_Write_Tests.sql` |
 
-합계: SELECT 7 / INSERT 2 / UPDATE 6 = **15개**. DELETE SP **0개**.
+합계: SELECT 8 / INSERT 2 / UPDATE 6 = **16개**. DELETE SP **0개**. Param 합계 **99개**(§36).
+
+`[R3]` **Param 열은 R3 재봉인을 반영한 값이다.** Write SP 8개에 `@OperatorName` 이, 수검자 Write 2개에
+`@HepatitisBExcluded` 가 더해졌다. `USP_HC_UPDATE_수검자정보` 의 Lock 은 §24.1 이 조건부(`SSN?`·`CHART?`)에서
+**조건 없이 항상**으로 바꿨다 — 변경 여부를 알려면 현재 행을 먼저 읽어야 하고 그러면 §23 전역 순서가 뒤집힌다.
 
 ---
 
@@ -1562,7 +1567,7 @@ tests/00_Test_Harness.sql     Fixture 직접 INSERT (§15.2) + 손상 데이터 
 tests/01_Schema_Tests.sql     객체 인벤토리·제약 수·금지 객체 0건
 tests/02_Seed_Tests.sql       Exam 19행 / Holiday 2행 / 주민번호 체크디지트 무효
 tests/03_Rule_Tests.sql       TVF 4종 결정적 경계 (@ServerTime 주입)
-tests/04_Select_SP_Tests.sql  SELECT SP 7개 계약
+tests/04_Select_SP_Tests.sql  SELECT SP 8개 계약
 tests/05~07_*_Write_Tests.sql Write SP 8개 계약
 tests/08_Rollback_Tests.sql   부분저장 0건
 tests/09~12_Concurrency_*.sql 2세션 경합
@@ -2421,7 +2426,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | `SED` | `001`~`011` | 11 | `tests/02_Seed_Tests.sql` | `검사코드` 19행 · `휴무일` 2행 · AEX 7건 Active (§13·§14) | G07 |
 | `SSN` | `001`~`006` | 6 | `tests/02_Seed_Tests.sql` | 실제 주민등록번호 미사용 — 체크디지트 전건 무효 (§16.2) | G12 |
 | `RUL` | `T01`~`T12` `N01`~`N12` `A01`~`A10` `G01`~`G08` `D01`~`D09` | 51 | `tests/03_Rule_Tests.sql` | 4개 TVF 결정적 경계 — 마감시각 · NEX 술어 · AEX 판정순서 · 휴무일 · `DATEFIRST` 불변 (§35) | G08 |
-| `SEL` | `001`~`020` | 20 | `tests/04_Select_SP_Tests.sql` + `tests/contract/` | 7개 SELECT SP — DB 상태 단언은 `tests/04`, RS0 Code·RS 형상은 `contract/` (§33.1a) | G09 |
+| `SEL` | `001`~`024` | 24 | `tests/04_Select_SP_Tests.sql` + `tests/contract/` | 8개 SELECT SP — DB 상태 단언은 `tests/04`, RS0 Code·RS 형상은 `contract/` (§33.1a) | G09 |
 | `PWR` | `001`~`014` `020`~`028` `030`~`031` | 25 | `tests/05_Patient_Write_Tests.sql` | `INSERT_수검자` · `UPDATE_수검자정보` (§33.4) | G06·G09 |
 | `RWR` | `001`~`012` `020`~`034` `040`~`044` `050`~`052` | 35 | `tests/06_Reservation_Write_Tests.sql` | `INSERT_예약` · `UPDATE_예약변경` · `UPDATE_예약취소` (§33.4) | G06·G09 |
 | `CWR` | `001`~`011` `020`~`026` `040`~`044` `050`~`052` | 26 | `tests/07_Reception_Write_Tests.sql` | `UPDATE_접수완료` · `UPDATE_접수추가검사` · `UPDATE_접수취소` (§33.4) | G06·G09 |
@@ -2431,7 +2436,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | `SEC` | `010` | 1 | `scripts/verify-no-secret.sh` | 배포 원본·로그·보고서 secret 0건 — **SQL 이 아니라 셸** | G12 |
 | `VER` | `001`~`007` | 7 | `deploy/09_Verify.sql` | 배포 직후 객체 수량 자체검증 | G03 |
 | `RBD` | `001`~`010` | 10 | `tests/14_Clean_Rebuild_Verify.sql` | Clean Rebuild 재현성 (§40) | G14 |
-| **합계** | | **242** | | | |
+| **합계** | | **246** | | | |
 
 `[I]` 범위가 전부 **연속**이다. 결번이 생기면 그 자체가 결함이다 — 계획에서 ID를 폐기할 때는 이 표에서도 지우고 뒤를 당기지 말고, 폐기 사유를 §45.4에 적는다.
 

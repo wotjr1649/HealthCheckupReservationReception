@@ -1,11 +1,11 @@
 `[!]` **이 계획서의 스키마 참조는 `plans/09`·`plans/10` 이 교체했다** ― 컬럼명 한글화,
 검사구성의 `예약접수`·`완료이력` 흡수, `검사항목` 삭제, `변경이력` EAV 전환. 당시 구조는 git 이력에 있다.
 
-# Stage 5 — SELECT Stored Procedure 7개 · Result Set 계약 검증기
+# Stage 5 — SELECT Stored Procedure 8개 · Result Set 계약 검증기
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
 **Spec:** `../06_DB_Transaction_Security_Seed_CANDIDATE.md`
-**Tasks:** `T15` ~ `T22`
+**Tasks:** `T15` ~ `T22` · `T22b`
 
 ## 공통 규칙 (T15~T21 전부에 적용)
 
@@ -27,7 +27,7 @@
 **시나리오는 `SEL` 1건당 파일 하나(20개) + `05` §9.11 Scope Cardinality 를 덮는 5개 = 25개다.**
 
 ```text
-파일명   tests/contract/<NN>_<시나리오>.sql      NN 은 01~20 이 SEL-001~SEL-020 과 1:1, 21~25 가 Scope
+파일명   tests/contract/<NN>_<시나리오>.sql      NN 은 01~20 이 SEL-001~SEL-020 과 1:1, 21~25 가 Scope. SEL-021~024 는 Test ID 명이다
 키       expected-contracts.json 의 키 = 파일명(확장자 제외). verify-contract-all.sh 가 basename 을 그대로 쓴다
 본문     SET NOCOUNT ON; → (필요하면) DECLARE 로 인자 확보 → EXEC 한 번 → GO
 소유     시나리오 .sql 은 그 SP 를 만드는 Task 가 함께 만든다 — RED 를 그 파일로 관측하기 때문이다.
@@ -71,6 +71,14 @@
 | `23_예약가능정보_Scope_EXTRA` | — | `예약가능정보` | `T020` |
 | `24_예약가능정보_Scope_SLOT_EXTRA` | — | `예약가능정보` | `T020` |
 | `25_예약가능정보_Scope_NONE` | — | `예약가능정보` | `T020` |
+| `SEL-021_변경이력_정상` | `SEL-021` | `변경이력` | `변경이력` 최초 `수검자` 행 |
+| `SEL-022_변경이력_기록0건` | `SEL-022` | `변경이력` | 리터럴 `-1` |
+| `SEL-023_변경이력_TargetTable_허용밖` | `SEL-023` | `변경이력` | 리터럴 |
+| `SEL-024_변경이력_TargetTable_NULL` | `SEL-024` | `변경이력` | 리터럴 |
+
+`[R3]` **`SEL-021`~`024` 만 Test ID 로 이름 짓는다.** `SP-LOG-01` 은 `변경이력` 에 행이 있어야 정상 조회를
+시험할 수 있는데, 그 행은 Write SP 가 만든다. `verify-contract-all.sh` 가 glob 사전순으로 도는 것을 이용해
+`PWR-*` 뒤에 오도록 이름을 지었다(`P` < `S`). 숫자 접두사 `26_` 을 쓰면 `PWR-*` 앞으로 가서 0행이 된다.
 
 `[X]` **Scope 시나리오의 `@WorkId` 는 `RSV` Work 여야 한다.** 표는 처음에 `23`·`24` 를 `T014` 로 적었는데
 `T014` 의 Work 는 `tests/00b` 가 만든 `RCP` 라 SP 가 `502 WrongStatus` 로 끊는다. `T020` 의 `RSV` Work 를 쓴다.
@@ -1080,3 +1088,73 @@ git commit -m "test(phase4): 후속 Result Set 계약 검증기 도입 (node, �
 **완료조건:** RED에서 실제 FAIL 관측 + 스펙 §45.2 의 `SEL` 전건이 계약 판정으로 PASS + Scope 5개 시나리오 PASS.
 
 `[X]` 초안은 시나리오를 SP 단위 11개로 셌다. 그렇게 세면 `SEL` 20건 중 9건이 판정되지 않는다 — 위 **계약 시나리오 규약** 표가 단일 출처다.
+
+---
+
+## Task T22b: `[dbo].[USP_HC_SELECT_변경이력]` (`SP-LOG-01`)
+
+**목적:** 대상 행 하나의 변경기록을 최신순으로 낸다. `00` CP-06 이 변경기록을 **열람용**으로 규정한 것을 받는 유일한 조회 SP 다.
+
+**관련 Baseline 위치:** `05` §8.3 (입력·RS·정렬·계약 경계), `05` §13 (허용 Code `0`·`100`·`101`), `04` §8.6.3·§8.6.4, `03` §23 (`DLG-LOG-01`).
+
+`[R3]` **이 Task 는 R3 재봉인으로 `SP-LOG-01` 이 신설된 뒤에 만들어졌다.** 초안 `T15`~`T22` 에는 없었고, `§45.2` 의 `SEL` 대역도 `001`~`020` 이라 8번째 SELECT SP 를 추적하지 못했다. `SEL-021`~`024` 로 대역을 넓히고 `SEL` 건수를 24 로, 카탈로그 합계를 246 으로 고쳤다.
+
+**선행조건:** `T21` 완료. 정상 조회 시나리오는 Write SP 가 남긴 `변경이력` 행을 필요로 한다.
+
+**Files:** Modify `deploy/04_Procedures_Select.sql` · `tests/04_Select_SP_Tests.sql` · `tools/expected-contracts.json`, Create `tests/contract/SEL-021_*.sql` ~ `SEL-024_*.sql`
+
+**Interfaces:**
+- Parameter 2개: `@TargetTable NVARCHAR(10)`, `@TargetKey BIGINT` (둘 다 `NOT NULL`)
+- Produces: RS0 + RS1 `(LogId BIGINT, RecordedAt DATETIME2(0), OperatorName NVARCHAR(50), ColumnName NVARCHAR(30), BeforeValue NVARCHAR(4000), AfterValue NVARCHAR(4000))`
+- 정렬 `RecordedAt DESC, LogId DESC` — `IX_변경이력_TARGET` 의 Key(`대상테이블, 대상키, 기록일시 DESC`)가 술어와 정렬을 그대로 덮는다
+
+**허용 Code:** `0, 100~101`
+
+**금지사항:**
+
+```text
+200 PatientNotFound      대상 행의 존재를 확인하지 않는다. 감사 기록은 대상 행보다 오래 산다 (04 §8.6.3)
+대상테이블을 RS1 에 실음   호출자가 이미 알고 넘긴 값이다 (05 §8.3)
+변경이력 기록             이 SP 는 데이터를 바꾸지 않으므로 남기지 않는다
+기간·조작자 전체 검색      계약에 없다. 대상 행 1개 단위 조회만 제공한다
+```
+
+- [ ] **Step 1: RED — 계약 시나리오 4건**
+
+| Test ID | 인자 | 기대 RS0 | 설명 |
+|---|---|---|---|
+| `SEL-021` | `N'수검자'`, 변경이력 최초 `수검자` 대상키 | `Success=1, Code=0` | 정상 조회. RS1 최소 1행 |
+| `SEL-022` | `N'예약접수'`, `-1` | `Success=1, Code=0` | 기록 0건 → RS1 **0행**. `200` 이 아니다 |
+| `SEL-023` | `N'완료이력'`, `1` | `Code=101` | `CK_변경이력_TARGET_TABLE` 도메인 밖 |
+| `SEL-024` | `NULL`, `1` | `Code=100` | 필수값 누락 |
+
+`[!]` **`SEL-021` 의 행수는 `rowsMin`/`rowsMax` 로 잡는다.** 대상키가 Fixture 가 아니라 Write SP 가 만든 값이라 회차마다 다르고, 그 행의 감사 행수도 어떤 Write SP 가 먼저 돌았느냐에 따라 달라진다. 계약이 요구하는 것은 *"정상 조회는 기록을 낸다"* 이므로 `rowsMin: 1` 이 그 계약이다.
+
+- [ ] **Step 2: 구현**
+
+```text
+정규화       @TargetTable LTRIM/RTRIM, 빈 문자열 → NULL. 한글 값이라 UPPER 하지 않는다
+필수값       @TargetTable NULL → 100 / @TargetKey NULL → 100
+값 형식      @TargetTable NOT IN (N'수검자', N'예약접수') → 101
+RS0          Code <> 0 이면 RS0 만 내고 RETURN
+RS1          대상테이블·대상키로 집고 기록일시 DESC, 이력ID DESC 로 정렬
+```
+
+읽기 전용이므로 `XACT_ABORT`·Transaction·`applock` 을 쓰지 않는다 (스펙 §31).
+
+- [ ] **Step 3: GREEN 실행**
+
+```bash
+sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -u \
+       -i deploy/04_Procedures_Select.sql -o artifacts/logs/04_sel.log
+echo "exit=$?"
+./scripts/verify-contract-all.sh
+```
+
+Expected: `SCH-014` 가 `10/16` 으로 전진하고 `SEL-021`~`024` 가 전건 PASS.
+
+**회귀시험:** `tests/00`~`05` 전체 + `verify-contract-all.sh`
+
+**Rollback/Cleanup:** `CREATE OR ALTER` 이므로 이전 파일 재배포로 되돌아간다.
+
+**완료조건:** `§45.2` 의 `SEL-021`~`024` 가 계약 판정으로 PASS + `tests/04` 의 읽기전용 불변조건이 이 SP 를 포함해 PASS.

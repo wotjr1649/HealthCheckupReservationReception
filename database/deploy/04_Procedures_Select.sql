@@ -920,3 +920,55 @@ BEGIN
     ORDER BY a.OptionCode ASC;
 END
 GO
+-- SP-LOG-01 (05 §8.3). 00 CP-06 이 변경기록을 열람용으로 규정한 것을 받는 유일한 조회 SP 다.
+--   대상 행 1개의 변경 내역만 낸다 - 기간·조작자 전체 검색은 제공하지 않는다.
+--   IX_변경이력_TARGET 의 Key 순서(대상테이블, 대상키, 기록일시 DESC)가 술어와 정렬을 그대로 덮는다.
+--   [!] 대상 행의 존재를 확인하지 않는다. 감사 기록은 대상 행보다 오래 살기 때문이다 (04 §8.6.3).
+--       기록이 0건이면 200 이 아니라 Code=0 + RS1 0행이다.
+CREATE OR ALTER PROCEDURE [dbo].[USP_HC_SELECT_변경이력]
+    @TargetTable NVARCHAR(10),
+    @TargetKey   BIGINT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
+    DECLARE @Code INT = 0, @Field VARCHAR(50) = NULL;
+    DECLARE @Msg NVARCHAR(300) = N'정상 처리되었습니다.';
+
+    -- 1. 정규화 (05 §2.2). 대상테이블은 한글 값이라 UPPER 하지 않는다.
+    SET @TargetTable = NULLIF(LTRIM(RTRIM(@TargetTable)), N'');
+
+    -- 2. 필수값 -> 값 형식 (05 §5)
+    IF @TargetTable IS NULL
+    BEGIN SET @Code = 100; SET @Field = 'TargetTable'; SET @Msg = N'필수값을 입력하십시오.'; END
+    ELSE IF @TargetKey IS NULL
+    BEGIN SET @Code = 100; SET @Field = 'TargetKey'; SET @Msg = N'필수값을 입력하십시오.'; END
+    -- CK_변경이력_TARGET_TABLE 과 같은 도메인이다 (04 §8.6.3). 완료이력은 쓰는 Write SP 가 0개다.
+    ELSE IF @TargetTable NOT IN (N'수검자', N'예약접수')
+    BEGIN SET @Code = 101; SET @Field = 'TargetTable'; SET @Msg = N'입력값이 올바르지 않습니다.'; END
+
+    -- RS0
+    SELECT
+          CAST(CASE WHEN @Code = 0 THEN 1 ELSE 0 END AS BIT) AS Success
+        , CAST(@Code AS INT)                  AS Code
+        , CAST(@Msg AS NVARCHAR(300))         AS Message
+        , CAST(@Field AS VARCHAR(50))         AS Field
+        , CAST(@ServerTime AS DATETIME2(7))   AS ServerTime;
+
+    IF @Code <> 0 RETURN;
+
+    -- RS1 변경이력 - 대상테이블은 싣지 않는다. 호출자가 이미 알고 넘긴 값이다 (05 §8.3).
+    SELECT
+          LogId        = CAST(h.[이력ID]   AS BIGINT)
+        , RecordedAt   = CAST(h.[기록일시] AS DATETIME2(0))
+        , OperatorName = CAST(h.[조작자명] AS NVARCHAR(50))
+        , ColumnName   = CAST(h.[컬럼명]   AS NVARCHAR(30))
+        , BeforeValue  = CAST(h.[변경전]   AS NVARCHAR(4000))
+        , AfterValue   = CAST(h.[변경후]   AS NVARCHAR(4000))
+      FROM [dbo].[변경이력] h
+     WHERE h.[대상테이블] = @TargetTable
+       AND h.[대상키]     = @TargetKey
+     ORDER BY h.[기록일시] DESC, h.[이력ID] DESC;
+END
+GO
