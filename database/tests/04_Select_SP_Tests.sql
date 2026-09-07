@@ -11,7 +11,7 @@ DECLARE @Fail INT = 0;
 --
 -- 지문 식을 SP 마다 되풀이하지 않는다. 전 SELECT SP 를 한 번에 호출하고 앞뒤로 한 번씩만 잰다.
 -- FAIL 이면 아래 EXEC 목록을 반씩 잘라 다시 돌리면 범인이 나온다.
--- 스칼라 UDF 로 묶지 않는다 — 계약(TVF 4 / SP 15) 밖이라 SCH-013·SCH-014 가 깨진다.
+-- 스칼라 UDF 로 묶지 않는다 — 계약(TVF 4 / SP 16) 밖이라 SCH-013·SCH-014 가 깨진다.
 
 DECLARE @Before VARCHAR(100) =
       CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[수검자]))   + '|'

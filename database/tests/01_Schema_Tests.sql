@@ -46,11 +46,11 @@ IF ((SELECT COUNT(*) FROM sys.indexes i
     PRINT 'PASS SCH-007 Filtered Unique Index 1개';
 ELSE BEGIN PRINT 'FAIL SCH-007 Filtered Unique Index 수 불일치'; SET @Fail += 1; END
 
--- SCH-008 업무/조회 NCI 4 (PK/UQ/UX 제외). IX_수검자_CEL_NUMBER_S 는 CelNumberS 와 함께 사라졌다
+-- SCH-008 업무/조회 NCI 5 (PK/UQ/UX 제외). IX_변경이력_TARGET 이 SP-LOG-01 조회 경로로 신설되었다
 IF ((SELECT COUNT(*) FROM sys.indexes i
       JOIN sys.tables t ON t.object_id = i.object_id AND t.is_ms_shipped = 0
-     WHERE i.type = 2 AND i.is_primary_key = 0 AND i.is_unique_constraint = 0 AND i.is_unique = 0) = 4)
-    PRINT 'PASS SCH-008 업무/조회 Nonclustered Index 4개';
+     WHERE i.type = 2 AND i.is_primary_key = 0 AND i.is_unique_constraint = 0 AND i.is_unique = 0) = 5)
+    PRINT 'PASS SCH-008 업무/조회 Nonclustered Index 5개';
 ELSE BEGIN PRINT 'FAIL SCH-008 Nonclustered Index 수 불일치'; SET @Fail += 1; END
 
 -- SCH-009 Sequence 1 / MAXVALUE 999999
@@ -79,9 +79,9 @@ IF ((SELECT COUNT(*) FROM sys.objects WHERE type = 'IF' AND name LIKE 'UFN[_]HC[
     PRINT 'PASS SCH-013 Inline TVF 4개';
 ELSE BEGIN PRINT 'FAIL SCH-013 Inline TVF 수 불일치 (T14 이전이면 정상)'; SET @Fail += 1; END
 
--- SCH-014 SP 15  (T30 이후 통과)
-IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 15)
-    PRINT 'PASS SCH-014 Stored Procedure 15개';
+-- SCH-014 SP 16  (T30 이후 통과)
+IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 16)
+    PRINT 'PASS SCH-014 Stored Procedure 16개';
 ELSE BEGIN PRINT 'FAIL SCH-014 SP 수 불일치 (T30 이전이면 정상)'; SET @Fail += 1; END
 
 -- SCH-015 컬럼 48개 전건 EXCEPT 양방향  (04 §8)
@@ -207,11 +207,11 @@ IF NOT EXISTS (SELECT N FROM @ExpDf EXCEPT SELECT name FROM sys.default_constrai
     PRINT 'PASS SCH-017 Default 제약 이름 전건 일치';
 ELSE BEGIN PRINT 'FAIL SCH-017 Default 제약 집합 불일치'; SET @Fail += 1; END
 
--- SCH-018 Nonclustered Index 4개 이름 + Key 컬럼 순서 EXCEPT 양방향  (04 §8.1.5 / §8.2.4)
+-- SCH-018 Nonclustered Index 5개 이름 + Key 컬럼 순서 EXCEPT 양방향  (04 §8.1.5 / §8.2.4 / §8.6.3)
 --   COUNT 로는 (성명, 생년월일) 이 (성명, 성별) 로 바뀐 것을 못 잡는다. 행 단위로 펼쳐 대조한다.
 -- [X] 초안의 기대값은 존재하지 않는 Index 를 가리켰다(`IX_수검자_CHART_NO` 는 UQ 이지 NCI 가 아니고,
 --     `IX_예약접수_DATE_SLOT_STATUS`·`..._PATIENT_STATUS`·`IX_검사항목_WORK` 는
---     04 §8 에 없는 이름이다). 04 §8.1.5 / §8.2.4 의 NCI 4개 · Key 9행이 실제 계약이다.
+--     04 §8 에 없는 이름이다). 04 §8.1.5 / §8.2.4 / §8.6.3 의 NCI 5개 · Key 12행이 실제 계약이다.
 --     `IX_수검자_CEL_NUMBER_S` 는 `CelNumberS` 컬럼과 함께 사라졌다 (04 §8.1.5).
 DECLARE @ExpIx TABLE (IxName SYSNAME, Ord TINYINT, ColName SYSNAME, PRIMARY KEY (IxName, Ord));
 INSERT @ExpIx (IxName, Ord, ColName) VALUES
@@ -223,7 +223,10 @@ INSERT @ExpIx (IxName, Ord, ColName) VALUES
  (N'IX_예약접수_SLOT',                  3, N'상태코드'),
  (N'IX_예약접수_PATIENT_STATE_DATE',    1, N'수검자ID'),
  (N'IX_예약접수_PATIENT_STATE_DATE',    2, N'상태코드'),
- (N'IX_예약접수_PATIENT_STATE_DATE',    3, N'예약일');
+ (N'IX_예약접수_PATIENT_STATE_DATE',    3, N'예약일'),
+ (N'IX_변경이력_TARGET',                1, N'대상테이블'),
+ (N'IX_변경이력_TARGET',                2, N'대상키'),
+ (N'IX_변경이력_TARGET',                3, N'기록일시');
 
 -- [X] 초안은 `;WITH Act AS (…) IF NOT EXISTS …` 였다. CTE 뒤에는 SELECT/INSERT/UPDATE/DELETE/MERGE 만
 --     올 수 있어 `IF` 는 구문오류이고, 설령 통과해도 CTE 는 IF 본문까지 유효범위가 미치지 않는다.

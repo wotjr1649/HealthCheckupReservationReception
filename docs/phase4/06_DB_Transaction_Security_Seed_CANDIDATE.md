@@ -285,7 +285,7 @@ database/
 │  ├─ 13_Security_Tests.sql
 │  ├─ 14_Clean_Rebuild_Verify.sql
 │  └─ contract/                       SP별 호출 시나리오 — EXEC 한 번, DB 상태 단언 없음
-│     └─ 01_*.sql ~ 22_*.sql           15개 SP 전건. RS0 Code·RS 형상 판정용 원본
+│     └─ 01_*.sql ~ 26_*.sql           16개 SP 전건. RS0 Code·RS 형상 판정용 원본
 │
 ├─ scripts/
 │  ├─ deploy.sh  rebuild.sh  test.sh  concurrency-test.sh
@@ -467,7 +467,7 @@ shell script는 역할에 따라 두 가지를 쓴다.
 
 ## 9.3 별도 lint script 미작성 · G13 증거의 한계 `[D4-004]` `[X 수정]`
 
-규칙이 허용목록이고 대상 객체가 25개(Table 6 + TVF 4 + SP 15)뿐이므로 별도 정적검사 script를 만들지 않는다. 객체 수가 크게 늘거나 다수 인원이 SQL을 추가하게 되면 그때 도입한다.
+규칙이 허용목록이고 대상 객체가 26개(Table 6 + TVF 4 + SP 16)뿐이므로 별도 정적검사 script를 만들지 않는다. 객체 수가 크게 늘거나 다수 인원이 SQL을 추가하게 되면 그때 도입한다.
 
 `[X]` **다만 블랙리스트 `grep` 0건을 "허용목록 준수 PASS"로 승격하지 않는다.** 초안의 `T37` Step 4는 알려진 신기능 문자열 일부만 `grep` 하고 그 결과 0건을 G13 증거로 삼았다. 논리적으로 성립하지 않는다 — grep 목록에 없는 2012 이후 기능은 그대로 통과하고, 주석·문자열 안의 금지 단어는 오탐한다.
 
@@ -850,7 +850,7 @@ NEX-06  EX013  Age IN (56,66)
 
 ---
 
-# 18. 15개 SP 구현 Matrix `[B]`
+# 18. 16개 SP 구현 Matrix `[B]`
 
 | SP | 구분 | Param | Result Set | 관련 정책·Rule | Transaction | Lock | Test file |
 |---|:---:|---:|:---:|---|:---:|---|---|
@@ -1581,7 +1581,7 @@ tools/verify-contract.js      후속 Result Set 형상 검증
 | SP 내부 `ROLLBACK` | **`Msg 3915`** — INSERT-EXEC 문 내에서는 ROLLBACK 불가 |
 | 진입 시 `@@TRANCOUNT` | **1** (평범한 `EXEC` 는 0) — **C# 호출과 다른 경로를 시험하게 된다** |
 
-15개 SP 전부가 RS를 2개 이상 반환하므로 이 패턴은 **구조적으로 성립하지 않는다.** 초안은 *"`INSERT … EXEC` 는 첫 번째 Result Set만 받는다"* 라는 잘못된 전제 위에 약 50곳의 단언을 세웠다.
+16개 SP 전부가 RS를 2개 이상 반환하므로 이 패턴은 **구조적으로 성립하지 않는다.** 초안은 *"`INSERT … EXEC` 는 첫 번째 Result Set만 받는다"* 라는 잘못된 전제 위에 약 50곳의 단언을 세웠다.
 
 ### 대체 구조 — 역할을 둘로 나눈다
 
@@ -2024,7 +2024,7 @@ END CATCH
 |---|---|---|
 | `SEC-001` | `EXECUTE AS USER` 컨텍스트에서 `USER_NAME()` | `HC_APP_TEST` (실측 확인) |
 | `SEC-002` | 동일 컨텍스트의 `IS_SRVROLEMEMBER('sysadmin')` | **`0`** (실측 확인) — dbo/sysadmin 오인 방지 증거. **FAIL이면 이후 전 항목 무의미하므로 즉시 중단** |
-| `SEC-003` | 15개 SP 실행 | 전부 성공 (`Msg 229` 만 실패로 계산) |
+| `SEC-003` | 16개 SP 실행 | 전부 성공 (`Msg 229` 만 실패로 계산) |
 | `SEC-004` | 6개 테이블 직접 `SELECT` | 전부 `Msg 229` |
 | `SEC-005` | 6개 테이블 `INSERT`/`UPDATE`/`DELETE` (Transaction + `ROLLBACK`) | 전부 `Msg 229`, 데이터 변경 0 |
 | `SEC-006` | 4개 TVF 직접 `SELECT` | 전부 `Msg 229` |
@@ -2049,7 +2049,7 @@ END CATCH
 | `RBD-001` | 잘못된 서버명에서 `Rebuild.sql` | **`NOT RUN`** — 인스턴스가 1개뿐이라 음성 시험 불가 |
 | `RBD-002` | 대상 DB 컨텍스트에서 `Rebuild.sql` 실행 (master 아님) | `THROW 50021` 로 중단, DB 변경 0 |
 | `RBD-003` | 빈 DB에서 `Deploy.sql` 전체 실행 | exit code 0 |
-| `RBD-004` | 배포 직후 객체 인벤토리 | Table 6 / TVF 4 / SP 15 / Sequence 1 / PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 / Trigger 0 |
+| `RBD-004` | 배포 직후 객체 인벤토리 | Table 6 / TVF 4 / SP 16 / Sequence 1 / PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5 / Trigger 0 |
 | `RBD-005` | **연속 2회 Rebuild** 후 **정렬된 객체·Seed 덤프를 `diff`** | 차이 0줄 |
 | `RBD-006` | 2회 Rebuild 후 Seed 행수 + **19행 전건 값** | Exam 19 / Holiday 2, 값까지 동일 |
 | `RBD-007` | `Deploy.sql` 단독 재실행 (DB 유지) | exit 0, 덤프 동일 |
@@ -2120,12 +2120,12 @@ artifacts/
 | G01 | WinForms 보호 | 변경 0건 (git diff + hash manifest 이중 증거) | `PLANNED` |
 | G02 | Preflight | `00_Preflight.sql` 가드 6종(`50010~50015`) 통과 · KST 540 · Version >= 11. `Rebuild.sql` 가드는 `50020~50024` 별도 | `PLANNED` |
 | G03 | Clean Deploy | 빈 DB 전체 배포 성공 (exit 0) | `PLANNED` |
-| G04 | Object Inventory | Table 6 / TVF 4 / SP 15 / Sequence 1 | `PLANNED` |
+| G04 | Object Inventory | Table 6 / TVF 4 / SP 16 / Sequence 1 | `PLANNED` |
 | G05 | Schema | PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 **+ 48컬럼·제약 23·Default 8·NCI Key 를 `EXCEPT` 양방향 차집합 0** | `PLANNED` |
 | G06 | 금지 객체 | Trigger 0 / TVP 0 / DELETE SP 0 / 추가 Table 0 | `PLANNED` |
 | G07 | Seed | Exam **19행 전건 값 일치**(`EXCEPT` 양방향) / NEX 역할 13 / AEX 역할 7 / `추가검사사용여부` 7건 모두 1 / Holiday 2 | `PLANNED` |
 | G08 | Rule | TGT/NEX/AEX/HOL 경계 전건 통과 + `CORRUPT-3` 재검증금지 확인 | `PLANNED` |
-| G09 | SP Contract | Parameter 95 `EXCEPT` 양방향 · RS0 **75행·`error_number` 0건** · **15/15 SP** 후속 RS 순서·컬럼·Cardinality · RS0 Code 가 `05` §13 허용집합 내 | `PLANNED` |
+| G09 | SP Contract | Parameter 99 `EXCEPT` 양방향 · RS0 **80행·`error_number` 0건** · **16/16 SP** 후속 RS 순서·컬럼·Cardinality · RS0 Code 가 `05` §13 허용집합 내 | `PLANNED` |
 | G10 | Rollback | 부분저장 0건 | `PLANNED` |
 | G11 | Concurrency | `CON-001`~`CON-008` 통과 **+ `rc=1` 경합 증거 1건 이상 + `Msg 1205`·`50002` 각 0건** | `PLANNED` |
 | G12 | Security | `SEC-001`~`SEC-011`. `sysadmin=0` 확인 후에만 유효. 거부는 `Msg 229` 만 인정 | `PLANNED` |
@@ -2290,7 +2290,7 @@ ROOT·하위 어디에도 `.git`이 없었다. 인계문서 §7.3.C·§10.5(Task
 | Implementation Blocker | **0건** |
 | 6 Table 추적 | **6/6** (§11) |
 | 4 TVF 추적 | **4/4** (§17) |
-| 15 SP 추적 | **15/15** (§18) |
+| 16 SP 추적 | **16/16** (§18) |
 | 8 Write SP Transaction 추적 | **8/8** (§21.2) |
 | 8 Write SP Lock 추적 | **8/8** (§22 · §24) |
 | `05` 적대적 테스트 계약 추적 | **§33.4에 12건 보완 후 전건 매핑** |

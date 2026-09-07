@@ -92,6 +92,22 @@ R3 재봉인에서 다음 세 가지를 개정했다.
 변경이력 대상키를 NOT NULL 로, 배포가 감사기록을 지우지 않도록   §8.6.2 · §8.6.3
 ```
 
+그 뒤 UI 계약을 두 가지 열었다. **테이블·컬럼·제약은 바뀌지 않는다** — 파라미터와 Index 만 는다.
+
+```text
+B형간염제외여부를 DLG-PAT-01 등록·수정 Editor 입력으로     §1.5 · §8.1.2 · 03 §6.2a
+  INSERT_수검자 · UPDATE_수검자정보 에 @HepatitisBExcluded
+  SELECT_수검자상세 RS1 에 HepatitisBExcluded
+변경기록 열람 화면 DLG-LOG-01 과 SP-LOG-01 신설             §8.6.4 · 03 §23 · 05 §8.3
+  IX_변경이력_TARGET 신설로 NCI 4 -> 5, SP 15 -> 16
+  00 CP-06 이 '열람용' 이라 해 놓고 하위 문서가 받지 않던 공백을 닫는다
+```
+
+`[!]` **`02_Function_Definition.xlsx` 의 `F-COM-008` 등재가 남아 있다.** 이 개정에서 `03`·`04`·`05` 는
+`F-COM-008`(변경기록 열람)을 정의했지만 Function ID 의 원천인 `02` 는 아직 16개다. `02` 는 xlsx 라
+행 추가가 `xl/tables/*` 의 ListObject 범위까지 건드려 별도 작업으로 분리했다. 그때까지
+§4.7 의 "17개 Function ID" 는 `02` 재봉인을 전제한 서술이다.
+
 ## 0.3 Source of Truth 우선순위
 
 충돌이 발생하면 다음 순서로 판단한다.
@@ -148,7 +164,7 @@ DB Role·GRANT EXECUTE·직접 DML 통제
 실행 테스트와 성능 검증
 ```
 
-현재 4개 업무/조회 Nonclustered Index는 최소 기준이다. 실행계획과 재현 가능한 성능시험으로 필요성이 증명된 경우에만 업무 의미를 갖지 않는 보조 Nonclustered Index 또는 INCLUDE를 DB Script에 추가할 수 있다. 이 경우에도 테이블·컬럼·키·제약의 기준선은 열지 않으며 근거와 결과를 `07_UI_DB_Matrix_Final_Validation.md`에 기록한다.
+현재 5개 업무/조회 Nonclustered Index는 최소 기준이다. 실행계획과 재현 가능한 성능시험으로 필요성이 증명된 경우에만 업무 의미를 갖지 않는 보조 Nonclustered Index 또는 INCLUDE를 DB Script에 추가할 수 있다. 이 경우에도 테이블·컬럼·키·제약의 기준선은 열지 않으며 근거와 결과를 `07_UI_DB_Matrix_Final_Validation.md`에 기록한다.
 
 ### 0.4.3 예외 처리
 
@@ -251,7 +267,7 @@ UI의 Enabled/Disabled 상태와 조회값은 사전검증이다. 데이터 변�
 - `SocialNumber`는 전체 수검자에서 고유하며 정확검색에 사용한다.
 - `Birthday`, `Gender`는 `SocialNumber`에서 유도하는 `PERSISTED` 계산열이다(§8.1.2). 어긋난 상태를 표현할 수 없으므로 원본-파생값 비교라는 단계 자체가 없다.
 - `CelNumberS`·`TelNumberS`는 둘 다 삭제했다. `@MobilePhone` 검색은 표시값에서 `-`를 뺀 결과로 비교하며 정규화 짝 컬럼을 두지 않는다(§8.1.2).
-- `HepatitisBExcluded`는 NEX-03의 B형간염(`EX010`) 제외 판정 입력이며 `1`이 제외다. UI 입력이 없고 Seed/Test Data로만 설정한다.
+- `HepatitisBExcluded`는 NEX-03의 B형간염(`EX010`) 제외 판정 입력이며 `1`이 제외다. `DLG-PAT-01` 등록·수정 Editor에서 입력하고 신규 기본값은 `0`이다(`03` §5.6). Seed/Test Data로도 설정한다.
 
 ## 1.6 계산값과 영속값 분리
 
@@ -480,7 +496,7 @@ AND
 - 본체는 술어의 의미 태그이며 컬럼명의 기계적 전개가 아니다 — `SOCIAL_FORMAT`, `EDIT_DATE`, `TIME_SLOT`, `EXAM_FORMAT`, `ROLE_REQUIRED`. 영문 대문자 `SNAKE_CASE`로 적는다.
 - Foreign Key의 본체는 **부모 테이블명**이다. FK는 컬럼이 아니라 관계를 가리키므로 컬럼명 규칙을 적용하지 않는다.
 - Primary Key는 본체를 두지 않는다.
-- Stored Procedure·Function·Sequence 이름은 한글화하지 않는다. `05_DB_Rule_SP_Contract.md`의 SP 15개·TVF 4개 이름과 `SEQ_HC_` 접두사 규칙이 그대로 유지된다.
+- Stored Procedure·Function·Sequence 이름은 한글화하지 않는다. `05_DB_Rule_SP_Contract.md`의 SP 16개·TVF 4개 이름과 `SEQ_HC_` 접두사 규칙이 그대로 유지된다.
 - 컬럼명은 한글이다. `05_DB_Rule_SP_Contract.md`의 Result Set 컬럼명과 Parameter 이름은 영문을 유지하므로 SP의 SELECT 목록에는 `ChartNo = p.[차트번호]` 형태의 별칭이 붙는다.
 
 ## 3.4 공통 데이터 타입 및 현재시각 계약
@@ -793,10 +809,11 @@ NEX 13개 + AEX 7개 - 공통 골밀도 1개 = 19개 Master 행
 | F-COM-005 | `예약접수`, `휴무일`, 일정/정원/중복 |
 | F-COM-006 | `예약접수`, `휴무일`, 접수조건 |
 | F-COM-007 | `휴무일`, 업무일/업무시간 Rule |
+| F-COM-008 | `변경이력` |
 
-16개 Function ID와 36개 기능정의 Row는 6개 테이블 및 Rule/SP 객체로 모두 추적 가능하다.
+17개 Function ID와 36개 기능정의 Row는 6개 테이블 및 Rule/SP 객체로 모두 추적 가능하다.
 
-`변경이력`은 특정 Function ID의 업무 데이터가 아니라 Write Stored Procedure 8개(`F-PAT-002`·`F-PAT-003`·`F-RSV-001`~`003`·`F-RCP-001`~`003`)가 공통으로 남기는 부수 기록이므로 위 표의 Entity 열에 개별 등재하지 않는다.
+`변경이력`은 Write Stored Procedure 8개(`F-PAT-002`·`F-PAT-003`·`F-RSV-001`~`003`·`F-RCP-001`~`003`)가 공통으로 남기는 부수 기록이다. 그 기록을 읽는 것은 `F-COM-008` 하나뿐이며 `DLG-LOG-01`이 대상 행 단위로 연다(`03` §23).
 
 ---
 
@@ -927,7 +944,7 @@ Rule/UDF/SP 입출력 계약은 `05_DB_Rule_SP_Contract.md`, 잠금 SQL·Seed/Te
 | 11 | `주소` | `NVARCHAR(200)` | O | 사용자 입력 | 주소 |
 | 12 | `상세주소` | `NVARCHAR(200)` | O | 사용자 입력 | 상세주소 |
 | 13 | `비고` | `NVARCHAR(MAX)` | O | 사용자 입력 | 메모 |
-| 14 | `B형간염제외여부` | `BIT` | X | `0` | B형간염(`EX010`) 검사 제외 여부. `1`이 제외 |
+| 14 | `B형간염제외여부` | `BIT` | X | `0` / 사용자 입력 | B형간염(`EX010`) 검사 제외 여부. `1`이 제외 |
 | 15 | `생성일시` | `DATETIME` | X | `GETDATE()` | 생성시각 |
 | 16 | `최종수정일시` | `DATETIME` | X | `GETDATE()` | 마지막 수정시각 및 수정 동시성 기준값 |
 
@@ -1211,7 +1228,7 @@ Write Stored Procedure 8개가 남기는 **데이터 변경 기록**이다. 상�
 
 값이 실제로 바뀐 컬럼만 남긴다. 같은 값으로 덮어쓴 것은 기록하지 않는다.
 
-### 8.6.3 Key / Constraint / Index
+### 8.6.3 Key / Constraint
 
 | 구분 | 이름 | 정의 |
 |---|---|---|
@@ -1220,20 +1237,29 @@ Write Stored Procedure 8개가 남기는 **데이터 변경 기록**이다. 상�
 | CK | `CK_변경이력_COLUMN_NOT_BLANK` | `컬럼명`이 공백만으로 이루어지지 않는다 |
 | DF | `DF_변경이력_CREATION_DATE` | `기록일시 = SYSDATETIME()` |
 
-Foreign Key 0개, Index 0개다.
+### 8.6.4 Index
+
+| 이름 | Key | INCLUDE | 목적 |
+|---|---|---|---|
+| `IX_변경이력_TARGET` | `대상테이블, 대상키, 기록일시 DESC` | - | `SP-LOG-01` 대상 행 1개의 변경 내역 최신순 |
+
+Foreign Key 0개, Nonclustered Index 1개다.
 
 - `대상키`는 대상이 여러 테이블이라 컬럼 하나에 FK를 걸 수 없고, 감사 기록은 대상 행보다 오래 살아야 한다.
   두 대상 테이블 모두 `BIGINT` 단일 PK이고 성공한 변경만 기록하므로 키를 모르는 경로가 없다 — 그래서 `NOT NULL`이다.
-- **현재 이 테이블을 읽는 Stored Procedure가 0개이므로** Clustered PK 하나만 둔다.
-  조회 화면이 `02`·`03`에 정의되면 그때 §0.4.2의 절차로 `(대상테이블, 대상키, 기록일시)` Index를 연다.
-  지금 만들면 그 Index를 쓰는 쿼리가 없어 §0.4.2가 요구하는 실행계획·성능시험 근거를 만들 수 없다.
+- `IX_변경이력_TARGET`은 `SP-LOG-01`(`USP_HC_SELECT_변경이력`)의 유일한 조회 경로를 받는다.
+  그 SP는 `대상테이블`·`대상키`로 한 행의 변경 내역을 집고 `기록일시` 최신순으로 낸다 —
+  Key 세 컬럼이 그 술어와 정렬을 그대로 덮는다. §0.4.2가 요구하는 "업무 의미를 갖지 않는 보조 Index"가
+  아니라 **업무 조회 경로 그 자체**이므로 성능시험 절차를 밟지 않는다.
+- `변경전`·`변경후`는 `NVARCHAR(4000)`이라 `INCLUDE`에 넣지 않는다. 대상 행 하나의 이력은 수십 건
+  규모이고 Key Lookup 비용이 Index 비대화보다 싸다.
 
 `deploy/01_Schema.sql`은 이 테이블만 `DROP` 대상에서 제외하고 `IF OBJECT_ID(...) IS NULL` 가드로 만든다.
 감사 기록이 배포로 지워지면 안 되기 때문이며, 물리 테이블 6개 중 clean-create가 아닌 유일한 예외다.
 `Rebuild.sql`은 DB를 통째로 DROP하므로 그 경로에서는 보존되지 않는다 — 개발 전용 진입점이다.
 이 가드가 옛 구조를 유지하는 드리프트는 `verify-schema-doc`의 `DOC-001`~`DOC-005`가 **부분적으로만** 잡는다. 그 게이트는 컬럼(이름·타입·NULL·순서)과 제약·인덱스 **이름**을 보고 제약의 **정의 텍스트**는 보지 않는다. 컬럼이나 제약 이름이 바뀐 드리프트는 잡히고, 같은 이름으로 술어만 바뀐 드리프트는 잡히지 않는다.
 
-### 8.6.4 기록 규칙
+### 8.6.5 기록 규칙
 
 기록의 상세 제어흐름은 `06_DB_Transaction_Security_Seed.md` §21이 확정한다. 본 문서는 스키마가 전제하는 다음 규칙을 고정한다.
 
@@ -1295,7 +1321,7 @@ Drop Script는 역순으로 수행한다. 수검자, Work, Master를 Cascade Del
 | Foreign Key | 0 | 1 | 0 | 0 | 1 | 0 | **2** |
 | Unique Constraint | 2 | 0 | 0 | 0 | 0 | 0 | **2** |
 | Filtered Unique Index | 0 | 0 | 1 | 0 | 0 | 0 | **1** |
-| Nonclustered Index | 2 | 2 | 0 | 0 | 0 | 0 | **4** |
+| Nonclustered Index | 2 | 2 | 0 | 0 | 0 | 1 | **5** |
 | CHECK | 7 | 4 | 8 | 1 | 1 | 2 | **23** |
 | DEFAULT | 3 | 2 | 1 | 1 | 0 | 1 | **8** |
 | Trigger | 0 | 0 | 0 | 0 | 0 | 0 | **0** |
@@ -1352,7 +1378,7 @@ UI 또는 C# 검증만으로 다음을 보장하지 않는다.
 | 최근 완료이력 | PatientId + CompletionDate 범위 | `PK_완료이력` |
 | 검진완료 분류 | PatientId + CompletionDate | `PK_완료이력` seek |
 | B형간염 제외여부(NEX-03) | PatientId | `PK_수검자` — 수검자 행에서 함께 읽는다 |
-| 변경이력 열람 | 없음 | `PK_변경이력` Scan |
+| 변경이력 열람 | 대상테이블 + 대상키 | `IX_변경이력_TARGET` seek, `기록일시` 최신순 |
 
 ## 11.2 Index 최소화 판단
 
@@ -1365,7 +1391,8 @@ UI 또는 C# 검증만으로 다음을 보장하지 않는다.
 - `예약접수.StatusCode` 단독 Index: 날짜 없는 상태 전체조회 빈도가 낮음
 - 완료이력 보조 Index: Composite PK가 최신 완료일 조회를 지원
 - `수검자.HepatitisBExcluded` 단독 Index: 항상 `PatientId`로 단일행을 집은 뒤 읽는다
-- `변경이력`의 어떤 Index도: 읽는 Stored Procedure가 0개다 (§8.6.3)
+- `변경이력`의 `기록일시` 단독 Index: 기간 전체 조회 화면이 없다. 열람은 항상 대상 행 1개 단위다 (§8.6.4)
+- `변경이력`의 `조작자명` Index: 조작자 검색 화면이 없고 그 값은 인증되지 않은 자기신고 문자열이다 (§14.2 L4)
 
 실제 구현 후 실행계획에서 병목이 확인되지 않는 한 Index를 추가하지 않는다.
 
@@ -1681,7 +1708,7 @@ TGT 입력자료 1
 
 - 물리 테이블은 정확히 6개이며 추가·삭제·분할·병합할 필요가 없다.
 - 6개 테이블 48컬럼의 전체 컬럼명·타입·NULL과 PK 6 / FK 2 / UQ 2 / UX 1 / CK 23 / DF 8이 확정되었다.
-- 화면과 Rule 조회를 지원하는 최소 업무/조회 Index 4개, Filtered Unique Index 1개, Sequence 1개가 확정되었다.
+- 화면과 Rule 조회를 지원하는 최소 업무/조회 Index 5개, Filtered Unique Index 1개, Sequence 1개가 확정되었다.
 - 예약·접수 동일 Work 행, 검사구성 컬럼 2개, SocialNumber 직접 고유성 구조가 확정되었다.
 - Patient는 `LastEditDate`, Work Aggregate는 `RowVersion`을 동시성 기준으로 사용한다.
 - AEX 실제변경과 No-op의 갱신경계가 확정되었다.

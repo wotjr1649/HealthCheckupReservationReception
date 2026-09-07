@@ -251,6 +251,14 @@ BEGIN
     );
 END
 GO
+-- 대상 행 하나의 변경 내역을 최신순으로 읽는다. USP_HC_SELECT_변경이력 의 유일한 조회 경로다
+-- (04 §8.6.4). 이 테이블은 clean-create 대상이 아니라 CREATE TABLE 가드 밖에서 따로 만든다 -
+-- 테이블이 이미 있고 인덱스만 없는 상태가 가능하기 때문이다.
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+                WHERE object_id = OBJECT_ID(N'[dbo].[변경이력]', N'U') AND name = N'IX_변경이력_TARGET')
+    CREATE NONCLUSTERED INDEX [IX_변경이력_TARGET]
+        ON [dbo].[변경이력] ([대상테이블], [대상키], [기록일시] DESC);
+GO
 CREATE SEQUENCE [dbo].[SEQ_HC_CHART_NO]
     AS BIGINT START WITH 1 INCREMENT BY 1
     MINVALUE 1 MAXVALUE 999999 NO CYCLE CACHE 50;

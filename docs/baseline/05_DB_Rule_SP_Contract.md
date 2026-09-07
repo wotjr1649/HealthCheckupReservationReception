@@ -150,6 +150,7 @@ Function은 다음 형식을 사용한다.
 | SP-RCP-01 | `[dbo].[USP_HC_UPDATE_접수완료]` | UPDATE | RSV → RCP |
 | SP-RCP-02 | `[dbo].[USP_HC_UPDATE_접수추가검사]` | UPDATE | RCP 상태 AEX 변경 |
 | SP-RCP-03 | `[dbo].[USP_HC_UPDATE_접수취소]` | UPDATE | RCP → CNC |
+| SP-LOG-01 | `[dbo].[USP_HC_SELECT_변경이력]` | SELECT | 대상 행 1개의 변경기록 최신순 열람 |
 
 Write Stored Procedure 8개(`SP-PAT-03`·`SP-PAT-04`·`SP-RSV-02`~`04`·`SP-RCP-01`~`03`)는 **실제로 바꾼 컬럼마다** `변경이력` 1행을 기록한다. 데이터를 바꾸지 않은 호출은 기록하지 않는다. 기록은 트랜잭션 밖에서 자체 `TRY/CATCH`로 수행하며 실패해도 업무 호출 결과를 바꾸지 않는다 — `04_DB_Design.md` §8.6.4.
 ## 1.4 내부 Inline TVF 4개
@@ -895,9 +896,12 @@ RS1은 정확히 1행이다.
 | `Address` | `NVARCHAR(200)` | O |
 | `AddressDetail` | `NVARCHAR(200)` | O |
 | `Memo` | `NVARCHAR(MAX)` | O |
+| `HepatitisBExcluded` | `BIT` | X |
 | `LastEditDate` | `DATETIME` | X |
 
 Patient가 없으면 `Code=200`이다.
+
+`HepatitisBExcluded`를 반환하는 이유는 `DLG-PAT-01` 수정 화면이 현재값을 보여야 하기 때문이다. `NEX-03`의 제외 판정 입력이며 `1`이 제외다(`04` §8.1.2).
 
 ---
 
@@ -1099,6 +1103,55 @@ CANCEL_RECEPTION
 조회는 업무시간 밖에도 성공하며 `Allowed=0`으로 반환한다.
 
 Work가 없으면 `500`, 저장 NEX가 없거나 검사구성이 손상됐으면 `701`이다.
+
+---
+
+## 8.3 `[dbo].[USP_HC_SELECT_변경이력]`
+
+`00` CP-06이 변경기록을 **열람용**으로 규정한 것을 받는 유일한 조회 SP다. 대상 행 하나의 변경 내역만 낸다 — 기간·조작자 전체 검색은 제공하지 않는다.
+
+### 입력
+
+| Parameter | 타입 | NULL |
+|---|---|:---:|
+| `@TargetTable` | `NVARCHAR(10)` | X |
+| `@TargetKey` | `BIGINT` | X |
+
+`@TargetTable`은 `N'수검자'` 또는 `N'예약접수'`만 허용한다(`04` §8.6.3 `CK_변경이력_TARGET_TABLE`). 그 밖의 값은 `101`이다.
+
+### Result Set
+
+```text
+RS0 처리결과
+RS1 변경이력
+```
+
+RS1 Schema:
+
+| 컬럼 | 타입 | NULL | 물리 출처 |
+|---|---|:---:|---|
+| `LogId` | `BIGINT` | X | `이력ID` |
+| `RecordedAt` | `DATETIME2(0)` | X | `기록일시` |
+| `OperatorName` | `NVARCHAR(50)` | O | `조작자명` |
+| `ColumnName` | `NVARCHAR(30)` | X | `컬럼명` |
+| `BeforeValue` | `NVARCHAR(4000)` | O | `변경전` |
+| `AfterValue` | `NVARCHAR(4000)` | O | `변경후` |
+
+정렬:
+
+```text
+RecordedAt DESC, LogId DESC
+```
+
+`IX_변경이력_TARGET`의 Key 순서(`대상테이블, 대상키, 기록일시 DESC`)가 이 술어와 정렬을 그대로 덮는다.
+
+### 계약 경계
+
+- 대상 행이 없거나 기록이 0건이면 **`Code=0` + RS1 0행**이다. `200 PatientNotFound`를 쓰지 않는다 — 이 SP는 대상 행의 존재를 확인하지 않는다. 감사 기록은 대상 행보다 오래 살기 때문이다(`04` §8.6.3).
+- `대상테이블`을 Result Set에 싣지 않는다. 호출자가 이미 알고 넘긴 값이다.
+- `OperatorName`은 인증되지 않은 자기신고 문자열이며 감사 주체의 증거가 아니다(`04` §14.2 L4). 화면은 이 값을 "조작자"가 아니라 **자기신고 값**으로 표시한다.
+- 값은 `NVARCHAR(4000)`에서 잘려 저장됐을 수 있다(`00` CP-06). 화면은 복원 근거로 쓰지 않는다.
+- 이 SP는 데이터를 바꾸지 않으므로 `변경이력`을 남기지 않는다.
 
 ---
 
@@ -1441,6 +1494,7 @@ BlockCode=0
 | `@Address` | `NVARCHAR(200)` | O |
 | `@AddressDetail` | `NVARCHAR(200)` | O |
 | `@Memo` | `NVARCHAR(MAX)` | O |
+| `@HepatitisBExcluded` | `BIT` | X |
 | `@ConfirmSimilarPatient` | `BIT` | X |
 | `@OperatorName` | `NVARCHAR(50)` | X |
 
@@ -1542,6 +1596,7 @@ RS1 Schema:
 | `@Address` | `NVARCHAR(200)` | O |
 | `@AddressDetail` | `NVARCHAR(200)` | O |
 | `@Memo` | `NVARCHAR(MAX)` | O |
+| `@HepatitisBExcluded` | `BIT` | X |
 | `@OperatorName` | `NVARCHAR(50)` | X |
 
 ### Result Set
@@ -1922,6 +1977,7 @@ RS1 Work결과
 | UPDATE_예약변경 | 0, 1, 100~102, 300~306, 308~309, 400~401, 410~412, 500, 502, 601, 700~701 |
 | UPDATE_예약취소 | 0, 100, 500, 502, 601, 308~309 |
 | SELECT_예약접수목록 | 0, 101, 103~104 |
+| SELECT_변경이력 | 0, 100~101 |
 | SELECT_예약접수상세 | 0, 100, 500, 701 |
 | UPDATE_접수완료 | 0, 100, 304, 308~309, 500, 502~503, 601, 701 |
 | UPDATE_접수추가검사 | 0, 1, 100, 308~309, 410~412, 500, 502, 601, 700~701 |
@@ -1989,8 +2045,9 @@ RS1 Work결과
 | F-COM-005 | P02-03~04 | Calendar/시간대 | UFN_HC_일정확인, SELECT_예약가능정보, 예약 Write SP |
 | F-COM-006 | P03-02~03 | 접수 Modal | UFN_HC_일정확인, SELECT_예약접수상세, UPDATE_접수완료 |
 | F-COM-007 | P01~P03 공통 | MainForm/Ribbon | SELECT_공통업무상태, UFN_HC_일정확인, 모든 Write SP |
+| F-COM-008 | P01~P03 공통 | DLG-LOG-01 | SELECT_변경이력 |
 
-16개 Function ID 모두 하나 이상의 DB 객체와 연결된다.
+17개 Function ID 모두 하나 이상의 DB 객체와 연결된다.
 
 ---
 
