@@ -1262,7 +1262,7 @@ BEGIN
     SET @Fail += 1;
 END
 
--- SCH-016 CHECK 제약 이름 23개 EXCEPT 양방향  (04 §8.1.3 7 + §8.2.3 4 + §8.3.3 8 + §8.4.2 1 + §8.5.3 1 + §8.6.3 2)
+-- SCH-016 CHECK 제약 이름 24개 EXCEPT 양방향  (04 §8.1.3 7 + §8.2.3 5 + §8.3.3 8 + §8.4.2 1 + §8.5.3 1 + §8.6.3 2)
 DECLARE @ExpCk TABLE (N SYSNAME PRIMARY KEY);
 INSERT INTO @ExpCk (N) VALUES
  (N'CK_수검자_CHART_NO_NOT_BLANK'), (N'CK_수검자_NAME_NOT_BLANK'),
@@ -1271,6 +1271,7 @@ INSERT INTO @ExpCk (N) VALUES
  (N'CK_수검자_EDIT_DATE'),
  (N'CK_예약접수_TIME_SLOT'),        (N'CK_예약접수_STATUS'),
  (N'CK_예약접수_EDIT_DATE'),        (N'CK_예약접수_EXAM_FORMAT'),
+ (N'CK_예약접수_EXAM_PAIR'),
  (N'CK_완료이력_EXAM_FORMAT'),
  (N'CK_검사코드_CODE_NOT_BLANK'),   (N'CK_검사코드_CODE_FORMAT'),
  (N'CK_검사코드_NAME_NOT_BLANK'),

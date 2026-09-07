@@ -177,7 +177,14 @@ CREATE TABLE [dbo].[예약접수]
          AND [추가검사항목] NOT LIKE '%,,%'
          AND [추가검사항목] NOT LIKE ',%'
          AND [추가검사항목] NOT LIKE '%,'))
-    )
+    ),
+    -- 추가검사는 국가검사 위에 얹는 것이라 NEX 없이 AEX 만 있는 Work 는 성립하지 않는다
+    -- (04 §2.3 "TGT 대상이면 기본 8종을 항상 구성한다", 05 §11.1 저장 규칙).
+    -- [X] EXAM_FORMAT 은 두 컬럼을 따로만 보므로 ('', 'EX014') 조합이 통과했다(실측 확인).
+    --     Write SP 4개가 저장 NEX 8~11 을 확인해 막고 있었지만 스키마는 열려 있었고,
+    --     그 구멍의 유일한 방어로 적혀 있던 SEC-004·005 는 구현 범위에서 빠졌다.
+    --     CORRUPT-2 는 ('', NULL) 이라 이 제약을 그대로 통과한다 - 손상 표현은 살아 있다.
+    CONSTRAINT [CK_예약접수_EXAM_PAIR] CHECK ([추가검사항목] IS NULL OR LEN([국가검사항목]) > 0)
 );
 GO
 CREATE NONCLUSTERED INDEX [IX_예약접수_SLOT]

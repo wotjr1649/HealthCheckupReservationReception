@@ -2134,7 +2134,7 @@ artifacts/
 | G02 | Preflight | `00_Preflight.sql` 가드 6종(`50010~50015`) 통과 · KST 540 · Version >= 11. `Rebuild.sql` 가드는 `50020~50024` 별도 | `PLANNED` |
 | G03 | Clean Deploy | 빈 DB 전체 배포 성공 (exit 0) | `PLANNED` |
 | G04 | Object Inventory | Table 6 / TVF 4 / SP 16 / Sequence 1 | `PLANNED` |
-| G05 | Schema | PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 **+ 48컬럼·제약 23·Default 8·NCI Key 를 `EXCEPT` 양방향 차집합 0** | `PLANNED` |
+| G05 | Schema | PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 **+ 48컬럼·제약 24·Default 8·NCI Key 를 `EXCEPT` 양방향 차집합 0** | `PLANNED` |
 | G06 | 금지 객체 | Trigger 0 / TVP 0 / DELETE SP 0 / 추가 Table 0 | `PLANNED` |
 | G07 | Seed | Exam **19행 전건 값 일치**(`EXCEPT` 양방향) / NEX 역할 13 / AEX 역할 7 / `추가검사사용여부` 7건 모두 1 / Holiday 2 | `PLANNED` |
 | G08 | Rule | TGT/NEX/AEX/HOL 경계 전건 통과 + `CORRUPT-3` 재검증금지 확인 | `PLANNED` |
@@ -2430,7 +2430,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | Prefix | 범위 | 건수 | 산출 파일 | 검증 대상 | Gate |
 |---|---|---:|---|---|---|
 | `PRE` | `001`~`006` | 6 | `deploy/00_Preflight.sql` | 배포 안전가드 `50010`~`50015` (§8.3) | G03 |
-| `SCH` | `001`~`018` | 18 | `tests/01_Schema_Tests.sql` | 6 Table · PK/FK/UQ/UX/NCI · 48컬럼 · 제약 23 · Default 8 · NCI Key (§34) | G05 |
+| `SCH` | `001`~`018` | 18 | `tests/01_Schema_Tests.sql` | 6 Table · PK/FK/UQ/UX/NCI · 48컬럼 · 제약 24 · Default 8 · NCI Key (§34) | G05 |
 | `SED` | `001`~`011` | 11 | `tests/02_Seed_Tests.sql` | `검사코드` 19행 · `휴무일` 2행 · AEX 7건 Active (§13·§14) | G07 |
 | `SSN` | `001`~`006` | 6 | `tests/02_Seed_Tests.sql` | 실제 주민등록번호 미사용 — 체크디지트 전건 무효 (§16.2) | G12 |
 | `RUL` | `T01`~`T12` `N01`~`N12` `A01`~`A10` `G01`~`G08` `D01`~`D09` | 51 | `tests/03_Rule_Tests.sql` | 4개 TVF 결정적 경계 — 마감시각 · NEX 술어 · AEX 판정순서 · 휴무일 · `DATEFIRST` 불변 (§35) | G08 |
