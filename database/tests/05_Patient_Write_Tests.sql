@@ -278,6 +278,34 @@ IF ((SELECT [차트번호] FROM [dbo].[수검자] WHERE [수검자ID] = @Tid) = 
     PRINT 'PASS PWR-028 RCP 가 있어도 차트번호 변경은 차단하지 않는다';
 ELSE BEGIN PRINT 'FAIL PWR-028 차트번호 변경이 차단됐다'; SET @Fail += 1; END
 
+-- PWR-029  LastEditDate 단조증가 가드를 실제로 발동시킨다 (05:545 · 스펙 §26)
+-- [X] PWR-022 는 갱신을 **한 번**만 하고 > 비교만 한다. DATETIME 은 약 3.33ms 틱이라
+--     연속 갱신이 같은 틱에 떨어질 때만 IF @NewEdit <= @OldEdit 가드가 발동한다.
+--     즉 그 가드를 통째로 지워도 PWR-022 는 PASS 한다 — 이름이 가리키는 기계장치를 시험하지 않았다.
+--     지연 없이 5회 연속 수정해 같은 틱 충돌을 강제하고, 매 회차가 직전보다 큰지 본다.
+DECLARE @M0 DATETIME = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
+DECLARE @Mprev DATETIME = @M0, @Mnow DATETIME, @Mled DATETIME;
+DECLARE @Mi INT = 0, @MFail INT = 0, @MTight INT = 0;
+DECLARE @MName NVARCHAR(100);
+WHILE @Mi < 5
+BEGIN
+    SET @Mi += 1;
+    SET @Mled = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
+    -- [X] EXEC 인자는 상수나 변수만 받는다. 식을 쓰면 Msg 102 로 배치가 컴파일 실패한다 (실측).
+    SET @MName = N'단조증가' + CONVERT(NVARCHAR(2), @Mi);
+    EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Bid, @Mled, @Cn, @MName, @Ssn,
+         NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, N'TEST';
+    SET @Mnow = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
+    IF @Mnow <= @Mprev SET @MFail += 1;
+    IF DATEDIFF(MILLISECOND, @Mprev, @Mnow) <= 4 SET @MTight += 1;
+    SET @Mprev = @Mnow;
+END
+IF @MFail = 0 AND @Mnow > @M0
+    PRINT 'PASS PWR-029 연속 5회 수정에서 LastEditDate 가 매번 단조증가 (4ms 이내 근접 '
+        + CONVERT(VARCHAR(3), @MTight) + '회)';
+ELSE BEGIN PRINT 'FAIL PWR-029 LastEditDate 가 역행하거나 정체했다 (역행 '
+        + CONVERT(VARCHAR(3), @MFail) + '회)'; SET @Fail += 1; END
+
 -- 뒤 파일이 쓰는 Fixture 차트번호를 되돌린다. 이 파일이 만든 수검자 2명은 그대로 둔다 —
 -- tests/00 이 전건을 지우고 다시 만들기 때문이다.
 UPDATE [dbo].[수검자] SET [차트번호] = N'F001' WHERE [수검자ID] = @Fid;
