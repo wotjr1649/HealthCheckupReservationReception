@@ -2453,7 +2453,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | `PWR` | `001`~`014` `020`~`028` `030`~`031` | 25 | `tests/05_Patient_Write_Tests.sql` | `INSERT_수검자` · `UPDATE_수검자정보` (§33.4) | G06·G09 |
 | `RWR` | `001`~`012` `020`~`034` `040`~`044` `050`~`052` | 35 | `tests/06_Reservation_Write_Tests.sql` | `INSERT_예약` · `UPDATE_예약변경` · `UPDATE_예약취소` (§33.4) | G06·G09 |
 | `CWR` | `001`~`011` `020`~`026` `040`~`044` `050`~`052` | 26 | `tests/07_Reception_Write_Tests.sql` | `UPDATE_접수완료` · `UPDATE_접수추가검사` · `UPDATE_접수취소` (§33.4) | G06·G09 |
-| `RBK` | `001`~`008` | 8 | `tests/08_Rollback_Tests.sql` | 부분저장 차단 · `XACT_ABORT` · `@@TRANCOUNT` 복원 (§21.3) | G10 |
+| `RBK` | `001`~`008` | 8 | `tests/08_Rollback_Tests.sql` + `tools/verify-docs.js` | 부분저장 차단 · `XACT_ABORT` · `@@TRANCOUNT` 복원 (§21.3). `RBK-008`(실패 응답 RS 개수)만 T-SQL 로 셀 수 없어 `V18` 이 `expected-contracts.json` 을 정적 대조한다 | G10 |
 | `CON` | `001`~`008` | 8 | `tests/09`~`12` + `scripts/concurrency-test.sh` | 2세션 경합. `rc=1` 증거 ≥1 · `Msg 1205`·`50002` 각 0건 (§38) | G11 |
 | `SEC` | `001`~`009` `011` | 10 | `tests/13_Security_Tests.sql` | 권한 경계 · `EXECUTE AS` 거부 `ERROR_NUMBER()=229` (§39) | G12 |
 | `SEC` | `010` | 1 | `scripts/verify-no-secret.sh` | 배포 원본·로그·보고서 secret 0건 — **SQL 이 아니라 셸** | G12 |

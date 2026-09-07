@@ -600,5 +600,33 @@ function splitFences(src) {
   else P('V17', 'RS0 블록 ' + blocks + '개 전부 5컬럼 명시 CAST (' + files.length + '개 배포 파일)');
 }
 
+
+// V18 RBK-008 — 실패 응답의 Result Set 개수는 RS0 1개뿐이다 (05 §3.5).
+//   T-SQL 로는 셀 수 없다. INSERT … EXEC 는 RS 2개 이상에서 Msg 213 이고(스펙 §33.1a),
+//   DMV 는 sp_getapplock 을 부르는 Write SP 에서 Msg 11520 이다(스펙 §36 실측).
+//   그래서 tests/08 이 NOT RUN 으로 남기고 여기서 정적으로 판정한다.
+//   유일한 예외는 INSERT_수검자 의 202·203 이다 - 기존 수검자·중복후보 Dialog 를 위해
+//   실패에도 RS1 을 동반한다. 그 둘 말고 rs0Success = 0 인 시나리오가 RS 를 2개 이상
+//   선언했다면 계약 위반이거나 기대값이 틀린 것이다.
+{
+  const cp = 'tools/expected-contracts.json';
+  if (!fs.existsSync(cp)) F('V18', cp + ' 이 없다 - 미실행은 PASS 가 아니다');
+  else {
+    const j = JSON.parse(fs.readFileSync(cp, 'utf8'));
+    const bad = []; let n = 0;
+    for (const [k, v] of Object.entries(j)) {
+      if (v.rs0Success !== 0) continue;
+      n++;
+      const rs = Array.isArray(v.resultSets) ? v.resultSets.length : 0;
+      const exempt = v.rs0Code === 202 || v.rs0Code === 203;
+      if (exempt) { if (rs !== 2) bad.push(k + '  Code=' + v.rs0Code + ' 은 RS 2개여야 한다 (관측 ' + rs + ')'); }
+      else if (rs !== 1) bad.push(k + '  Code=' + v.rs0Code + ' 실패인데 RS ' + rs + '개');
+    }
+    if (!n) F('V18', '실패 시나리오가 하나도 없다 - 기대값 파일을 확인한다');
+    else if (bad.length) F('V18', '실패 응답에 후속 Result Set 이 붙은 시나리오 ' + bad.length + '건', bad.join('\n'));
+    else P('V18', 'RBK-008 실패 시나리오 ' + n + '건 전부 RS0 1개만 (202·203 은 RS1 동반)');
+  }
+}
+
 console.log('\n=== verify-docs: PASS ' + pass + ' / FAIL ' + fail + ' ===');
 process.exit(fail ? 1 : 0);
