@@ -1013,7 +1013,7 @@ Expected: exit 0, 모든 테스트 파일 통과.
 cat artifacts/reports/test-summary.txt
 ```
 
-- [ ] **Step 3: 기준선·WinForms 재검증 (G00·G01)**
+- [x] **Step 3: 기준선·WinForms 재검증 (G00·G01)**
 
 ```bash
 RC=0; ./scripts/verify-baseline.sh >> artifacts/reports/baseline-hash.txt 2>&1 || RC=$?
@@ -1026,9 +1026,24 @@ git diff --stat baseline-HC-RSV-RCP-20260904-R3 -- docs/baseline winforms
 echo "(위 diff 가 비어야 한다)"
 ```
 
-Expected: baseline `=== 6/6 ===` exit 0, winforms `PASS 변경 0건` exit 0, git diff **빈 출력**.
+`[X 실측]` **`docs/baseline` 의 git diff 는 빈 출력일 수 없다.** 태그
+`baseline-HC-RSV-RCP-20260904-R3`(2026-09-04 18:01) 이후에 **R3 재봉인**이 세 커밋에 걸쳐
+일어났다 — 04·05·00·01·02·03 여섯 파일을 CLAUDE.md §2 의 예외 조건(파일과 해시를 같은 커밋에)
+아래 바꿨다. 태그와의 diff 가 비어 있다면 오히려 재봉인이 안 된 것이다.
 
-- [ ] **Step 4: 2025 전용 기능 미사용 확인 (G13)**
+```text
+G00 의 권위는 태그 diff 가 아니라 scripts/verify-baseline.sh 의 SHA-256 6개다.
+그 해시는 파일과 **같은 커밋**에서 갱신되므로 "지금 기준선이 봉인된 그대로인가" 를 판정한다.
+태그 diff 는 winforms 에만 적용한다 — 그쪽은 예외 없이 읽기 전용이다 (CLAUDE.md §2).
+```
+
+Expected: baseline `=== 6/6 ===` exit 0, winforms `PASS 변경 0건` exit 0,
+`git diff --stat <태그> -- winforms` **0줄**. `-- docs/baseline` 은 재봉인분만큼 나온다.
+
+`[실측 2026-09-07]` baseline 6/6 · winforms PASS 0건 · winforms diff 0줄.
+docs/baseline 은 6파일 686+/477- (R3 재봉인분).
+
+- [x] **Step 4: 2025 전용 기능 미사용 확인 (G13)**
 
 G13 은 **세 갈래로 나누어** 기록한다(스펙 §9.3). 블랙리스트 grep 0건을 허용목록 준수 `PASS` 로 승격하지 않는다.
 
@@ -1055,7 +1070,25 @@ grep -rl 'CREATE OR ALTER' tests/ tools/ 2>/dev/null && echo "FAIL G13-b CREATE 
 (c) §9.2 허용목록 준수                          →  REVIEWED      (자동 판정 불가)
 ```
 
+`[X 실측]` **위 grep 은 항상 FAIL 한다.** 실측 27건이 전부 오탐이었다.
+
+```text
+1  금지를 설명하는 주석이 걸린다
+   deploy/06:12  "… STRING_AGG·FOR XML PATH 는 스펙 §9.2 허용목록 밖이고"
+   tests/12:49   "STRING_SPLIT 은 허용목록 밖이다 (06 §9.2)"
+2  TRIM( 가 JavaScript 의 .trim( 를 전부 잡는다.  는 '.' 과 't' 사이에 성립한다.
+   tools/ 는 T-SQL 이 아니다 — §9.2 는 T-SQL 허용목록이므로 검사 대상이 아니다.
+3  CREATE DATABASE … COLLATE Korean_Wansung_CI_AS 는 설계가 요구하는 DB 정렬 지정이다.
+   §9.2 가 막는 것은 질의에서 비교 의미를 갈아끼우는 **식 수준** COLLATE 다.
+```
+
+일회성 grep 을 `scripts/verify-tsql-allowlist.sh` 로 옮겨 `.sql` 만, 주석을 지운 뒤 검사한다.
+`test.sh` 가 매 회귀에 부른다 — 한 번 훑고 마는 검사는 조용히 썩는다.
+
 Expected: `PASS G13-b` 2줄. `(c)` 는 보고서에 **`REVIEWED`** 로만 적는다.
+
+`[실측 2026-09-07]` `PASS G13-b 허용목록 밖 T-SQL 0건 (.sql 137 개 · 주석 제외)` ·
+`PASS G13-b2 CREATE OR ALTER 는 배포 원본 안에만 있다` · exit 0.
 
 - [ ] **Step 5: `06_DB_Transaction_Security_Seed.md` FINAL 후보 작성**
 

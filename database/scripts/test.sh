@@ -64,6 +64,10 @@ fi
 # SEC-010 (secret 스캔) 은 SQL 이 아니라 셸이다. 전체 회귀에 반드시 포함한다.
 ./scripts/verify-no-secret.sh || FAILED=1
 
+# G13-b (허용 T-SQL 목록) 도 셸이다. 계획서의 일회성 grep 은 주석과 JS 의 .trim( 을 잡아
+# 항상 FAIL 했다 — 반복 가능한 게이트로 옮겼다 (스펙 §9.2 · plans/08 T37 Step 4).
+./scripts/verify-tsql-allowlist.sh > /dev/null || { ./scripts/verify-tsql-allowlist.sh; FAILED=1; }
+
 # 문서 정합성 게이트 (스펙 §45.3)
 node tools/verify-docs.js || FAILED=1
 
