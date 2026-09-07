@@ -329,9 +329,9 @@ E-mail
 | 4 | SocialNumber | 등록/수정, 조회, 상세, 선택 컬럼 | 테스트 전체값 표시; `-` 제거 후 숫자 13자리 저장; DB 최종 고유성 검증 |
 | 5 | Birthday | ReadOnly | SocialNumber에서 `yyyyMMdd` 자동산출 |
 | 6 | Gender | ReadOnly | SocialNumber에서 M/F 자동산출; UI 남/여 |
-| 7 | EMail | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
-| 8 | CelNumber | 등록/수정, 조회/Grid/상세 | 선택, 미입력 NULL |
-| 9 | TelNumber | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
+| 7 | Email | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
+| 8 | MobilePhone | 등록/수정, 조회/Grid/상세 | 선택, 미입력 NULL |
+| 9 | Phone | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
 | 10 | Zipcode | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
 | 11 | Address | 등록/수정, 상세/선택 컬럼 | 선택, 미입력 NULL |
 | 12 | AddressDetail | 등록/수정, 상세 | 선택, 미입력 NULL |
@@ -388,8 +388,6 @@ Mode = New / Edit
 
 | 7번째 자리 | 세기 | 성별 |
 |---|---:|---|
-| 9 | 1800년대 | 남 |
-| 0 | 1800년대 | 여 |
 | 1, 5 | 1900년대 | 남 |
 | 2, 6 | 1900년대 | 여 |
 | 3, 7 | 2000년대 | 남 |
@@ -1063,9 +1061,9 @@ Context 전환
 - SocialNumber 전체 테스트값
 - Birthday
 - Gender
-- CelNumber
-- TelNumber
-- EMail
+- MobilePhone
+- Phone
+- Email
 - Zipcode
 - Address
 - AddressDetail
@@ -1078,7 +1076,7 @@ Context 전환
 - SocialNumber 전체 테스트값
 - Birthday
 - Gender
-- CelNumber
+- MobilePhone
 
 ## 17.3 예약/접수 Workbench
 

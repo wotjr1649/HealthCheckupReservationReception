@@ -57,7 +57,7 @@ DB는 다음 업무 흐름을 지원해야 한다.
 03 와이어프레임 기준본을 정식 파일명 하나로 통일
 주민등록번호는 임의 테스트값 13자리를 수검자에 직접 저장
 주민등록번호 고유성·정확검색을 수검자의 Unique Constraint로 일원화
-수검자 저장 SP가 주민등록번호 형식·날짜·세기/성별·파생값을 최종검증
+수검자 저장 SP가 주민등록번호 형식·날짜·세기/성별을 최종검증 (파생값은 계산열이 만든다)
 물리 테이블을 6개로 단순화
 예약변경 중복판정에서 현재 WorkId 제외
 NEX 실제 반환 Cardinality를 8~11행으로 확정
@@ -148,7 +148,7 @@ DB Role·GRANT EXECUTE·직접 DML 통제
 실행 테스트와 성능 검증
 ```
 
-현재 5개 업무/조회 Nonclustered Index는 최소 기준이다. 실행계획과 재현 가능한 성능시험으로 필요성이 증명된 경우에만 업무 의미를 갖지 않는 보조 Nonclustered Index 또는 INCLUDE를 DB Script에 추가할 수 있다. 이 경우에도 테이블·컬럼·키·제약의 기준선은 열지 않으며 근거와 결과를 `07_UI_DB_Matrix_Final_Validation.md`에 기록한다.
+현재 4개 업무/조회 Nonclustered Index는 최소 기준이다. 실행계획과 재현 가능한 성능시험으로 필요성이 증명된 경우에만 업무 의미를 갖지 않는 보조 Nonclustered Index 또는 INCLUDE를 DB Script에 추가할 수 있다. 이 경우에도 테이블·컬럼·키·제약의 기준선은 열지 않으며 근거와 결과를 `07_UI_DB_Matrix_Final_Validation.md`에 기록한다.
 
 ### 0.4.3 예외 처리
 
@@ -249,7 +249,7 @@ UI의 Enabled/Disabled 상태와 조회값은 사전검증이다. 데이터 변�
 - `SocialNumber`에는 `-`를 제거한 숫자 13자리 임의 테스트값을 저장한다.
 - 실제 주민등록번호를 입력하거나 Seed에 포함하지 않는다.
 - `SocialNumber`는 전체 수검자에서 고유하며 정확검색에 사용한다.
-- `Birthday`, `Gender`는 `SocialNumber`에서 산출하고, 저장 SP가 원본과 파생값의 일관성을 최종 보장한다.
+- `Birthday`, `Gender`는 `SocialNumber`에서 유도하는 `PERSISTED` 계산열이다(§8.1.2). 어긋난 상태를 표현할 수 없으므로 원본-파생값 비교라는 단계 자체가 없다.
 - `CelNumberS`·`TelNumberS`는 둘 다 삭제했다. `@MobilePhone` 검색은 표시값에서 `-`를 뺀 결과로 비교하며 정규화 짝 컬럼을 두지 않는다(§8.1.2).
 - `HepatitisBExcluded`는 NEX-03의 B형간염(`EX010`) 제외 판정 입력이며 `1`이 제외다. UI 입력이 없고 Seed/Test Data로만 설정한다.
 
@@ -432,14 +432,13 @@ AND
 | 7 | 상태코드 | `RSV`, `RCP`, `CNR`, `CNC` |
 | 8 | 시간대코드 | `AM`, `PM` |
 | 9 | 성별코드 | `M`, `F` |
-| 10 | 검사출처 | `NEX`, `AEX` |
-| 11 | 주민번호 저장 | `수검자.SocialNumber` 숫자 13자리 테스트값 + Unique Constraint |
-| 12 | ChartNo 자동발급 | `SEQ_HC_CHART_NO` |
-| 13 | AEX 다중입력 | `OPT01~OPT07`별 7개 `BIT` 파라미터 |
-| 14 | Work 동시성 | `ROWVERSION` + 기대상태 조건 UPDATE |
-| 15 | 정원/중복 | Transaction + Patient/Slot 직렬화 |
-| 16 | Rule 재사용 | 소수의 명시적인 UDF/평가 SP만 사용 |
-| 17 | Trigger/Cascade | 업무 Trigger 없음, FK Cascade 없음 |
+| 10 | 주민번호 저장 | `수검자.SocialNumber` 숫자 13자리 테스트값 + Unique Constraint |
+| 11 | ChartNo 자동발급 | `SEQ_HC_CHART_NO` |
+| 12 | AEX 다중입력 | `OPT01~OPT07`별 7개 `BIT` 파라미터 |
+| 13 | Work 동시성 | `ROWVERSION` + 기대상태 조건 UPDATE |
+| 14 | 정원/중복 | Transaction + Patient/Slot 직렬화 |
+| 15 | Rule 재사용 | 소수의 명시적인 UDF/평가 SP만 사용 |
+| 16 | Trigger/Cascade | 업무 Trigger 없음, FK Cascade 없음 |
 
 ## 3.2 6개 테이블과 비테이블 객체의 경계
 
@@ -478,7 +477,7 @@ AND
 
 - 접두사는 영문 대문자다.
 - 제약·인덱스 이름의 테이블명 자리는 한글이다. 본체는 컬럼명의 기계적 전개가 아니므로 컬럼명이 한글이 되어도 본체는 영문 대문자 `SNAKE_CASE`를 유지한다.
-- 본체는 술어의 의미 태그이며 컬럼명의 기계적 전개가 아니다 — `SOCIAL_FORMAT`, `EDIT_DATE`, `TIME_SLOT`, `SOURCE`, `ROLE_REQUIRED`. 영문 대문자 `SNAKE_CASE`로 적는다.
+- 본체는 술어의 의미 태그이며 컬럼명의 기계적 전개가 아니다 — `SOCIAL_FORMAT`, `EDIT_DATE`, `TIME_SLOT`, `EXAM_FORMAT`, `ROLE_REQUIRED`. 영문 대문자 `SNAKE_CASE`로 적는다.
 - Foreign Key의 본체는 **부모 테이블명**이다. FK는 컬럼이 아니라 관계를 가리키므로 컬럼명 규칙을 적용하지 않는다.
 - Primary Key는 본체를 두지 않는다.
 - Stored Procedure·Function·Sequence 이름은 한글화하지 않는다. `05_DB_Rule_SP_Contract.md`의 SP 15개·TVF 4개 이름과 `SEQ_HC_` 접두사 규칙이 그대로 유지된다.
@@ -532,7 +531,7 @@ DECLARE @StoredNow   DATETIME2(0) = CONVERT(DATETIME2(0), @Now);
 - 저장 SP는 6자리 생년월일의 실제 날짜와 7번째 자리의 세기·성별 코드를 검증한다.
 - `Birthday(yyyyMMdd)`와 `Gender(M/F)`는 **DB가 `SocialNumber`에서 유도한다**(§8.1.2). 저장 SP가 산출해 넣지 않으며 `INSERT`에 명시하면 `Msg 271`이다.
 - 실제 행정번호 존재 여부와 마지막 검증번호 계산은 수행하지 않는다.
-- UI에서 산출한 Birthday/Gender는 사용자 안내용이며 DB 저장값의 최종 기준은 Write SP다.
+- UI에서 산출한 Birthday/Gender는 사용자 안내용이며 DB 저장값의 최종 기준은 §8.1.2의 계산열이다.
 
 ## 3.6 ChartNo 자동발급
 
@@ -814,7 +813,7 @@ NEX 13개 + AEX 7개 - 공통 골밀도 1개 = 19개 Master 행
 | AEX 코드 중복을 DB에서 차단할 수 있는가 | PASS — filtered unique index 1개 |
 | 역할별 NULL 조합 오류를 차단할 수 있는가 | PASS — CHECK |
 | 주민번호 정확검색·고유성을 단일 Patient 테이블에서 보장하는가 | PASS — `SocialNumber` Unique Constraint |
-| 추가 기술 테이블 없이 Birthday/Gender 일관성을 보장하는가 | PASS — Write SP 최종 산출·검증 |
+| 추가 기술 테이블 없이 Birthday/Gender 일관성을 보장하는가 | PASS — `PERSISTED` 계산열이 어긋난 상태를 표현 불가로 만든다 |
 | 관리자 CRUD 없는 Seed 수명주기와 맞는가 | PASS |
 | 상위 정책 또는 기능이 삭제되는가 | 없음 |
 
@@ -960,13 +959,15 @@ Rule/UDF/SP 입출력 계약은 `05_DB_Rule_SP_Contract.md`, 잠금 SQL·Seed/Te
 | UQ | `UQ_수검자_SOCIAL_NUMBER` | `주민번호` |
 | CK | `CK_수검자_CHART_NO_NOT_BLANK` | `LEN(LTRIM(RTRIM(차트번호))) > 0` |
 | CK | `CK_수검자_NAME_NOT_BLANK` | `LEN(LTRIM(RTRIM(성명))) > 0` |
-| CK | `CK_수검자_SOCIAL_FORMAT` | `LEN(주민번호)=13 AND 주민번호 NOT LIKE '%[^0-9]%'` 이며 7번째 자리가 `1`~`8` |
+| CK | `CK_수검자_SOCIAL_FORMAT` | 13자·13바이트의 숫자이며 7번째 자리가 `1`~`8` |
 | CK | `CK_수검자_BIRTHDAY` | 숫자 8자리이며 `TRY_CONVERT(DATE, 생년월일, 112)` 가능. 계산열이라 실제로 잡는 것은 달력에 없는 날짜다 |
 | CK | `CK_수검자_GENDER` | `성별 IN ('M','F')` |
-| CK | `CK_수검자_CEL_DIGIT` | `휴대전화`가 NULL이거나, `-`를 뺀 결과가 숫자만 포함하며 그 길이가 10~11 |
+| CK | `CK_수검자_CEL_DIGIT` | `휴대전화`가 NULL이거나, `-`를 뺀 결과가 숫자 10~11자이며 전부 단일바이트 |
 | CK | `CK_수검자_EDIT_DATE` | `최종수정일시 >= 생성일시` |
 
 `CK_수검자_CEL_DIGIT`가 길이를 함께 보는 이유는 `-`를 뺀 결과만 검사하면 빈 문자열과 하이픈만으로 이루어진 값이 전부 통과하기 때문이다(실측 확인). 빈 문자열은 어떤 `LIKE` 패턴에도 걸리지 않는다.
+
+`DATALENGTH`를 함께 보는 이유는 정렬이 `Korean_Wansung_CI_AS`라 `[^0-9]`가 **전각 숫자를 잡지 못하기** 때문이다. `'0１012345678'`은 11자라 자릿수도 통과했다(실측 확인). `DATALENGTH = LEN`이면 전부 단일바이트다. `주민번호`는 `VARCHAR(13)` 폭이 우연히 같은 일을 하고 있었으나 폭에 기대지 않도록 `DATALENGTH = 13`을 명시한다.
 
 `전화번호`에는 형식 제약을 두지 않는다 — 읽는 계약이 표시 하나뿐이다.
 
@@ -1100,7 +1101,7 @@ Detail 변경 시 Master `LastEditDate`를 따로 갱신하는 규칙이 필요 
 |---|---|---|
 | PK | `PK_검사코드` | `검사항목코드` Clustered |
 | CK | `CK_검사코드_CODE_NOT_BLANK` | `검사항목코드` 공백 불가 |
-| CK | `CK_검사코드_CODE_FORMAT` | `검사항목코드`가 `A-Z0-9` 밖의 문자를 담지 않는다 |
+| CK | `CK_검사코드_CODE_FORMAT` | `검사항목코드`가 `A-Z0-9,` 밖의 문자를 담지 않으며 전부 단일바이트다. §8.2.3의 정렬 누수가 여기에도 적용되어 소문자는 통과한다 |
 | CK | `CK_검사코드_NAME_NOT_BLANK` | `검사항목명` 공백 불가 |
 | CK | `CK_검사코드_ROLE_REQUIRED` | `국가검사규칙코드` 또는 `추가검사코드` 중 하나 이상 존재 |
 | CK | `CK_검사코드_NEX_RULE` | NULL 또는 `NEX-01`~`NEX-06` |
@@ -1230,7 +1231,7 @@ Foreign Key 0개, Index 0개다.
 `deploy/01_Schema.sql`은 이 테이블만 `DROP` 대상에서 제외하고 `IF OBJECT_ID(...) IS NULL` 가드로 만든다.
 감사 기록이 배포로 지워지면 안 되기 때문이며, 물리 테이블 6개 중 clean-create가 아닌 유일한 예외다.
 `Rebuild.sql`은 DB를 통째로 DROP하므로 그 경로에서는 보존되지 않는다 — 개발 전용 진입점이다.
-이 가드가 옛 구조를 조용히 유지하는 드리프트는 배포 후 스키마 덤프 대조가 잡는다.
+이 가드가 옛 구조를 유지하는 드리프트는 `verify-schema-doc`의 `DOC-001`~`DOC-005`가 **부분적으로만** 잡는다. 그 게이트는 컬럼(이름·타입·NULL·순서)과 제약·인덱스 **이름**을 보고 제약의 **정의 텍스트**는 보지 않는다. 컬럼이나 제약 이름이 바뀐 드리프트는 잡히고, 같은 이름으로 술어만 바뀐 드리프트는 잡히지 않는다.
 
 ### 8.6.4 기록 규칙
 
@@ -1279,7 +1280,7 @@ Foreign Key 0개, Index 0개다.
 
 Drop Script는 역순으로 수행한다. 수검자, Work, Master를 Cascade Delete하지 않는다.
 
-`변경이력`은 FK가 없어 순서 제약이 없지만 마지막에 둔다. clean-create의 Drop 역순에서 가장 먼저 지워져, 뒤이어 실패하더라도 옛 로그가 새 스키마에 남지 않는다.
+`변경이력`은 FK가 없어 순서 제약이 없고, `Drop` 목록에 아예 없다(§8.6.3). 다른 다섯 테이블이 지워진 뒤 조건부로 생성되므로 생성 순서의 마지막에 둔다.
 
 ---
 
@@ -1364,7 +1365,7 @@ UI 또는 C# 검증만으로 다음을 보장하지 않는다.
 - `예약접수.StatusCode` 단독 Index: 날짜 없는 상태 전체조회 빈도가 낮음
 - 완료이력 보조 Index: Composite PK가 최신 완료일 조회를 지원
 - `수검자.HepatitisBExcluded` 단독 Index: 항상 `PatientId`로 단일행을 집은 뒤 읽는다
-- `변경이력`의 어떤 Index도: 읽는 Stored Procedure가 0개이고 매 배포에 비워진다
+- `변경이력`의 어떤 Index도: 읽는 Stored Procedure가 0개다 (§8.6.3)
 
 실제 구현 후 실행계획에서 병목이 확인되지 않는 한 Index를 추가하지 않는다.
 
@@ -1506,7 +1507,6 @@ Mermaid는 핵심 컬럼만 요약한다. 정확한 타입 길이·NULL·제약�
 
 | 불변조건 | 선언적 제약이 부족한 이유 | 최종 구현 위치 |
 |---|---|---|
-| SocialNumber의 6자리 날짜·7번째 자리 해석과 Birthday/Gender 일치 | 세기·성별 산출과 원본-파생값 비교 필요 | Patient Insert/Update SP |
 | 실제 주민등록번호 사용 금지 | 입력값의 실제성은 DB 제약만으로 판별 불가 | 과제 운영원칙·Seed 검수 |
 | 현재일/업무일/마감 | 현재시각과 HOL 조회 필요 | 일정/접수 Rule 및 Write SP |
 | 시간대 최대 20명 | 다른 Work 행 COUNT 필요 | Reservation Transaction |

@@ -234,7 +234,7 @@ Field
 
 - 모든 DDL·호출 예시는 `[dbo].[객체명]` 형식으로 Schema를 명시한다.
 - 한글 객체명에는 공백·하이픈·괄호·슬래시를 사용하지 않는다.
-- SQL Script는 UTF-8로 저장한다.
+- SQL Script는 **UTF-8 with BOM**으로 저장한다. BOM이 없으면 `sqlcmd`가 한글 객체명을 깨뜨려 `Msg 105`/`102`가 난다(실측 확인).
 - C# `CommandText`에는 `dbo.USP_HC_...` 전체 이름을 사용한다.
 - 사용자 정의 객체에 `sp_` 접두사를 사용하지 않는다.
 
@@ -843,17 +843,17 @@ RS1:
 
 | 컬럼 | 타입 | NULL | 물리 출처 |
 |---|---|:---:|---|
-| `PatientId` | `BIGINT` | X | PatientId |
-| `ChartNo` | `NVARCHAR(100)` | X | ChartNo |
-| `Name` | `NVARCHAR(100)` | X | Name |
-| `SocialNumber` | `VARCHAR(13)` | X | SocialNumber |
-| `Birthday` | `VARCHAR(8)` | X | Birthday |
-| `Gender` | `CHAR(1)` | X | Gender |
-| `MobilePhone` | `VARCHAR(13)` | O | CelNumber |
-| `Phone` | `VARCHAR(13)` | O | TelNumber |
-| `Email` | `VARCHAR(200)` | O | EMail |
-| `Zipcode` | `VARCHAR(10)` | O | Zipcode |
-| `Address` | `NVARCHAR(200)` | O | Address |
+| `PatientId` | `BIGINT` | X | `수검자ID` |
+| `ChartNo` | `NVARCHAR(100)` | X | `차트번호` |
+| `Name` | `NVARCHAR(100)` | X | `성명` |
+| `SocialNumber` | `VARCHAR(13)` | X | `주민번호` |
+| `Birthday` | `VARCHAR(8)` | X | `생년월일` (계산열) |
+| `Gender` | `CHAR(1)` | X | `성별` (계산열) |
+| `MobilePhone` | `VARCHAR(13)` | O | `휴대전화` |
+| `Phone` | `VARCHAR(13)` | O | `전화번호` |
+| `Email` | `VARCHAR(200)` | O | `이메일` |
+| `Zipcode` | `VARCHAR(10)` | O | `우편번호` |
+| `Address` | `NVARCHAR(200)` | O | `주소` |
 
 정렬:
 
@@ -2248,7 +2248,7 @@ LastEditDate DATETIME 원본 유지
 | 예약불가와 SP 실패 혼합 | PASS — 분리 |
 | 중복후보 후속 데이터 누락 | PASS — INSERT_수검자 예외계약 |
 | SocialNumber 저장·검색 경계 | PASS — VARCHAR(13) 직접 정확검색·UQ |
-| Birthday/Gender 최종 산출 책임 | PASS — Patient Write SP |
+| Birthday/Gender 최종 산출 책임 | PASS — `수검자`의 `PERSISTED` 계산열 (`04` §8.1.2) |
 | 주민번호 전용 보조구조 잔존 | PASS — 없음 |
 | 예약변경 현재 WorkId 제외 | PASS — SELECT/UPDATE 모두 명시 |
 | 다른 유효업무 복수행 이상상태 | PASS — 701 |

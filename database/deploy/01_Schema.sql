@@ -56,7 +56,12 @@ CREATE TABLE [dbo].[수검자]
     --     평가되어 Msg 515 가 나온다(실측 확인). 제약 평가 순서는 보장되지 않는다.
     --     그래도 허용 도메인을 여기에 적어 두는 값어치는 남는다 - 스키마만 읽어도 범위를 알 수 있다.
     -- 04 §1.5 가 실제 주민등록번호를 저장하지 않는다고 못박았으므로 임의 테스트값의 범위에 맞다.
-    CONSTRAINT [CK_수검자_SOCIAL_FORMAT]      CHECK (LEN([주민번호]) = 13 AND [주민번호] NOT LIKE '%[^0-9]%'
+    -- [X] LEN 은 문자 수, DATALENGTH 는 바이트 수다. 정렬이 Korean_Wansung_CI_AS 라
+    --     [^0-9] 가 전각 숫자를 잡지 못한다(실측 확인). 지금 전각이 막히는 이유는 이 제약이
+    --     아니라 VARCHAR(13) 폭이 13자를 14바이트로 만들기 때문이며, 폭이 넓어지면 조용히 열린다.
+    --     DATALENGTH = 13 이면 13자가 전부 단일바이트여야 하므로 제약 자체가 막는다.
+    CONSTRAINT [CK_수검자_SOCIAL_FORMAT]      CHECK (LEN([주민번호]) = 13 AND DATALENGTH([주민번호]) = 13
+                                                    AND [주민번호] NOT LIKE '%[^0-9]%'
                                                     AND SUBSTRING([주민번호], 7, 1) IN ('1','2','3','4','5','6','7','8')),
     -- 계산열이라 8자리 숫자는 구조적으로 보장된다. 이 CHECK 가 실제로 잡는 것은
     -- 주민번호 앞 6자리가 달력에 없는 날짜인 경우다(예: 991332 -> 19991332).
@@ -65,9 +70,14 @@ CREATE TABLE [dbo].[수검자]
     -- [X] 하이픈을 뺀 결과만 검사하면 빈 문자열·하이픈만인 값이 전부 통과한다(실측 확인).
     --     빈 문자열은 어떤 LIKE 패턴에도 걸리지 않기 때문이다. 자릿수를 함께 본다.
     --     표시값 그대로 저장하므로(04 §8.1.2) 하이픈을 뺀 자릿수가 10~11 이어야 한다.
+    --     그리고 [^0-9] 는 전각 숫자를 잡지 못한다. '0１012345678' 은 11자라 자릿수도 통과했다
+    --     (실측 확인). 이 컬럼은 폭에도 걸리지 않아 정렬 누수가 실제 저장까지 도달하던 유일한 곳이다.
+    --     DATALENGTH = LEN 이면 전부 단일바이트다.
     CONSTRAINT [CK_수검자_CEL_DIGIT]          CHECK ([휴대전화] IS NULL
                                                     OR (REPLACE([휴대전화], '-', '') NOT LIKE '%[^0-9]%'
-                                                        AND LEN(REPLACE([휴대전화], '-', '')) BETWEEN 10 AND 11)),
+                                                        AND LEN(REPLACE([휴대전화], '-', '')) BETWEEN 10 AND 11
+                                                        AND DATALENGTH(REPLACE([휴대전화], '-', ''))
+                                                          = LEN(REPLACE([휴대전화], '-', '')))),
     CONSTRAINT [CK_수검자_EDIT_DATE]          CHECK ([최종수정일시] >= [생성일시])
 );
 GO
@@ -93,7 +103,12 @@ CREATE TABLE [dbo].[검사코드]
     -- Master 의 코드 도메인을 검사구성 문자열의 도메인과 맞춘다. 이것이 없으면 'EX-001' 이나
     -- '검사01' 이 Master 에는 들어가는데 예약접수 검사구성에는 저장할 수 없는 코드가 된다(실측 확인).
     -- 선행공백 코드가 별개 PK 행이 되는 것도 함께 막힌다.
-    CONSTRAINT [CK_검사코드_CODE_FORMAT]    CHECK ([검사항목코드] NOT LIKE '%[^A-Z0-9]%'),
+    -- [X] 정렬이 CI 라 [A-Z0-9] 가 소문자까지 포함한다 - 'ex001' 은 이 제약을 통과한다(실측 확인).
+    --     DATALENGTH = LEN 이 전각 영숫자만 닫고, 소문자는 COLLATE 없이 못 막는다.
+    --     COLLATE 는 06 §9.2 허용목록 밖이다. 검사코드는 Seed 19행 고정이고 관리자 CRUD 가
+    --     없으므로(04 §8.3.1) 남는 위험은 저장 SP 를 우회한 직접 DML 뿐이고 SEC-004·005 가 막는다.
+    CONSTRAINT [CK_검사코드_CODE_FORMAT]    CHECK ([검사항목코드] NOT LIKE '%[^A-Z0-9]%'
+                                                   AND DATALENGTH([검사항목코드]) = LEN([검사항목코드])),
     CONSTRAINT [CK_검사코드_NAME_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([검사항목명]))) > 0),
     CONSTRAINT [CK_검사코드_ROLE_REQUIRED]  CHECK ([국가검사규칙코드] IS NOT NULL OR [추가검사코드] IS NOT NULL),
     CONSTRAINT [CK_검사코드_NEX_RULE]       CHECK ([국가검사규칙코드] IS NULL OR [국가검사규칙코드] IN ('NEX-01','NEX-02','NEX-03','NEX-04','NEX-05','NEX-06')),
