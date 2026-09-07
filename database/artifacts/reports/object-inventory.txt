@@ -1,9 +1,280 @@
-Table       = 7
-PK          = 7
-FK          = 4
-UQ          = 2
-FilteredUX  = 1
-Sequence    = 1
-Trigger     = 0
-TVF         = 0
-Procedure   = 0
+PASS RBD-004 인벤토리 지문 일치  INVENTORY|6|4|16|1|6|2|2|1|5|24|8|0|0|19|2
+PASS RBD-006 Seed 역할 분포 NEX 13 / AEX 7 / 겸용 1 / AEX Active 7
+PASS RBD-010 DB 에 credential·대칭키·HC Login 0건 (파일 스캔은 verify-no-secret.sh)
+--- OBJECTS ---
+OBJ|C |CK_검사코드_AEX_CODE
+OBJ|C |CK_검사코드_AEX_GENDER
+OBJ|C |CK_검사코드_AEX_GROUP
+OBJ|C |CK_검사코드_CODE_FORMAT
+OBJ|C |CK_검사코드_CODE_NOT_BLANK
+OBJ|C |CK_검사코드_NAME_NOT_BLANK
+OBJ|C |CK_검사코드_NEX_RULE
+OBJ|C |CK_검사코드_ROLE_REQUIRED
+OBJ|C |CK_변경이력_COLUMN_NOT_BLANK
+OBJ|C |CK_변경이력_TARGET_TABLE
+OBJ|C |CK_수검자_BIRTHDAY
+OBJ|C |CK_수검자_CEL_DIGIT
+OBJ|C |CK_수검자_CHART_NO_NOT_BLANK
+OBJ|C |CK_수검자_EDIT_DATE
+OBJ|C |CK_수검자_GENDER
+OBJ|C |CK_수검자_NAME_NOT_BLANK
+OBJ|C |CK_수검자_SOCIAL_FORMAT
+OBJ|C |CK_예약접수_EDIT_DATE
+OBJ|C |CK_예약접수_EXAM_FORMAT
+OBJ|C |CK_예약접수_EXAM_PAIR
+OBJ|C |CK_예약접수_STATUS
+OBJ|C |CK_예약접수_TIME_SLOT
+OBJ|C |CK_완료이력_EXAM_FORMAT
+OBJ|C |CK_휴무일_NAME_NOT_BLANK
+OBJ|D |DF_검사코드_AEX_ACTIVE
+OBJ|D |DF_변경이력_CREATION_DATE
+OBJ|D |DF_수검자_CREATION_DATE
+OBJ|D |DF_수검자_HEPATITIS_B_EXCLUDED
+OBJ|D |DF_수검자_LAST_EDIT_DATE
+OBJ|D |DF_예약접수_CREATION_DATE
+OBJ|D |DF_예약접수_LAST_EDIT_DATE
+OBJ|D |DF_휴무일_ACTIVE
+OBJ|F |FK_예약접수_수검자
+OBJ|F |FK_완료이력_수검자
+OBJ|IF|UFN_HC_검진대상확인
+OBJ|IF|UFN_HC_국가검사구성
+OBJ|IF|UFN_HC_일정확인
+OBJ|IF|UFN_HC_추가검사확인
+OBJ|P |USP_HC_INSERT_수검자
+OBJ|P |USP_HC_INSERT_예약
+OBJ|P |USP_HC_SELECT_공통업무상태
+OBJ|P |USP_HC_SELECT_변경이력
+OBJ|P |USP_HC_SELECT_수검자목록
+OBJ|P |USP_HC_SELECT_수검자상세
+OBJ|P |USP_HC_SELECT_수검자유효업무
+OBJ|P |USP_HC_SELECT_예약가능정보
+OBJ|P |USP_HC_SELECT_예약접수목록
+OBJ|P |USP_HC_SELECT_예약접수상세
+OBJ|P |USP_HC_UPDATE_수검자정보
+OBJ|P |USP_HC_UPDATE_예약변경
+OBJ|P |USP_HC_UPDATE_예약취소
+OBJ|P |USP_HC_UPDATE_접수완료
+OBJ|P |USP_HC_UPDATE_접수추가검사
+OBJ|P |USP_HC_UPDATE_접수취소
+OBJ|PK|PK_검사코드
+OBJ|PK|PK_변경이력
+OBJ|PK|PK_수검자
+OBJ|PK|PK_예약접수
+OBJ|PK|PK_완료이력
+OBJ|PK|PK_휴무일
+OBJ|SO|SEQ_HC_CHART_NO
+OBJ|U |검사코드
+OBJ|U |변경이력
+OBJ|U |수검자
+OBJ|U |예약접수
+OBJ|U |완료이력
+OBJ|U |휴무일
+OBJ|UQ|UQ_수검자_CHART_NO
+OBJ|UQ|UQ_수검자_SOCIAL_NUMBER
+--- COLUMNS ---
+COL|검사코드|1|검사항목코드|varchar|10|0
+COL|검사코드|2|검사항목명|nvarchar|200|0
+COL|검사코드|3|국가검사규칙코드|varchar|10|1
+COL|검사코드|4|추가검사코드|varchar|10|1
+COL|검사코드|5|추가검사성별코드|char|1|1
+COL|검사코드|6|추가검사사용여부|bit|1|0
+COL|변경이력|1|이력ID|bigint|8|0
+COL|변경이력|2|기록일시|datetime2|6|0
+COL|변경이력|3|조작자명|nvarchar|100|1
+COL|변경이력|4|대상테이블|nvarchar|20|0
+COL|변경이력|5|대상키|bigint|8|0
+COL|변경이력|6|컬럼명|nvarchar|60|0
+COL|변경이력|7|변경전|nvarchar|8000|1
+COL|변경이력|8|변경후|nvarchar|8000|1
+COL|수검자|1|수검자ID|bigint|8|0
+COL|수검자|2|차트번호|nvarchar|200|0
+COL|수검자|3|성명|nvarchar|200|0
+COL|수검자|4|주민번호|varchar|13|0
+COL|수검자|5|생년월일|varchar|8|0
+COL|수검자|6|성별|char|1|0
+COL|수검자|7|이메일|varchar|200|1
+COL|수검자|8|휴대전화|varchar|13|1
+COL|수검자|9|전화번호|varchar|13|1
+COL|수검자|10|우편번호|varchar|10|1
+COL|수검자|11|주소|nvarchar|400|1
+COL|수검자|12|상세주소|nvarchar|400|1
+COL|수검자|13|B형간염제외여부|bit|1|0
+COL|수검자|14|비고|nvarchar|-1|1
+COL|수검자|15|생성일시|datetime|8|0
+COL|수검자|16|최종수정일시|datetime|8|0
+COL|예약접수|1|업무ID|bigint|8|0
+COL|예약접수|2|수검자ID|bigint|8|0
+COL|예약접수|3|예약일|date|3|0
+COL|예약접수|4|시간대코드|char|2|0
+COL|예약접수|5|상태코드|char|3|0
+COL|예약접수|6|국가검사항목|nvarchar|200|0
+COL|예약접수|7|추가검사항목|nvarchar|100|1
+COL|예약접수|8|생성일시|datetime2|6|0
+COL|예약접수|9|최종수정일시|datetime2|6|0
+COL|예약접수|10|행버전|timestamp|8|0
+COL|완료이력|1|수검자ID|bigint|8|0
+COL|완료이력|2|완료일자|date|3|0
+COL|완료이력|3|국가검사항목|nvarchar|200|1
+COL|완료이력|4|추가검사항목|nvarchar|100|1
+COL|휴무일|1|휴무일자|date|3|0
+COL|휴무일|2|휴무일명|nvarchar|200|0
+COL|휴무일|3|사용여부|bit|1|0
+COL|휴무일|4|비고|nvarchar|1000|1
+--- INDEXES ---
+IDX|검사코드|PK_검사코드|1|0|0|1|검사항목코드
+IDX|검사코드|UX_검사코드_AEX_CODE|1|1|0|1|추가검사코드
+IDX|변경이력|IX_변경이력_TARGET|0|0|0|1|대상테이블
+IDX|변경이력|IX_변경이력_TARGET|0|0|0|2|대상키
+IDX|변경이력|IX_변경이력_TARGET|0|0|0|3|기록일시
+IDX|변경이력|PK_변경이력|1|0|0|1|이력ID
+IDX|수검자|IX_수검자_BIRTHDAY|0|0|0|1|생년월일
+IDX|수검자|IX_수검자_BIRTHDAY|0|0|1|0|성명
+IDX|수검자|IX_수검자_BIRTHDAY|0|0|1|0|성별
+IDX|수검자|IX_수검자_BIRTHDAY|0|0|1|0|수검자ID
+IDX|수검자|IX_수검자_BIRTHDAY|0|0|1|0|차트번호
+IDX|수검자|IX_수검자_BIRTHDAY|0|0|1|0|휴대전화
+IDX|수검자|IX_수검자_NAME_BIRTHDAY|0|0|0|1|성명
+IDX|수검자|IX_수검자_NAME_BIRTHDAY|0|0|0|2|생년월일
+IDX|수검자|IX_수검자_NAME_BIRTHDAY|0|0|1|0|성별
+IDX|수검자|IX_수검자_NAME_BIRTHDAY|0|0|1|0|수검자ID
+IDX|수검자|IX_수검자_NAME_BIRTHDAY|0|0|1|0|차트번호
+IDX|수검자|IX_수검자_NAME_BIRTHDAY|0|0|1|0|휴대전화
+IDX|수검자|PK_수검자|1|0|0|1|수검자ID
+IDX|수검자|UQ_수검자_CHART_NO|1|0|0|1|차트번호
+IDX|수검자|UQ_수검자_SOCIAL_NUMBER|1|0|0|1|주민번호
+IDX|예약접수|IX_예약접수_PATIENT_STATE_DATE|0|0|0|1|수검자ID
+IDX|예약접수|IX_예약접수_PATIENT_STATE_DATE|0|0|0|2|상태코드
+IDX|예약접수|IX_예약접수_PATIENT_STATE_DATE|0|0|0|3|예약일
+IDX|예약접수|IX_예약접수_PATIENT_STATE_DATE|0|0|1|0|시간대코드
+IDX|예약접수|IX_예약접수_SLOT|0|0|0|1|예약일
+IDX|예약접수|IX_예약접수_SLOT|0|0|0|2|시간대코드
+IDX|예약접수|IX_예약접수_SLOT|0|0|0|3|상태코드
+IDX|예약접수|IX_예약접수_SLOT|0|0|1|0|수검자ID
+IDX|예약접수|PK_예약접수|1|0|0|1|업무ID
+IDX|완료이력|PK_완료이력|1|0|0|1|수검자ID
+IDX|완료이력|PK_완료이력|1|0|0|2|완료일자
+IDX|휴무일|PK_휴무일|1|0|0|1|휴무일자
+--- PARAMETERS ---
+PRM|USP_HC_INSERT_수검자|1|@AutoChartNo|bit|1
+PRM|USP_HC_INSERT_수검자|2|@ChartNo|nvarchar|200
+PRM|USP_HC_INSERT_수검자|3|@Name|nvarchar|200
+PRM|USP_HC_INSERT_수검자|4|@SocialNumber|varchar|13
+PRM|USP_HC_INSERT_수검자|5|@MobilePhone|varchar|13
+PRM|USP_HC_INSERT_수검자|6|@Phone|varchar|13
+PRM|USP_HC_INSERT_수검자|7|@Email|varchar|200
+PRM|USP_HC_INSERT_수검자|8|@Zipcode|varchar|10
+PRM|USP_HC_INSERT_수검자|9|@Address|nvarchar|400
+PRM|USP_HC_INSERT_수검자|10|@AddressDetail|nvarchar|400
+PRM|USP_HC_INSERT_수검자|11|@Memo|nvarchar|-1
+PRM|USP_HC_INSERT_수검자|12|@HepatitisBExcluded|bit|1
+PRM|USP_HC_INSERT_수검자|13|@ConfirmSimilarPatient|bit|1
+PRM|USP_HC_INSERT_수검자|14|@OperatorName|nvarchar|100
+PRM|USP_HC_INSERT_예약|1|@PatientId|bigint|8
+PRM|USP_HC_INSERT_예약|2|@ReservationType|varchar|10
+PRM|USP_HC_INSERT_예약|3|@ReservationDate|date|3
+PRM|USP_HC_INSERT_예약|4|@TimeSlot|char|2
+PRM|USP_HC_INSERT_예약|5|@AexOpt01Selected|bit|1
+PRM|USP_HC_INSERT_예약|6|@AexOpt02Selected|bit|1
+PRM|USP_HC_INSERT_예약|7|@AexOpt03Selected|bit|1
+PRM|USP_HC_INSERT_예약|8|@AexOpt04Selected|bit|1
+PRM|USP_HC_INSERT_예약|9|@AexOpt05Selected|bit|1
+PRM|USP_HC_INSERT_예약|10|@AexOpt06Selected|bit|1
+PRM|USP_HC_INSERT_예약|11|@AexOpt07Selected|bit|1
+PRM|USP_HC_INSERT_예약|12|@OperatorName|nvarchar|100
+PRM|USP_HC_SELECT_변경이력|1|@TargetTable|nvarchar|20
+PRM|USP_HC_SELECT_변경이력|2|@TargetKey|bigint|8
+PRM|USP_HC_SELECT_수검자목록|1|@ChartNo|nvarchar|200
+PRM|USP_HC_SELECT_수검자목록|2|@Name|nvarchar|200
+PRM|USP_HC_SELECT_수검자목록|3|@SocialNumber|varchar|13
+PRM|USP_HC_SELECT_수검자목록|4|@Birthday|varchar|8
+PRM|USP_HC_SELECT_수검자목록|5|@MobilePhone|varchar|13
+PRM|USP_HC_SELECT_수검자상세|1|@PatientId|bigint|8
+PRM|USP_HC_SELECT_수검자유효업무|1|@PatientId|bigint|8
+PRM|USP_HC_SELECT_예약가능정보|1|@PatientId|bigint|8
+PRM|USP_HC_SELECT_예약가능정보|2|@WorkId|bigint|8
+PRM|USP_HC_SELECT_예약가능정보|3|@RowVersion|binary|8
+PRM|USP_HC_SELECT_예약가능정보|4|@ReservationType|varchar|10
+PRM|USP_HC_SELECT_예약가능정보|5|@ReservationDate|date|3
+PRM|USP_HC_SELECT_예약가능정보|6|@TimeSlot|char|2
+PRM|USP_HC_SELECT_예약가능정보|7|@AexOpt01Selected|bit|1
+PRM|USP_HC_SELECT_예약가능정보|8|@AexOpt02Selected|bit|1
+PRM|USP_HC_SELECT_예약가능정보|9|@AexOpt03Selected|bit|1
+PRM|USP_HC_SELECT_예약가능정보|10|@AexOpt04Selected|bit|1
+PRM|USP_HC_SELECT_예약가능정보|11|@AexOpt05Selected|bit|1
+PRM|USP_HC_SELECT_예약가능정보|12|@AexOpt06Selected|bit|1
+PRM|USP_HC_SELECT_예약가능정보|13|@AexOpt07Selected|bit|1
+PRM|USP_HC_SELECT_예약접수목록|1|@FromDate|date|3
+PRM|USP_HC_SELECT_예약접수목록|2|@ToDate|date|3
+PRM|USP_HC_SELECT_예약접수목록|3|@Status|char|3
+PRM|USP_HC_SELECT_예약접수목록|4|@ChartNo|nvarchar|200
+PRM|USP_HC_SELECT_예약접수목록|5|@Name|nvarchar|200
+PRM|USP_HC_SELECT_예약접수상세|1|@WorkId|bigint|8
+PRM|USP_HC_UPDATE_수검자정보|1|@PatientId|bigint|8
+PRM|USP_HC_UPDATE_수검자정보|2|@LastEditDate|datetime|8
+PRM|USP_HC_UPDATE_수검자정보|3|@ChartNo|nvarchar|200
+PRM|USP_HC_UPDATE_수검자정보|4|@Name|nvarchar|200
+PRM|USP_HC_UPDATE_수검자정보|5|@SocialNumber|varchar|13
+PRM|USP_HC_UPDATE_수검자정보|6|@MobilePhone|varchar|13
+PRM|USP_HC_UPDATE_수검자정보|7|@Phone|varchar|13
+PRM|USP_HC_UPDATE_수검자정보|8|@Email|varchar|200
+PRM|USP_HC_UPDATE_수검자정보|9|@Zipcode|varchar|10
+PRM|USP_HC_UPDATE_수검자정보|10|@Address|nvarchar|400
+PRM|USP_HC_UPDATE_수검자정보|11|@AddressDetail|nvarchar|400
+PRM|USP_HC_UPDATE_수검자정보|12|@Memo|nvarchar|-1
+PRM|USP_HC_UPDATE_수검자정보|13|@HepatitisBExcluded|bit|1
+PRM|USP_HC_UPDATE_수검자정보|14|@OperatorName|nvarchar|100
+PRM|USP_HC_UPDATE_예약변경|1|@WorkId|bigint|8
+PRM|USP_HC_UPDATE_예약변경|2|@RowVersion|binary|8
+PRM|USP_HC_UPDATE_예약변경|3|@ReservationDate|date|3
+PRM|USP_HC_UPDATE_예약변경|4|@TimeSlot|char|2
+PRM|USP_HC_UPDATE_예약변경|5|@AexOpt01Selected|bit|1
+PRM|USP_HC_UPDATE_예약변경|6|@AexOpt02Selected|bit|1
+PRM|USP_HC_UPDATE_예약변경|7|@AexOpt03Selected|bit|1
+PRM|USP_HC_UPDATE_예약변경|8|@AexOpt04Selected|bit|1
+PRM|USP_HC_UPDATE_예약변경|9|@AexOpt05Selected|bit|1
+PRM|USP_HC_UPDATE_예약변경|10|@AexOpt06Selected|bit|1
+PRM|USP_HC_UPDATE_예약변경|11|@AexOpt07Selected|bit|1
+PRM|USP_HC_UPDATE_예약변경|12|@OperatorName|nvarchar|100
+PRM|USP_HC_UPDATE_예약취소|1|@WorkId|bigint|8
+PRM|USP_HC_UPDATE_예약취소|2|@RowVersion|binary|8
+PRM|USP_HC_UPDATE_예약취소|3|@OperatorName|nvarchar|100
+PRM|USP_HC_UPDATE_접수완료|1|@WorkId|bigint|8
+PRM|USP_HC_UPDATE_접수완료|2|@RowVersion|binary|8
+PRM|USP_HC_UPDATE_접수완료|3|@OperatorName|nvarchar|100
+PRM|USP_HC_UPDATE_접수추가검사|1|@WorkId|bigint|8
+PRM|USP_HC_UPDATE_접수추가검사|2|@RowVersion|binary|8
+PRM|USP_HC_UPDATE_접수추가검사|3|@AexOpt01Selected|bit|1
+PRM|USP_HC_UPDATE_접수추가검사|4|@AexOpt02Selected|bit|1
+PRM|USP_HC_UPDATE_접수추가검사|5|@AexOpt03Selected|bit|1
+PRM|USP_HC_UPDATE_접수추가검사|6|@AexOpt04Selected|bit|1
+PRM|USP_HC_UPDATE_접수추가검사|7|@AexOpt05Selected|bit|1
+PRM|USP_HC_UPDATE_접수추가검사|8|@AexOpt06Selected|bit|1
+PRM|USP_HC_UPDATE_접수추가검사|9|@AexOpt07Selected|bit|1
+PRM|USP_HC_UPDATE_접수추가검사|10|@OperatorName|nvarchar|100
+PRM|USP_HC_UPDATE_접수취소|1|@WorkId|bigint|8
+PRM|USP_HC_UPDATE_접수취소|2|@RowVersion|binary|8
+PRM|USP_HC_UPDATE_접수취소|3|@OperatorName|nvarchar|100
+--- GRANTS ---
+--- SEED ---
+SEED|EXAM|EX001|문진/진찰|NEX-01|-|-|0
+SEED|EXAM|EX002|신체계측|NEX-01|-|-|0
+SEED|EXAM|EX003|혈압|NEX-01|-|-|0
+SEED|EXAM|EX004|시력·청력|NEX-01|-|-|0
+SEED|EXAM|EX005|흉부 X-ray|NEX-01|-|-|0
+SEED|EXAM|EX006|요검사|NEX-01|-|-|0
+SEED|EXAM|EX007|혈액검사|NEX-01|-|-|0
+SEED|EXAM|EX008|구강검진|NEX-01|-|-|0
+SEED|EXAM|EX009|이상지질혈증|NEX-02|-|-|0
+SEED|EXAM|EX010|B형간염|NEX-03|-|-|0
+SEED|EXAM|EX011|C형간염|NEX-04|-|-|0
+SEED|EXAM|EX012|골밀도검사|NEX-05|OPT04|A|1
+SEED|EXAM|EX013|폐기능|NEX-06|-|-|0
+SEED|EXAM|EX014|복부초음파|-|OPT01|A|1
+SEED|EXAM|EX015|갑상선초음파|-|OPT02|A|1
+SEED|EXAM|EX016|유방초음파|-|OPT03|F|1
+SEED|EXAM|EX017|PSA|-|OPT05|M|1
+SEED|EXAM|EX018|HbA1c|-|OPT06|A|1
+SEED|EXAM|EX019|HPV 검사|-|OPT07|F|1
+SEED|HOL|2026-12-25|성탄절|1
+SEED|HOL|2026-12-26|센터 휴진일|1
+=== 14_Clean_Rebuild_Verify 완료 ===

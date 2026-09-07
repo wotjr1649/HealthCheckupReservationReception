@@ -43,6 +43,10 @@ for s in 1 2 3 4 5 6 7 8; do
   ./scripts/concurrency-test.sh "$s" || FAILED=1
 done
 
+# Clean Rebuild 계약 중 회차 사이 비교가 필요한 것 (RBD-002·003·005·007·008·009).
+# tests/14 는 한 회차의 지문만 보므로 이 스크립트가 없으면 G14 의 절반이 빈다.
+./scripts/clean-rebuild-verify.sh || FAILED=1
+
 # SEC-010 (secret 스캔) 은 SQL 이 아니라 셸이다. 전체 회귀에 반드시 포함한다.
 ./scripts/verify-no-secret.sh || FAILED=1
 

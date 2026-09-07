@@ -424,12 +424,16 @@ function splitFences(src) {
     });
   }
   // 구분자 문자열 안의 수치는 위 패턴이 보지 못한다.
-  // 'INVENTORY|7|4|15|1|7|6|2|1|5|0|19|2' 의 6번째 칸이 Foreign Key 수인데
+  // 'INVENTORY|6|4|16|1|6|2|2|1|5|24|8|0|0|19|2' 의 6번째 칸이 Foreign Key 수인데
   // \bFK\s*6 은 그것을 FK 로 읽지 못한다 — plans/08 의 RBD-004·005 가 이 구멍으로 들어왔다.
   // 패턴 대신 위치로 짚어 기준선 04 실측과 대조한다(V08 과 같은 방식이다).
-  // 유일한 가정은 "6번째 칸이 FK" 라는 위치다. 칸 수가 12 가 아니면 그 가정이 깨진 것이므로
+  // 유일한 가정은 "6번째 칸이 FK" 라는 위치다. 칸 수가 15 가 아니면 그 가정이 깨진 것이므로
   // 조용히 넘기지 않고 형상 자체를 FAIL 로 낸다 — fail-open 을 남기지 않는다.
   {
+    // 지문 칸 순서 (tests/14_Clean_Rebuild_Verify.sql (1) 참조). FK 는 6번째(index 5)다.
+    //   Table | TVF | SP | Sequence | PK | FK | UQ | UX | NCI | CHECK | DEFAULT | Trigger | TVP | Exam | Holiday
+    // CK_예약접수_EXAM_PAIR 신설(2026-09-07) 때 CHECK·DEFAULT·TVP 3칸을 더해 12 -> 15 가 됐다.
+    const FP_ARITY = 15;
     const fk = uniq(/\`FK_[^\`\n]+\`/g);
     for (const f of targets) {
       const buf = fs.readFileSync(f);
@@ -439,8 +443,8 @@ function splitFences(src) {
         if (!m) return;
         const cols = m[1].slice(1).split('|');
         const at = path.basename(f) + ':' + (i + 1);
-        if (cols.length !== 12)
-          hits.push(at + ' [지문 형상] 칸 ' + cols.length + '개 — 12개가 아니면 FK 위치 가정이 깨진다');
+        if (cols.length !== FP_ARITY)
+          hits.push(at + ' [지문 형상] 칸 ' + cols.length + '개 — ' + FP_ARITY + '개가 아니면 FK 위치 가정이 깨진다');
         else if (+cols[5] !== fk)
           hits.push(at + ' [지문 FK] 선언=' + cols[5] + ' / 기준선 04 실측=' + fk + '  ' + l.trim().slice(0, 56));
       });
@@ -560,6 +564,40 @@ function splitFences(src) {
                   : P('V16', 'N 없는 리터럴에 CP949 밖 문자 0건 (' + chars.length + '종 검사)');
     }
   }
+}
+
+
+// V17 RS0 의 5컬럼 타입을 배포 SQL 에서 정적으로 대조한다.
+//   sys.dm_exec_describe_first_result_set_for_object 는 sp_getapplock 을 부르는 SP 에서
+//   Msg 11520 으로 실패한다 - 그 내부가 확장 프로시저 sys.xp_userlock 을 부르기 때문이다(실측).
+//   Write SP 8개가 전부 그 부류라 DMV 로는 16/16 을 볼 수 없다(스펙 §36 [X 실측]).
+//   verify-contract.js 는 실측 출력에서 **컬럼명**만 보므로 타입이 비어 있었다. 여기서 메꾼다.
+{
+  const files = fs.readdirSync('deploy').filter(f => /^0[4-7]_.*\.sql$/.test(f));
+  const want = [
+    [/CAST\([^()]*(?:\([^()]*\))?[^()]*AS BIT\)\s*AS Success/,               'Success BIT'],
+    [/CAST\([^()]*AS INT\)\s*AS Code/,                                        'Code INT'],
+    [/CAST\([^()]*AS NVARCHAR\(300\)\)\s*AS Message/,                        'Message NVARCHAR(300)'],
+    [/CAST\([^()]*AS VARCHAR\(50\)\)\s*AS Field/,                            'Field VARCHAR(50)'],
+    [/CAST\([^()]*AS DATETIME2\(7\)\)\s*AS ServerTime/,                      'ServerTime DATETIME2(7)'],
+  ];
+  const bad = []; let blocks = 0;
+  for (const f of files) {
+    const sql = fs.readFileSync('deploy/' + f, 'utf8');
+    const lines = sql.split(/\r?\n/);
+    lines.forEach((l, i) => {
+      if (!/\bAS Success\b/.test(l)) return;
+      blocks++;
+      // RS0 는 5줄 연속이다. 여유를 두고 8줄을 본다.
+      const win = lines.slice(i, i + 8).join('\n');
+      for (const [re, label] of want) {
+        if (!re.test(win)) bad.push(f + ':' + (i + 1) + '  ' + label + ' CAST 없음');
+      }
+    });
+  }
+  if (!blocks) F('V17', '배포 SQL 에서 RS0 블록을 하나도 찾지 못했다 - 미실행은 PASS 가 아니다');
+  else if (bad.length) F('V17', 'RS0 5컬럼 CAST 누락 ' + bad.length + '건', [...new Set(bad)].join('\n'));
+  else P('V17', 'RS0 블록 ' + blocks + '개 전부 5컬럼 명시 CAST (' + files.length + '개 배포 파일)');
 }
 
 console.log('\n=== verify-docs: PASS ' + pass + ' / FAIL ' + fail + ' ===');

@@ -1,0 +1,8 @@
+PASS RBD-002 대상 DB 컨텍스트의 Rebuild 가 Msg 50021 로 중단됐다 (exit=1)
+NOT RUN RBD-001 잘못된 서버명(50020) - 인스턴스가 1개뿐이라 음성 시험 불가
+PASS RBD-003 빈 DB 에서 Deploy 전체 실행 exit 0
+PASS RBD-005 연속 2회 Rebuild 의 정렬 덤프가 완전히 동일
+PASS RBD-007 Deploy 단독 재실행 exit 0 + 덤프 동일
+PASS RBD-008 Procedure 파일 단독 재실행 exit 0 + 덤프 동일 (GRANT 구획 포함)
+PASS RBD-009 타 DB 메타데이터가 rebuild 전후로 동일
+clean-rebuild FAILED=0

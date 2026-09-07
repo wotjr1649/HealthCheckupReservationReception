@@ -292,6 +292,7 @@ database/
 │  ├─ verify-baseline.sh              00~05 SHA-256 재검증
 │  ├─ verify-winforms-unchanged.sh    WinForms hash manifest 대조
 │  ├─ verify-contract-all.sh          tests/contract/* 전건 실행 → verify-contract.js
+│  ├─ clean-rebuild-verify.sh         RBD-002·003·005·007·008·009. 회차 사이 덤프 diff
 │  └─ verify-no-secret.sh             SEC-010. 배포 원본 + 로그 + 보고서 secret 스캔
 │
 ├─ tools/
@@ -900,7 +901,21 @@ SELECT
 | 4 | `Field` | `VARCHAR(50)` | O |
 | 5 | `ServerTime` | `DATETIME2(7)` | X |
 
-`[I]` **모든 컬럼에 명시적 `CAST`를 건다.** `sys.dm_exec_describe_first_result_set_for_object`가 15개 SP 전부에서 동일한 타입 문자열을 보고해야 G09가 성립한다.
+`[I]` **모든 컬럼에 명시적 `CAST`를 건다.**
+
+`[X 실측]` **DMV 로는 16/16 을 볼 수 없다.** `sys.dm_exec_describe_first_result_set_for_object` 는
+`sp_getapplock` 을 호출하는 SP 에서 **`Msg 11520`** 으로 실패한다 — 그 내부가 확장 프로시저
+`sys.xp_userlock` 을 부르기 때문이다. `sp_getapplock` 은 §22·§24 가 Write SP 8개 전부에
+의무화한 것이므로 이 미달은 구현 결함이 아니라 **스펙 내부 모순**이었다.
+실측: 16개 중 8개 실패, 총 48행(기대 80).
+
+판정 경로를 셋으로 나눈다.
+
+```text
+SELECT SP 8개   DMV 로 40행 · error_number 0건 · 5컬럼 타입 문자열 대조
+Write SP 8개    verify-contract.js 가 계약 시나리오의 **실측 출력 헤더**로 컬럼명·순서를 판정
+전체 16개       verify-docs.js V17 이 배포 SQL 의 RS0 CAST 패턴을 정적으로 대조해 타입을 메꾼다
+```
 
 `ServerTime`은 SP 시작 시 캡처한 `@ServerTime`을 그대로 사용하며, 실패 경로에서도 동일 값을 반환한다.
 

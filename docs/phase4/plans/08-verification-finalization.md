@@ -1,6 +1,26 @@
 `[!]` **이 계획서의 스키마 참조는 `plans/09`·`plans/10` 이 교체했다** ― 컬럼명 한글화,
 검사구성의 `예약접수`·`완료이력` 흡수, `검사항목` 삭제, `변경이력` EAV 전환. 당시 구조는 git 이력에 있다.
 
+`[R3]` **`T35`·`T36` 착수 시점(2026-09-07)에 R3 잔재를 정리했다.** 아래가 실행을 막고 있었다.
+
+```text
+SP 15                    -> 16. R3 재봉인이 SP-LOG-01 을 더했다 (05 §1.3 · 06 §18).
+NCI 4                    -> 5.  IX_변경이력_TARGET 이 더해졌다 (04 §8.6.4).
+지문 12칸                 -> 15칸. CHECK·DEFAULT·TVP 를 더했다. FK 는 여전히 6번째 칸이다.
+업무시간 가드의 [Active]   -> [사용여부]
+영문 컬럼명 ExamItemCode  -> 검사항목코드 등. plans/09 가 전부 한글화했다.
+GRANT 15건 유지 확인       -> 사용자 결정(2026-09-07)으로 Security 미구현이라 기대는 0건이다.
+                            RBD-008 은 덤프의 GRANT 구획이 재실행 전후로 같은지로 판정한다.
+```
+
+`[R3]` **`T36` 의 DMV 판정은 16/16 이 될 수 없다.** `sys.dm_exec_describe_first_result_set_for_object`
+는 `sp_getapplock` 을 부르는 SP 에서 `Msg 11520` 으로 실패하고, Write SP 8개가 전부 그 부류다(실측).
+스펙 §36 이 판정 경로를 셋으로 나눴다 — SELECT SP 8개는 DMV, Write SP 8개는 계약 시나리오의 실측
+출력, 타입은 `verify-docs.js` 의 `V17` 이 배포 SQL 의 `CAST` 패턴을 정적으로 대조한다.
+
+`[R3]` **회차 사이 비교는 `scripts/clean-rebuild-verify.sh` 로 옮겼다.** `tests/14` 는 한 회차의
+지문·덤프만 낸다. `RBD-002`·`003`·`005`·`007`·`008`·`009` 가 그 스크립트에 있고 `RBD-001` 은
+인스턴스가 1개뿐이라 `NOT RUN` 이다.
 # Stage 10~12 — Rollback · Concurrency · Clean Rebuild · 문서 최종화
 
 **Index:** `2026-09-04-phase4-database-implementation.md`
@@ -53,7 +73,7 @@ IF NOT (DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
         AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
         AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
         AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
-                         WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [Active] = 1))
+                         WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [사용여부] = 1))
 BEGIN
     PRINT 'SKIP 08_Rollback_Tests 업무시간(월~토 09:00~18:00, 비휴무일) 밖';
     RETURN;
@@ -356,7 +376,7 @@ IF ((SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped=0) = 6) PRINT 'PASS VER
 ELSE BEGIN PRINT 'FAIL VER-001 Table'; SET @Fail += 1; END
 IF ((SELECT COUNT(*) FROM sys.objects WHERE type='IF' AND name LIKE 'UFN[_]HC[_]%') = 4) PRINT 'PASS VER-002 TVF 4';
 ELSE BEGIN PRINT 'FAIL VER-002 TVF'; SET @Fail += 1; END
-IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 15) PRINT 'PASS VER-003 SP 15';
+IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 16) PRINT 'PASS VER-003 SP 16';
 ELSE BEGIN PRINT 'FAIL VER-003 SP'; SET @Fail += 1; END
 IF ((SELECT COUNT(*) FROM sys.sequences) = 1) PRINT 'PASS VER-004 Sequence 1';
 ELSE BEGIN PRINT 'FAIL VER-004 Sequence'; SET @Fail += 1; END
@@ -428,7 +448,7 @@ DECLARE @FP VARCHAR(200) = 'INVENTORY|'
      + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[검사코드]))            + '|'
      + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[휴무일]));
 
-IF @FP = 'INVENTORY|6|4|15|1|6|2|2|1|4|0|19|2'
+IF @FP = 'INVENTORY|6|4|16|1|6|2|2|1|5|24|8|0|0|19|2'
     PRINT 'PASS RBD-004 인벤토리 지문 일치  ' + @FP;
 ELSE BEGIN PRINT 'FAIL RBD-004 인벤토리 지문 불일치  ' + @FP; SET @Fail += 1; END
 
@@ -471,7 +491,7 @@ SELECT 'SEED|EXAM|' + [검사항목코드] + '|' + [검사항목명] + '|' + ISN
      + '|' + CONVERT(VARCHAR(1), [추가검사사용여부])
 FROM [dbo].[검사코드] ORDER BY [검사항목코드];
 SELECT 'SEED|HOL|' + CONVERT(VARCHAR(10), [휴무일자], 23) + '|' + [휴무일명]
-     + '|' + CONVERT(VARCHAR(1), [Active])
+     + '|' + CONVERT(VARCHAR(1), [사용여부])
 FROM [dbo].[휴무일] ORDER BY [휴무일자];
 
 IF @Fail > 0 THROW 51000, N'Clean Rebuild 검증 실패', 1;
@@ -496,7 +516,7 @@ diff -u artifacts/reports/inventory_run1.txt artifacts/reports/inventory_run2.tx
 cp artifacts/reports/inventory_run2.txt artifacts/reports/object-inventory.txt
 ```
 
-Expected: `PASS RBD-005`, 지문 = `INVENTORY|6|4|15|1|6|2|2|1|4|0|19|2`
+Expected: `PASS RBD-005`, 지문 = `INVENTORY|6|4|16|1|6|2|2|1|5|24|8|0|0|19|2`
 
 - [ ] **Step 5: 안전가드 음성 검증 — `RBD-002` 만 (RBD-001 은 `NOT RUN`)**
 
@@ -542,7 +562,7 @@ else
   echo "FAIL RBD-007 exit=$D7 또는 덤프 불일치"; RC=1
 fi
 
-# RBD-008  03~07 Procedure 파일만 단독 재실행 → exit 0 + GRANT 15건 유지
+# RBD-008  03~07 Procedure 파일만 단독 재실행 → exit 0 + 덤프의 GRANT 구획 전후 동일
 for f in deploy/03_*.sql deploy/04_*.sql deploy/05_*.sql deploy/06_*.sql deploy/07_*.sql; do
   sqlcmd -S "$SRV" -E -d "$DB" -b -I -i "$f" >> artifacts/logs/rbd008.log 2>&1 || RC=1
 done
@@ -590,9 +610,9 @@ Expected: `PASS RBD-009`. `otherdb_before.txt` 는 **`T04` Step 7 이 만든다*
 
 ---
 
-## Task T36: 15개 SP 전체 계약 검증
+## Task T36: 16개 SP 전체 계약 검증
 
-**목적:** `T22` 의 검증기를 15개 SP 전부로 확장해 G09를 충족한다.
+**목적:** `T22` 의 검증기를 16개 SP 전부로 확장해 G09를 충족한다.
 
 **관련 Baseline 위치:** `05` §17.9, 스펙 §36.
 
@@ -828,7 +848,7 @@ IF NOT EXISTS (SELECT SpName FROM @Rs0 s
                               EXCEPT SELECT r.Ordinal, r.ColName, r.TypeName FROM @Rs0 r WHERE r.SpName = s.SpName)
                    OR EXISTS (SELECT r.Ordinal, r.ColName, r.TypeName FROM @Rs0 r WHERE r.SpName = s.SpName
                               EXCEPT SELECT e.Ordinal, e.ColName, e.TypeName FROM @Expected e))
-    PRINT 'PASS CTR-RS0-C 15개 SP 의 RS0 컬럼·순서·타입 전건 일치';
+    PRINT 'PASS CTR-RS0-C 16개 SP 의 RS0 컬럼·순서·타입 전건 일치';
 ELSE BEGIN PRINT 'FAIL CTR-RS0-C RS0 스키마 불일치 SP 존재'; SET @Fail += 1; END
 ```
 
@@ -853,7 +873,7 @@ grep -c '^PASS' artifacts/reports/contract-verify.txt
 
 Expected: 전부 `PASS`, exit 0.
 
-- [ ] **Step 5: Commit** — `test(phase4): 15개 SP 전체 Result Set·Parameter 계약 검증`
+- [ ] **Step 5: Commit** — `test(phase4): 16개 SP 전체 Result Set·Parameter 계약 검증`
 
 **완료조건:** Parameter 95행 `EXCEPT` 차집합 0, RS0 메타 75행 + `error_number` 0건, **15/15 SP** 의 후속 RS 시나리오 전부 PASS, 관측 RS0 `Code` 가 전건 `tools/allowed-codes.json` 의 해당 SP 허용집합 안. **G09 충족.**
 
@@ -1019,7 +1039,7 @@ git log --oneline baseline-HC-RSV-RCP-20260904-R3..HEAD | head -50
 ```text
 Baseline integrity   VERIFIED (6/6)
 WinForms 변경         0건
-Object Inventory      Table 6 / TVF 4 / SP 15 / Sequence 1
+Object Inventory      Table 6 / TVF 4 / SP 16 / Sequence 1
 Gate 판정             G00~G16 실제 결과
 총 테스트             PASS n / FAIL n / SKIP n
 Deviation             n건
