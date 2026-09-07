@@ -90,8 +90,22 @@ function workbook(creator, sheets) {
   const wb = new ExcelJS.Workbook();
   wb.creator = creator;
   wb.created = new Date();
+  wb.__sheets = sheets;          // emit() 이 열 너비 왕복을 대조하는 데 쓴다
 
   for (const s of sheets) {
+    // draw 시트는 표가 아니라 그림이다. 눈금선을 끄고 그리기 함수에 맡긴다.
+    if (s.draw) {
+      const dws = wb.addWorksheet(s.name, { views: [{ showGridLines: false }] });
+      dws.columns = s.w.map(width => ({ width }));
+      if (s.rowHeight) dws.properties.defaultRowHeight = s.rowHeight;
+      const t = dws.getCell(1, 1);
+      t.value = s.title;
+      t.font = { bold: true, size: 14, color: { argb: NAVY } };
+      dws.getRow(1).height = 26;
+      s.draw(dws);
+      continue;
+    }
+
     const ws = wb.addWorksheet(s.name, { views: [{ state: 'frozen', xSplit: 0, ySplit: 2 }] });
     ws.columns = s.w.map(width => ({ width }));
 
@@ -145,10 +159,21 @@ async function emit(wb, outName, checks) {
   for (const ws of re.worksheets) {
     let n = 0;
     ws.eachRow({ includeEmpty: false }, () => n++);
-    console.log('  - ' + ws.name.padEnd(16) + ' 행 ' + n + ' (데이터 ' + (n - 2) + ')');
+    console.log('  - ' + ws.name.padEnd(16) + ' 행 ' + n);
   }
 
+  // [X] exceljs 4.4 는 너비가 **정확히 9** 인 열의 <col> 을 아예 쓰지 않는다 — 자기 기본값과
+  //     같다고 보기 때문이다. 그런데 Excel 의 실제 기본은 8.43 이라 그림이 조용히 어긋난다.
+  //     지정한 너비가 파일에 살아남았는지 왕복으로 대조한다. 9 를 쓰지 않는 것으로 피한다.
   let fail = 0;
+  for (const spec of (wb.__sheets || [])) {
+    const ws = re.getWorksheet(spec.name);
+    const got = ws.columns.map(c => c.width);
+    const bad = spec.w.map((want, i) => (got[i] === want ? null : (i + 1) + '열 ' + want + '->'
+                 + (got[i] === undefined ? '없음' : got[i]))).filter(Boolean);
+    if (bad.length) { fail++; console.log('FAIL ' + spec.name + ' 열 너비가 파일에 안 남았다: ' + bad.join(' · ')); }
+  }
+
   for (const [label, got, want] of checks) {
     const ok = got === want;
     if (!ok) fail++;
@@ -159,3 +184,91 @@ async function emit(wb, outName, checks) {
 }
 
 module.exports = { read, cell, sections, tables, fences, workbook, emit, OUTDIR };
+
+/* ================================================================== *
+ * 그리기 킷 — ERD 용.
+ *
+ * exceljs 4.4 는 도형을 못 그리고 이 환경에는 래스터라이저가 없어 한글이 든 PNG 를
+ * 만들 수 없다. 그래서 셀 자체로 그린다 — 테두리·채움·병합만 쓰므로 이미지와 달리
+ * 선택·검색·인쇄가 되고 파일이 커지지 않는다.
+ *
+ * 선은 셀 테두리다. 가로선은 어떤 행의 bottom, 세로선은 어떤 열의 right 다.
+ * ================================================================== */
+const LINE = 'FF44546A';
+
+/* 기존 테두리를 지우지 않고 한 변만 얹는다. 얹는 순서가 결과를 바꾸지 않아야 한다. */
+function edge(ws, r, c, side, style, color) {
+  const cell = ws.getCell(r, c);
+  cell.border = Object.assign({}, cell.border, { [side]: { style, color: { argb: color || LINE } } });
+}
+
+const hline = (ws, r, c1, c2, style) => { for (let c = c1; c <= c2; c++) edge(ws, r, c, 'bottom', style || 'medium'); };
+const vline = (ws, c, r1, r2, style) => { for (let r = r1; r <= r2; r++) edge(ws, r, c, 'right', style || 'medium'); };
+
+/* 사각형 바깥 테두리 */
+function rect(ws, r1, c1, r2, c2, style) {
+  for (let c = c1; c <= c2; c++) { edge(ws, r1, c, 'top', style); edge(ws, r2, c, 'bottom', style); }
+  for (let r = r1; r <= r2; r++) { edge(ws, r, c1, 'left', style); edge(ws, r, c2, 'right', style); }
+}
+
+function put(ws, r, c, v, o) {
+  const cell = ws.getCell(r, c);
+  cell.value = v === '' ? null : v;
+  cell.font = Object.assign({ size: 9 }, (o || {}).font);
+  cell.alignment = Object.assign({ vertical: 'middle', horizontal: 'left' }, (o || {}).align);
+  if ((o || {}).fill) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: o.fill } };
+  return cell;
+}
+
+const merge = (ws, r1, c1, r2, c2) => { try { ws.mergeCells(r1, c1, r2, c2); } catch (e) { /* 이미 병합 */ } };
+
+/*
+ * Entity 상자 하나.
+ *   o = { r, c, w, title, sub, rows: [[a, b, c], …] }
+ *   w 는 차지하는 열 수이며 rows 의 각 배열 길이와 같아야 한다.
+ *   반환값은 { top, bottom, left, right } — 연결선을 그 좌표에 붙인다.
+ */
+function entity(ws, o) {
+  const { r, c, w, title, sub, rows } = o;
+  let y = r;
+
+  merge(ws, y, c, y, c + w - 1);
+  put(ws, y, c, title, { font: { size: 11, bold: true, color: { argb: 'FFFFFFFF' } },
+                         align: { horizontal: 'center' }, fill: NAVY });
+  for (let i = 1; i < w; i++) put(ws, y, c + i, '', { fill: NAVY });
+  y++;
+
+  if (sub) {
+    merge(ws, y, c, y, c + w - 1);
+    put(ws, y, c, sub, { font: { size: 8, italic: true, color: { argb: 'FF44546A' } },
+                         align: { horizontal: 'center' }, fill: 'FFEAEEF6' });
+    for (let i = 1; i < w; i++) put(ws, y, c + i, '', { fill: 'FFEAEEF6' });
+    y++;
+  }
+
+  const first = y;
+  for (const row of rows) {
+    row.forEach((v, i) => {
+      const key = /^(PK|FK|UQ|PK,FK)$/.test(String(row[0] || ''));
+      put(ws, y, c + i, v, {
+        font: { size: 9, bold: i === 0 || (i === 1 && key) },
+        align: { horizontal: i === 0 ? 'center' : 'left' },
+        fill: key ? 'FFFFF6E0' : 'FFFFFFFF',
+      });
+      edge(ws, y, c + i, 'bottom', 'hair', 'FFD5DCE8');
+    });
+    y++;
+  }
+  const bottom = y - 1;
+  rect(ws, r, c, bottom, c + w - 1, 'medium');
+  return { top: r, bottom, left: c, right: c + w - 1, first, title };
+}
+
+module.exports.edge = edge;
+module.exports.hline = hline;
+module.exports.vline = vline;
+module.exports.rect = rect;
+module.exports.put = put;
+module.exports.merge = merge;
+module.exports.entity = entity;
+module.exports.NAVY = NAVY;

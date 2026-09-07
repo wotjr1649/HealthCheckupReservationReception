@@ -69,7 +69,13 @@ for (const s of secs) {
 const t33 = tbl(/^3\.3 명명규칙/);
 const S5 = t33.rows.map(r => r);
 
+/* 시트 A·B — 논리 ERD · 물리 ERD.
+   같은 문서를 두 번 파싱하지 않도록 여기서 파싱한 것을 넘긴다. */
+const erd = require('./erd_04.js').build({ secs, owner, t7, S2, find, tbl });
+
 const wb = M.workbook('검진 예약·접수 DB 설계서', [
+  ...erd.sheets,
+
   { name: '테이블', title: '물리 테이블 6개', group: 0, ctr: [0],
     head: ['No', '테이블', 'PK', '주요 FK', '핵심 고유성 / 역할'],
     w: [6, 14, 24, 12, 46], rows: S1 },
@@ -96,6 +102,10 @@ const declared = secs
   .filter(Boolean).reduce((a, m) => a + Number(m[1]), 0);
 
 M.emit(wb, '04_검진_예약접수_DB설계서.xlsx', [
+  ['ERD Entity', erd.stat.tables, 6],
+  ['ERD 관계 (§4.4)', erd.stat.rel, 2],
+  ['ERD 관계선 (§4.5 mermaid)', erd.stat.mermaid, 2],
+  ['ERD Foreign Key (§8)', erd.stat.fk, 2],
   ['테이블 수', S1.length, 6],
   ['컬럼 전건 (§8 선언 합계와 대조)', S2.length, declared],
   ['컬럼 전건 (04 §8 실측)', S2.length, 48],
