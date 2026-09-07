@@ -464,10 +464,35 @@ scripts/verify-csharp-call.sh      csc 가 없으면 NOT RUN(exit 3) ― SKIP �
 `[!]` **`@B형간염제외여부` 는 ASCII `B` 로 시작한다.** 초안의 `LIKE '@[가-힣]%'` 는 97 을 세어
 FAIL 했다. 계약은 "첫 글자가 한글" 이 아니라 **"한글을 담는다"** 이다 — `CS-015` 가 그 형태다.
 
-## 14. 남은 일
+## 14. 산출물 ― `④` 단계
+
+`build_04.js`·`build_05.js` 를 신설했다(사용자 승인). **내용을 하드코딩하지 않는다.**
 
 ```text
-[ ] 창 안 회귀 1회 (업무시간)
-[ ] docs/baseline/output/ 00~05 여섯 종 ― build_04.js·build_05.js 신설 여부 사용자 확인 대기
-[ ] 06 · artifacts/reports/phase4-report.md 최종 갱신
+tools/docgen/xlsx/md.js         기준선 마크다운의 표·코드펜스를 뽑는 파서 + 공통 서식
+tools/docgen/xlsx/build_04.js   04_검진_예약접수_DB설계서.xlsx     시트 5
+tools/docgen/xlsx/build_05.js   05_검진_예약접수_SP계약서.xlsx     시트 5
+```
+
+`database/CLAUDE.md` §3 이 적은 "기준선을 고쳤다고 산출물이 따라오지 않는다" 가
+`build_00.js`·`proc/slides`·`wireframe/screens` 의 하드코딩 때문이다. 04·05 는 원본을 읽으므로
+그 어긋남이 원리적으로 생기지 않는다. 두 생성기는 마지막에 행 수를 기준선 선언값과 대조한다.
+
+| 산출물 | 시트 | 실측 |
+|---|---|---|
+| `04_…DB설계서.xlsx` | 테이블 6 · 컬럼 48 · 제약 43 · 인덱스 8 · 명명규칙 12 | FAIL 0 |
+| `05_…SP계약서.xlsx` | SP 16 · Parameter 118(SP 99 + TVF 19) · Result Set 238 · ResultCode 38 · TVF 51 | FAIL 0 |
+
+`Result Set 238` 은 `RS0 16×5=80` + `RS1~RS5 158` 이다. 40개 (SP, RS) 조합 전부가 표에 있다.
+
+`docs/baseline/output/` 여섯 종을 2026-09-08 에 전부 다시 생성했다. 이 디렉터리는
+ROOT `.gitignore` 대상이라 **어떤 커밋에도 남지 않는다** — 재현 수단은 `tools/docgen` 뿐이다.
+
+`[!]` `build_00.js` 의 자체 검증이 금지 문자열 `"최종 판정"` 1건을 낸다. **R4 이전부터 있던 것이고**
+`00_Project_Policy.md` 는 R4 에서 한 바이트도 열지 않았다. 이 계열의 책임 밖이라 그대로 둔다.
+
+## 15. 남은 일
+
+```text
+[ ] 창 안 회귀 1회 (업무시간 월~토 11:10~15:50) ― 이것만 남았다
 ```
