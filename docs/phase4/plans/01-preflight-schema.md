@@ -437,7 +437,7 @@ SELECT @CompatLevel = CONVERT(VARCHAR(10), compatibility_level) FROM sys.databas
 PRINT 'INFO Edition           = ' + CONVERT(VARCHAR(80), SERVERPROPERTY('Edition'));
 PRINT 'INFO CompatibilityLevel= ' + ISNULL(@CompatLevel, '(미확인)');
 PRINT 'INFO Collation         = ' + ISNULL(CONVERT(VARCHAR(80), DATABASEPROPERTYEX(@TargetDb, 'Collation')), '(미확인)');
-PRINT 'INFO ServerTime        = ' + CONVERT(VARCHAR(40), SYSDATETIMEOFFSET(), 126);
+PRINT 'INFO [서버시각]        = ' + CONVERT(VARCHAR(40), SYSDATETIMEOFFSET(), 126);
 PRINT 'INFO LoginName         = ' + SUSER_SNAME();
 GO
 ```
@@ -871,10 +871,10 @@ CREATE TABLE [dbo].[수검자]
     [CelNumberS]         VARCHAR(13)     NULL,
     [휴대전화]          VARCHAR(13)     NULL,
     [TelNumber]          VARCHAR(13)     NULL,
-    [Zipcode]            VARCHAR(10)     NULL,
-    [Address]            NVARCHAR(200)   NULL,
-    [AddressDetail]      NVARCHAR(200)   NULL,
-    [Memo]               NVARCHAR(MAX)   NULL,
+    [[우편번호]]            VARCHAR(10)     NULL,
+    [[주소]]            NVARCHAR(200)   NULL,
+    [[상세주소]]      NVARCHAR(200)   NULL,
+    [[비고]]               NVARCHAR(MAX)   NULL,
     [B형간염제외여부] BIT             NOT NULL CONSTRAINT [DF_수검자_HEPATITIS_B_EXCLUDED] DEFAULT (0),
     [생성일시]       DATETIME        NOT NULL CONSTRAINT [DF_수검자_CREATION_DATE]        DEFAULT (GETDATE()),
     [최종수정일시]       DATETIME        NOT NULL CONSTRAINT [DF_수검자_LAST_EDIT_DATE]       DEFAULT (GETDATE()),
@@ -1126,8 +1126,8 @@ Expected: exit **1**, `FAIL SCH-001`. 테스트 하네스가 실제로 실패를
 SET NOCOUNT ON;
 DECLARE @Fail INT = 0;
 
-DECLARE @Expected TABLE (Name SYSNAME PRIMARY KEY);
-INSERT INTO @Expected (Name) VALUES
+DECLARE @Expected TABLE ([성명] SYSNAME PRIMARY KEY);
+INSERT INTO @Expected ([성명]) VALUES
  ('수검자'),('예약접수'),
  ('검사코드'),('휴무일'),
  ('완료이력'),('변경이력');
@@ -1138,8 +1138,8 @@ IF ((SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0) = 6)
 ELSE BEGIN PRINT 'FAIL SCH-001 사용자 테이블 수 불일치'; SET @Fail += 1; END
 
 -- SCH-002 테이블 이름 집합 정확 일치
-IF NOT EXISTS (SELECT Name FROM @Expected EXCEPT SELECT name FROM sys.tables WHERE is_ms_shipped = 0)
-   AND NOT EXISTS (SELECT name FROM sys.tables WHERE is_ms_shipped = 0 EXCEPT SELECT Name FROM @Expected)
+IF NOT EXISTS (SELECT [성명] FROM @Expected EXCEPT SELECT name FROM sys.tables WHERE is_ms_shipped = 0)
+   AND NOT EXISTS (SELECT name FROM sys.tables WHERE is_ms_shipped = 0 EXCEPT SELECT [성명] FROM @Expected)
     PRINT 'PASS SCH-002 테이블 이름 집합 일치';
 ELSE BEGIN PRINT 'FAIL SCH-002 테이블 이름 집합 불일치'; SET @Fail += 1; END
 
@@ -1210,8 +1210,8 @@ IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 15)
 ELSE BEGIN PRINT 'FAIL SCH-014 SP 수 불일치 (T30 이전이면 정상)'; SET @Fail += 1; END
 
 -- SCH-015 컬럼 48개 전건 EXCEPT 양방향  (04 §8)
-DECLARE @ExpCol TABLE (T SYSNAME, C SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, C));
-INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
+DECLARE @ExpCol TABLE (T SYSNAME, [코드] SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, [코드]));
+INSERT INTO @ExpCol (T, [코드], Ty, Len, Nul) VALUES
  -- 48행 전건. 기준선 04 §8 의 컬럼 표에서 기계 생성했다(개수·타입·길이·NULL 모두 그 표가 출처다).
  -- Len 은 문자·이진형만 채운다. nvarchar/nchar 는 문자 수, MAX 는 -1, 그 밖은 NULL.
  -- 수검자 16행
@@ -1271,8 +1271,8 @@ INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
  (N'변경이력', N'변경전',               N'nvarchar',  4000,  1),
  (N'변경이력', N'변경후',               N'nvarchar',  4000,  1);
 
-DECLARE @ActCol TABLE (T SYSNAME, C SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, C));
-INSERT INTO @ActCol (T, C, Ty, Len, Nul)
+DECLARE @ActCol TABLE (T SYSNAME, [코드] SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, [코드]));
+INSERT INTO @ActCol (T, [코드], Ty, Len, Nul)
 SELECT t.name, c.name, y.name
      , CASE WHEN y.name IN ('nvarchar','nchar') AND c.max_length > 0 THEN c.max_length / 2
             WHEN y.name IN ('varchar','char','binary','varbinary') THEN c.max_length
@@ -1283,14 +1283,14 @@ JOIN sys.columns c ON c.object_id = t.object_id
 JOIN sys.types  y ON y.user_type_id = c.user_type_id
 WHERE t.is_ms_shipped = 0;
 
-IF NOT EXISTS (SELECT T,C,Ty,Len,Nul FROM @ExpCol EXCEPT SELECT T,C,Ty,Len,Nul FROM @ActCol)
-   AND NOT EXISTS (SELECT T,C,Ty,Len,Nul FROM @ActCol EXCEPT SELECT T,C,Ty,Len,Nul FROM @ExpCol)
+IF NOT EXISTS (SELECT T,[코드],Ty,Len,Nul FROM @ExpCol EXCEPT SELECT T,[코드],Ty,Len,Nul FROM @ActCol)
+   AND NOT EXISTS (SELECT T,[코드],Ty,Len,Nul FROM @ActCol EXCEPT SELECT T,[코드],Ty,Len,Nul FROM @ExpCol)
     PRINT 'PASS SCH-015 컬럼 48개 전건 일치';
 ELSE
 BEGIN
     PRINT 'FAIL SCH-015 컬럼 불일치';
-    SELECT '기대에만 있음' AS Side, * FROM (SELECT T,C,Ty,Len,Nul FROM @ExpCol EXCEPT SELECT T,C,Ty,Len,Nul FROM @ActCol) a;
-    SELECT '실측에만 있음' AS Side, * FROM (SELECT T,C,Ty,Len,Nul FROM @ActCol EXCEPT SELECT T,C,Ty,Len,Nul FROM @ExpCol) b;
+    SELECT '기대에만 있음' AS Side, * FROM (SELECT T,[코드],Ty,Len,Nul FROM @ExpCol EXCEPT SELECT T,[코드],Ty,Len,Nul FROM @ActCol) a;
+    SELECT '실측에만 있음' AS Side, * FROM (SELECT T,[코드],Ty,Len,Nul FROM @ActCol EXCEPT SELECT T,[코드],Ty,Len,Nul FROM @ExpCol) b;
     SET @Fail += 1;
 END
 

@@ -7,16 +7,16 @@ DELETE w FROM [dbo].[예약접수] w
  WHERE p.[차트번호] = 'T014' AND w.[상태코드] = 'RCP';
 GO
 -- T014 (남, 기준일 2026-10-01 에 만 56세) 의 RCP Work
---   ReservationDate 와 NEX 산출 기준일을 동일하게 '2026-10-01' 로 맞춘다.
+--   예약일 와 NEX 산출 기준일을 동일하게 '2026-10-01' 로 맞춘다.
 DECLARE @Prcp BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T014');
 DECLARE @Nrcp NVARCHAR(100) = N'', @NC VARCHAR(10);
-DECLARE @NCodes TABLE (C VARCHAR(10) PRIMARY KEY);
-INSERT INTO @NCodes (C) SELECT n.[ExamCode] FROM [dbo].[UFN_HC_국가검사구성](@Prcp, '2026-10-01') n;
+DECLARE @NCodes TABLE ([코드] VARCHAR(10) PRIMARY KEY);
+INSERT INTO @NCodes ([코드]) SELECT n.[검사항목코드] FROM [dbo].[UFN_HC_국가검사구성](@Prcp, '2026-10-01') n;
 WHILE EXISTS (SELECT 1 FROM @NCodes)
 BEGIN
-    SELECT TOP (1) @NC = C FROM @NCodes ORDER BY C;
+    SELECT TOP (1) @NC = [코드] FROM @NCodes ORDER BY [코드];
     SET @Nrcp = @Nrcp + @NC + N',';
-    DELETE FROM @NCodes WHERE C = @NC;
+    DELETE FROM @NCodes WHERE [코드] = @NC;
 END
 SET @Nrcp = LEFT(@Nrcp, LEN(@Nrcp) - 1);
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드], [국가검사항목], [추가검사항목])
@@ -35,7 +35,7 @@ ELSE BEGIN PRINT 'FAIL FIX-RCP-002 AEX 불일치'; SET @Fail += 1; END
 IF @Fail > 0 THROW 51000, N'RCP Fixture 배치 실패', 1;
 
 -- T011 (여, 기준일 2026-10-01 에 만 54세) 의 RCP Work
---   T014 는 남성이라 저장 NEX 에 EX012 가 없다. NEX-05 술어가 Gender='F' 를 요구하기 때문이다.
+--   T014 는 남성이라 저장 NEX 에 EX012 가 없다. NEX-05 술어가 성별='F' 를 요구하기 때문이다.
 --   412 ExamDuplicate 는 EX012 로만 발생하므로(스펙 §17.2a) RUL-A09·CWR-024 는 이 Work 를 쓴다.
 DELETE w FROM [dbo].[예약접수] w
  JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
@@ -43,13 +43,13 @@ DELETE w FROM [dbo].[예약접수] w
 GO
 DECLARE @P11 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T011');
 DECLARE @N11 NVARCHAR(100) = N'', @NC VARCHAR(10);
-DECLARE @NCodes TABLE (C VARCHAR(10) PRIMARY KEY);
-INSERT INTO @NCodes (C) SELECT n.[ExamCode] FROM [dbo].[UFN_HC_국가검사구성](@P11, '2026-10-01') n;
+DECLARE @NCodes TABLE ([코드] VARCHAR(10) PRIMARY KEY);
+INSERT INTO @NCodes ([코드]) SELECT n.[검사항목코드] FROM [dbo].[UFN_HC_국가검사구성](@P11, '2026-10-01') n;
 WHILE EXISTS (SELECT 1 FROM @NCodes)
 BEGIN
-    SELECT TOP (1) @NC = C FROM @NCodes ORDER BY C;
+    SELECT TOP (1) @NC = [코드] FROM @NCodes ORDER BY [코드];
     SET @N11 = @N11 + @NC + N',';
-    DELETE FROM @NCodes WHERE C = @NC;
+    DELETE FROM @NCodes WHERE [코드] = @NC;
 END
 SET @N11 = LEFT(@N11, LEN(@N11) - 1);
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드], [국가검사항목], [추가검사항목])

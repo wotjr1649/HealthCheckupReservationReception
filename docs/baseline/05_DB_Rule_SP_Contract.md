@@ -2,9 +2,11 @@
 
 - **문서명:** `05_DB_Rule_SP_Contract.md`
 - **상태:** FINAL / GO / READ-ONLY — Phase 3 Rule·Stored Procedure 계약 확정
-- **문서 버전:** v2.0
-- **기준일:** 2026-09-04
-- **기준선 ID:** `HC-RSV-RCP-20260904-R3`
+- **문서 버전:** v3.0
+- **기준일:** 2026-09-08
+- **기준선 ID:** `HC-RSV-RCP-20260908-R4`
+- **직전 기준선:** `HC-RSV-RCP-20260904-R3` (2026-09-04, v2.0)
+- **R4 개정 범위:** SP 16개 이름 · Parameter 99건 · Result Set 컬럼 전건 · TVF 4개의 Parameter·반환 컬럼을 한글로 바꾼다. Table·컬럼·ResultCode 값 체계·Rule 책임·검증순서·Result Set 순서와 개수는 바꾸지 않는다.
 - **Solution:** `HealthCheckupReservationReception`
 - **WinForms Project:** `HealthCheckupReservationReception.WinForms`
 - **Database:** `HealthCheckupReservationReceptionDb`
@@ -36,7 +38,7 @@ Stored Procedure Result Set 순서·컬럼·Cardinality
 업무 실패 우선순위
 예약일·시간대·TGT·NEX·AEX 평가순서
 수검자·예약·접수 Write SP의 No-op 및 성공 반환
-예약변경 중복판정의 현재 WorkId 제외
+예약변경 중복판정의 현재 업무ID 제외
 Phase 4 Transaction·잠금·권한·Seed 구현 인계
 ```
 
@@ -49,15 +51,15 @@ Phase 4 Transaction·잠금·권한·Seed 구현 인계
 ```text
 물리 테이블 6개와 전체 컬럼
 PK / FK / UQ / CK / DF / Sequence
-수검자.SocialNumber = 숫자 13자리 임의 테스트값
+수검자.주민번호 = 숫자 13자리 임의 테스트값
 상태코드 RSV / RCP / CNR / CNC
 시간대코드 AM / PM
 AEX OPT01~OPT07의 7개 BIT 입력경계
-Patient 동시성 = LastEditDate
-Work Aggregate 동시성 = RowVersion
-AEX 실제 변경 시 Work RowVersion 갱신
+Patient 동시성 = 최종수정일시
+Work Aggregate 동시성 = 행버전
+AEX 실제 변경 시 Work 행버전 갱신
 동일 AEX 집합 = No-op
-예약변경 다른 유효업무 = 현재 WorkId 제외
+예약변경 다른 유효업무 = 현재 업무ID 제외
 NEX 실제 Cardinality = 8~11행
 검색조건 AND / 정확검색 / 이름 접두검색
 DB 서버 KST 기준시각
@@ -75,7 +77,7 @@ SET XACT_ABORT ON
 TRY/CATCH 및 THROW 본문
 sp_getapplock 또는 UPDLOCK/HOLDLOCK 선택
 잠금 Resource 문자열과 잠금 획득순서
-SocialNumber 형식·고유성·실제 주민등록번호 사용 금지 검수 Script
+주민번호 형식·고유성·실제 주민등록번호 사용 금지 검수 Script
 검사·휴무일·완료이력 Seed/Test Data
 DB Role·GRANT EXECUTE·직접 DML 통제·배포 순서
 실제 CREATE FUNCTION / CREATE PROCEDURE Script
@@ -122,7 +124,7 @@ DB Role·GRANT EXECUTE·직접 DML 통제·배포 순서
 Stored Procedure는 다음 형식을 사용한다.
 
 ```text
-[dbo].[USP_HC_{SELECT|INSERT|UPDATE}_{한글업무명}]
+[dbo].[USP_HC_{한글업무명}_{조회|등록|수정|변경|취소|완료}]
 ```
 
 Function은 다음 형식을 사용한다.
@@ -135,22 +137,22 @@ Function은 다음 형식을 사용한다.
 
 | ID | 물리 객체명 | 구분 | 책임 |
 |---|---|:---:|---|
-| SP-COM-01 | `[dbo].[USP_HC_SELECT_공통업무상태]` | SELECT | DB 현재 업무일·운영시간 상태 |
-| SP-PAT-01 | `[dbo].[USP_HC_SELECT_수검자목록]` | SELECT | 수검자 검색 |
-| SP-PAT-02 | `[dbo].[USP_HC_SELECT_수검자상세]` | SELECT | Patient 최신 상세 |
-| SP-PAT-03 | `[dbo].[USP_HC_INSERT_수검자]` | INSERT | 신규등록·동일수검자·중복후보 처리 |
-| SP-PAT-04 | `[dbo].[USP_HC_UPDATE_수검자정보]` | UPDATE | 수검자 수정·식별정보 검증 |
-| SP-PAT-05 | `[dbo].[USP_HC_SELECT_수검자유효업무]` | SELECT | 현재일 이후 RSV/RCP 업무 확인 |
-| SP-RSV-01 | `[dbo].[USP_HC_SELECT_예약가능정보]` | SELECT | 날짜·시간대·정원·TGT·NEX·AEX 사전정보 |
-| SP-RSV-02 | `[dbo].[USP_HC_INSERT_예약]` | INSERT | Normal/WalkIn 예약 생성 |
-| SP-RSV-03 | `[dbo].[USP_HC_UPDATE_예약변경]` | UPDATE | 예약일·시간대·AEX 영향범위 변경 |
-| SP-RSV-04 | `[dbo].[USP_HC_UPDATE_예약취소]` | UPDATE | RSV → CNR |
-| SP-WRK-01 | `[dbo].[USP_HC_SELECT_예약접수목록]` | SELECT | Workbench 공통 목록 |
-| SP-WRK-02 | `[dbo].[USP_HC_SELECT_예약접수상세]` | SELECT | Work 상세·검사구성·Action 가능 여부 |
-| SP-RCP-01 | `[dbo].[USP_HC_UPDATE_접수완료]` | UPDATE | RSV → RCP |
-| SP-RCP-02 | `[dbo].[USP_HC_UPDATE_접수추가검사]` | UPDATE | RCP 상태 AEX 변경 |
-| SP-RCP-03 | `[dbo].[USP_HC_UPDATE_접수취소]` | UPDATE | RCP → CNC |
-| SP-LOG-01 | `[dbo].[USP_HC_SELECT_변경이력]` | SELECT | 대상 행 1개의 변경기록 최신순 열람 |
+| SP-COM-01 | `[dbo].[USP_HC_공통업무상태_조회]` | SELECT | DB 현재 업무일·운영시간 상태 |
+| SP-PAT-01 | `[dbo].[USP_HC_수검자목록_조회]` | SELECT | 수검자 검색 |
+| SP-PAT-02 | `[dbo].[USP_HC_수검자상세_조회]` | SELECT | Patient 최신 상세 |
+| SP-PAT-03 | `[dbo].[USP_HC_수검자_등록]` | INSERT | 신규등록·동일수검자·중복후보 처리 |
+| SP-PAT-04 | `[dbo].[USP_HC_수검자정보_수정]` | UPDATE | 수검자 수정·식별정보 검증 |
+| SP-PAT-05 | `[dbo].[USP_HC_수검자유효업무_조회]` | SELECT | 현재일 이후 RSV/RCP 업무 확인 |
+| SP-RSV-01 | `[dbo].[USP_HC_예약가능정보_조회]` | SELECT | 날짜·시간대·정원·TGT·NEX·AEX 사전정보 |
+| SP-RSV-02 | `[dbo].[USP_HC_예약_등록]` | INSERT | Normal/WalkIn 예약 생성 |
+| SP-RSV-03 | `[dbo].[USP_HC_예약_변경]` | UPDATE | 예약일·시간대·AEX 영향범위 변경 |
+| SP-RSV-04 | `[dbo].[USP_HC_예약_취소]` | UPDATE | RSV → CNR |
+| SP-WRK-01 | `[dbo].[USP_HC_예약접수목록_조회]` | SELECT | Workbench 공통 목록 |
+| SP-WRK-02 | `[dbo].[USP_HC_예약접수상세_조회]` | SELECT | Work 상세·검사구성·Action 가능 여부 |
+| SP-RCP-01 | `[dbo].[USP_HC_접수_완료]` | UPDATE | RSV → RCP |
+| SP-RCP-02 | `[dbo].[USP_HC_접수추가검사_변경]` | UPDATE | RCP 상태 AEX 변경 |
+| SP-RCP-03 | `[dbo].[USP_HC_접수_취소]` | UPDATE | RCP → CNC |
+| SP-LOG-01 | `[dbo].[USP_HC_변경이력_조회]` | SELECT | 대상 행 1개의 변경기록 최신순 열람 |
 
 Write Stored Procedure 8개(`SP-PAT-03`·`SP-PAT-04`·`SP-RSV-02`~`04`·`SP-RCP-01`~`03`)는 **실제로 바꾼 컬럼마다** `변경이력` 1행을 기록한다. 데이터를 바꾸지 않은 호출은 기록하지 않는다. 기록은 트랜잭션 밖에서 자체 `TRY/CATCH`로 수행하며 실패해도 업무 호출 결과를 바꾸지 않는다 — `04_DB_Design.md` §8.6.4.
 ## 1.4 내부 Inline TVF 4개
@@ -190,45 +192,58 @@ Scalar Wrapper UDF
 
 ## 1.6 Parameter·Result 컬럼 네이밍
 
-외부 계약은 짧고 의미가 바로 드러나는 PascalCase 영문을 사용한다.
+외부 계약은 한글을 사용한다. 축약하지 않고 접두사를 붙이지 않으며, 물리 컬럼과 짝이 있으면 그 컬럼명을 그대로 쓴다.
 
 ```text
-PatientId      O
-ReservationDate O
-CurrentCount   O
-CanSave        O
-BlockMessage   O
+@수검자ID       O      물리 컬럼 수검자ID 와 같은 이름
+@예약일         O
+현재인원        O
+저장가능        O
+차단메시지      O
 
-Pid            X
-RsvDt          X
-CurCnt         X
-SaveYn         X
-BlkMsg         X
+@Pid            X      축약
+@RsvDt          X      축약
+CurCnt          X      축약
+SaveYn          X      Yn 접미
+BlkMsg          X      축약
+p_예약일        X      접두사
 ```
 
-다음 긴 표현은 사용하지 않는다.
+BIT는 능력이면 `~가능`, 그 밖에는 `~여부`로 끝낸다.
 
 ```text
-EvaluationStatus
-PrimaryBlockReason
-EffectiveSelected
-ProjectedReservationCount
-ReservationContextCode
-ResultKey
-IsNoOp
-ResultTarget
+저장가능 · 선택가능 · 일정가능 · 현재업무가능
+업무일여부 · 오늘여부 · 마감경과여부 · 유효선택여부 · 허용여부
 ```
 
-대신 다음을 사용한다.
+코드와 메시지가 짝이면 접두어를 공유한다.
 
 ```text
-Scope
-BlockCode / BlockMessage
-Selected
-AfterCount
-ReservationType
-Code
-Field
+차단코드 / 차단메시지
+사유코드 / 사유메시지
+업무가능코드 / 업무가능메시지
+```
+
+`04` §3.3이 적은 대로 **컬럼명·Parameter명·Result Set 컬럼명의 글자가 같아진다.** 구분 표지는 `@`와 대괄호의 위치뿐이므로 Result Set 별칭의 좌변에는 대괄호를 반드시 붙인다.
+
+```text
+[차트번호] = CAST(p.[차트번호] AS NVARCHAR(100))     O
+차트번호   = CAST(p.[차트번호] AS NVARCHAR(100))     X
+```
+
+식별자 예산은 `sysname = nvarchar(128)`이며 글자 수로 센다 — 한글이 손해 보지 않는다. 본 계약의 최장 이름은 10글자다.
+
+다음 긴 영문 표현은 R3까지의 후보였고 채택하지 않았다. 대응하는 한글 이름을 함께 적는다.
+
+```text
+EvaluationStatus          -> 변경범위
+PrimaryBlockReason        -> 차단코드 / 차단메시지
+EffectiveSelected         -> 유효선택여부
+ProjectedReservationCount -> 적용후인원
+ReservationContextCode    -> 예약구분
+ResultKey                 -> 결과코드
+ResultTarget              -> 오류항목
+IsNoOp                    -> 쓰지 않는다. No-op 은 결과코드 1 로만 표현한다
 ```
 
 ## 1.7 SQL 식별자 작성 규칙
@@ -262,17 +277,17 @@ Stored Procedure 입구에서 다음 규칙을 적용한다.
 주민등록번호 → C#/UI가 '-'를 제거한 숫자 13자리로 전달하고 SP가 형식·날짜·코드를 재검증
 ```
 
-- `@SocialNumber`의 SQL 타입은 `VARCHAR(13)`이므로 하이픈이 포함된 14자리 표시값을 SP에 전달하지 않는다.
+- `@주민번호`의 SQL 타입은 `VARCHAR(13)`이므로 하이픈이 포함된 14자리 표시값을 SP에 전달하지 않는다.
 - UI는 `000000-0000000` 형태로 표시할 수 있으나 C# 호출 DTO에는 하이픈을 제거한 13자리 값만 설정한다.
 
 허용 코드:
 
 ```text
-ReservationType : NORMAL / WALKIN
-TimeSlot        : AM / PM
-Status          : RSV / RCP / CNR / CNC
-Scope           : ALL / SLOT / EXTRA / SLOT_EXTRA / NONE
-ExamType        : BASIC / CONDITIONAL
+예약구분 : NORMAL / WALKIN
+시간대코드        : AM / PM
+상태코드          : RSV / RCP / CNR / CNC
+변경범위           : ALL / SLOT / EXTRA / SLOT_EXTRA / NONE
+국가검사구분        : BASIC / CONDITIONAL
 ```
 
 ## 2.3 DB 기준시각
@@ -280,16 +295,16 @@ ExamType        : BASIC / CONDITIONAL
 모든 외부 SP는 시작 시 DB 기준시각을 한 번만 캡처한다.
 
 ```sql
-DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
-DECLARE @Today      DATE         = CONVERT(DATE, @ServerTime);
-DECLARE @NowTime    TIME(7)      = CONVERT(TIME(7), @ServerTime);
-DECLARE @StoredNow  DATETIME2(0) = CONVERT(DATETIME2(0), @ServerTime);
+DECLARE @서버시각 DATETIME2(7) = SYSDATETIME();
+DECLARE @오늘날짜      DATE         = CONVERT(DATE, @서버시각);
+DECLARE @현재시각    TIME(7)      = CONVERT(TIME(7), @서버시각);
+DECLARE @저장시각  DATETIME2(0) = CONVERT(DATETIME2(0), @서버시각);
 ```
 
 - DB 서버 현지시각은 KST(UTC+09:00)다.
-- 운영시간·마감 비교에는 `@NowTime`을 사용한다.
-- Work 시각 저장에는 `@StoredNow`를 사용한다.
-- 한 번의 SP에서 UDF마다 현재시각을 다시 구하지 않고 동일 `@ServerTime`을 전달한다.
+- 운영시간·마감 비교에는 `@현재시각`을 사용한다.
+- Work 시각 저장에는 `@저장시각`를 사용한다.
+- 한 번의 SP에서 UDF마다 현재시각을 다시 구하지 않고 동일 `@서버시각`을 전달한다.
 
 ## 2.4 시간 경계
 
@@ -305,17 +320,17 @@ DECLARE @StoredNow  DATETIME2(0) = CONVERT(DATETIME2(0), @ServerTime);
 | WalkIn 당일예약 | 11:00 | 16:00 |
 | 접수 | 11:00 | 16:00 |
 
-## 2.5 `Field` 표기
+## 2.5 `오류항목` 표기
 
-RS0의 `Field`는 Parameter 이름에서 `@`를 제외한 문자열을 사용한다.
+RS0의 `오류항목`는 Parameter 이름에서 `@`를 제외한 문자열을 사용한다.
 
 ```text
-PatientId
-WorkId
-RowVersion
-ReservationDate
-TimeSlot
-AexOpt04Selected
+수검자ID
+업무ID
+행버전
+예약일
+시간대코드
+추가검사04선택여부
 ```
 
 특정 입력 하나로 귀속할 수 없는 오류는 `NULL`을 반환한다.
@@ -330,15 +345,15 @@ AexOpt04Selected
 
 | 순서 | 컬럼 | SQL 타입 | NULL | 의미 |
 |---:|---|---|:---:|---|
-| 1 | `Success` | `BIT` | X | 요청 업무 또는 조회계약 처리 성공 여부 |
-| 2 | `Code` | `INT` | X | C# 분기용 ResultCode |
-| 3 | `Message` | `NVARCHAR(300)` | X | 사용자·로그 기본 메시지 |
-| 4 | `Field` | `VARCHAR(50)` | O | 문제가 있는 입력항목 |
-| 5 | `ServerTime` | `DATETIME2(7)` | X | SP 시작 시 캡처한 KST DB 시각 |
+| 1 | `성공여부` | `BIT` | X | 요청 업무 또는 조회계약 처리 성공 여부 |
+| 2 | `결과코드` | `INT` | X | C# 분기용 ResultCode |
+| 3 | `결과메시지` | `NVARCHAR(300)` | X | 사용자·로그 기본 메시지 |
+| 4 | `오류항목` | `VARCHAR(50)` | O | 문제가 있는 입력항목 |
+| 5 | `서버시각` | `DATETIME2(7)` | X | SP 시작 시 캡처한 KST DB 시각 |
 
 ## 3.2 기본 성공값
 
-| Success | Code | 의미 |
+| 성공여부 | 결과코드 | 의미 |
 |:---:|---:|---|
 | 1 | 0 | 정상 처리 |
 | 1 | 1 | Write 요청이 실제 데이터 변경 없이 종료됨 |
@@ -346,20 +361,20 @@ AexOpt04Selected
 
 ## 3.3 업무 불가 평가와 SP 실패의 분리
 
-`USP_HC_SELECT_예약가능정보`에서 휴무일·정원 마감·TGT 비대상은 SP 실패가 아니다.
+`USP_HC_예약가능정보_조회`에서 휴무일·정원 마감·TGT 비대상은 SP 실패가 아니다.
 
 ```text
-RS0.Success = 1
-RS0.Code    = 0
-RS1.CanSave = 0
-RS1.BlockCode / BlockMessage = 실제 예약 차단사유
+RS0.성공여부 = 1
+RS0.결과코드    = 0
+RS1.저장가능 = 0
+RS1.차단코드 / 차단메시지 = 실제 예약 차단사유
 ```
 
-존재하지 않는 PatientId, 잘못된 Parameter 조합, Work 상태·동시성 오류는 SP 실패다.
+존재하지 않는 수검자ID, 잘못된 Parameter 조합, Work 상태·동시성 오류는 SP 실패다.
 
 ```text
-RS0.Success = 0
-RS0.Code    = 해당 오류코드
+RS0.성공여부 = 0
+RS0.결과코드    = 해당 오류코드
 ```
 
 ## 3.4 조회 0건
@@ -367,7 +382,7 @@ RS0.Code    = 해당 오류코드
 검색 결과가 없는 것은 정상이다.
 
 ```text
-RS0: Success=1, Code=0
+RS0: 성공여부=1, 결과코드=0
 RS1: 0행
 ```
 
@@ -382,8 +397,8 @@ RS1: 0행
 예외:
 
 ```text
-USP_HC_INSERT_수검자
-Code=202 또는 203
+USP_HC_수검자_등록
+결과코드=202 또는 203
 → RS0 실패와 함께 RS1 수검자결과를 반환
 ```
 
@@ -402,10 +417,10 @@ Code=202 또는 203
 OUTPUT Parameter
 SQL RETURN 값
 업무실패용 RAISERROR
-Message 문자열 비교에 의한 C# 분기
+결과메시지 문자열 비교에 의한 C# 분기
 ```
 
-C#은 `Code`를 Enum으로 매핑하여 분기한다.
+C#은 `결과코드`를 Enum으로 매핑하여 분기한다.
 
 ---
 
@@ -427,50 +442,50 @@ C#은 `Code`를 Enum으로 매핑하여 분기한다.
 
 ## 4.2 코드 목록
 
-| Code | C# Enum | 기본 Message | 기본 Field |
+| 결과코드 | C# Enum | 기본 결과메시지 | 기본 오류항목 |
 |---:|---|---|---|
 | 0 | `Ok` | 정상 처리되었습니다. | NULL |
 | 1 | `NoChange` | 변경된 내용이 없습니다. | NULL |
 | 2 | `ExistingPatient` | 동일한 수검자가 이미 등록되어 있어 기존 정보를 사용합니다. | NULL |
-| 100 | `MissingValue` | 필수값을 입력하십시오. | 해당 Field |
-| 101 | `BadValue` | 입력값이 올바르지 않습니다. | 해당 Field |
-| 102 | `BadRequest` | 함께 사용할 수 없는 입력값 조합입니다. | 해당 Field 또는 NULL |
+| 100 | `MissingValue` | 필수값을 입력하십시오. | 해당 오류항목 |
+| 101 | `BadValue` | 입력값이 올바르지 않습니다. | 해당 오류항목 |
+| 102 | `BadRequest` | 함께 사용할 수 없는 입력값 조합입니다. | 해당 오류항목 또는 NULL |
 | 103 | `NeedSearchCondition` | 조회조건을 하나 이상 입력하십시오. | NULL |
-| 104 | `BadDateRange` | 시작일은 종료일보다 늦을 수 없습니다. | `FromDate` |
-| 200 | `PatientNotFound` | 수검자를 찾을 수 없습니다. | `PatientId` |
-| 201 | `ChartNoUsed` | 이미 사용 중인 차트번호입니다. | `ChartNo` |
-| 202 | `SameNumberDifferentName` | 동일한 주민등록번호의 기존 수검자와 이름이 다릅니다. | `Name` |
+| 104 | `BadDateRange` | 시작일은 종료일보다 늦을 수 없습니다. | `시작일` |
+| 200 | `PatientNotFound` | 수검자를 찾을 수 없습니다. | `수검자ID` |
+| 201 | `ChartNoUsed` | 이미 사용 중인 차트번호입니다. | `차트번호` |
+| 202 | `SameNumberDifferentName` | 동일한 주민등록번호의 기존 수검자와 이름이 다릅니다. | `성명` |
 | 203 | `SimilarPatient` | 이름과 생년월일이 같은 수검자가 있습니다. | NULL |
-| 204 | `SocialNumberUsed` | 다른 수검자가 사용 중인 주민등록번호입니다. | `SocialNumber` |
-| 205 | `SocialChangeBlocked` | 예약 또는 접수완료 업무가 있어 주민등록번호를 변경할 수 없습니다. | `SocialNumber` |
-| 206 | `ChartNoLimit` | 자동 차트번호 발급범위를 초과했습니다. | `ChartNo` |
-| 300 | `PastDate` | 과거 날짜는 예약할 수 없습니다. | `ReservationDate` |
-| 301 | `Sunday` | 일요일은 업무일이 아닙니다. | `ReservationDate` |
-| 302 | `Holiday` | 선택한 날짜는 휴무일입니다. | `ReservationDate` |
-| 303 | `SlotClosed` | 선택한 시간대는 운영하지 않습니다. | `TimeSlot` |
-| 304 | `CutoffPassed` | 해당 시간대의 마감시간이 지났습니다. | `TimeSlot` |
-| 305 | `SlotFull` | 해당 시간대의 예약 정원이 마감되었습니다. | `TimeSlot` |
-| 306 | `OtherReservation` | 수검자에게 다른 유효 예약 또는 접수 업무가 있습니다. | `PatientId` |
-| 307 | `NoOpenSlot` | 선택할 수 있는 시간대가 없습니다. | `TimeSlot` |
+| 204 | `SocialNumberUsed` | 다른 수검자가 사용 중인 주민등록번호입니다. | `주민번호` |
+| 205 | `SocialChangeBlocked` | 예약 또는 접수완료 업무가 있어 주민등록번호를 변경할 수 없습니다. | `주민번호` |
+| 206 | `ChartNoLimit` | 자동 차트번호 발급범위를 초과했습니다. | `차트번호` |
+| 300 | `PastDate` | 과거 날짜는 예약할 수 없습니다. | `예약일` |
+| 301 | `Sunday` | 일요일은 업무일이 아닙니다. | `예약일` |
+| 302 | `Holiday` | 선택한 날짜는 휴무일입니다. | `예약일` |
+| 303 | `SlotClosed` | 선택한 시간대는 운영하지 않습니다. | `시간대코드` |
+| 304 | `마감경과여부` | 해당 시간대의 마감시간이 지났습니다. | `시간대코드` |
+| 305 | `SlotFull` | 해당 시간대의 예약 정원이 마감되었습니다. | `시간대코드` |
+| 306 | `OtherReservation` | 수검자에게 다른 유효 예약 또는 접수 업무가 있습니다. | `수검자ID` |
+| 307 | `NoOpenSlot` | 선택할 수 있는 시간대가 없습니다. | `시간대코드` |
 | 308 | `CenterClosed` | 오늘은 업무일이 아닙니다. | NULL |
 | 309 | `OutsideHours` | 현재는 업무 운영시간이 아닙니다. | NULL |
-| 400 | `UnderAge` | 예약일 기준 만 20세 미만으로 검진 대상이 아닙니다. | `ReservationDate` |
-| 401 | `NotDue` | 일반건강검진 2년 주기가 도래하지 않았습니다. | `ReservationDate` |
-| 410 | `ExamOff` | 현재 사용할 수 없는 추가검사입니다. | 해당 AEX Field |
-| 411 | `WrongGender` | 성별 조건을 충족하지 않는 추가검사입니다. | 해당 AEX Field |
-| 412 | `ExamDuplicate` | 일반건강검진에 포함된 검사입니다. | 해당 AEX Field |
-| 500 | `WorkNotFound` | 예약·접수 업무를 찾을 수 없습니다. | `WorkId` |
-| 501 | `WrongPatient` | 요청한 수검자와 예약·접수 업무의 수검자가 다릅니다. | `PatientId` |
-| 502 | `WrongStatus` | 현재 상태에서는 요청한 업무를 처리할 수 없습니다. | `WorkId` |
-| 503 | `NotToday` | 예약일이 오늘인 업무만 접수할 수 있습니다. | `WorkId` |
-| 600 | `PatientChanged` | 다른 사용자가 수검자 정보를 변경했습니다. 최신 정보를 다시 조회하십시오. | `LastEditDate` |
-| 601 | `WorkChanged` | 다른 사용자가 예약·접수 업무를 변경했습니다. 최신 정보를 다시 조회하십시오. | `RowVersion` |
+| 400 | `UnderAge` | 예약일 기준 만 20세 미만으로 검진 대상이 아닙니다. | `예약일` |
+| 401 | `NotDue` | 일반건강검진 2년 주기가 도래하지 않았습니다. | `예약일` |
+| 410 | `ExamOff` | 현재 사용할 수 없는 추가검사입니다. | 해당 AEX 오류항목 |
+| 411 | `WrongGender` | 성별 조건을 충족하지 않는 추가검사입니다. | 해당 AEX 오류항목 |
+| 412 | `ExamDuplicate` | 일반건강검진에 포함된 검사입니다. | 해당 AEX 오류항목 |
+| 500 | `WorkNotFound` | 예약·접수 업무를 찾을 수 없습니다. | `업무ID` |
+| 501 | `WrongPatient` | 요청한 수검자와 예약·접수 업무의 수검자가 다릅니다. | `수검자ID` |
+| 502 | `WrongStatus` | 현재 상태에서는 요청한 업무를 처리할 수 없습니다. | `업무ID` |
+| 503 | `NotToday` | 예약일이 오늘인 업무만 접수할 수 있습니다. | `업무ID` |
+| 600 | `PatientChanged` | 다른 사용자가 수검자 정보를 변경했습니다. 최신 정보를 다시 조회하십시오. | `최종수정일시` |
+| 601 | `WorkChanged` | 다른 사용자가 예약·접수 업무를 변경했습니다. 최신 정보를 다시 조회하십시오. | `행버전` |
 | 700 | `ExamSetupError` | 검사 Master 구성이 올바르지 않습니다. | NULL |
-| 701 | `WorkDataError` | 예약·접수 업무의 검사구성 또는 유효업무 데이터가 올바르지 않습니다. | `WorkId` 또는 NULL |
+| 701 | `WorkDataError` | 예약·접수 업무의 검사구성 또는 유효업무 데이터가 올바르지 않습니다. | `업무ID` 또는 NULL |
 
 ## 4.3 동일 코드의 메시지 보정
 
-`101`, `102`, `502`, `700`, `701`은 SP 문맥에 맞게 `Message`를 더 구체적으로 반환할 수 있다. C# 분기는 숫자 `Code`만 사용하며 메시지 문구를 비교하지 않는다.
+`101`, `102`, `502`, `700`, `701`은 SP 문맥에 맞게 `결과메시지`를 더 구체적으로 반환할 수 있다. C# 분기는 숫자 `결과코드`만 사용하며 메시지 문구를 비교하지 않는다.
 
 # 5. 공통 오류 우선순위
 
@@ -498,7 +513,7 @@ C#은 `Code`를 Enum으로 매핑하여 분기한다.
 예:
 
 ```text
-다른 사용자가 RSV를 RCP로 변경하여 상태와 RowVersion이 모두 달라짐
+다른 사용자가 RSV를 RCP로 변경하여 상태와 행버전이 모두 달라짐
 → 502 WrongStatus 우선
 → 601 WorkChanged는 반환하지 않음
 ```
@@ -519,12 +534,12 @@ C#은 `Code`를 Enum으로 매핑하여 분기한다.
 
 | Parameter | 타입 | NULL | 의미 |
 |---|---|:---:|---|
-| `@ServerTime` | `DATETIME2(7)` | X | 호출 SP가 한 번 캡처한 KST 시각 |
-| `@ReservationDate` | `DATE` | X | 확인할 예약일 |
-| `@TimeSlot` | `CHAR(2)` | X | `AM` / `PM` |
-| `@CutoffType` | `VARCHAR(10)` | X | `NORMAL` / `RECEPTION` / `NONE` |
+| `@서버시각` | `DATETIME2(7)` | X | 호출 SP가 한 번 캡처한 KST 시각 |
+| `@예약일` | `DATE` | X | 확인할 예약일 |
+| `@시간대코드` | `CHAR(2)` | X | `AM` / `PM` |
+| `@마감구분` | `VARCHAR(10)` | X | `NORMAL` / `RECEPTION` / `NONE` |
 
-`@CutoffType` 의미:
+`@마감구분` 의미:
 
 | 값 | 적용업무 |
 |---|---|
@@ -538,17 +553,17 @@ C#은 `Code`를 Enum으로 매핑하여 분기한다.
 
 | 순서 | 컬럼 | 타입 | NULL | 의미 |
 |---:|---|---|:---:|---|
-| 1 | `CanWorkNow` | `BIT` | X | 현재일·현재시각 기준 Write 업무 가능 여부 |
-| 2 | `WorkCode` | `INT` | X | `0`, `308`, `309` |
-| 3 | `WorkMessage` | `NVARCHAR(300)` | X | 현재 업무 가능 여부 설명 |
-| 4 | `IsBusinessDay` | `BIT` | X | 요청일이 월~토이며 활성 휴무일이 아닌가 |
-| 5 | `HolidayName` | `NVARCHAR(100)` | O | 활성 휴무일명 |
-| 6 | `IsOpen` | `BIT` | X | 요청일에 해당 시간대를 운영하는가 |
-| 7 | `CutoffTime` | `TIME(0)` | O | 요청일이 오늘이고 마감 적용 시각이 있을 때만 반환 |
-| 8 | `CutoffPassed` | `BIT` | X | 현재시각이 마감시각 이상인가 |
-| 9 | `CanUse` | `BIT` | X | 과거일·요일·휴무일·시간대·마감 통과 여부 |
-| 10 | `ReasonCode` | `INT` | X | `0`, `300~304` |
-| 11 | `ReasonMessage` | `NVARCHAR(300)` | X | 요청 일정 차단사유 |
+| 1 | `현재업무가능` | `BIT` | X | 현재일·현재시각 기준 Write 업무 가능 여부 |
+| 2 | `업무가능코드` | `INT` | X | `0`, `308`, `309` |
+| 3 | `업무가능메시지` | `NVARCHAR(300)` | X | 현재 업무 가능 여부 설명 |
+| 4 | `업무일여부` | `BIT` | X | 요청일이 월~토이며 활성 휴무일이 아닌가 |
+| 5 | `휴무일명` | `NVARCHAR(100)` | O | 활성 휴무일명 |
+| 6 | `운영여부` | `BIT` | X | 요청일에 해당 시간대를 운영하는가 |
+| 7 | `마감시각` | `TIME(0)` | O | 요청일이 오늘이고 마감 적용 시각이 있을 때만 반환 |
+| 8 | `마감경과여부` | `BIT` | X | 현재시각이 마감시각 이상인가 |
+| 9 | `일정가능` | `BIT` | X | 과거일·요일·휴무일·시간대·마감 통과 여부 |
+| 10 | `사유코드` | `INT` | X | `0`, `300~304` |
+| 11 | `사유메시지` | `NVARCHAR(300)` | X | 요청 일정 차단사유 |
 
 ### 6.1.4 책임
 
@@ -571,20 +586,20 @@ RECEPTION 11:00 / 16:00
 시간대 정원
 다른 유효예약
 TGT / NEX / AEX
-Work 상태와 RowVersion
+Work 상태와 행버전
 Transaction과 잠금
 ```
 
 ### 6.1.5 우선순위
 
-요청 일정 `ReasonCode`:
+요청 일정 `사유코드`:
 
 ```text
 300 PastDate
 → 301 Sunday
 → 302 Holiday
 → 303 SlotClosed
-→ 304 CutoffPassed
+→ 304 마감경과여부
 ```
 
 요일 계산은 `SET DATEFIRST`에 의존하지 않는다.
@@ -597,18 +612,18 @@ Transaction과 잠금
 
 | Parameter | 타입 | NULL | 의미 |
 |---|---|:---:|---|
-| `@PatientId` | `BIGINT` | X | 수검자 |
-| `@ReservationDate` | `DATE` | X | 대상판정 기준일 |
+| `@수검자ID` | `BIGINT` | X | 수검자 |
+| `@예약일` | `DATE` | X | 대상판정 기준일 |
 
 ### 6.2.2 반환
 
 | 순서 | 컬럼 | 타입 | NULL | 의미 |
 |---:|---|---|:---:|---|
-| 1 | `Eligible` | `BIT` | X | 일반건강검진 대상 여부 |
-| 2 | `Age` | `INT` | X | 예약일 기준 만 나이 |
-| 3 | `LastCheckupDate` | `DATE` | O | 예약일 이전 가장 최근 완료일 |
-| 4 | `ReasonCode` | `INT` | X | `0`, `400`, `401` |
-| 5 | `ReasonMessage` | `NVARCHAR(300)` | X | 대상판정 설명 |
+| 1 | `검진대상여부` | `BIT` | X | 일반건강검진 대상 여부 |
+| 2 | `나이` | `INT` | X | 예약일 기준 만 나이 |
+| 3 | `최근완료일자` | `DATE` | O | 예약일 이전 가장 최근 완료일 |
+| 4 | `사유코드` | `INT` | X | `0`, `400`, `401` |
+| 5 | `사유메시지` | `NVARCHAR(300)` | X | 대상판정 설명 |
 
 Cardinality:
 
@@ -622,7 +637,7 @@ Patient 없음 → 0행
 ### 6.2.3 판정식
 
 ```text
-Age >= 20
+나이 >= 20
 AND
 (
   예약일 이전 완료이력 없음
@@ -633,7 +648,7 @@ AND
 완료이력 범위:
 
 ```text
-CompletionDate < ReservationDate
+CompletionDate < 예약일
 ```
 
 예약일 당일 및 이후 완료이력은 사용하지 않는다.
@@ -646,17 +661,17 @@ CompletionDate < ReservationDate
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
-| `@PatientId` | `BIGINT` | X |
-| `@ReservationDate` | `DATE` | X |
+| `@수검자ID` | `BIGINT` | X |
+| `@예약일` | `DATE` | X |
 
 ### 6.3.2 반환
 
 | 순서 | 컬럼 | 타입 | NULL | 의미 |
 |---:|---|---|:---:|---|
-| 1 | `ExamCode` | `VARCHAR(10)` | X | EX001~EX013 |
-| 2 | `ExamName` | `NVARCHAR(100)` | X | 검사명 |
-| 3 | `ExamType` | `VARCHAR(12)` | X | `BASIC` / `CONDITIONAL` |
-| 4 | `RuleCode` | `VARCHAR(10)` | X | NEX-01~NEX-06 |
+| 1 | `검사항목코드` | `VARCHAR(10)` | X | EX001~EX013 |
+| 2 | `검사항목명` | `NVARCHAR(100)` | X | 검사명 |
+| 3 | `국가검사구분` | `VARCHAR(12)` | X | `BASIC` / `CONDITIONAL` |
+| 4 | `국가검사규칙코드` | `VARCHAR(10)` | X | NEX-01~NEX-06 |
 
 Cardinality:
 
@@ -668,23 +683,23 @@ TGT 대상   → 8~11행
 정렬:
 
 ```text
-ExamCode ASC
+검사항목코드 ASC
 ```
 
 ### 6.3.3 기본검사
 
 ```text
 EX001~EX008
-ExamType=BASIC
-RuleCode=NEX-01
+국가검사구분=BASIC
+국가검사규칙코드=NEX-01
 ```
 
 ### 6.3.4 조건부검사
 
-| ExamCode | RuleCode | 조건 |
+| 검사항목코드 | 국가검사규칙코드 | 조건 |
 |---|---|---|
-| EX009 | NEX-02 | 남성: 만 24세 이상이며 `(Age-24)%4=0`; 여성: 만 40세 이상이며 `(Age-40)%4=0` |
-| EX010 | NEX-03 | 만 40세이며 `수검자.HepatitisBExcluded = 0` |
+| EX009 | NEX-02 | 남성: 만 24세 이상이며 `(나이-24)%4=0`; 여성: 만 40세 이상이며 `(나이-40)%4=0` |
+| EX010 | NEX-03 | 만 40세이며 `수검자.B형간염제외여부 = 0` |
 | EX011 | NEX-04 | 만 56세 |
 | EX012 | NEX-05 | 여성 만 54·60·66세 |
 | EX013 | NEX-06 | 만 56·66세 |
@@ -697,23 +712,23 @@ Function은 내부적으로 TGT를 확인하며 비대상자에게 NEX를 반환
 
 | Parameter | 타입 | NULL | 의미 |
 |---|---|:---:|---|
-| `@PatientId` | `BIGINT` | X | 수검자 |
-| `@ReservationDate` | `DATE` | X | 신규·예약일변경 시 기준일 |
-| `@WorkId` | `BIGINT` | O | 저장된 NEX 사용 시 필수 |
-| `@UseSavedExams` | `BIT` | X | 0=새 NEX, 1=Work의 저장 NEX |
-| `@AexOpt01Selected` | `BIT` | X | OPT01 요청 선택값 |
-| `@AexOpt02Selected` | `BIT` | X | OPT02 요청 선택값 |
-| `@AexOpt03Selected` | `BIT` | X | OPT03 요청 선택값 |
-| `@AexOpt04Selected` | `BIT` | X | OPT04 요청 선택값 |
-| `@AexOpt05Selected` | `BIT` | X | OPT05 요청 선택값 |
-| `@AexOpt06Selected` | `BIT` | X | OPT06 요청 선택값 |
-| `@AexOpt07Selected` | `BIT` | X | OPT07 요청 선택값 |
+| `@수검자ID` | `BIGINT` | X | 수검자 |
+| `@예약일` | `DATE` | X | 신규·예약일변경 시 기준일 |
+| `@업무ID` | `BIGINT` | O | 저장된 NEX 사용 시 필수 |
+| `@저장검사사용여부` | `BIT` | X | 0=새 NEX, 1=Work의 저장 NEX |
+| `@추가검사01선택여부` | `BIT` | X | OPT01 요청 선택값 |
+| `@추가검사02선택여부` | `BIT` | X | OPT02 요청 선택값 |
+| `@추가검사03선택여부` | `BIT` | X | OPT03 요청 선택값 |
+| `@추가검사04선택여부` | `BIT` | X | OPT04 요청 선택값 |
+| `@추가검사05선택여부` | `BIT` | X | OPT05 요청 선택값 |
+| `@추가검사06선택여부` | `BIT` | X | OPT06 요청 선택값 |
+| `@추가검사07선택여부` | `BIT` | X | OPT07 요청 선택값 |
 
 조합:
 
 ```text
-UseSavedExams=0 → WorkId NULL 허용, 예약일 기준 TGT/NEX 사용
-UseSavedExams=1 → WorkId 필수, Work에 저장된 NEX 사용
+저장검사사용여부=0 → 업무ID NULL 허용, 예약일 기준 TGT/NEX 사용
+저장검사사용여부=1 → 업무ID 필수, Work에 저장된 NEX 사용
 ```
 
 호출 SP가 조합을 먼저 검증한다.
@@ -724,19 +739,19 @@ UseSavedExams=1 → WorkId 필수, Work에 저장된 NEX 사용
 
 | 순서 | 컬럼 | 타입 | NULL | 의미 |
 |---:|---|---|:---:|---|
-| 1 | `OptionCode` | `VARCHAR(10)` | X | OPT01~OPT07 |
-| 2 | `ExamCode` | `VARCHAR(10)` | X | 공통 검사코드 |
-| 3 | `ExamName` | `NVARCHAR(100)` | X | 검사명 |
-| 4 | `Requested` | `BIT` | X | 호출자가 요청한 선택값 |
-| 5 | `Selected` | `BIT` | X | Rule 적용 후 실제 유효 선택값 |
-| 6 | `CanSelect` | `BIT` | X | 화면 Checkbox 활성 여부 |
-| 7 | `ReasonCode` | `INT` | X | `0`, `400`, `401`, `410~412` |
-| 8 | `ReasonMessage` | `NVARCHAR(300)` | X | 선택불가 사유 |
+| 1 | `추가검사코드` | `VARCHAR(10)` | X | OPT01~OPT07 |
+| 2 | `검사항목코드` | `VARCHAR(10)` | X | 공통 검사코드 |
+| 3 | `검사항목명` | `NVARCHAR(100)` | X | 검사명 |
+| 4 | `요청선택여부` | `BIT` | X | 호출자가 요청한 선택값 |
+| 5 | `유효선택여부` | `BIT` | X | Rule 적용 후 실제 유효 선택값 |
+| 6 | `선택가능` | `BIT` | X | 화면 Checkbox 활성 여부 |
+| 7 | `사유코드` | `INT` | X | `0`, `400`, `401`, `410~412` |
+| 8 | `사유메시지` | `NVARCHAR(300)` | X | 선택불가 사유 |
 
 정렬:
 
 ```text
-OptionCode ASC
+추가검사코드 ASC
 ```
 
 ### 6.4.3 판정순서
@@ -747,7 +762,7 @@ OptionCode ASC
 TGT 비대상
 → AdditionalActive=0
 → 성별 불충족
-→ NEX 동일 ExamCode
+→ NEX 동일 검사항목코드
 ```
 
 저장된 NEX 기준:
@@ -755,29 +770,29 @@ TGT 비대상
 ```text
 추가검사사용여부=0
 → 성별 불충족
-→ 저장된 NEX 동일 ExamCode
+→ 저장된 NEX 동일 검사항목코드
 ```
 
-저장된 NEX는 `예약접수.국가검사항목` 문자열이다. 동일 `ExamCode` 포함 여부는
+저장된 NEX는 `예약접수.국가검사항목` 문자열이다. 동일 `검사항목코드` 포함 여부는
 양끝을 쉼표로 감싼 문자열 비교로 판정하므로 인라인 TVF의 단일 SELECT 안에서 성립한다.
 
 예:
 
 ```text
-Requested=1
-CanSelect=0
-Selected=0
-ReasonCode=412
-ReasonMessage=일반건강검진에 포함된 검사입니다.
+요청선택여부=1
+선택가능=0
+유효선택여부=0
+사유코드=412
+사유메시지=일반건강검진에 포함된 검사입니다.
 ```
 
-선택하지 않은 비활성·성별제한 항목은 행에 사유를 표시하지만 저장을 차단하지 않는다. `Requested=1`인 무효 항목만 Write를 차단한다.
+선택하지 않은 비활성·성별제한 항목은 행에 사유를 표시하지만 저장을 차단하지 않는다. `요청선택여부=1`인 무효 항목만 Write를 차단한다.
 
 ---
 
 # 7. 공통·수검자 SELECT SP 계약
 
-## 7.1 `[dbo].[USP_HC_SELECT_공통업무상태]`
+## 7.1 `[dbo].[USP_HC_공통업무상태_조회]`
 
 ### 입력
 
@@ -796,41 +811,41 @@ RS1:
 
 | 순서 | 컬럼 | 타입 | NULL |
 |---:|---|---|:---:|
-| 1 | `Today` | `DATE` | X |
-| 2 | `DayName` | `NVARCHAR(10)` | X |
-| 3 | `HolidayName` | `NVARCHAR(100)` | O |
-| 4 | `OpenTime` | `TIME(0)` | X |
-| 5 | `CloseTime` | `TIME(0)` | X |
-| 6 | `IsBusinessDay` | `BIT` | X |
-| 7 | `WithinHours` | `BIT` | X |
-| 8 | `CanWorkNow` | `BIT` | X |
-| 9 | `BlockCode` | `INT` | X |
-| 10 | `BlockMessage` | `NVARCHAR(300)` | X |
+| 1 | `오늘날짜` | `DATE` | X |
+| 2 | `요일명` | `NVARCHAR(10)` | X |
+| 3 | `휴무일명` | `NVARCHAR(100)` | O |
+| 4 | `운영시작시각` | `TIME(0)` | X |
+| 5 | `운영종료시각` | `TIME(0)` | X |
+| 6 | `업무일여부` | `BIT` | X |
+| 7 | `운영시간내여부` | `BIT` | X |
+| 8 | `현재업무가능` | `BIT` | X |
+| 9 | `차단코드` | `INT` | X |
+| 10 | `차단메시지` | `NVARCHAR(300)` | X |
 
 ```text
-OpenTime=09:00
-CloseTime=18:00
-BlockCode=0 / 308 / 309
+운영시작시각=09:00
+운영종료시각=18:00
+차단코드=0 / 308 / 309
 ```
 
 조회 자체는 업무시간 밖에도 허용한다.
 
 ---
 
-## 7.2 `[dbo].[USP_HC_SELECT_수검자목록]`
+## 7.2 `[dbo].[USP_HC_수검자목록_조회]`
 
 ### 입력
 
 | Parameter | 타입 | NULL | 검색방식 |
 |---|---|:---:|---|
-| `@ChartNo` | `NVARCHAR(100)` | O | 정확검색 |
-| `@Name` | `NVARCHAR(100)` | O | 접두검색 |
-| `@SocialNumber` | `VARCHAR(13)` | O | C#에서 `-` 제거 후 정확검색 |
-| `@Birthday` | `VARCHAR(8)` | O | 정확검색 |
-| `@MobilePhone` | `VARCHAR(13)` | O | `-` 제거 후 정확검색 |
+| `@차트번호` | `NVARCHAR(100)` | O | 정확검색 |
+| `@성명` | `NVARCHAR(100)` | O | 접두검색 |
+| `@주민번호` | `VARCHAR(13)` | O | C#에서 `-` 제거 후 정확검색 |
+| `@생년월일` | `VARCHAR(8)` | O | 정확검색 |
+| `@휴대전화` | `VARCHAR(13)` | O | `-` 제거 후 정확검색 |
 
 - 입력된 조건은 모두 `AND`로 결합한다.
-- 모든 조건이 NULL이면 `Code=103`이다.
+- 모든 조건이 NULL이면 `결과코드=103`이다.
 - 주민번호 검색값은 숫자 13자리 형식을 검증하며 실제 주민등록번호를 입력하지 않는다.
 
 ### Result Set
@@ -844,33 +859,33 @@ RS1:
 
 | 컬럼 | 타입 | NULL | 물리 출처 |
 |---|---|:---:|---|
-| `PatientId` | `BIGINT` | X | `수검자ID` |
-| `ChartNo` | `NVARCHAR(100)` | X | `차트번호` |
-| `Name` | `NVARCHAR(100)` | X | `성명` |
-| `SocialNumber` | `VARCHAR(13)` | X | `주민번호` |
-| `Birthday` | `VARCHAR(8)` | X | `생년월일` (계산열) |
-| `Gender` | `CHAR(1)` | X | `성별` (계산열) |
-| `MobilePhone` | `VARCHAR(13)` | O | `휴대전화` |
-| `Phone` | `VARCHAR(13)` | O | `전화번호` |
-| `Email` | `VARCHAR(200)` | O | `이메일` |
-| `Zipcode` | `VARCHAR(10)` | O | `우편번호` |
-| `Address` | `NVARCHAR(200)` | O | `주소` |
+| `수검자ID` | `BIGINT` | X | `수검자ID` |
+| `차트번호` | `NVARCHAR(100)` | X | `차트번호` |
+| `성명` | `NVARCHAR(100)` | X | `성명` |
+| `주민번호` | `VARCHAR(13)` | X | `주민번호` |
+| `생년월일` | `VARCHAR(8)` | X | `생년월일` (계산열) |
+| `성별` | `CHAR(1)` | X | `성별` (계산열) |
+| `휴대전화` | `VARCHAR(13)` | O | `휴대전화` |
+| `전화번호` | `VARCHAR(13)` | O | `전화번호` |
+| `이메일` | `VARCHAR(200)` | O | `이메일` |
+| `우편번호` | `VARCHAR(10)` | O | `우편번호` |
+| `주소` | `NVARCHAR(200)` | O | `주소` |
 
 정렬:
 
 ```text
-Name ASC, Birthday ASC, ChartNo ASC
+성명 ASC, 생년월일 ASC, 차트번호 ASC
 ```
 
-`SocialNumber`는 과제에서 사용하는 임의 테스트값이며 화면 표시 위치에서는 전체 13자리를 제공한다.
+`주민번호`는 과제에서 사용하는 임의 테스트값이며 화면 표시 위치에서는 전체 13자리를 제공한다.
 
-## 7.3 `[dbo].[USP_HC_SELECT_수검자상세]`
+## 7.3 `[dbo].[USP_HC_수검자상세_조회]`
 
 ### 입력
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
-| `@PatientId` | `BIGINT` | X |
+| `@수검자ID` | `BIGINT` | X |
 
 ### Result Set
 
@@ -883,42 +898,42 @@ RS1은 정확히 1행이다.
 
 | 컬럼 | 타입 | NULL |
 |---|---|:---:|
-| `PatientId` | `BIGINT` | X |
-| `ChartNo` | `NVARCHAR(100)` | X |
-| `Name` | `NVARCHAR(100)` | X |
-| `SocialNumber` | `VARCHAR(13)` | X |
-| `Birthday` | `VARCHAR(8)` | X |
-| `Gender` | `CHAR(1)` | X |
-| `MobilePhone` | `VARCHAR(13)` | O |
-| `Phone` | `VARCHAR(13)` | O |
-| `Email` | `VARCHAR(200)` | O |
-| `Zipcode` | `VARCHAR(10)` | O |
-| `Address` | `NVARCHAR(200)` | O |
-| `AddressDetail` | `NVARCHAR(200)` | O |
-| `Memo` | `NVARCHAR(MAX)` | O |
-| `HepatitisBExcluded` | `BIT` | X |
-| `LastEditDate` | `DATETIME` | X |
+| `수검자ID` | `BIGINT` | X |
+| `차트번호` | `NVARCHAR(100)` | X |
+| `성명` | `NVARCHAR(100)` | X |
+| `주민번호` | `VARCHAR(13)` | X |
+| `생년월일` | `VARCHAR(8)` | X |
+| `성별` | `CHAR(1)` | X |
+| `휴대전화` | `VARCHAR(13)` | O |
+| `전화번호` | `VARCHAR(13)` | O |
+| `이메일` | `VARCHAR(200)` | O |
+| `우편번호` | `VARCHAR(10)` | O |
+| `주소` | `NVARCHAR(200)` | O |
+| `상세주소` | `NVARCHAR(200)` | O |
+| `비고` | `NVARCHAR(MAX)` | O |
+| `B형간염제외여부` | `BIT` | X |
+| `최종수정일시` | `DATETIME` | X |
 
-Patient가 없으면 `Code=200`이다.
+Patient가 없으면 `결과코드=200`이다.
 
-`HepatitisBExcluded`를 반환하는 이유는 `DLG-PAT-01` 수정 화면이 현재값을 보여야 하기 때문이다. `NEX-03`의 제외 판정 입력이며 `1`이 제외다(`04` §8.1.2).
+`B형간염제외여부`를 반환하는 이유는 `DLG-PAT-01` 수정 화면이 현재값을 보여야 하기 때문이다. `NEX-03`의 제외 판정 입력이며 `1`이 제외다(`04` §8.1.2).
 
 ---
 
-## 7.4 `[dbo].[USP_HC_SELECT_수검자유효업무]`
+## 7.4 `[dbo].[USP_HC_수검자유효업무_조회]`
 
 ### 입력
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
-| `@PatientId` | `BIGINT` | X |
+| `@수검자ID` | `BIGINT` | X |
 
 ### 조회범위
 
 ```text
-PatientId 일치
-AND ReservationDate >= DB Today
-AND Status IN ('RSV','RCP')
+수검자ID 일치
+AND 예약일 >= DB 오늘날짜
+AND 상태코드 IN ('RSV','RCP')
 ```
 
 ### Result Set
@@ -932,13 +947,13 @@ RS1:
 
 | 컬럼 | 타입 | NULL |
 |---|---|:---:|
-| `WorkId` | `BIGINT` | X |
-| `ReservationDate` | `DATE` | X |
-| `TimeSlot` | `CHAR(2)` | X |
-| `Status` | `CHAR(3)` | X |
-| `StatusName` | `NVARCHAR(10)` | X |
-| `IsToday` | `BIT` | X |
-| `RowVersion` | `BINARY(8)` | X |
+| `업무ID` | `BIGINT` | X |
+| `예약일` | `DATE` | X |
+| `시간대코드` | `CHAR(2)` | X |
+| `상태코드` | `CHAR(3)` | X |
+| `상태명` | `NVARCHAR(10)` | X |
+| `오늘여부` | `BIT` | X |
+| `행버전` | `BINARY(8)` | X |
 
 정상 Cardinality:
 
@@ -946,30 +961,30 @@ RS1:
 0행 또는 1행
 ```
 
-2행 이상이면 RP-06 불변조건 위반으로 `Code=701`을 반환한다.
+2행 이상이면 RP-06 불변조건 위반으로 `결과코드=701`을 반환한다.
 
 ---
 
 # 8. Workbench SELECT SP 계약
 
-## 8.1 `[dbo].[USP_HC_SELECT_예약접수목록]`
+## 8.1 `[dbo].[USP_HC_예약접수목록_조회]`
 
 ### 입력
 
 | Parameter | 타입 | NULL | 의미 |
 |---|---|:---:|---|
-| `@FromDate` | `DATE` | O | 시작일 포함 |
-| `@ToDate` | `DATE` | O | 종료일 포함 |
-| `@Status` | `CHAR(3)` | O | NULL / RSV / RCP / CNR / CNC |
-| `@ChartNo` | `NVARCHAR(100)` | O | 정확검색 |
-| `@Name` | `NVARCHAR(100)` | O | 접두검색 |
+| `@시작일` | `DATE` | O | 시작일 포함 |
+| `@종료일` | `DATE` | O | 종료일 포함 |
+| `@상태코드` | `CHAR(3)` | O | NULL / RSV / RCP / CNR / CNC |
+| `@차트번호` | `NVARCHAR(100)` | O | 정확검색 |
+| `@성명` | `NVARCHAR(100)` | O | 접두검색 |
 
 규칙:
 
 ```text
-FromDate > ToDate → 104
+시작일 > 종료일 → 104
 모든 조건 없음   → 103
-Status=NULL은 조회조건으로 보지 않음
+상태코드=NULL은 조회조건으로 보지 않음
 입력된 조건은 AND
 ```
 
@@ -984,33 +999,33 @@ RS1:
 
 | 컬럼 | 타입 | NULL |
 |---|---|:---:|
-| `WorkId` | `BIGINT` | X |
-| `PatientId` | `BIGINT` | X |
-| `ReservationDate` | `DATE` | X |
-| `TimeSlot` | `CHAR(2)` | X |
-| `Status` | `CHAR(3)` | X |
-| `StatusName` | `NVARCHAR(10)` | X |
-| `Name` | `NVARCHAR(100)` | X |
-| `ChartNo` | `NVARCHAR(100)` | X |
-| `Gender` | `CHAR(1)` | X |
-| `Birthday` | `VARCHAR(8)` | X |
-| `MobilePhone` | `VARCHAR(13)` | O |
+| `업무ID` | `BIGINT` | X |
+| `수검자ID` | `BIGINT` | X |
+| `예약일` | `DATE` | X |
+| `시간대코드` | `CHAR(2)` | X |
+| `상태코드` | `CHAR(3)` | X |
+| `상태명` | `NVARCHAR(10)` | X |
+| `성명` | `NVARCHAR(100)` | X |
+| `차트번호` | `NVARCHAR(100)` | X |
+| `성별` | `CHAR(1)` | X |
+| `생년월일` | `VARCHAR(8)` | X |
+| `휴대전화` | `VARCHAR(13)` | O |
 
 정렬:
 
 ```text
-ReservationDate ASC, TimeSlot ASC, Name ASC, WorkId ASC
+예약일 ASC, 시간대코드 ASC, 성명 ASC, 업무ID ASC
 ```
 
 ---
 
-## 8.2 `[dbo].[USP_HC_SELECT_예약접수상세]`
+## 8.2 `[dbo].[USP_HC_예약접수상세_조회]`
 
 ### 입력
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
-| `@WorkId` | `BIGINT` | X |
+| `@업무ID` | `BIGINT` | X |
 
 ### Result Set 순서
 
@@ -1026,36 +1041,36 @@ RS4 가능한업무
 
 | 컬럼 | 타입 | NULL |
 |---|---|:---:|
-| `WorkId` | `BIGINT` | X |
-| `PatientId` | `BIGINT` | X |
-| `ChartNo` | `NVARCHAR(100)` | X |
-| `Name` | `NVARCHAR(100)` | X |
-| `Birthday` | `VARCHAR(8)` | X |
-| `Gender` | `CHAR(1)` | X |
-| `MobilePhone` | `VARCHAR(13)` | O |
-| `ReservationDate` | `DATE` | X |
-| `TimeSlot` | `CHAR(2)` | X |
-| `Status` | `CHAR(3)` | X |
-| `StatusName` | `NVARCHAR(10)` | X |
-| `Capacity` | `INT` | X |
-| `CurrentCount` | `INT` | X |
-| `SeatsLeft` | `INT` | X |
-| `RowVersion` | `BINARY(8)` | X |
+| `업무ID` | `BIGINT` | X |
+| `수검자ID` | `BIGINT` | X |
+| `차트번호` | `NVARCHAR(100)` | X |
+| `성명` | `NVARCHAR(100)` | X |
+| `생년월일` | `VARCHAR(8)` | X |
+| `성별` | `CHAR(1)` | X |
+| `휴대전화` | `VARCHAR(13)` | O |
+| `예약일` | `DATE` | X |
+| `시간대코드` | `CHAR(2)` | X |
+| `상태코드` | `CHAR(3)` | X |
+| `상태명` | `NVARCHAR(10)` | X |
+| `정원` | `INT` | X |
+| `현재인원` | `INT` | X |
+| `잔여자리` | `INT` | X |
+| `행버전` | `BINARY(8)` | X |
 
 ```text
-Capacity=20
-CurrentCount=같은 날짜·시간대의 RSV+RCP
-SeatsLeft=MAX(0, 20-CurrentCount)
+정원=20
+현재인원=같은 날짜·시간대의 RSV+RCP
+잔여자리=MAX(0, 20-현재인원)
 ```
 
 ### RS2 국가검사항목
 
 | 컬럼 | 타입 | NULL |
 |---|---|:---:|
-| `ExamCode` | `VARCHAR(10)` | X |
-| `ExamName` | `NVARCHAR(100)` | X |
-| `ExamType` | `VARCHAR(12)` | X |
-| `RuleCode` | `VARCHAR(10)` | X |
+| `검사항목코드` | `VARCHAR(10)` | X |
+| `검사항목명` | `NVARCHAR(100)` | X |
+| `국가검사구분` | `VARCHAR(12)` | X |
+| `국가검사규칙코드` | `VARCHAR(10)` | X |
 
 `예약접수.국가검사항목`에 실제로 저장된 코드만 반환한다.
 
@@ -1063,9 +1078,9 @@ SeatsLeft=MAX(0, 20-CurrentCount)
 
 | 컬럼 | 타입 | NULL |
 |---|---|:---:|
-| `OptionCode` | `VARCHAR(10)` | X |
-| `ExamCode` | `VARCHAR(10)` | X |
-| `ExamName` | `NVARCHAR(100)` | X |
+| `추가검사코드` | `VARCHAR(10)` | X |
+| `검사항목코드` | `VARCHAR(10)` | X |
+| `검사항목명` | `NVARCHAR(100)` | X |
 
 `예약접수.추가검사항목`에 실제로 저장된 코드만 반환한다.
 
@@ -1075,12 +1090,12 @@ SeatsLeft=MAX(0, 20-CurrentCount)
 
 | 컬럼 | 타입 | NULL |
 |---|---|:---:|
-| `ActionCode` | `VARCHAR(30)` | X |
-| `Allowed` | `BIT` | X |
-| `ReasonCode` | `INT` | X |
-| `ReasonMessage` | `NVARCHAR(300)` | X |
+| `업무동작코드` | `VARCHAR(30)` | X |
+| `허용여부` | `BIT` | X |
+| `사유코드` | `INT` | X |
+| `사유메시지` | `NVARCHAR(300)` | X |
 
-고정 `ActionCode`:
+고정 `업무동작코드`:
 
 ```text
 EDIT_RESERVATION
@@ -1092,7 +1107,7 @@ CANCEL_RECEPTION
 
 허용조건:
 
-| ActionCode | 허용조건 | 차단 우선순위 |
+| 업무동작코드 | 허용조건 | 차단 우선순위 |
 |---|---|---|
 | EDIT_RESERVATION | RSV + 현재 공통 업무 가능 | 502 → 308/309 |
 | CANCEL_RESERVATION | RSV + 현재 공통 업무 가능 | 502 → 308/309 |
@@ -1100,13 +1115,13 @@ CANCEL_RECEPTION
 | EDIT_EXTRA | RCP + 현재 공통 업무 가능 | 502 → 308/309 |
 | CANCEL_RECEPTION | RCP + 현재 공통 업무 가능 | 502 → 308/309 |
 
-조회는 업무시간 밖에도 성공하며 `Allowed=0`으로 반환한다.
+조회는 업무시간 밖에도 성공하며 `허용여부=0`으로 반환한다.
 
 Work가 없으면 `500`, 저장 NEX가 없거나 검사구성이 손상됐으면 `701`이다.
 
 ---
 
-## 8.3 `[dbo].[USP_HC_SELECT_변경이력]`
+## 8.3 `[dbo].[USP_HC_변경이력_조회]`
 
 `00` CP-06이 변경기록을 **열람용**으로 규정한 것을 받는 유일한 조회 SP다. 대상 행 하나의 변경 내역만 낸다 — 기간·조작자 전체 검색은 제공하지 않는다.
 
@@ -1114,10 +1129,10 @@ Work가 없으면 `500`, 저장 NEX가 없거나 검사구성이 손상됐으면
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
-| `@TargetTable` | `NVARCHAR(10)` | X |
-| `@TargetKey` | `BIGINT` | X |
+| `@대상테이블` | `NVARCHAR(10)` | X |
+| `@대상키` | `BIGINT` | X |
 
-`@TargetTable`은 `N'수검자'` 또는 `N'예약접수'`만 허용한다(`04` §8.6.3 `CK_변경이력_TARGET_TABLE`). 그 밖의 값은 `101`이다.
+`@대상테이블`은 `N'수검자'` 또는 `N'예약접수'`만 허용한다(`04` §8.6.3 `CK_변경이력_TARGET_TABLE`). 그 밖의 값은 `101`이다.
 
 ### Result Set
 
@@ -1130,32 +1145,32 @@ RS1 Schema:
 
 | 컬럼 | 타입 | NULL | 물리 출처 |
 |---|---|:---:|---|
-| `LogId` | `BIGINT` | X | `이력ID` |
-| `RecordedAt` | `DATETIME2(0)` | X | `기록일시` |
-| `OperatorName` | `NVARCHAR(50)` | O | `조작자명` |
-| `ColumnName` | `NVARCHAR(30)` | X | `컬럼명` |
-| `BeforeValue` | `NVARCHAR(4000)` | O | `변경전` |
-| `AfterValue` | `NVARCHAR(4000)` | O | `변경후` |
+| `이력ID` | `BIGINT` | X | `이력ID` |
+| `기록일시` | `DATETIME2(0)` | X | `기록일시` |
+| `조작자명` | `NVARCHAR(50)` | O | `조작자명` |
+| `컬럼명` | `NVARCHAR(30)` | X | `컬럼명` |
+| `변경전` | `NVARCHAR(4000)` | O | `변경전` |
+| `변경후` | `NVARCHAR(4000)` | O | `변경후` |
 
 정렬:
 
 ```text
-RecordedAt DESC, LogId DESC
+기록일시 DESC, 이력ID DESC
 ```
 
 `IX_변경이력_TARGET`의 Key 순서(`대상테이블, 대상키, 기록일시 DESC`)가 이 술어와 정렬을 그대로 덮는다.
 
 ### 계약 경계
 
-- 대상 행이 없거나 기록이 0건이면 **`Code=0` + RS1 0행**이다. `200 PatientNotFound`를 쓰지 않는다 — 이 SP는 대상 행의 존재를 확인하지 않는다. 감사 기록은 대상 행보다 오래 살기 때문이다(`04` §8.6.3).
+- 대상 행이 없거나 기록이 0건이면 **`결과코드=0` + RS1 0행**이다. `200 PatientNotFound`를 쓰지 않는다 — 이 SP는 대상 행의 존재를 확인하지 않는다. 감사 기록은 대상 행보다 오래 살기 때문이다(`04` §8.6.3).
 - `대상테이블`을 Result Set에 싣지 않는다. 호출자가 이미 알고 넘긴 값이다.
-- `OperatorName`은 인증되지 않은 자기신고 문자열이며 감사 주체의 증거가 아니다(`04` §14.2 L4). 화면은 이 값을 "조작자"가 아니라 **자기신고 값**으로 표시한다.
+- `조작자명`은 인증되지 않은 자기신고 문자열이며 감사 주체의 증거가 아니다(`04` §14.2 L4). 화면은 이 값을 "조작자"가 아니라 **자기신고 값**으로 표시한다.
 - 값은 `NVARCHAR(4000)`에서 잘려 저장됐을 수 있다(`00` CP-06). 화면은 복원 근거로 쓰지 않는다.
 - 이 SP는 데이터를 바꾸지 않으므로 `변경이력`을 남기지 않는다.
 
 ---
 
-# 9. `[dbo].[USP_HC_SELECT_예약가능정보]` 계약
+# 9. `[dbo].[USP_HC_예약가능정보_조회]` 계약
 
 ## 9.1 목적
 
@@ -1174,25 +1189,25 @@ AEX 7종 선택 가능 여부
 
 달력 Cell Paint·Hover에서는 호출하지 않고 날짜 선택이 확정된 시점에 호출한다.
 
-`@TimeSlot`이 NULL이어도 SP 내부에서는 `[dbo].[UFN_HC_일정확인]`을 `AM`, `PM`으로 각각 호출하여 두 시간대 정보를 만든다.
+`@시간대코드`이 NULL이어도 SP 내부에서는 `[dbo].[UFN_HC_일정확인]`을 `AM`, `PM`으로 각각 호출하여 두 시간대 정보를 만든다.
 
 ## 9.2 입력 Signature
 
 ```sql
-CREATE PROCEDURE [dbo].[USP_HC_SELECT_예약가능정보]
-    @PatientId             BIGINT,
-    @WorkId                BIGINT,
-    @RowVersion            BINARY(8),
-    @ReservationType       VARCHAR(10),
-    @ReservationDate       DATE,
-    @TimeSlot              CHAR(2),
-    @AexOpt01Selected      BIT,
-    @AexOpt02Selected      BIT,
-    @AexOpt03Selected      BIT,
-    @AexOpt04Selected      BIT,
-    @AexOpt05Selected      BIT,
-    @AexOpt06Selected      BIT,
-    @AexOpt07Selected      BIT
+CREATE PROCEDURE [dbo].[USP_HC_예약가능정보_조회]
+    @수검자ID             BIGINT,
+    @업무ID                BIGINT,
+    @행버전            BINARY(8),
+    @예약구분       VARCHAR(10),
+    @예약일       DATE,
+    @시간대코드              CHAR(2),
+    @추가검사01선택여부      BIT,
+    @추가검사02선택여부      BIT,
+    @추가검사03선택여부      BIT,
+    @추가검사04선택여부      BIT,
+    @추가검사05선택여부      BIT,
+    @추가검사06선택여부      BIT,
+    @추가검사07선택여부      BIT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1201,7 +1216,7 @@ END;
 
 ## 9.3 NULL·조합 계약
 
-| 업무 | WorkId | RowVersion | ReservationType | TimeSlot |
+| 업무 | 업무ID | 행버전 | 예약구분 | 시간대코드 |
 |---|---|---|---|---|
 | 신규 일반예약 | NULL | NULL | NORMAL | 날짜 선택 중 NULL 가능 |
 | 신규 WalkIn | NULL | NULL | WALKIN | 날짜 선택 중 NULL 가능 |
@@ -1210,25 +1225,25 @@ END;
 오류 조합:
 
 ```text
-WorkId NULL + RowVersion NOT NULL       → 102
-WorkId NOT NULL + RowVersion NULL       → 100
-WorkId NOT NULL + ReservationType=WALKIN→ 102
-ReservationType=WALKIN + Date<>DB Today → 102
-기존 날짜 유지 + TimeSlot NULL          → 102
+업무ID NULL + 행버전 NOT NULL       → 102
+업무ID NOT NULL + 행버전 NULL       → 100
+업무ID NOT NULL + 예약구분=WALKIN→ 102
+예약구분=WALKIN + Date<>DB 오늘날짜 → 102
+기존 날짜 유지 + 시간대코드 NULL          → 102
 AEX BIT 중 하나라도 NULL                → 100
 ```
 
-## 9.4 예약변경 Scope
+## 9.4 예약변경 변경범위
 
 SP가 DB 현재값과 요청값을 비교한다.
 
 ```text
-DateChanged
-SlotChanged
-ExtraChanged
+예약일변경여부
+시간대변경여부
+추가검사변경여부
 ```
 
-| 실제 변경 | Scope | 실행 Rule |
+| 실제 변경 | 변경범위 | 실행 Rule |
 |---|---|---|
 | 신규예약 | ALL | 일정 + TGT + NEX + AEX |
 | 예약일 변경 포함 | ALL | 일정 + TGT + NEX + AEX |
@@ -1237,26 +1252,26 @@ ExtraChanged
 | 시간대+AEX | SLOT_EXTRA | 일정·정원·중복 + 저장 NEX 기준 AEX |
 | 변경 없음 | NONE | 존재·상태·동시성 확인 후 종료 |
 
-`Scope=NONE`은 조회 SP의 정상 결과이므로 `RS0.Success=1`, `RS0.Code=0`으로 반환한다. `Code=1`은 실제 Write SP의 No-op에만 사용한다.
+`변경범위=NONE`은 조회 SP의 정상 결과이므로 `RS0.성공여부=1`, `RS0.결과코드=0`으로 반환한다. `결과코드=1`은 실제 Write SP의 No-op에만 사용한다.
 
-시간대만 변경하는 경우 현재 AEX 코드는 `ExtraChanged` 집합 비교에만 사용한다. TGT/NEX/AEX Rule을 재평가하지 않고 검사구성 두 컬럼을 재조립하지 않는다.
+시간대만 변경하는 경우 현재 AEX 코드는 `추가검사변경여부` 집합 비교에만 사용한다. TGT/NEX/AEX Rule을 재평가하지 않고 검사구성 두 컬럼을 재조립하지 않는다.
 
 다른 유효업무 조회조건은 다음과 같이 고정한다.
 
 ```text
 신규예약:
-PatientId 일치
-AND ReservationDate >= DB Today
+수검자ID 일치
+AND 예약일 >= DB 오늘날짜
 AND StatusCode IN ('RSV','RCP')
 
 예약변경:
 위 조건
-AND WorkId <> @WorkId
+AND 업무ID <> @업무ID
 ```
 
-- 예약변경 대상 Work 자신은 `OtherWorkId` 후보에서 제외한다.
-- 다른 유효업무 0건이면 충돌 없음, 1건이면 `OtherWorkId`를 반환한다.
-- 다른 유효업무가 2건 이상이면 RP-06 불변조건이 이미 손상된 상태이므로 `RS0.Code=701`을 반환한다.
+- 예약변경 대상 Work 자신은 `다른업무ID` 후보에서 제외한다.
+- 다른 유효업무 0건이면 충돌 없음, 1건이면 `다른업무ID`를 반환한다.
+- 다른 유효업무가 2건 이상이면 RP-06 불변조건이 이미 손상된 상태이므로 `RS0.결과코드=701`을 반환한다.
 
 ## 9.5 Result Set 순서
 
@@ -1275,40 +1290,40 @@ RS5 추가검사항목
 
 | 순서 | 컬럼 | 타입 | NULL |
 |---:|---|---|:---:|
-| 1 | `Scope` | `VARCHAR(12)` | X |
-| 2 | `PatientId` | `BIGINT` | X |
-| 3 | `WorkId` | `BIGINT` | O |
-| 4 | `ReservationType` | `VARCHAR(10)` | X |
-| 5 | `ReservationDate` | `DATE` | X |
-| 6 | `TimeSlot` | `CHAR(2)` | O |
-| 7 | `DateChanged` | `BIT` | O |
-| 8 | `SlotChanged` | `BIT` | O |
-| 9 | `ExtraChanged` | `BIT` | O |
-| 10 | `CanWorkNow` | `BIT` | X |
-| 11 | `OtherWorkId` | `BIGINT` | O |
-| 12 | `CanSave` | `BIT` | X |
-| 13 | `BlockCode` | `INT` | X |
-| 14 | `BlockMessage` | `NVARCHAR(300)` | X |
+| 1 | `변경범위` | `VARCHAR(12)` | X |
+| 2 | `수검자ID` | `BIGINT` | X |
+| 3 | `업무ID` | `BIGINT` | O |
+| 4 | `예약구분` | `VARCHAR(10)` | X |
+| 5 | `예약일` | `DATE` | X |
+| 6 | `시간대코드` | `CHAR(2)` | O |
+| 7 | `예약일변경여부` | `BIT` | O |
+| 8 | `시간대변경여부` | `BIT` | O |
+| 9 | `추가검사변경여부` | `BIT` | O |
+| 10 | `현재업무가능` | `BIT` | X |
+| 11 | `다른업무ID` | `BIGINT` | O |
+| 12 | `저장가능` | `BIT` | X |
+| 13 | `차단코드` | `INT` | X |
+| 14 | `차단메시지` | `NVARCHAR(300)` | X |
 
-신규예약의 `DateChanged`, `SlotChanged`, `ExtraChanged`는 NULL이다. `OtherWorkId`는 예약변경 시 현재 Work를 제외한 다른 유효업무 ID만 반환한다.
+신규예약의 `예약일변경여부`, `시간대변경여부`, `추가검사변경여부`는 NULL이다. `다른업무ID`는 예약변경 시 현재 Work를 제외한 다른 유효업무 ID만 반환한다.
 
-대표 `BlockCode` 우선순위:
+대표 `차단코드` 우선순위:
 
 ```text
 308/309 현재 공통 업무 불가
 → 306 다른 유효예약
-→ 선택한 Slot의 300~305
-→ TimeSlot 미선택이고 AM/PM 모두 불가이면 307
+→ 선택한 시간대의 300~305
+→ 시간대코드 미선택이고 AM/PM 모두 불가이면 307
 → 400/401 TGT 비대상
-→ 요청한 무효 AEX 410~412, OptionCode ASC
+→ 요청한 무효 AEX 410~412, 추가검사코드 ASC
 ```
 
-시간대를 아직 선택하지 않았으나 선택 가능한 Slot이 하나 이상이면:
+시간대를 아직 선택하지 않았으나 선택 가능한 시간대이 하나 이상이면:
 
 ```text
-CanSave=0
-BlockCode=0
-BlockMessage=''
+저장가능=0
+차단코드=0
+차단메시지=''
 ```
 
 ## 9.7 RS2 시간대정보
@@ -1317,42 +1332,42 @@ BlockMessage=''
 
 | 순서 | 컬럼 | 타입 | NULL |
 |---:|---|---|:---:|
-| 1 | `TimeSlot` | `CHAR(2)` | X |
-| 2 | `SlotName` | `NVARCHAR(10)` | X |
-| 3 | `Capacity` | `INT` | X |
-| 4 | `CurrentCount` | `INT` | X |
-| 5 | `AfterCount` | `INT` | X |
-| 6 | `SeatsLeft` | `INT` | X |
-| 7 | `IsOpen` | `BIT` | X |
-| 8 | `CutoffTime` | `TIME(0)` | O |
-| 9 | `CutoffPassed` | `BIT` | X |
-| 10 | `CanSelect` | `BIT` | X |
-| 11 | `BlockCode` | `INT` | X |
-| 12 | `BlockMessage` | `NVARCHAR(300)` | X |
+| 1 | `시간대코드` | `CHAR(2)` | X |
+| 2 | `시간대명` | `NVARCHAR(10)` | X |
+| 3 | `정원` | `INT` | X |
+| 4 | `현재인원` | `INT` | X |
+| 5 | `적용후인원` | `INT` | X |
+| 6 | `잔여자리` | `INT` | X |
+| 7 | `운영여부` | `BIT` | X |
+| 8 | `마감시각` | `TIME(0)` | O |
+| 9 | `마감경과여부` | `BIT` | X |
+| 10 | `선택가능` | `BIT` | X |
+| 11 | `차단코드` | `INT` | X |
+| 12 | `차단메시지` | `NVARCHAR(300)` | X |
 
 정원:
 
 ```text
-Capacity=20
-CurrentCount=같은 날짜+시간대이며 Status IN ('RSV','RCP')
+정원=20
+현재인원=같은 날짜+시간대이며 상태코드 IN ('RSV','RCP')
 ```
 
-`AfterCount`:
+`적용후인원`:
 
 ```text
-신규예약                       = CurrentCount + 1
-기존 Work가 같은 날짜·시간대 유지 = CurrentCount
-기존 Work가 다른 시간대로 이동     = CurrentCount + 1
+신규예약                       = 현재인원 + 1
+기존 Work가 같은 날짜·시간대 유지 = 현재인원
+기존 Work가 다른 시간대로 이동     = 현재인원 + 1
 ```
 
 ```text
-SeatsLeft=MAX(0, Capacity-AfterCount)
-SlotFull은 AfterCount>Capacity일 때 성립
+잔여자리=MAX(0, 정원-적용후인원)
+SlotFull은 적용후인원>정원일 때 성립
 ```
 
-현재 Work가 이미 20/20 Slot에 포함되어 같은 Slot을 유지하는 경우 `AfterCount=20`, `CanSelect=1`이다.
+현재 Work가 이미 20/20 시간대에 포함되어 같은 시간대을 유지하는 경우 `적용후인원=20`, `선택가능=1`이다.
 
-`CanSelect`는 요청일·시간대 운영·마감·정원만 반영한다. 현재 공통 업무 가능 여부, 다른 유효예약, TGT, AEX는 RS1에서 결합한다.
+`선택가능`는 요청일·시간대 운영·마감·정원만 반영한다. 현재 공통 업무 가능 여부, 다른 유효예약, TGT, AEX는 RS1에서 결합한다.
 
 ## 9.8 RS3 검진대상
 
@@ -1360,22 +1375,22 @@ SlotFull은 AfterCount>Capacity일 때 성립
 
 | 컬럼 | 타입 | NULL |
 |---|---|:---:|
-| `Eligible` | `BIT` | X |
-| `Age` | `INT` | X |
-| `LastCheckupDate` | `DATE` | O |
-| `ReasonCode` | `INT` | X |
-| `ReasonMessage` | `NVARCHAR(300)` | X |
+| `검진대상여부` | `BIT` | X |
+| `나이` | `INT` | X |
+| `최근완료일자` | `DATE` | O |
+| `사유코드` | `INT` | X |
+| `사유메시지` | `NVARCHAR(300)` | X |
 
 ## 9.9 RS4 국가검사항목
 
-`ALL`에서 TGT 대상이면 8~11행, 비대상이거나 다른 Scope이면 0행이다.
+`ALL`에서 TGT 대상이면 8~11행, 비대상이거나 다른 변경범위이면 0행이다.
 
 | 컬럼 | 타입 | NULL |
 |---|---|:---:|
-| `ExamCode` | `VARCHAR(10)` | X |
-| `ExamName` | `NVARCHAR(100)` | X |
-| `ExamType` | `VARCHAR(12)` | X |
-| `RuleCode` | `VARCHAR(10)` | X |
+| `검사항목코드` | `VARCHAR(10)` | X |
+| `검사항목명` | `NVARCHAR(100)` | X |
+| `국가검사구분` | `VARCHAR(12)` | X |
+| `국가검사규칙코드` | `VARCHAR(10)` | X |
 
 ## 9.10 RS5 추가검사항목
 
@@ -1383,20 +1398,20 @@ AEX를 실제 평가하는 `ALL`, `EXTRA`, `SLOT_EXTRA`이면 정확히 7행이�
 
 | 컬럼 | 타입 | NULL |
 |---|---|:---:|
-| `OptionCode` | `VARCHAR(10)` | X |
-| `ExamCode` | `VARCHAR(10)` | X |
-| `ExamName` | `NVARCHAR(100)` | X |
-| `Requested` | `BIT` | X |
-| `Selected` | `BIT` | X |
-| `CanSelect` | `BIT` | X |
-| `ReasonCode` | `INT` | X |
-| `ReasonMessage` | `NVARCHAR(300)` | X |
+| `추가검사코드` | `VARCHAR(10)` | X |
+| `검사항목코드` | `VARCHAR(10)` | X |
+| `검사항목명` | `NVARCHAR(100)` | X |
+| `요청선택여부` | `BIT` | X |
+| `유효선택여부` | `BIT` | X |
+| `선택가능` | `BIT` | X |
+| `사유코드` | `INT` | X |
+| `사유메시지` | `NVARCHAR(300)` | X |
 
-TGT 비대상인 `ALL`에서는 7행을 반환하되 모두 `CanSelect=0`, `Selected=0`으로 표시한다.
+TGT 비대상인 `ALL`에서는 7행을 반환하되 모두 `선택가능=0`, `유효선택여부=0`으로 표시한다.
 
-## 9.11 Scope별 Cardinality
+## 9.11 변경범위별 Cardinality
 
-| Scope | RS2 | RS3 | RS4 | RS5 |
+| 변경범위 | RS2 | RS3 | RS4 | RS5 |
 |---|---:|---:|---:|---:|
 | ALL | 2 | 0 또는 1 | 0 또는 8~11 | 0 또는 7 |
 | SLOT | 2 | 0 | 0 | 0 |
@@ -1404,64 +1419,64 @@ TGT 비대상인 `ALL`에서는 7행을 반환하되 모두 `CanSelect=0`, `Sele
 | SLOT_EXTRA | 2 | 0 | 0 | 7 |
 | NONE | 0 | 0 | 0 | 0 |
 
-## 9.12 `CanSave`
+## 9.12 `저장가능`
 
 신규예약·예약일 변경:
 
 ```text
-CanWorkNow
-AND OtherWorkId IS NULL
-AND TimeSlot 선택
-AND 선택 Slot.CanSelect=1
-AND Eligible=1
+현재업무가능
+AND 다른업무ID IS NULL
+AND 시간대코드 선택
+AND 선택 시간대.선택가능=1
+AND 검진대상여부=1
 AND NEX 8건 이상
-AND Requested=1인 모든 AEX가 CanSelect=1
+AND 요청선택여부=1인 모든 AEX가 선택가능=1
 ```
 
 시간대만 변경:
 
 ```text
-CanWorkNow
-AND OtherWorkId IS NULL
-AND 선택 Slot.CanSelect=1
+현재업무가능
+AND 다른업무ID IS NULL
+AND 선택 시간대.선택가능=1
 ```
 
 AEX만 변경:
 
 ```text
-CanWorkNow
-AND Requested=1인 모든 AEX가 CanSelect=1
-AND ExtraChanged=1
+현재업무가능
+AND 요청선택여부=1인 모든 AEX가 선택가능=1
+AND 추가검사변경여부=1
 ```
 
 시간대+AEX:
 
 ```text
-CanWorkNow
-AND OtherWorkId IS NULL
-AND 선택 Slot.CanSelect=1
-AND Requested=1인 모든 AEX가 CanSelect=1
+현재업무가능
+AND 다른업무ID IS NULL
+AND 선택 시간대.선택가능=1
+AND 요청선택여부=1인 모든 AEX가 선택가능=1
 ```
 
 변경 없음:
 
 ```text
-Scope=NONE
-CanSave=0
-BlockCode=0
+변경범위=NONE
+저장가능=0
+차단코드=0
 ```
 
 ## 9.13 호출·평가 순서
 
 ```text
-1. ServerTime 캡처
+1. 서버시각 캡처
 2. 필수값
 3. 허용값
 4. Parameter 조합
 5. Patient 존재
-6. WorkId가 있으면 Work 존재 → Patient 일치 → RSV 상태 → RowVersion
-7. Scope 계산
-8. Scope=NONE이면 `RS0.Code=0`, `CanSave=0`의 조회결과 반환
+6. 업무ID가 있으면 Work 존재 → Patient 일치 → RSV 상태 → 행버전
+7. 변경범위 계산
+8. 변경범위=NONE이면 `RS0.결과코드=0`, `저장가능=0`의 조회결과 반환
 9. ALL이면 검사 Master 구성 확인
 10. EXTRA/SLOT_EXTRA이면 AEX Master와 저장 NEX 무결성 확인
 11. 현재 공통 업무 가능 여부
@@ -1477,32 +1492,32 @@ BlockCode=0
 
 # 10. 수검자 Write SP 계약
 
-## 10.1 `[dbo].[USP_HC_INSERT_수검자]`
+## 10.1 `[dbo].[USP_HC_수검자_등록]`
 
 ### 입력
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
-| `@AutoChartNo` | `BIT` | X |
-| `@ChartNo` | `NVARCHAR(100)` | O |
-| `@Name` | `NVARCHAR(100)` | X |
-| `@SocialNumber` | `VARCHAR(13)` | X |
-| `@MobilePhone` | `VARCHAR(13)` | O |
-| `@Phone` | `VARCHAR(13)` | O |
-| `@Email` | `VARCHAR(200)` | O |
-| `@Zipcode` | `VARCHAR(10)` | O |
-| `@Address` | `NVARCHAR(200)` | O |
-| `@AddressDetail` | `NVARCHAR(200)` | O |
-| `@Memo` | `NVARCHAR(MAX)` | O |
-| `@HepatitisBExcluded` | `BIT` | X |
-| `@ConfirmSimilarPatient` | `BIT` | X |
-| `@OperatorName` | `NVARCHAR(50)` | X |
+| `@차트번호자동발급여부` | `BIT` | X |
+| `@차트번호` | `NVARCHAR(100)` | O |
+| `@성명` | `NVARCHAR(100)` | X |
+| `@주민번호` | `VARCHAR(13)` | X |
+| `@휴대전화` | `VARCHAR(13)` | O |
+| `@전화번호` | `VARCHAR(13)` | O |
+| `@이메일` | `VARCHAR(200)` | O |
+| `@우편번호` | `VARCHAR(10)` | O |
+| `@주소` | `NVARCHAR(200)` | O |
+| `@상세주소` | `NVARCHAR(200)` | O |
+| `@비고` | `NVARCHAR(MAX)` | O |
+| `@B형간염제외여부` | `BIT` | X |
+| `@유사수검자확인여부` | `BIT` | X |
+| `@조작자명` | `NVARCHAR(50)` | X |
 
 조합:
 
 ```text
-AutoChartNo=1 → ChartNo=NULL
-AutoChartNo=0 → ChartNo 필수
+차트번호자동발급여부=1 → 차트번호=NULL
+차트번호자동발급여부=0 → 차트번호 필수
 ```
 
 주민번호 처리:
@@ -1512,10 +1527,10 @@ C# 전달값: '-'가 제거된 숫자 13자리
 → SP에서 길이·숫자 여부 재검증
 → 6자리 생년월일 실제 날짜 검증
 → 7번째 자리의 출생세기·성별 코드 해석
-→ Birthday(yyyyMMdd) / Gender(M,F) 는 DB 가 유도한다 (04 §8.1.2 계산열)
+→ 생년월일(yyyyMMdd) / 성별(M,F) 는 DB 가 유도한다 (04 §8.1.2 계산열)
 ```
 
-| 7번째 자리 | 출생세기 | Gender | UI 표시 |
+| 7번째 자리 | 출생세기 | 성별 | UI 표시 |
 |---|---:|:---:|---|
 | `1`, `5` | 1900년대 | M | 남 |
 | `2`, `6` | 1900년대 | F | 여 |
@@ -1524,7 +1539,7 @@ C# 전달값: '-'가 제거된 숫자 13자리
 
 - `9`·`0`(1800년대생)은 저장하지 않는다. `04` §8.1.3의 `CK_수검자_SOCIAL_FORMAT`이 7번째 자리를 `1`~`8`로 묶는다.
 - 실제 행정번호 존재 여부와 마지막 검증번호 계산은 수행하지 않는다.
-- SP는 위 코드를 **검증만** 한다. `Birthday`·`Gender` 값 자체는 `04` §8.1.2의 `PERSISTED` 계산열이 만들며
+- SP는 위 코드를 **검증만** 한다. `생년월일`·`성별` 값 자체는 `04` §8.1.2의 `PERSISTED` 계산열이 만들며
   `INSERT`/`UPDATE`에 그 두 컬럼을 명시하면 `Msg 271`이다. 이 계약은 `INSERT_수검자`와 `UPDATE_수검자정보`에 동일하게 적용한다.
 
 ### Result Set
@@ -1538,18 +1553,18 @@ RS1 Schema:
 
 | 컬럼 | 타입 | NULL |
 |---|---|:---:|
-| `PatientId` | `BIGINT` | X |
-| `ChartNo` | `NVARCHAR(100)` | X |
-| `Name` | `NVARCHAR(100)` | X |
-| `SocialNumber` | `VARCHAR(13)` | X |
-| `Birthday` | `VARCHAR(8)` | X |
-| `Gender` | `CHAR(1)` | X |
-| `MobilePhone` | `VARCHAR(13)` | O |
-| `LastEditDate` | `DATETIME` | X |
+| `수검자ID` | `BIGINT` | X |
+| `차트번호` | `NVARCHAR(100)` | X |
+| `성명` | `NVARCHAR(100)` | X |
+| `주민번호` | `VARCHAR(13)` | X |
+| `생년월일` | `VARCHAR(8)` | X |
+| `성별` | `CHAR(1)` | X |
+| `휴대전화` | `VARCHAR(13)` | O |
+| `최종수정일시` | `DATETIME` | X |
 
 결과:
 
-| 상황 | Success | Code | RS1 |
+| 상황 | 성공여부 | 결과코드 | RS1 |
 |---|:---:|---:|---:|
 | 신규등록 | 1 | 0 | 신규 1행 |
 | 동일 주민번호+동일 이름 | 1 | 2 | 기존 1행 |
@@ -1562,42 +1577,42 @@ RS1 Schema:
 
 ```text
 필수값·문자열 정규화
-→ SocialNumber 13자리·숫자·날짜·세기/성별 검증
-→ Birthday/Gender 산출
-→ AutoChartNo 조합
+→ 주민번호 13자리·숫자·날짜·세기/성별 검증
+→ 생년월일/성별 산출
+→ 차트번호자동발급여부 조합
 → 현재 공통 업무 가능
-→ 동일 SocialNumber 조회
-→ 이름+산출 Birthday 후보
-→ 수동 ChartNo 고유성
-→ 자동 ChartNo 발급
+→ 동일 주민번호 조회
+→ 이름+산출 생년월일 후보
+→ 수동 차트번호 고유성
+→ 자동 차트번호 발급
 → 수검자 1행 Transaction 저장
 ```
 
-- `ConfirmSimilarPatient=1`은 현재 요청의 Name+산출 Birthday+SocialNumber 조합에만 유효하다.
+- `유사수검자확인여부=1`은 현재 요청의 성명+산출 생년월일+주민번호 조합에만 유효하다.
 - C#은 세 값 중 하나가 바뀌면 확인값을 0으로 초기화한다.
 - DB는 주민번호와 차트번호 고유성을 항상 다시 확인한다.
-- UI가 계산한 Birthday/Gender를 입력 Parameter로 받지 않으며 계산열이 유도한 값이 유일한 기준이다.
+- UI가 계산한 생년월일/성별를 입력 Parameter로 받지 않으며 계산열이 유도한 값이 유일한 기준이다.
 
-## 10.2 `[dbo].[USP_HC_UPDATE_수검자정보]`
+## 10.2 `[dbo].[USP_HC_수검자정보_수정]`
 
 ### 입력
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
-| `@PatientId` | `BIGINT` | X |
-| `@LastEditDate` | `DATETIME` | X |
-| `@ChartNo` | `NVARCHAR(100)` | X |
-| `@Name` | `NVARCHAR(100)` | X |
-| `@SocialNumber` | `VARCHAR(13)` | X |
-| `@MobilePhone` | `VARCHAR(13)` | O |
-| `@Phone` | `VARCHAR(13)` | O |
-| `@Email` | `VARCHAR(200)` | O |
-| `@Zipcode` | `VARCHAR(10)` | O |
-| `@Address` | `NVARCHAR(200)` | O |
-| `@AddressDetail` | `NVARCHAR(200)` | O |
-| `@Memo` | `NVARCHAR(MAX)` | O |
-| `@HepatitisBExcluded` | `BIT` | X |
-| `@OperatorName` | `NVARCHAR(50)` | X |
+| `@수검자ID` | `BIGINT` | X |
+| `@최종수정일시` | `DATETIME` | X |
+| `@차트번호` | `NVARCHAR(100)` | X |
+| `@성명` | `NVARCHAR(100)` | X |
+| `@주민번호` | `VARCHAR(13)` | X |
+| `@휴대전화` | `VARCHAR(13)` | O |
+| `@전화번호` | `VARCHAR(13)` | O |
+| `@이메일` | `VARCHAR(200)` | O |
+| `@우편번호` | `VARCHAR(10)` | O |
+| `@주소` | `NVARCHAR(200)` | O |
+| `@상세주소` | `NVARCHAR(200)` | O |
+| `@비고` | `NVARCHAR(MAX)` | O |
+| `@B형간염제외여부` | `BIT` | X |
+| `@조작자명` | `NVARCHAR(50)` | X |
 
 ### Result Set
 
@@ -1610,39 +1625,39 @@ RS1:
 
 | 컬럼 | 타입 | NULL |
 |---|---|:---:|
-| `PatientId` | `BIGINT` | X |
-| `ChartNo` | `NVARCHAR(100)` | X |
-| `LastEditDate` | `DATETIME` | X |
+| `수검자ID` | `BIGINT` | X |
+| `차트번호` | `NVARCHAR(100)` | X |
+| `최종수정일시` | `DATETIME` | X |
 
 ### 변경판정
 
 주민번호 변경 여부는 정규화된 값을 직접 비교한다.
 
 ```text
-기존 SocialNumber = 요청 SocialNumber → 주민번호 변경 아님
-기존 SocialNumber <> 요청 SocialNumber → 주민번호 변경
+기존 주민번호 = 요청 주민번호 → 주민번호 변경 아님
+기존 주민번호 <> 요청 주민번호 → 주민번호 변경
 ```
 
 ### 검증순서
 
 ```text
 필수값·문자열 정규화
-→ SocialNumber 13자리·숫자·날짜·세기/성별 검증
-→ Birthday/Gender 산출
+→ 주민번호 13자리·숫자·날짜·세기/성별 검증
+→ 생년월일/성별 산출
 → Patient 존재
-→ LastEditDate
+→ 최종수정일시
 → 실제 변경 여부
-→ 변경 없음이면 Code=1 반환
+→ 변경 없음이면 결과코드=1 반환
 → 현재 공통 업무 가능
-→ ChartNo 변경 시 다른 Patient 고유성
-→ 주민번호 변경 시 다른 Patient SocialNumber 고유성
+→ 차트번호 변경 시 다른 Patient 고유성
+→ 주민번호 변경 시 다른 Patient 주민번호 고유성
 → 주민번호 변경 시 대상 Patient의 모든 RSV/RCP 존재 확인
 → 수검자 Transaction 수정
 ```
 
-- No-op에서는 DB 행을 갱신하지 않고 기존 `LastEditDate`를 반환한다.
+- No-op에서는 DB 행을 갱신하지 않고 기존 `최종수정일시`를 반환한다.
 - 주민번호 변경으로 기존 Work의 TGT/NEX/AEX를 자동 재판정하거나 취소하지 않는다.
-- Birthday/Gender는 요청값을 받지 않는다. SocialNumber를 바꾸면 계산열이 자동으로 다시 유도한다.
+- 생년월일/성별는 요청값을 받지 않는다. 주민번호를 바꾸면 계산열이 자동으로 다시 유도한다.
 
 # 11. 예약 Write SP 계약
 
@@ -1650,37 +1665,37 @@ RS1:
 
 | 컬럼 | 타입 | NULL |
 |---|---|:---:|
-| `WorkId` | `BIGINT` | X |
-| `Status` | `CHAR(3)` | X |
-| `RowVersion` | `BINARY(8)` | X |
+| `업무ID` | `BIGINT` | X |
+| `상태코드` | `CHAR(3)` | X |
+| `행버전` | `BINARY(8)` | X |
 
-## 11.1 `[dbo].[USP_HC_INSERT_예약]`
+## 11.1 `[dbo].[USP_HC_예약_등록]`
 
 ### 입력
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
-| `@PatientId` | `BIGINT` | X |
-| `@ReservationType` | `VARCHAR(10)` | X |
-| `@ReservationDate` | `DATE` | X |
-| `@TimeSlot` | `CHAR(2)` | X |
-| `@AexOpt01Selected` | `BIT` | X |
-| `@AexOpt02Selected` | `BIT` | X |
-| `@AexOpt03Selected` | `BIT` | X |
-| `@AexOpt04Selected` | `BIT` | X |
-| `@AexOpt05Selected` | `BIT` | X |
-| `@AexOpt06Selected` | `BIT` | X |
-| `@AexOpt07Selected` | `BIT` | X |
-| `@OperatorName` | `NVARCHAR(50)` | X |
+| `@수검자ID` | `BIGINT` | X |
+| `@예약구분` | `VARCHAR(10)` | X |
+| `@예약일` | `DATE` | X |
+| `@시간대코드` | `CHAR(2)` | X |
+| `@추가검사01선택여부` | `BIT` | X |
+| `@추가검사02선택여부` | `BIT` | X |
+| `@추가검사03선택여부` | `BIT` | X |
+| `@추가검사04선택여부` | `BIT` | X |
+| `@추가검사05선택여부` | `BIT` | X |
+| `@추가검사06선택여부` | `BIT` | X |
+| `@추가검사07선택여부` | `BIT` | X |
+| `@조작자명` | `NVARCHAR(50)` | X |
 
-`ReservationType`:
+`예약구분`:
 
 ```text
 NORMAL
 WALKIN
 ```
 
-WalkIn은 `ReservationDate=DB Today`여야 한다.
+WalkIn은 `예약일=DB 오늘날짜`여야 한다.
 
 ### Result Set
 
@@ -1709,31 +1724,31 @@ RS1 Work결과
 
 ```text
 예약접수.StatusCode='RSV'
-검사구성=NEX 전체 + Selected=1인 AEX
+검사구성=NEX 전체 + 유효선택여부=1인 AEX
 ```
 
 Write SP는 조회 SP 결과를 신뢰하지 않고 모든 조건을 다시 검증한다.
 
 ---
 
-## 11.2 `[dbo].[USP_HC_UPDATE_예약변경]`
+## 11.2 `[dbo].[USP_HC_예약_변경]`
 
 ### 입력
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
-| `@WorkId` | `BIGINT` | X |
-| `@RowVersion` | `BINARY(8)` | X |
-| `@ReservationDate` | `DATE` | X |
-| `@TimeSlot` | `CHAR(2)` | X |
-| `@AexOpt01Selected` | `BIT` | X |
-| `@AexOpt02Selected` | `BIT` | X |
-| `@AexOpt03Selected` | `BIT` | X |
-| `@AexOpt04Selected` | `BIT` | X |
-| `@AexOpt05Selected` | `BIT` | X |
-| `@AexOpt06Selected` | `BIT` | X |
-| `@AexOpt07Selected` | `BIT` | X |
-| `@OperatorName` | `NVARCHAR(50)` | X |
+| `@업무ID` | `BIGINT` | X |
+| `@행버전` | `BINARY(8)` | X |
+| `@예약일` | `DATE` | X |
+| `@시간대코드` | `CHAR(2)` | X |
+| `@추가검사01선택여부` | `BIT` | X |
+| `@추가검사02선택여부` | `BIT` | X |
+| `@추가검사03선택여부` | `BIT` | X |
+| `@추가검사04선택여부` | `BIT` | X |
+| `@추가검사05선택여부` | `BIT` | X |
+| `@추가검사06선택여부` | `BIT` | X |
+| `@추가검사07선택여부` | `BIT` | X |
+| `@조작자명` | `NVARCHAR(50)` | X |
 
 ### Result Set
 
@@ -1747,10 +1762,10 @@ RS1 Work결과
 ```text
 필수값·허용값
 → Work 존재
-→ Status=RSV
-→ RowVersion
-→ 현재 예약일·시간대와 AEX 코드 집합으로 DateChanged / SlotChanged / ExtraChanged 계산
-→ 변경 없음이면 Code=1, UPDATE 없음
+→ 상태코드=RSV
+→ 행버전
+→ 현재 예약일·시간대와 AEX 코드 집합으로 예약일변경여부 / 시간대변경여부 / 추가검사변경여부 계산
+→ 변경 없음이면 결과코드=1, UPDATE 없음
 → 예약일 변경이면 검사 Master 구성 확인
 → AEX 변경이면 저장 NEX 무결성과 AEX Master 구성 확인
 → 실제 변경이면 현재 공통 업무 가능
@@ -1782,8 +1797,8 @@ RS1 Work결과
 
 ```text
 예약접수.추가검사항목 UPDATE
-→ 같은 행이라 RowVersion 이 자동 변경된다
-→ 새 RowVersion 반환
+→ 같은 행이라 행버전 이 자동 변경된다
+→ 새 행버전 반환
 ```
 
 검사구성이 Work 행의 컬럼이므로 Detail 변경 뒤 Master `최종수정일시`를 따로 갱신하는 단계가 없다.
@@ -1792,8 +1807,8 @@ RS1 Work결과
 
 ```text
 UPDATE 없음
-기존 RowVersion 유지
-Code=1
+기존 행버전 유지
+결과코드=1
 ```
 
 검사구성은 검사항목코드 오름차순으로 조립되므로 집합 동일 판정이 문자열 비교다.
@@ -1802,15 +1817,15 @@ Code=1
 
 ---
 
-## 11.3 `[dbo].[USP_HC_UPDATE_예약취소]`
+## 11.3 `[dbo].[USP_HC_예약_취소]`
 
 ### 입력
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
-| `@WorkId` | `BIGINT` | X |
-| `@RowVersion` | `BINARY(8)` | X |
-| `@OperatorName` | `NVARCHAR(50)` | X |
+| `@업무ID` | `BIGINT` | X |
+| `@행버전` | `BINARY(8)` | X |
+| `@조작자명` | `NVARCHAR(50)` | X |
 
 ### Result Set
 
@@ -1824,8 +1839,8 @@ RS1 Work결과
 ```text
 필수값
 → Work 존재
-→ Status=RSV
-→ RowVersion
+→ 상태코드=RSV
+→ 행버전
 → 현재 공통 업무 가능
 → RSV→CNR
 ```
@@ -1838,15 +1853,15 @@ RS1 Work결과
 
 # 12. 접수 Write SP 계약
 
-## 12.1 `[dbo].[USP_HC_UPDATE_접수완료]`
+## 12.1 `[dbo].[USP_HC_접수_완료]`
 
 ### 입력
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
-| `@WorkId` | `BIGINT` | X |
-| `@RowVersion` | `BINARY(8)` | X |
-| `@OperatorName` | `NVARCHAR(50)` | X |
+| `@업무ID` | `BIGINT` | X |
+| `@행버전` | `BINARY(8)` | X |
+| `@조작자명` | `NVARCHAR(50)` | X |
 
 ### Result Set
 
@@ -1860,19 +1875,19 @@ RS1 Work결과
 ```text
 필수값
 → Work 존재
-→ Status=RSV
-→ RowVersion
+→ 상태코드=RSV
+→ 행버전
 → Work 검사구성 무결성
 → 현재 공통 업무 가능
-→ ReservationDate=DB Today
-→ 해당 TimeSlot의 접수마감 전
+→ 예약일=DB 오늘날짜
+→ 해당 시간대코드의 접수마감 전
 → RSV→RCP
 ```
 
 접수 성공 시 다음은 변경하지 않는다.
 
 ```text
-ReservationDate
+예약일
 TimeSlotCode
 NEX
 AEX
@@ -1882,22 +1897,22 @@ AEX
 
 ---
 
-## 12.2 `[dbo].[USP_HC_UPDATE_접수추가검사]`
+## 12.2 `[dbo].[USP_HC_접수추가검사_변경]`
 
 ### 입력
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
-| `@WorkId` | `BIGINT` | X |
-| `@RowVersion` | `BINARY(8)` | X |
-| `@AexOpt01Selected` | `BIT` | X |
-| `@AexOpt02Selected` | `BIT` | X |
-| `@AexOpt03Selected` | `BIT` | X |
-| `@AexOpt04Selected` | `BIT` | X |
-| `@AexOpt05Selected` | `BIT` | X |
-| `@AexOpt06Selected` | `BIT` | X |
-| `@AexOpt07Selected` | `BIT` | X |
-| `@OperatorName` | `NVARCHAR(50)` | X |
+| `@업무ID` | `BIGINT` | X |
+| `@행버전` | `BINARY(8)` | X |
+| `@추가검사01선택여부` | `BIT` | X |
+| `@추가검사02선택여부` | `BIT` | X |
+| `@추가검사03선택여부` | `BIT` | X |
+| `@추가검사04선택여부` | `BIT` | X |
+| `@추가검사05선택여부` | `BIT` | X |
+| `@추가검사06선택여부` | `BIT` | X |
+| `@추가검사07선택여부` | `BIT` | X |
+| `@조작자명` | `NVARCHAR(50)` | X |
 
 ### Result Set
 
@@ -1911,32 +1926,32 @@ RS1 Work결과
 ```text
 필수값
 → Work 존재
-→ Status=RCP
-→ RowVersion
+→ 상태코드=RCP
+→ 행버전
 → 저장 NEX·AEX 집합 확인
 → 현재 AEX와 요청 AEX 비교
-→ 동일집합이면 Code=1, UPDATE 없음
+→ 동일집합이면 결과코드=1, UPDATE 없음
 → 실제 변경이면 저장 NEX 무결성과 AEX Master 구성 확인
 → 현재 공통 업무 가능
 → 저장 NEX 기준 AEX 성별·중복 Rule
-→ 추가검사항목 컬럼 변경 + Work LastEditDate 갱신
+→ 추가검사항목 컬럼 변경 + Work 최종수정일시 갱신
 ```
 
-No-op에서는 현재 Master 비활성·성별·중복 Rule을 재평가하지 않으며 기존 RowVersion을 유지한다.
+No-op에서는 현재 Master 비활성·성별·중복 Rule을 재평가하지 않으며 기존 행버전을 유지한다.
 
 실제 변경에서는 예약일·시간대·TGT·NEX를 변경하거나 재평가하지 않는다.
 
 ---
 
-## 12.3 `[dbo].[USP_HC_UPDATE_접수취소]`
+## 12.3 `[dbo].[USP_HC_접수_취소]`
 
 ### 입력
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
-| `@WorkId` | `BIGINT` | X |
-| `@RowVersion` | `BINARY(8)` | X |
-| `@OperatorName` | `NVARCHAR(50)` | X |
+| `@업무ID` | `BIGINT` | X |
+| `@행버전` | `BINARY(8)` | X |
+| `@조작자명` | `NVARCHAR(50)` | X |
 
 ### Result Set
 
@@ -1950,8 +1965,8 @@ RS1 Work결과
 ```text
 필수값
 → Work 존재
-→ Status=RCP
-→ RowVersion
+→ 상태코드=RCP
+→ 행버전
 → 현재 공통 업무 가능
 → RCP→CNC
 ```
@@ -1964,7 +1979,7 @@ RS1 Work결과
 
 # 13. SP별 RS0 허용 ResultCode
 
-| SP | 허용 Code |
+| SP | 허용 결과코드 |
 |---|---|
 | SELECT_공통업무상태 | 0 |
 | SELECT_수검자목록 | 0, 101, 103 |
@@ -1987,13 +2002,13 @@ RS1 Work결과
 
 후속 Result Set의 안내·차단 코드는 다음과 같다.
 
-| SP | 후속 Result Set Code |
+| SP | 후속 Result Set 결과코드 |
 |---|---|
 | SELECT_공통업무상태 | RS1 `0`, `308`, `309` |
 | SELECT_예약가능정보 | RS1/RS2 `0`, `300~309`; RS3 `0`, `400`, `401`; RS5 `0`, `400`, `401`, `410~412` |
 | SELECT_예약접수상세 | RS4 `0`, `304`, `308`, `309`, `502`, `503` |
 
-`SELECT_예약가능정보`의 업무 차단은 RS0 실패가 아니라 RS1/RS2/RS3/RS5의 `BlockCode` 또는 `ReasonCode`로 반환한다.
+`SELECT_예약가능정보`의 업무 차단은 RS0 실패가 아니라 RS1/RS2/RS3/RS5의 `차단코드` 또는 `사유코드`로 반환한다.
 
 # 14. Transaction·잠금 Phase 4 인계
 
@@ -2001,29 +2016,29 @@ RS1 Work결과
 
 | Write SP | 같은 Transaction 대상 | 논리 잠금영역 |
 |---|---|---|
-| INSERT_수검자 | 수검자 | ChartNo, SocialNumber |
-| UPDATE_수검자정보 | 수검자 | PatientId, 변경 ChartNo/SocialNumber |
-| INSERT_예약 | Work 1행 (검사구성 컬럼 포함) | PatientId, 대상 Date+Slot |
-| UPDATE_예약변경 | Work 1행 (검사구성 컬럼 포함) | WorkId, PatientId, 기존/신규 Slot |
-| UPDATE_예약취소 | Work | WorkId |
-| UPDATE_접수완료 | Work | WorkId |
-| UPDATE_접수추가검사 | Work 1행 (추가검사항목 컬럼) | WorkId |
-| UPDATE_접수취소 | Work | WorkId |
+| INSERT_수검자 | 수검자 | 차트번호, 주민번호 |
+| UPDATE_수검자정보 | 수검자 | 수검자ID, 변경 차트번호/주민번호 |
+| INSERT_예약 | Work 1행 (검사구성 컬럼 포함) | 수검자ID, 대상 Date+시간대 |
+| UPDATE_예약변경 | Work 1행 (검사구성 컬럼 포함) | 업무ID, 수검자ID, 기존/신규 시간대 |
+| UPDATE_예약취소 | Work | 업무ID |
+| UPDATE_접수완료 | Work | 업무ID |
+| UPDATE_접수추가검사 | Work 1행 (추가검사항목 컬럼) | 업무ID |
+| UPDATE_접수취소 | Work | 업무ID |
 
 `변경이력` INSERT는 위 표의 Transaction 대상이 아니다. 항상 `@@TRANCOUNT = 0` 지점에서 자동커밋으로 수행하므로 논리 잠금영역을 넓히지 않고, 실패해도 업무 Transaction을 되돌리지 않는다.
 고정 동시 실행 결과:
 
 ```text
-동일 SocialNumber 수검자 동시등록 → 정확히 1건만 신규 INSERT
-19/20 Slot에 동시 신규예약 2건 → 정확히 1건 성공
-동일 Patient의 서로 다른 Slot 동시예약 → 정확히 1건 성공
+동일 주민번호 수검자 동시등록 → 정확히 1건만 신규 INSERT
+19/20 시간대에 동시 신규예약 2건 → 정확히 1건 성공
+동일 Patient의 서로 다른 시간대 동시예약 → 정확히 1건 성공
 주민번호 변경과 같은 Patient 신규예약 → 모순된 동시 성공 금지
-예약변경은 현재 WorkId를 제외하고 다른 유효업무만 판정
+예약변경은 현재 업무ID를 제외하고 다른 유효업무만 판정
 같은 RSV의 접수완료와 예약취소 → 정확히 하나만 성공
-같은 Work의 AEX 동시변경 → 오래된 RowVersion 요청 실패
+같은 Work의 AEX 동시변경 → 오래된 행버전 요청 실패
 ```
 
-예약 이동 시 기존·신규 Slot 잠금은 결정적 순서로 취득해야 한다. `OtherWorkId` 조회 결과가 2건 이상이면 잠금 성공 여부와 관계없이 `701 WorkDataError`로 처리한다.
+예약 이동 시 기존·신규 시간대 잠금은 결정적 순서로 취득해야 한다. `다른업무ID` 조회 결과가 2건 이상이면 잠금 성공 여부와 관계없이 `701 WorkDataError`로 처리한다.
 
 # 15. Policy·Process·Function·UI·DB 객체 추적
 
@@ -2108,37 +2123,59 @@ public enum DbCode
 
 ## 16.2 RS0 DTO
 
+**C# 식별자는 영문 PascalCase를 유지한다.** DB 계약이 한글이 된 것과 C#의 명명규칙은 별개이며,
+Enum 멤버·프로퍼티·변수에 한글을 쓰면 기존 .NET 코딩 표준·직렬화·리플렉션 관례에서 벗어난다.
+연결은 **Result Set 컬럼명 문자열**에서만 일어난다.
+
 ```csharp
 public sealed class DbResult
 {
-    public bool Success { get; set; }
-    public int Code { get; set; }
-    public string Message { get; set; }
-    public string Field { get; set; }
-    public DateTime ServerTime { get; set; }
+    public bool     Success    { get; set; }   // [성공여부]
+    public int      Code       { get; set; }   // [결과코드]
+    public string   Message    { get; set; }   // [결과메시지]
+    public string   Field      { get; set; }   // [오류항목]
+    public DateTime ServerTime { get; set; }   // [서버시각]
 }
 ```
+
+읽을 때는 컬럼명을 한글로 지정한다. 컬럼 순서에 기대지 않는다.
+
+```csharp
+r.Success = (bool) reader["성공여부"];
+r.Code    = (int)  reader["결과코드"];
+```
+
+Parameter도 이름으로 넘긴다. `SqlParameter` 이름은 한글이며 `@`를 붙인다.
+
+```csharp
+cmd.Parameters.Add("@수검자ID",  SqlDbType.BigInt).Value  = patientId;
+cmd.Parameters.Add("@차트번호",  SqlDbType.NVarChar, 100).Value = (object) chartNo ?? DBNull.Value;
+```
+
+- `SqlCommand.CommandText`에는 `dbo.USP_HC_수검자_등록`처럼 한글 SP 이름을 그대로 적는다.
+- 소스 파일은 **UTF-8 with BOM**으로 저장한다. BOM이 없으면 컴파일러가 한글 문자열을 시스템 기본 코드페이지로 읽어 깨뜨린다.
+- `RS0.Field`가 담는 값은 Parameter 이름(`N'주민번호'`)이다. 화면이 입력항목을 찾는 키이므로 Parameter 이름과 항상 같다.
 
 ## 16.3 동시성값
 
 ```text
-수검자.LastEditDate → C# DateTime
-예약접수.RowVersion → C# byte[8]
+수검자.최종수정일시 → C# DateTime
+예약접수.행버전 → C# byte[8]
 ```
 
 - DB에서 읽은 값을 문자열로 변환해 재전송하지 않는다.
 - 성공 Write 응답의 새 값을 화면·DTO 원본값으로 교체한다.
-- `Code=600/601`이면 최신 상세를 다시 조회하고 사용자 입력을 자동 덮어쓰지 않는다.
+- `결과코드=600/601`이면 최신 상세를 다시 조회하고 사용자 입력을 자동 덮어쓰지 않는다.
 
 ## 16.4 예약가능정보 Result Set 처리
 
 ```text
 RS0 실패 → 후속 Result Set을 사용하지 않음
 RS0 성공 → RS1~RS5를 고정 순서로 읽음
-RS1.CanSave와 BlockCode로 저장버튼·안내문 결정
+RS1.[저장가능]과 [차단코드]로 저장버튼·안내문 결정
 ```
 
-수검자 등록의 `Code=202/203`은 예외적으로 RS1 후보 데이터를 읽는다.
+수검자 등록의 `결과코드=202/203`은 예외적으로 RS1 후보 데이터를 읽는다.
 
 ---
 
@@ -2191,8 +2228,8 @@ RS1.CanSave와 BlockCode로 저장버튼·안내문 결정
 ```text
 남성 만 23/24/28세 이상지질혈증
 여성 만 39/40/44세 이상지질혈증
-만 40세 B형간염 HepatitisBExcluded 1/0
-만 55/56세 C형간염
+만 40세 B형간염 B형간염제외여부 1/0
+만 55/56세 코드형간염
 여성 만 54/60/66세 골밀도
 만 56/66세 폐기능
 조건부 3종 동시 충족 시 NEX 11행
@@ -2215,23 +2252,23 @@ NEX EX012 + OPT04 선택
 ## 17.6 수검자
 
 ```text
-C#에서 SocialNumber 하이픈 제거 후 13자리로 SP 전달
+C#에서 주민번호 하이픈 제거 후 13자리로 SP 전달
 12자리 / 14자리 / 숫자 외 문자를 포함한 입력
 존재하지 않는 생년월일
 허용되지 않은 7번째 자리
-Birthday/Gender DB 산출값 확인
-동일 주민번호+동일 이름 → Code=2
-동일 주민번호+다른 이름 → Code=202 + 기존 1행
-이름+생년월일 동일 후보 → Code=203 + 후보 N행
+생년월일/성별 DB 산출값 확인
+동일 주민번호+동일 이름 → 결과코드=2
+동일 주민번호+다른 이름 → 결과코드=202 + 기존 1행
+이름+생년월일 동일 후보 → 결과코드=203 + 후보 N행
 후보 확인 후 별도등록
-수동 ChartNo 중복
-자동 ChartNo 발급
+수동 차트번호 중복
+자동 차트번호 발급
 수정 No-op
-LastEditDate 충돌
+최종수정일시 충돌
 주민번호 변경+RSV 존재
 주민번호 변경+RCP 존재
 차트번호 변경+활성 Work 존재 → 차트번호 중복만 검증
-동일 SocialNumber 동시등록 → 1건만 신규등록
+동일 주민번호 동시등록 → 1건만 신규등록
 실제 주민등록번호를 Seed/Test Data에 사용하지 않았는지 검수
 ```
 
@@ -2251,8 +2288,8 @@ WalkIn 날짜가 오늘 아님
 AEX만 변경
 시간대+AEX 변경
 변경 없음
-RowVersion 충돌
-현재 Work가 20/20 Slot을 그대로 유지
+행버전 충돌
+현재 Work가 20/20 시간대을 그대로 유지
 ```
 
 ## 17.8 접수
@@ -2274,14 +2311,14 @@ RCP 접수취소 후 RSV 복원 금지
 
 ```text
 모든 SP의 RS0 정확히 1행
-예약불가는 RS0 성공 + BlockCode
+예약불가는 RS0 성공 + 차단코드
 검색 0건은 성공
-수검자 Code=202/203은 후보 Result Set 존재
+수검자 결과코드=202/203은 후보 Result Set 존재
 예약가능정보 성공 Result Set 순서 고정
-Scope별 Cardinality 준수
+변경범위별 Cardinality 준수
 NEX RS4가 0 또는 8~11행인지 검증
-RowVersion BINARY(8)
-LastEditDate DATETIME 원본 유지
+행버전 BINARY(8)
+최종수정일시 DATETIME 원본 유지
 ```
 
 # 18. Phase 3 적대적 최종검수
@@ -2304,18 +2341,18 @@ LastEditDate DATETIME 원본 유지
 | 사용되지 않는 ResultCode | PASS — 0개 |
 | 예약불가와 SP 실패 혼합 | PASS — 분리 |
 | 중복후보 후속 데이터 누락 | PASS — INSERT_수검자 예외계약 |
-| SocialNumber 저장·검색 경계 | PASS — VARCHAR(13) 직접 정확검색·UQ |
-| Birthday/Gender 최종 산출 책임 | PASS — `수검자`의 `PERSISTED` 계산열 (`04` §8.1.2) |
+| 주민번호 저장·검색 경계 | PASS — VARCHAR(13) 직접 정확검색·UQ |
+| 생년월일/성별 최종 산출 책임 | PASS — `수검자`의 `PERSISTED` 계산열 (`04` §8.1.2) |
 | 주민번호 전용 보조구조 잔존 | PASS — 없음 |
-| 예약변경 현재 WorkId 제외 | PASS — SELECT/UPDATE 모두 명시 |
+| 예약변경 현재 업무ID 제외 | PASS — SELECT/UPDATE 모두 명시 |
 | 다른 유효업무 복수행 이상상태 | PASS — 701 |
 | NEX 실제 Cardinality | PASS — 8~11행 |
 | 시간대만 변경 시 TGT/NEX/AEX 재검증 | PASS — 금지 |
-| AEX 실제 변경 RowVersion 갱신 | PASS — 명시 |
+| AEX 실제 변경 행버전 갱신 | PASS — 명시 |
 | AEX 동일집합 No-op | PASS — 명시 |
 | 예약일 변경 영향범위 | PASS — ALL |
 | 시간대+AEX 영향범위 | PASS — SLOT_EXTRA |
-| 현재 Work 정원 중복계산 | PASS — AfterCount 규칙 확정 |
+| 현재 Work 정원 중복계산 | PASS — 적용후인원 규칙 확정 |
 | 조회값을 저장권한으로 오인 | PASS — Write SP 재검증 |
 | Patient/Work 동시성 구분 | PASS |
 | 00~04 스키마 변경 | PASS — 0건 |
@@ -2336,7 +2373,7 @@ Phase 4는 다음을 구현하되 본 문서의 외부 계약을 변경하지 �
 ```text
 Transaction·잠금 상세 SQL
 동시성 UPDATE 조건
-SocialNumber 숫자 13자리·파생값·고유성 검증 SQL
+주민번호 숫자 13자리·파생값·고유성 검증 SQL
 실제 주민등록번호 금지와 임의 테스트값 Seed 검수
 19개 검사 Master Seed
 평일·토요일 휴무일 Seed
@@ -2355,17 +2392,17 @@ DB Role·GRANT EXECUTE·직접 DML 통제
 HC 접두사 의미
 16개 Stored Procedure 이름과 수
 4개 Inline TVF 이름과 수
-각 SP Parameter 이름·타입·NULL (R3에서 Write SP 8개에 `@OperatorName`을 추가하며 한 번 열렸고, 그 외에는 고정이다)
+각 SP Parameter 이름·타입·NULL (R3에서 Write SP 8개에 `@조작자명`을 추가하며 한 번 열렸고, 그 외에는 고정이다)
 RS0 공통 컬럼
 SP별 Result Set 순서·컬럼·Cardinality
 3자리 ResultCode와 영역
 오류 우선순위
-SocialNumber 직접 저장·검색·파생값 계약
-예약변경 Scope와 현재 WorkId 제외조건
+주민번호 직접 저장·검색·파생값 계약
+예약변경 변경범위와 현재 업무ID 제외조건
 NEX 8~11행 Cardinality
 No-op 정의
 수검자 후보 Result Set 예외
-Patient LastEditDate / Work RowVersion 계약
+Patient 최종수정일시 / Work 행버전 계약
 Phase 4 논리 Transaction·잠금 인계
 ```
 

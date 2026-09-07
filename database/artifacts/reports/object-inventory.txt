@@ -40,22 +40,22 @@ OBJ|IF|UFN_HC_검진대상확인
 OBJ|IF|UFN_HC_국가검사구성
 OBJ|IF|UFN_HC_일정확인
 OBJ|IF|UFN_HC_추가검사확인
-OBJ|P |USP_HC_INSERT_수검자
-OBJ|P |USP_HC_INSERT_예약
-OBJ|P |USP_HC_SELECT_공통업무상태
-OBJ|P |USP_HC_SELECT_변경이력
-OBJ|P |USP_HC_SELECT_수검자목록
-OBJ|P |USP_HC_SELECT_수검자상세
-OBJ|P |USP_HC_SELECT_수검자유효업무
-OBJ|P |USP_HC_SELECT_예약가능정보
-OBJ|P |USP_HC_SELECT_예약접수목록
-OBJ|P |USP_HC_SELECT_예약접수상세
-OBJ|P |USP_HC_UPDATE_수검자정보
-OBJ|P |USP_HC_UPDATE_예약변경
-OBJ|P |USP_HC_UPDATE_예약취소
-OBJ|P |USP_HC_UPDATE_접수완료
-OBJ|P |USP_HC_UPDATE_접수추가검사
-OBJ|P |USP_HC_UPDATE_접수취소
+OBJ|P |USP_HC_공통업무상태_조회
+OBJ|P |USP_HC_변경이력_조회
+OBJ|P |USP_HC_수검자_등록
+OBJ|P |USP_HC_수검자목록_조회
+OBJ|P |USP_HC_수검자상세_조회
+OBJ|P |USP_HC_수검자유효업무_조회
+OBJ|P |USP_HC_수검자정보_수정
+OBJ|P |USP_HC_예약_등록
+OBJ|P |USP_HC_예약_변경
+OBJ|P |USP_HC_예약_취소
+OBJ|P |USP_HC_예약가능정보_조회
+OBJ|P |USP_HC_예약접수목록_조회
+OBJ|P |USP_HC_예약접수상세_조회
+OBJ|P |USP_HC_접수_완료
+OBJ|P |USP_HC_접수_취소
+OBJ|P |USP_HC_접수추가검사_변경
 OBJ|PK|PK_검사코드
 OBJ|PK|PK_변경이력
 OBJ|PK|PK_수검자
@@ -155,105 +155,105 @@ IDX|완료이력|PK_완료이력|1|0|0|1|수검자ID
 IDX|완료이력|PK_완료이력|1|0|0|2|완료일자
 IDX|휴무일|PK_휴무일|1|0|0|1|휴무일자
 --- PARAMETERS ---
-PRM|USP_HC_INSERT_수검자|1|@AutoChartNo|bit|1
-PRM|USP_HC_INSERT_수검자|2|@ChartNo|nvarchar|200
-PRM|USP_HC_INSERT_수검자|3|@Name|nvarchar|200
-PRM|USP_HC_INSERT_수검자|4|@SocialNumber|varchar|13
-PRM|USP_HC_INSERT_수검자|5|@MobilePhone|varchar|13
-PRM|USP_HC_INSERT_수검자|6|@Phone|varchar|13
-PRM|USP_HC_INSERT_수검자|7|@Email|varchar|200
-PRM|USP_HC_INSERT_수검자|8|@Zipcode|varchar|10
-PRM|USP_HC_INSERT_수검자|9|@Address|nvarchar|400
-PRM|USP_HC_INSERT_수검자|10|@AddressDetail|nvarchar|400
-PRM|USP_HC_INSERT_수검자|11|@Memo|nvarchar|-1
-PRM|USP_HC_INSERT_수검자|12|@HepatitisBExcluded|bit|1
-PRM|USP_HC_INSERT_수검자|13|@ConfirmSimilarPatient|bit|1
-PRM|USP_HC_INSERT_수검자|14|@OperatorName|nvarchar|100
-PRM|USP_HC_INSERT_예약|1|@PatientId|bigint|8
-PRM|USP_HC_INSERT_예약|2|@ReservationType|varchar|10
-PRM|USP_HC_INSERT_예약|3|@ReservationDate|date|3
-PRM|USP_HC_INSERT_예약|4|@TimeSlot|char|2
-PRM|USP_HC_INSERT_예약|5|@AexOpt01Selected|bit|1
-PRM|USP_HC_INSERT_예약|6|@AexOpt02Selected|bit|1
-PRM|USP_HC_INSERT_예약|7|@AexOpt03Selected|bit|1
-PRM|USP_HC_INSERT_예약|8|@AexOpt04Selected|bit|1
-PRM|USP_HC_INSERT_예약|9|@AexOpt05Selected|bit|1
-PRM|USP_HC_INSERT_예약|10|@AexOpt06Selected|bit|1
-PRM|USP_HC_INSERT_예약|11|@AexOpt07Selected|bit|1
-PRM|USP_HC_INSERT_예약|12|@OperatorName|nvarchar|100
-PRM|USP_HC_SELECT_변경이력|1|@TargetTable|nvarchar|20
-PRM|USP_HC_SELECT_변경이력|2|@TargetKey|bigint|8
-PRM|USP_HC_SELECT_수검자목록|1|@ChartNo|nvarchar|200
-PRM|USP_HC_SELECT_수검자목록|2|@Name|nvarchar|200
-PRM|USP_HC_SELECT_수검자목록|3|@SocialNumber|varchar|13
-PRM|USP_HC_SELECT_수검자목록|4|@Birthday|varchar|8
-PRM|USP_HC_SELECT_수검자목록|5|@MobilePhone|varchar|13
-PRM|USP_HC_SELECT_수검자상세|1|@PatientId|bigint|8
-PRM|USP_HC_SELECT_수검자유효업무|1|@PatientId|bigint|8
-PRM|USP_HC_SELECT_예약가능정보|1|@PatientId|bigint|8
-PRM|USP_HC_SELECT_예약가능정보|2|@WorkId|bigint|8
-PRM|USP_HC_SELECT_예약가능정보|3|@RowVersion|binary|8
-PRM|USP_HC_SELECT_예약가능정보|4|@ReservationType|varchar|10
-PRM|USP_HC_SELECT_예약가능정보|5|@ReservationDate|date|3
-PRM|USP_HC_SELECT_예약가능정보|6|@TimeSlot|char|2
-PRM|USP_HC_SELECT_예약가능정보|7|@AexOpt01Selected|bit|1
-PRM|USP_HC_SELECT_예약가능정보|8|@AexOpt02Selected|bit|1
-PRM|USP_HC_SELECT_예약가능정보|9|@AexOpt03Selected|bit|1
-PRM|USP_HC_SELECT_예약가능정보|10|@AexOpt04Selected|bit|1
-PRM|USP_HC_SELECT_예약가능정보|11|@AexOpt05Selected|bit|1
-PRM|USP_HC_SELECT_예약가능정보|12|@AexOpt06Selected|bit|1
-PRM|USP_HC_SELECT_예약가능정보|13|@AexOpt07Selected|bit|1
-PRM|USP_HC_SELECT_예약접수목록|1|@FromDate|date|3
-PRM|USP_HC_SELECT_예약접수목록|2|@ToDate|date|3
-PRM|USP_HC_SELECT_예약접수목록|3|@Status|char|3
-PRM|USP_HC_SELECT_예약접수목록|4|@ChartNo|nvarchar|200
-PRM|USP_HC_SELECT_예약접수목록|5|@Name|nvarchar|200
-PRM|USP_HC_SELECT_예약접수상세|1|@WorkId|bigint|8
-PRM|USP_HC_UPDATE_수검자정보|1|@PatientId|bigint|8
-PRM|USP_HC_UPDATE_수검자정보|2|@LastEditDate|datetime|8
-PRM|USP_HC_UPDATE_수검자정보|3|@ChartNo|nvarchar|200
-PRM|USP_HC_UPDATE_수검자정보|4|@Name|nvarchar|200
-PRM|USP_HC_UPDATE_수검자정보|5|@SocialNumber|varchar|13
-PRM|USP_HC_UPDATE_수검자정보|6|@MobilePhone|varchar|13
-PRM|USP_HC_UPDATE_수검자정보|7|@Phone|varchar|13
-PRM|USP_HC_UPDATE_수검자정보|8|@Email|varchar|200
-PRM|USP_HC_UPDATE_수검자정보|9|@Zipcode|varchar|10
-PRM|USP_HC_UPDATE_수검자정보|10|@Address|nvarchar|400
-PRM|USP_HC_UPDATE_수검자정보|11|@AddressDetail|nvarchar|400
-PRM|USP_HC_UPDATE_수검자정보|12|@Memo|nvarchar|-1
-PRM|USP_HC_UPDATE_수검자정보|13|@HepatitisBExcluded|bit|1
-PRM|USP_HC_UPDATE_수검자정보|14|@OperatorName|nvarchar|100
-PRM|USP_HC_UPDATE_예약변경|1|@WorkId|bigint|8
-PRM|USP_HC_UPDATE_예약변경|2|@RowVersion|binary|8
-PRM|USP_HC_UPDATE_예약변경|3|@ReservationDate|date|3
-PRM|USP_HC_UPDATE_예약변경|4|@TimeSlot|char|2
-PRM|USP_HC_UPDATE_예약변경|5|@AexOpt01Selected|bit|1
-PRM|USP_HC_UPDATE_예약변경|6|@AexOpt02Selected|bit|1
-PRM|USP_HC_UPDATE_예약변경|7|@AexOpt03Selected|bit|1
-PRM|USP_HC_UPDATE_예약변경|8|@AexOpt04Selected|bit|1
-PRM|USP_HC_UPDATE_예약변경|9|@AexOpt05Selected|bit|1
-PRM|USP_HC_UPDATE_예약변경|10|@AexOpt06Selected|bit|1
-PRM|USP_HC_UPDATE_예약변경|11|@AexOpt07Selected|bit|1
-PRM|USP_HC_UPDATE_예약변경|12|@OperatorName|nvarchar|100
-PRM|USP_HC_UPDATE_예약취소|1|@WorkId|bigint|8
-PRM|USP_HC_UPDATE_예약취소|2|@RowVersion|binary|8
-PRM|USP_HC_UPDATE_예약취소|3|@OperatorName|nvarchar|100
-PRM|USP_HC_UPDATE_접수완료|1|@WorkId|bigint|8
-PRM|USP_HC_UPDATE_접수완료|2|@RowVersion|binary|8
-PRM|USP_HC_UPDATE_접수완료|3|@OperatorName|nvarchar|100
-PRM|USP_HC_UPDATE_접수추가검사|1|@WorkId|bigint|8
-PRM|USP_HC_UPDATE_접수추가검사|2|@RowVersion|binary|8
-PRM|USP_HC_UPDATE_접수추가검사|3|@AexOpt01Selected|bit|1
-PRM|USP_HC_UPDATE_접수추가검사|4|@AexOpt02Selected|bit|1
-PRM|USP_HC_UPDATE_접수추가검사|5|@AexOpt03Selected|bit|1
-PRM|USP_HC_UPDATE_접수추가검사|6|@AexOpt04Selected|bit|1
-PRM|USP_HC_UPDATE_접수추가검사|7|@AexOpt05Selected|bit|1
-PRM|USP_HC_UPDATE_접수추가검사|8|@AexOpt06Selected|bit|1
-PRM|USP_HC_UPDATE_접수추가검사|9|@AexOpt07Selected|bit|1
-PRM|USP_HC_UPDATE_접수추가검사|10|@OperatorName|nvarchar|100
-PRM|USP_HC_UPDATE_접수취소|1|@WorkId|bigint|8
-PRM|USP_HC_UPDATE_접수취소|2|@RowVersion|binary|8
-PRM|USP_HC_UPDATE_접수취소|3|@OperatorName|nvarchar|100
+PRM|USP_HC_변경이력_조회|1|@대상테이블|nvarchar|20
+PRM|USP_HC_변경이력_조회|2|@대상키|bigint|8
+PRM|USP_HC_수검자_등록|1|@차트번호자동발급여부|bit|1
+PRM|USP_HC_수검자_등록|2|@차트번호|nvarchar|200
+PRM|USP_HC_수검자_등록|3|@성명|nvarchar|200
+PRM|USP_HC_수검자_등록|4|@주민번호|varchar|13
+PRM|USP_HC_수검자_등록|5|@휴대전화|varchar|13
+PRM|USP_HC_수검자_등록|6|@전화번호|varchar|13
+PRM|USP_HC_수검자_등록|7|@이메일|varchar|200
+PRM|USP_HC_수검자_등록|8|@우편번호|varchar|10
+PRM|USP_HC_수검자_등록|9|@주소|nvarchar|400
+PRM|USP_HC_수검자_등록|10|@상세주소|nvarchar|400
+PRM|USP_HC_수검자_등록|11|@비고|nvarchar|-1
+PRM|USP_HC_수검자_등록|12|@B형간염제외여부|bit|1
+PRM|USP_HC_수검자_등록|13|@유사수검자확인여부|bit|1
+PRM|USP_HC_수검자_등록|14|@조작자명|nvarchar|100
+PRM|USP_HC_수검자목록_조회|1|@차트번호|nvarchar|200
+PRM|USP_HC_수검자목록_조회|2|@성명|nvarchar|200
+PRM|USP_HC_수검자목록_조회|3|@주민번호|varchar|13
+PRM|USP_HC_수검자목록_조회|4|@생년월일|varchar|8
+PRM|USP_HC_수검자목록_조회|5|@휴대전화|varchar|13
+PRM|USP_HC_수검자상세_조회|1|@수검자ID|bigint|8
+PRM|USP_HC_수검자유효업무_조회|1|@수검자ID|bigint|8
+PRM|USP_HC_수검자정보_수정|1|@수검자ID|bigint|8
+PRM|USP_HC_수검자정보_수정|2|@최종수정일시|datetime|8
+PRM|USP_HC_수검자정보_수정|3|@차트번호|nvarchar|200
+PRM|USP_HC_수검자정보_수정|4|@성명|nvarchar|200
+PRM|USP_HC_수검자정보_수정|5|@주민번호|varchar|13
+PRM|USP_HC_수검자정보_수정|6|@휴대전화|varchar|13
+PRM|USP_HC_수검자정보_수정|7|@전화번호|varchar|13
+PRM|USP_HC_수검자정보_수정|8|@이메일|varchar|200
+PRM|USP_HC_수검자정보_수정|9|@우편번호|varchar|10
+PRM|USP_HC_수검자정보_수정|10|@주소|nvarchar|400
+PRM|USP_HC_수검자정보_수정|11|@상세주소|nvarchar|400
+PRM|USP_HC_수검자정보_수정|12|@비고|nvarchar|-1
+PRM|USP_HC_수검자정보_수정|13|@B형간염제외여부|bit|1
+PRM|USP_HC_수검자정보_수정|14|@조작자명|nvarchar|100
+PRM|USP_HC_예약_등록|1|@수검자ID|bigint|8
+PRM|USP_HC_예약_등록|2|@예약구분|varchar|10
+PRM|USP_HC_예약_등록|3|@예약일|date|3
+PRM|USP_HC_예약_등록|4|@시간대코드|char|2
+PRM|USP_HC_예약_등록|5|@추가검사01선택여부|bit|1
+PRM|USP_HC_예약_등록|6|@추가검사02선택여부|bit|1
+PRM|USP_HC_예약_등록|7|@추가검사03선택여부|bit|1
+PRM|USP_HC_예약_등록|8|@추가검사04선택여부|bit|1
+PRM|USP_HC_예약_등록|9|@추가검사05선택여부|bit|1
+PRM|USP_HC_예약_등록|10|@추가검사06선택여부|bit|1
+PRM|USP_HC_예약_등록|11|@추가검사07선택여부|bit|1
+PRM|USP_HC_예약_등록|12|@조작자명|nvarchar|100
+PRM|USP_HC_예약_변경|1|@업무ID|bigint|8
+PRM|USP_HC_예약_변경|2|@행버전|binary|8
+PRM|USP_HC_예약_변경|3|@예약일|date|3
+PRM|USP_HC_예약_변경|4|@시간대코드|char|2
+PRM|USP_HC_예약_변경|5|@추가검사01선택여부|bit|1
+PRM|USP_HC_예약_변경|6|@추가검사02선택여부|bit|1
+PRM|USP_HC_예약_변경|7|@추가검사03선택여부|bit|1
+PRM|USP_HC_예약_변경|8|@추가검사04선택여부|bit|1
+PRM|USP_HC_예약_변경|9|@추가검사05선택여부|bit|1
+PRM|USP_HC_예약_변경|10|@추가검사06선택여부|bit|1
+PRM|USP_HC_예약_변경|11|@추가검사07선택여부|bit|1
+PRM|USP_HC_예약_변경|12|@조작자명|nvarchar|100
+PRM|USP_HC_예약_취소|1|@업무ID|bigint|8
+PRM|USP_HC_예약_취소|2|@행버전|binary|8
+PRM|USP_HC_예약_취소|3|@조작자명|nvarchar|100
+PRM|USP_HC_예약가능정보_조회|1|@수검자ID|bigint|8
+PRM|USP_HC_예약가능정보_조회|2|@업무ID|bigint|8
+PRM|USP_HC_예약가능정보_조회|3|@행버전|binary|8
+PRM|USP_HC_예약가능정보_조회|4|@예약구분|varchar|10
+PRM|USP_HC_예약가능정보_조회|5|@예약일|date|3
+PRM|USP_HC_예약가능정보_조회|6|@시간대코드|char|2
+PRM|USP_HC_예약가능정보_조회|7|@추가검사01선택여부|bit|1
+PRM|USP_HC_예약가능정보_조회|8|@추가검사02선택여부|bit|1
+PRM|USP_HC_예약가능정보_조회|9|@추가검사03선택여부|bit|1
+PRM|USP_HC_예약가능정보_조회|10|@추가검사04선택여부|bit|1
+PRM|USP_HC_예약가능정보_조회|11|@추가검사05선택여부|bit|1
+PRM|USP_HC_예약가능정보_조회|12|@추가검사06선택여부|bit|1
+PRM|USP_HC_예약가능정보_조회|13|@추가검사07선택여부|bit|1
+PRM|USP_HC_예약접수목록_조회|1|@시작일|date|3
+PRM|USP_HC_예약접수목록_조회|2|@종료일|date|3
+PRM|USP_HC_예약접수목록_조회|3|@상태코드|char|3
+PRM|USP_HC_예약접수목록_조회|4|@차트번호|nvarchar|200
+PRM|USP_HC_예약접수목록_조회|5|@성명|nvarchar|200
+PRM|USP_HC_예약접수상세_조회|1|@업무ID|bigint|8
+PRM|USP_HC_접수_완료|1|@업무ID|bigint|8
+PRM|USP_HC_접수_완료|2|@행버전|binary|8
+PRM|USP_HC_접수_완료|3|@조작자명|nvarchar|100
+PRM|USP_HC_접수_취소|1|@업무ID|bigint|8
+PRM|USP_HC_접수_취소|2|@행버전|binary|8
+PRM|USP_HC_접수_취소|3|@조작자명|nvarchar|100
+PRM|USP_HC_접수추가검사_변경|1|@업무ID|bigint|8
+PRM|USP_HC_접수추가검사_변경|2|@행버전|binary|8
+PRM|USP_HC_접수추가검사_변경|3|@추가검사01선택여부|bit|1
+PRM|USP_HC_접수추가검사_변경|4|@추가검사02선택여부|bit|1
+PRM|USP_HC_접수추가검사_변경|5|@추가검사03선택여부|bit|1
+PRM|USP_HC_접수추가검사_변경|6|@추가검사04선택여부|bit|1
+PRM|USP_HC_접수추가검사_변경|7|@추가검사05선택여부|bit|1
+PRM|USP_HC_접수추가검사_변경|8|@추가검사06선택여부|bit|1
+PRM|USP_HC_접수추가검사_변경|9|@추가검사07선택여부|bit|1
+PRM|USP_HC_접수추가검사_변경|10|@조작자명|nvarchar|100
 --- GRANTS ---
 --- SEED ---
 SEED|EXAM|EX001|문진/진찰|NEX-01|-|-|0

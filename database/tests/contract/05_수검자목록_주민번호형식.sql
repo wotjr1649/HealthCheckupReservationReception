@@ -1,3 +1,3 @@
 ﻿SET NOCOUNT ON;
-EXEC [dbo].[USP_HC_SELECT_수검자목록] NULL, NULL, '12345', NULL, NULL;
+EXEC [dbo].[USP_HC_수검자목록_조회] NULL, NULL, '12345', NULL, NULL;
 GO

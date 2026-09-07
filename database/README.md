@@ -1,4 +1,4 @@
-# 검진 예약·접수 관리 — Phase 4 Database
+﻿# 검진 예약·접수 관리 — Phase 4 Database
 
 `HealthCheckupReservationReceptionDb` 의 스키마·Seed·Inline TVF·Stored Procedure·보안·테스트 일체.
 설계 계약은 `../docs/baseline/04_DB_Design.md` 와 `../docs/baseline/05_DB_Rule_SP_Contract.md`,
@@ -32,7 +32,7 @@ erDiagram
 | `검사코드` | 기준 Master | 검사 19종 + NEX/AEX 역할 통합 (12 NEX · 6 AEX · 1 겸용) | Seed 고정 |
 | `휴무일` | 기준 Master | 공휴일·센터 휴진일 | Seed 고정 |
 | `완료이력` | Rule 입력 | 일반검진 완료일 + 그때의 검사구성. TGT 판정 입력 | Seed/Test · 복사 스크립트 |
-| `변경이력` | 변경 기록 | 성공한 데이터 변경을 컬럼 단위로 (`00` CP-06) | Write SP 8개가 쓰고 `USP_HC_SELECT_변경이력` 이 읽는다 (F-COM-008 · DLG-LOG-01) |
+| `변경이력` | 변경 기록 | 성공한 데이터 변경을 컬럼 단위로 (`00` CP-06) | Write SP 8개가 쓰고 `USP_HC_변경이력_조회` 이 읽는다 (F-COM-008 · DLG-LOG-01) |
 
 검사구성은 `검사항목코드`를 오름차순 쉼표로 이은 문자열이다. 전개는 `검사코드` 를 JOIN 하고
 양끝을 쉼표로 감싼 `LIKE` 로 하며 파서가 필요 없다 (`../docs/phase4/plans/10-schema-consolidation.md` §2.1).
@@ -45,7 +45,7 @@ erDiagram
 ```
 
 조회 전용이고 배포물이 아니다. 볼 대상을 바꾸려면 `scripts/inspect.sql` 위쪽의
-`@WorkId` · `@ChartNo` 두 변수만 고친다.
+`@업무ID` · `@차트번호` 두 변수만 고친다.
 
 ## 빠른 시작
 
@@ -97,15 +97,16 @@ G00~G16 의 정의와 증거 파일 대응은 스펙 §42 에 있다.
 | `scripts/copy-completion.sh` | 접수완료(`RCP`) 업무 **전체**를 완료이력으로 복사 |
 | `scripts/dev-completion.sh` | `DEV_완료이력_등록` SP 설치 — 한 사람의 한 날짜를 콕 집어 넣고 지운다 |
 | `scripts/verify-red.sh` | 폐기용 DB 에서 "시험이 실제로 실패를 잡는가" 를 판정 (`RED-001`~`004`) |
+| `scripts/verify-csharp-call.sh` | `csc.exe` 로 `tools/csharp-probe/Probe.cs` 를 컴파일해 **실제 ADO.NET 호출**로 한글 Parameter·컬럼을 확인 (`CS-001`~`016`) |
 
 ```sql
-EXEC [dbo].[DEV_완료이력_등록] @ChartNo = N'T001', @CompletionDate = '2024-05-01';
-EXEC [dbo].[DEV_완료이력_등록] @ChartNo = N'T002', @CompletionDate = '2023-11-11', @Unknown = 1;
-EXEC [dbo].[DEV_완료이력_등록] @ChartNo = N'T001', @CompletionDate = '2024-05-01', @Delete = 1;
+EXEC [dbo].[DEV_완료이력_등록] @차트번호 = N'T001', @완료일자 = '2024-05-01';
+EXEC [dbo].[DEV_완료이력_등록] @차트번호 = N'T002', @완료일자 = '2023-11-11', @검사구성모름 = 1;
+EXEC [dbo].[DEV_완료이력_등록] @차트번호 = N'T001', @완료일자 = '2024-05-01', @삭제 = 1;
 ```
 
-`@Nex` 를 비우면 현재 Master 의 `NEX-01` 기본검사로 채운다. `@Unknown = 1` 은 외부 기관 이력(검사구성 모름)이며
-`@Nex`·`@Aex` 와 함께 쓰면 거절한다 — 시나리오를 세우는 도구가 입력을 조용히 삼키면 세운 상태와 의도가 갈린다.
+`@국가검사` 를 비우면 현재 Master 의 `NEX-01` 기본검사로 채운다. `@검사구성모름 = 1` 은 외부 기관 이력(검사구성 모름)이며
+`@국가검사`·`@추가검사` 와 함께 쓰면 거절한다 — 시나리오를 세우는 도구가 입력을 조용히 삼키면 세운 상태와 의도가 갈린다.
 
 `DEV_` 접두사는 의도적이다. 계약 개수를 세는 게이트가 전부 `name LIKE 'USP[_]HC[_]%'` 로 거르므로
 (`SCH-014` · `VER-003` · `RBD-004` 지문 · `SCH-019`) 이 SP 는 16개 계약을 한 글자도 건드리지 않는다.

@@ -1,14 +1,14 @@
 ﻿SET NOCOUNT ON;
 PRINT '--- 12_Concurrency_Verify 시작 ---';
 GO
--- 동시성 판정 - DB **최종 상태** 몫 (스펙 §38.2). 로그 수치(applock rc=1 · Msg 1205 · 50002 ·
+-- 동시성 판정 - DB **최종 상태** 몫 (스펙 §38.2). 로그 수치(applock 잠금결과=1 · Msg 1205 · 50002 ·
 -- 2627 · 50001 · 601 · 502)는 concurrency-test.sh 가 본다. 둘 다 있어야 G11 이 성립한다.
 -- 세션 A/B 는 업무실패로 끝날 수 있고 그것이 정상이므로 exit code 로 판정하지 않는다.
 DECLARE @Scen INT = CONVERT(INT, N'$(Scenario)');
 DECLARE @Fail INT = 0;
 DECLARE @P1 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'CONC1');
 DECLARE @P2 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'CONC2');
-DECLARE @Today DATE = CONVERT(DATE, SYSDATETIME());
+DECLARE @오늘날짜 DATE = CONVERT(DATE, SYSDATETIME());
 DECLARE @N INT;
 
 IF @Scen = 1
@@ -40,18 +40,18 @@ BEGIN
     --   ① A→B  주민번호 새 값 · 검사구성 새 기준        정상
     --   ② B→A  A 가 205(EP-08) · 검사구성 옛 기준       정상
     --   ③ 경합  주민번호 새 값 · 검사구성 **옛** 기준    위반
-    DECLARE @Nex NVARCHAR(100), @D DATE;
-    SELECT @Nex = w.[국가검사항목], @D = w.[예약일] FROM [dbo].[예약접수] w
+    DECLARE @국가검사 NVARCHAR(100), @D DATE;
+    SELECT @국가검사 = w.[국가검사항목], @D = w.[예약일] FROM [dbo].[예약접수] w
      WHERE w.[수검자ID] = @P1 AND w.[상태코드] IN ('RSV','RCP');
-    IF @Nex IS NULL BEGIN PRINT 'FAIL CON-004 CONC1 의 유효업무가 없다'; SET @Fail += 1; END
+    IF @국가검사 IS NULL BEGIN PRINT 'FAIL CON-004 CONC1 의 유효업무가 없다'; SET @Fail += 1; END
     ELSE
     BEGIN
         -- STRING_SPLIT 은 허용목록 밖이다 (06 §9.2). 쉼표 개수와 LIKE 로 양방향을 센다.
-        DECLARE @Saved INT = CASE WHEN LEN(@Nex) = 0 THEN 0
-                                  ELSE LEN(@Nex) - LEN(REPLACE(@Nex, N',', N'')) + 1 END;
+        DECLARE @Saved INT = CASE WHEN LEN(@국가검사) = 0 THEN 0
+                                  ELSE LEN(@국가검사) - LEN(REPLACE(@국가검사, N',', N'')) + 1 END;
         DECLARE @Tvf INT = (SELECT COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](@P1, @D));
         DECLARE @Both INT = (SELECT COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](@P1, @D) f
-                              WHERE N',' + @Nex + N',' LIKE N'%,' + f.ExamCode + N',%');
+                              WHERE N',' + @국가검사 + N',' LIKE N'%,' + f.[검사항목코드] + N',%');
         DECLARE @Ssn2 VARCHAR(13) = (SELECT [주민번호] FROM [dbo].[수검자] WHERE [수검자ID] = @P1);
         PRINT 'INFO CON-004 주민번호=' + @Ssn2 + ' 저장NEX=' + CONVERT(VARCHAR(5), @Saved)
             + ' 최종기준NEX=' + CONVERT(VARCHAR(5), @Tvf) + ' 교집합=' + CONVERT(VARCHAR(5), @Both);
@@ -65,10 +65,10 @@ IF @Scen = 5
 BEGIN
     -- 예약취소의 목표상태는 CNR 이다. CNC 는 접수취소(RCP→CNC)의 것이다 (실측 확인).
     DECLARE @St CHAR(3) = (SELECT TOP (1) w.[상태코드] FROM [dbo].[예약접수] w
-                            WHERE w.[수검자ID] = @P1 AND w.[예약일] = @Today AND w.[시간대코드] = 'PM'
+                            WHERE w.[수검자ID] = @P1 AND w.[예약일] = @오늘날짜 AND w.[시간대코드] = 'PM'
                             ORDER BY w.[업무ID]);
     SET @N = (SELECT COUNT(*) FROM [dbo].[예약접수] w
-               WHERE w.[수검자ID] = @P1 AND w.[예약일] = @Today AND w.[시간대코드] = 'PM');
+               WHERE w.[수검자ID] = @P1 AND w.[예약일] = @오늘날짜 AND w.[시간대코드] = 'PM');
     PRINT 'INFO CON-005 최종 상태코드=' + ISNULL(@St, '(없음)') + ' 행수=' + CONVERT(VARCHAR(5), @N);
     IF @N = 1 AND @St IN ('RCP', 'CNR')
         PRINT 'PASS CON-005 접수완료 vs 예약취소 → 한쪽만 전이 (RCP 또는 CNR)';
@@ -79,10 +79,10 @@ IF @Scen = 6
 BEGIN
     -- 601 은 로그 판정이다. 여기서는 두 요청 중 **한쪽 집합만** 저장됐는지 본다.
     --   A = EX014,EX018 (OPT01+OPT06) · B = EX014,EX015 (OPT01+OPT02)
-    DECLARE @Aex NVARCHAR(50) = (SELECT TOP (1) w.[추가검사항목] FROM [dbo].[예약접수] w
+    DECLARE @추가검사 NVARCHAR(50) = (SELECT TOP (1) w.[추가검사항목] FROM [dbo].[예약접수] w
                                   WHERE w.[수검자ID] = @P1 AND w.[상태코드] = 'RCP' ORDER BY w.[업무ID]);
-    PRINT 'INFO CON-006 최종 추가검사항목=' + ISNULL(@Aex, '(NULL)');
-    IF @Aex IN (N'EX014,EX018', N'EX014,EX015')
+    PRINT 'INFO CON-006 최종 추가검사항목=' + ISNULL(@추가검사, '(NULL)');
+    IF @추가검사 IN (N'EX014,EX018', N'EX014,EX015')
         PRINT 'PASS CON-006 같은 Work 동시 AEX 변경 → 한쪽 집합만 저장';
     ELSE BEGIN PRINT 'FAIL CON-006 두 요청이 섞였거나 아무것도 저장되지 않았다'; SET @Fail += 1; END
 END
@@ -104,7 +104,7 @@ END
 IF @Scen = 8
 BEGIN
     SET @N = (SELECT COUNT(*) FROM [dbo].[예약접수]
-               WHERE [예약일] = @Today AND [시간대코드] = 'PM' AND [상태코드] IN ('RSV','RCP'));
+               WHERE [예약일] = @오늘날짜 AND [시간대코드] = 'PM' AND [상태코드] IN ('RSV','RCP'));
     IF @N = 20 PRINT 'PASS CON-008 접수완료 vs WalkIn 신규 → 최종 20 (21 이면 §24.2 결함 재발)';
     ELSE BEGIN PRINT 'FAIL CON-008 최종 인원 ' + CONVERT(VARCHAR(5), @N); SET @Fail += 1; END
 END

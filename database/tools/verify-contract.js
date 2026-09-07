@@ -49,7 +49,7 @@ const pick = (name) => {
   const k = rs0.columns.indexOf(name);
   return k < 0 ? undefined : rs0.firstRow[k];
 };
-const obsSuccess = pick('Success'), obsCode = pick('Code');
+const obsSuccess = pick('성공여부'), obsCode = pick('결과코드');
 if (expected.rs0Success !== undefined && Number(obsSuccess) !== expected.rs0Success) {
   bad(`FAIL ${key} RS0.Success 관측 ${obsSuccess} != 기대 ${expected.rs0Success}`); fail++;
 }

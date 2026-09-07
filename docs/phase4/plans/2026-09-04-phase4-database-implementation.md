@@ -4,7 +4,7 @@
 
 **Goal:** `HealthCheckupReservationReceptionDb`에 7개 물리 테이블·4개 Inline TVF·15개 Stored Procedure를 배포하고, 8개 Write SP의 Transaction·잠금·동시성·권한·Seed·테스트를 실행 증거와 함께 완성한다.
 
-**Architecture:** 배포는 clean-create 방식이다 — `01_Schema.sql`이 FK 역순 `DROP IF EXISTS` 후 `CREATE`하므로 `Deploy.sql`은 항상 재실행 가능하고 항상 동일한 결과를 만든다. 동시성은 `sp_getapplock`으로 논리 자원(SSN/CHART/PAT/WORK/SLOT)을 전역 순서대로 직렬화하고, 행 상태·동시성은 기대상태·`RowVersion` 조건부 `UPDATE` + `@@ROWCOUNT`로 보장한다. 시간에 의존하는 Rule은 `@ServerTime`을 파라미터로 받는 Inline TVF로 결정적으로 시험하고, Write SP는 실제 서버시각으로 통합시험한다.
+**Architecture:** 배포는 clean-create 방식이다 — `01_Schema.sql`이 FK 역순 `DROP IF EXISTS` 후 `CREATE`하므로 `Deploy.sql`은 항상 재실행 가능하고 항상 동일한 결과를 만든다. 동시성은 `sp_getapplock`으로 논리 자원(SSN/CHART/PAT/WORK/SLOT)을 전역 순서대로 직렬화하고, 행 상태·동시성은 기대상태·`행버전` 조건부 `UPDATE` + `@@ROWCOUNT`로 보장한다. 시간에 의존하는 Rule은 `@서버시각`을 파라미터로 받는 Inline TVF로 결정적으로 시험하고, Write SP는 실제 서버시각으로 통합시험한다.
 
 **Tech Stack:** Microsoft SQL Server 2025 Express (`.\SQLEXPRESS`, `17.0.1125.2`) / T-SQL / `sqlcmd 15.0.1300.359` / Git Bash / `node v24.19.0` (표준 라이브러리만) / `git 2.55.0`
 
@@ -36,17 +36,17 @@ Preflight 가드 위반   THROW 50010 ~ 50015   (00_Preflight.sql, 대상 DB 컨
 Rebuild 가드 위반     THROW 50020 ~ 50024   (Rebuild.sql, master 컨텍스트)
 테스트 파일 실패      THROW 51000
 barrier 시각 경과     THROW 51001
-정원                  Capacity = 20  (RSV + RCP, CNR·CNC 제외)
+정원                  정원 = 20  (RSV + RCP, CNR·CNC 제외)
 NEX Cardinality      TGT 대상 8~11행 / 비대상 0행
 AEX                   OPT01~OPT07 7개 BIT, NULL 불허, 0개 이상 선택 허용
 ResultCode Catalog    정확히 38개. 새 코드를 추가하지 않는다
-RS0                   Success BIT / Code INT / Message NVARCHAR(300) / Field VARCHAR(50) / ServerTime DATETIME2(7)
+RS0                   성공여부 BIT / 결과코드 INT / 결과메시지 NVARCHAR(300) / 오류항목 VARCHAR(50) / 서버시각 DATETIME2(7)
 Rule Test 기준 예약일  2026-10-01
 휴무일 Seed           2026-12-25(금, 평일 휴무) / 2026-12-26(토, 토요일 휴무)
 요일 계산             DATEDIFF(DAY, 0, @d) % 7    (0=월 … 5=토, 6=일)
 만 나이               DATEDIFF(YEAR,@b,@d) - CASE WHEN (MONTH(@d)*100+DAY(@d)) < (MONTH(@b)*100+DAY(@b)) THEN 1 ELSE 0 END
-Patient 동시성        수검자.LastEditDate DATETIME. 증가하지 않으면 DATEADD(MILLISECOND, 4, @Old)
-Work 동시성           예약접수.RowVersion BINARY(8)
+Patient 동시성        수검자.최종수정일시 DATETIME. 증가하지 않으면 DATEADD(MILLISECOND, 4, @Old)
+Work 동시성           예약접수.행버전 BINARY(8)
 ```
 
 ### 절대 금지 (모든 Task 공통)
@@ -227,7 +227,7 @@ IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
 ResultCode·Result Set 형상 판정   tests/contract/<NN>_<시나리오>.sql  (EXEC 한 번)
                                   → sqlcmd -u -W -w 65535 -s"|" -o
                                   → node tools/verify-contract.js
-DB 상태 불변조건 판정              tests/<NN>_*.sql  (행수 · StatusCode · RowVersion · Detail 집합)
+DB 상태 불변조건 판정              tests/<NN>_*.sql  (행수 · StatusCode · 행버전 · Detail 집합)
 ```
 
 `tools/expected-contracts.json` 의 각 시나리오에 `"sp"`, `"rs0Success"`, `"rs0Code"`, `"resultSets"` 를 둔다.
@@ -266,19 +266,19 @@ BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
 
-    DECLARE @ServerTime DATETIME2(7) = SYSDATETIME();
-    DECLARE @Today      DATE          = CONVERT(DATE, @ServerTime);
-    DECLARE @NowTime    TIME(7)       = CONVERT(TIME(7), @ServerTime);
-    DECLARE @StoredNow  DATETIME2(0)  = CONVERT(DATETIME2(0), @ServerTime);
-    DECLARE @Code INT = 0, @Field VARCHAR(50) = NULL, @Msg NVARCHAR(300) = NULL;
+    DECLARE @서버시각 DATETIME2(7) = SYSDATETIME();
+    DECLARE @오늘날짜      DATE          = CONVERT(DATE, @서버시각);
+    DECLARE @현재시각    TIME(7)       = CONVERT(TIME(7), @서버시각);
+    DECLARE @저장시각  DATETIME2(0)  = CONVERT(DATETIME2(0), @서버시각);
+    DECLARE @결과코드 INT = 0, @오류항목 VARCHAR(50) = NULL, @결과메시지 NVARCHAR(300) = NULL;
 
     -- [1] Transaction 밖: 입력 정규화 / 필수값 / 허용값 / 조합
-    IF @Code <> 0
+    IF @결과코드 <> 0
     BEGIN
-        SELECT CAST(0 AS BIT) AS Success, CAST(@Code AS INT) AS Code,
-               CAST(@Msg AS NVARCHAR(300)) AS Message,
-               CAST(@Field AS VARCHAR(50)) AS Field,
-               CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+        SELECT CAST(0 AS BIT) AS [성공여부], CAST(@결과코드 AS INT) AS [결과코드],
+               CAST(@결과메시지 AS NVARCHAR(300)) AS [결과메시지],
+               CAST(@오류항목 AS VARCHAR(50)) AS [오류항목],
+               CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
         RETURN;
     END
 
@@ -293,13 +293,13 @@ BEGIN
         --       (1) NEX 개수 NOT BETWEEN 8 AND 11  → 701
         --       (2) ExamSourceCode 가 검사코드 역할과 불일치 → 701
         --       (3) AEX 개수 > 6 → 701
-        IF @Code <> 0
+        IF @결과코드 <> 0
         BEGIN
             ROLLBACK TRANSACTION;
-            SELECT CAST(0 AS BIT) AS Success, CAST(@Code AS INT) AS Code,
-                   CAST(@Msg AS NVARCHAR(300)) AS Message,
-                   CAST(@Field AS VARCHAR(50)) AS Field,
-                   CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+            SELECT CAST(0 AS BIT) AS [성공여부], CAST(@결과코드 AS INT) AS [결과코드],
+                   CAST(@결과메시지 AS NVARCHAR(300)) AS [결과메시지],
+                   CAST(@오류항목 AS VARCHAR(50)) AS [오류항목],
+                   CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
             RETURN;
         END
 
@@ -312,10 +312,10 @@ BEGIN
     END CATCH
 
     -- [6] COMMIT 이후에만 성공 Result Set 출력
-    SELECT CAST(1 AS BIT) AS Success, CAST(@Code AS INT) AS Code,
-           CAST(@Msg AS NVARCHAR(300)) AS Message,
-           CAST(NULL AS VARCHAR(50)) AS Field,
-           CAST(@ServerTime AS DATETIME2(7)) AS ServerTime;
+    SELECT CAST(1 AS BIT) AS [성공여부], CAST(@결과코드 AS INT) AS [결과코드],
+           CAST(@결과메시지 AS NVARCHAR(300)) AS [결과메시지],
+           CAST(NULL AS VARCHAR(50)) AS [오류항목],
+           CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
     SELECT <RS1 — 05 계약 그대로>;
 END
 ```
@@ -325,22 +325,22 @@ END
 ### applock 획득 블록
 
 ```sql
-DECLARE @rc INT, @Res NVARCHAR(255);
+DECLARE @잠금결과 INT, @Res NVARCHAR(255);
 
-SET @Res = N'HC|PAT|' + CONVERT(NVARCHAR(20), @PatientId);
-EXEC @rc = sp_getapplock @Resource = @Res, @LockMode = 'Exclusive',
+SET @Res = N'HC|PAT|' + CONVERT(NVARCHAR(20), @수검자ID);
+EXEC @잠금결과 = sp_getapplock @Resource = @Res, @LockMode = 'Exclusive',
                          @LockOwner = 'Transaction', @LockTimeout = 5000;
 
-PRINT 'INFO applock rc=' + CONVERT(VARCHAR(4), @rc);   -- 경합 증거. 생략 금지
--- 자원명(@Res)은 찍지 않는다. HC|CHART|C000123 은 ChartNo 평문이고 HC|PAT|… 는 내부 식별자다.
--- 스펙 §41 "로그에 실제 개인정보를 남기지 않는다" 위반. rc 만으로 경합 증거(rc=1)는 충분하다.
+PRINT 'INFO applock [rc]=' + CONVERT(VARCHAR(4), @잠금결과);   -- 경합 증거. 생략 금지
+-- 자원명(@Res)은 찍지 않는다. HC|CHART|C000123 은 [차트번호] 평문이고 HC|PAT|… 는 내부 식별자다.
+-- 스펙 §41 "로그에 실제 개인정보를 남기지 않는다" 위반. [rc] 만으로 경합 증거([rc]=1)는 충분하다.
 
-IF @rc = -3                                   -- deadlock victim
+IF @잠금결과 = -3                                   -- deadlock victim
 BEGIN
     ROLLBACK TRANSACTION;
     THROW 50002, N'잠금 교착이 발생했습니다. 다시 시도하십시오.', 1;
 END
-IF @rc < 0                                    -- -1 timeout / -2 취소 / -999 호출오류
+IF @잠금결과 < 0                                    -- -1 timeout / -2 취소 / -999 호출오류
 BEGIN
     ROLLBACK TRANSACTION;
     THROW 50001, N'잠금 획득에 실패했습니다. 잠시 후 다시 시도하십시오.', 1;
@@ -354,38 +354,38 @@ END
 `SSN` 자원만 원문이 아닌 hash를 쓴다. `@Res` 를 `PRINT` 해도 주민번호가 노출되지 않는다.
 
 ```sql
-SET @Res = N'HC|SSN|' + CONVERT(CHAR(64), HASHBYTES('SHA2_256', @SocialNumber), 2);
+SET @Res = N'HC|SSN|' + CONVERT(CHAR(64), HASHBYTES('SHA2_256', @주민번호), 2);
 ```
 
-### Slot 자원 2개 정렬 획득 — `CURSOR` 대신 `WHILE`
+### 시간대 자원 2개 정렬 획득 — `CURSOR` 대신 `WHILE`
 
 ```sql
 -- 자원이 최대 2개이므로 분기 2줄로 충분하다. CURSOR 를 쓰지 않는다 (허용목록 §9.2)
-DECLARE @ResA NVARCHAR(255) = N'HC|SLOT|' + CONVERT(CHAR(8), @CurDate, 112)         + N'|' + @CurSlot;
-DECLARE @ResB NVARCHAR(255) = N'HC|SLOT|' + CONVERT(CHAR(8), @ReservationDate, 112) + N'|' + @TimeSlot;
+DECLARE @자원A NVARCHAR(255) = N'HC|SLOT|' + CONVERT(CHAR(8), @현재예약일, 112)         + N'|' + @현재시간대코드;
+DECLARE @자원B NVARCHAR(255) = N'HC|SLOT|' + CONVERT(CHAR(8), @예약일, 112) + N'|' + @시간대코드;
 
-IF @ResA = @ResB SET @ResB = NULL;                      -- 같은 Slot 이면 하나만
-IF @ResB IS NOT NULL AND @ResB < @ResA                  -- 문자열 오름차순으로 정렬
+IF @자원A = @자원B SET @자원B = NULL;                      -- 같은 시간대 이면 하나만
+IF @자원B IS NOT NULL AND @자원B < @자원A                  -- 문자열 오름차순으로 정렬
 BEGIN
-    DECLARE @Tmp NVARCHAR(255) = @ResA; SET @ResA = @ResB; SET @ResB = @Tmp;
+    DECLARE @Tmp NVARCHAR(255) = @자원A; SET @자원A = @자원B; SET @자원B = @Tmp;
 END
--- @ResA 획득 → (있으면) @ResB 획득
+-- @자원A 획득 → (있으면) @자원B 획득
 ```
 
 `SLOT` 자원은 문자열 오름차순으로 정렬해 획득한다.
 
 ```sql
-SET @Res = N'HC|SLOT|' + CONVERT(CHAR(8), @ReservationDate, 112) + N'|' + @TimeSlot;
+SET @Res = N'HC|SLOT|' + CONVERT(CHAR(8), @예약일, 112) + N'|' + @시간대코드;
 ```
 
 ### 조건부 UPDATE 표준형
 
 ```sql
 UPDATE [dbo].[예약접수]
-   SET StatusCode = '<새 상태>', LastEditDate = @StoredNow
- WHERE WorkId       = @WorkId
+   SET StatusCode = '<새 상태>', [최종수정일시] = @저장시각
+ WHERE [업무ID]       = @업무ID
    AND StatusCode   = '<기대 상태>'
-   AND [행버전] = @RowVersion;
+   AND [행버전] = @행버전;
 
 IF @@ROWCOUNT = 0
 BEGIN

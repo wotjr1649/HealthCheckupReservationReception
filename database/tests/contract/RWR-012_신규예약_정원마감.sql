@@ -4,6 +4,6 @@
 DECLARE @Pf BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'F020');
 DECLARE @Pc BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T018');
 UPDATE [dbo].[예약접수] SET [상태코드] = 'RSV' WHERE [수검자ID] = @Pf;
-EXEC [dbo].[USP_HC_INSERT_예약] @Pc, 'NORMAL', '2026-11-16', 'AM', 0,0,0,0,0,0,0, N'TEST';
+EXEC [dbo].[USP_HC_예약_등록] @Pc, 'NORMAL', '2026-11-16', 'AM', 0,0,0,0,0,0,0, N'TEST';
 UPDATE [dbo].[예약접수] SET [상태코드] = 'CNR' WHERE [수검자ID] = @Pf;
 GO

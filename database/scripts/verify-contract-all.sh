@@ -48,7 +48,7 @@ DAYOK=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
 #   조회 쪽은 여기서 매 회귀 고정한다 (SELECT SP 라 시각과 무관하다).
 #   저장 쪽은 CON-002(19/20 → 20)·CON-008(20/20 → 305)이 경계에서 고정한다.
 #   한쪽만 바뀌면 둘 중 하나가 반드시 깨진다.
-CAPQ="SET NOCOUNT ON; DECLARE @P BIGINT = (SELECT TOP (1) [수검자ID] FROM [dbo].[수검자] ORDER BY [수검자ID]); EXEC [dbo].[USP_HC_SELECT_예약가능정보] @P, NULL, NULL, 'NORMAL', '2026-11-16', 'AM', 0,0,0,0,0,0,0;"
+CAPQ="SET NOCOUNT ON; DECLARE @P BIGINT = (SELECT TOP (1) [수검자ID] FROM [dbo].[수검자] ORDER BY [수검자ID]); EXEC [dbo].[USP_HC_예약가능정보_조회] @P, NULL, NULL, 'NORMAL', '2026-11-16', 'AM', 0,0,0,0,0,0,0;"
 CAPP=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -s"|" -Q "$CAPQ" 2>/dev/null \
        | grep -E '^(AM|PM)\|' | cut -d'|' -f3 | sort -u | tr -d ' \r' | tr '\n' ' ' | sed 's/ *$//')
 if [ "$CAPP" = "20" ]; then

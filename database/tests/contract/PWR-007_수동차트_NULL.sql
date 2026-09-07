@@ -1,4 +1,4 @@
 ﻿SET NOCOUNT ON;
-EXEC [dbo].[USP_HC_INSERT_수검자] 0, NULL, N'차트없음', '9101011000015',
+EXEC [dbo].[USP_HC_수검자_등록] 0, NULL, N'차트없음', '9101011000015',
      NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, N'TEST';
 GO

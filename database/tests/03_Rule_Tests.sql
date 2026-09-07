@@ -3,69 +3,69 @@ DECLARE @Fail INT = 0;
 DECLARE @Biz DATE = '2026-11-16';   -- 월요일, 휴무일 아님
 
 -- RUL-T01 08:59:59.9999999 → 309
-IF ((SELECT WorkCode FROM [dbo].[UFN_HC_일정확인](
+IF ((SELECT [업무가능코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 08:59:59.9999999'), @Biz, 'AM', 'NONE')) = 309)
     PRINT 'PASS RUL-T01 08:59:59 업무불가 309';
 ELSE BEGIN PRINT 'FAIL RUL-T01'; SET @Fail += 1; END
 
--- RUL-T02 09:00:00 → CanWorkNow=1
-IF ((SELECT CanWorkNow FROM [dbo].[UFN_HC_일정확인](
+-- RUL-T02 09:00:00 → 현재업무가능=1
+IF ((SELECT [현재업무가능] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 09:00:00.0000000'), @Biz, 'AM', 'NONE')) = 1)
     PRINT 'PASS RUL-T02 09:00:00 업무가능';
 ELSE BEGIN PRINT 'FAIL RUL-T02'; SET @Fail += 1; END
 
--- RUL-T03 17:59:59.9999999 → CanWorkNow=1
-IF ((SELECT CanWorkNow FROM [dbo].[UFN_HC_일정확인](
+-- RUL-T03 17:59:59.9999999 → 현재업무가능=1
+IF ((SELECT [현재업무가능] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 17:59:59.9999999'), @Biz, 'AM', 'NONE')) = 1)
     PRINT 'PASS RUL-T03 17:59:59 업무가능';
 ELSE BEGIN PRINT 'FAIL RUL-T03'; SET @Fail += 1; END
 
 -- RUL-T04 18:00:00 → 309
-IF ((SELECT WorkCode FROM [dbo].[UFN_HC_일정확인](
+IF ((SELECT [업무가능코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 18:00:00.0000000'), @Biz, 'AM', 'NONE')) = 309)
     PRINT 'PASS RUL-T04 18:00:00 업무불가 309';
 ELSE BEGIN PRINT 'FAIL RUL-T04'; SET @Fail += 1; END
 
 -- RUL-T05/T06 NORMAL AM 마감 10:00
-IF ((SELECT CutoffPassed FROM [dbo].[UFN_HC_일정확인](
+IF ((SELECT [마감경과여부] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 09:59:59.9999999'), @Biz, 'AM', 'NORMAL')) = 0)
     PRINT 'PASS RUL-T05 09:59:59 NORMAL AM 마감 전';
 ELSE BEGIN PRINT 'FAIL RUL-T05'; SET @Fail += 1; END
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 10:00:00.0000000'), @Biz, 'AM', 'NORMAL')) = 304)
     PRINT 'PASS RUL-T06 10:00:00 NORMAL AM 304';
 ELSE BEGIN PRINT 'FAIL RUL-T06'; SET @Fail += 1; END
 
 -- RUL-T07/T08 RECEPTION AM 마감 11:00
-IF ((SELECT CutoffPassed FROM [dbo].[UFN_HC_일정확인](
+IF ((SELECT [마감경과여부] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 10:59:59.9999999'), @Biz, 'AM', 'RECEPTION')) = 0)
     PRINT 'PASS RUL-T07 10:59:59 RECEPTION AM 마감 전';
 ELSE BEGIN PRINT 'FAIL RUL-T07'; SET @Fail += 1; END
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 11:00:00.0000000'), @Biz, 'AM', 'RECEPTION')) = 304)
     PRINT 'PASS RUL-T08 11:00:00 RECEPTION AM 304';
 ELSE BEGIN PRINT 'FAIL RUL-T08'; SET @Fail += 1; END
 
--- RUL-T09 14:59:59.9999999 + NORMAL/PM → CutoffPassed=0
-IF ((SELECT CutoffPassed FROM [dbo].[UFN_HC_일정확인](
+-- RUL-T09 14:59:59.9999999 + NORMAL/PM → 마감경과여부=0
+IF ((SELECT [마감경과여부] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 14:59:59.9999999'), @Biz, 'PM', 'NORMAL')) = 0)
     PRINT 'PASS RUL-T09 14:59:59 NORMAL PM 마감 전';
 ELSE BEGIN PRINT 'FAIL RUL-T09'; SET @Fail += 1; END
 
--- RUL-T10 15:00:00 + NORMAL/PM → ReasonCode=304
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+-- RUL-T10 15:00:00 + NORMAL/PM → 사유코드=304
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 15:00:00.0000000'), @Biz, 'PM', 'NORMAL')) = 304)
     PRINT 'PASS RUL-T10 15:00:00 NORMAL PM 304';
 ELSE BEGIN PRINT 'FAIL RUL-T10'; SET @Fail += 1; END
 
--- RUL-T11 15:59:59.9999999 + RECEPTION/PM → CutoffPassed=0
-IF ((SELECT CutoffPassed FROM [dbo].[UFN_HC_일정확인](
+-- RUL-T11 15:59:59.9999999 + RECEPTION/PM → 마감경과여부=0
+IF ((SELECT [마감경과여부] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 15:59:59.9999999'), @Biz, 'PM', 'RECEPTION')) = 0)
     PRINT 'PASS RUL-T11 15:59:59 RECEPTION PM 마감 전';
 ELSE BEGIN PRINT 'FAIL RUL-T11'; SET @Fail += 1; END
 
--- RUL-T12 16:00:00 + RECEPTION/PM → ReasonCode=304
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+-- RUL-T12 16:00:00 + RECEPTION/PM → 사유코드=304
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 16:00:00.0000000'), @Biz, 'PM', 'RECEPTION')) = 304)
     PRINT 'PASS RUL-T12 16:00:00 RECEPTION PM 304';
 ELSE BEGIN PRINT 'FAIL RUL-T12'; SET @Fail += 1; END
@@ -76,54 +76,54 @@ ELSE BEGIN PRINT 'FAIL RUL-T12'; SET @Fail += 1; END
 -- 요일 실측: 2020-01-05 일 · 2020-01-06 월 · 2026-11-17 화 · 2026-11-21 토 · 2026-11-22 일
 --            2026-12-25 금 · 2026-12-26 토   (DATEDIFF(DAY,0,d)%7 → 0=월 … 6=일)
 
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2020-01-06', 'AM', 'NONE')) = 300)
     PRINT 'PASS RUL-D01 과거 평일 300';
 ELSE BEGIN PRINT 'FAIL RUL-D01'; SET @Fail += 1; END
 
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2020-01-05', 'AM', 'NONE')) = 300)
     PRINT 'PASS RUL-D02 과거 일요일 300 (과거가 일요일보다 우선)';
 ELSE BEGIN PRINT 'FAIL RUL-D02'; SET @Fail += 1; END
 
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2026-11-22', 'AM', 'NONE')) = 301)
     PRINT 'PASS RUL-D03 미래 일요일 301';
 ELSE BEGIN PRINT 'FAIL RUL-D03'; SET @Fail += 1; END
 
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2026-12-25', 'AM', 'NONE')) = 302)
     PRINT 'PASS RUL-D04 활성 평일 휴무일 302';
 ELSE BEGIN PRINT 'FAIL RUL-D04'; SET @Fail += 1; END
 
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2026-12-26', 'AM', 'NONE')) = 302)
     PRINT 'PASS RUL-D05 활성 토요일 휴무일 302 (휴무일이 토요일 규칙보다 우선)';
 ELSE BEGIN PRINT 'FAIL RUL-D05'; SET @Fail += 1; END
 
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2026-11-21', 'AM', 'NONE')) = 0)
     PRINT 'PASS RUL-D06 미래 토요일 오전 운영';
 ELSE BEGIN PRINT 'FAIL RUL-D06'; SET @Fail += 1; END
 
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2026-11-21', 'PM', 'NONE')) = 303)
     PRINT 'PASS RUL-D07 미래 토요일 오후 미운영 303';
 ELSE BEGIN PRINT 'FAIL RUL-D07'; SET @Fail += 1; END
 
--- 토요일 오후는 마감시각이 존재하지 않는다. RawCutoff 가 요일을 보지 않으므로
--- CutoffTime 이 NULL 인지 함께 본다 (05 §6.1.3 "마감 적용 시각이 있을 때만 반환").
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+-- 토요일 오후는 마감시각이 존재하지 않는다. 기본마감시각 가 요일을 보지 않으므로
+-- 마감시각 이 NULL 인지 함께 본다 (05 §6.1.3 "마감 적용 시각이 있을 때만 반환").
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 10:30:00'), '2026-11-17', 'AM', 'NONE')) = 0)
     PRINT 'PASS RUL-D08 정상 평일 0';
 ELSE BEGIN PRINT 'FAIL RUL-D08'; SET @Fail += 1; END
 
 -- RUL-D09 DATEFIRST 비종속. 같은 인자를 DATEFIRST 1 과 7 에서 각각 돌린다.
 SET DATEFIRST 1;
-DECLARE @Sun1 INT = (SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+DECLARE @Sun1 INT = (SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 10:00:00'), CONVERT(DATE,'2026-11-22'), 'AM', 'NONE'));
 SET DATEFIRST 7;
-DECLARE @Sun7 INT = (SELECT ReasonCode FROM [dbo].[UFN_HC_일정확인](
+DECLARE @Sun7 INT = (SELECT [사유코드] FROM [dbo].[UFN_HC_일정확인](
         CONVERT(DATETIME2(7), '2026-11-16 10:00:00'), CONVERT(DATE,'2026-11-22'), 'AM', 'NONE'));
 IF @Sun1 = 301 AND @Sun7 = 301
     PRINT 'PASS RUL-D09 DATEFIRST 비종속 확인';
@@ -135,12 +135,12 @@ DECLARE @Ref DATE = '2026-10-01';
 DECLARE @P BIGINT;
 
 SELECT @P = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T001';   -- 만 19세
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_검진대상확인](@P, @Ref)) = 400)
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_검진대상확인](@P, @Ref)) = 400)
     PRINT 'PASS RUL-G01 만 19세 400 UnderAge';
 ELSE BEGIN PRINT 'FAIL RUL-G01'; SET @Fail += 1; END
 
 SELECT @P = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T002';   -- 만 20세
-IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@P, @Ref)) = 1)
+IF ((SELECT [검진대상여부] FROM [dbo].[UFN_HC_검진대상확인](@P, @Ref)) = 1)
     PRINT 'PASS RUL-G02 만 20세 대상';
 ELSE BEGIN PRINT 'FAIL RUL-G02'; SET @Fail += 1; END
 
@@ -149,42 +149,42 @@ ELSE BEGIN PRINT 'FAIL RUL-G02'; SET @Fail += 1; END
 DECLARE @Pg BIGINT;
 
 SELECT @Pg = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T005';
-IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 1
-    AND (SELECT LastCheckupDate FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) IS NULL)
+IF ((SELECT [검진대상여부] FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 1
+    AND (SELECT [최근완료일자] FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) IS NULL)
     PRINT 'PASS RUL-G03 완료이력 없음 → Eligible=1, LastCheckupDate NULL';
 ELSE BEGIN PRINT 'FAIL RUL-G03'; SET @Fail += 1; END
 
 SELECT @Pg = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T016';
-IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 0
-    AND (SELECT ReasonCode FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 401)
+IF ((SELECT [검진대상여부] FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 0
+    AND (SELECT [사유코드] FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 401)
     PRINT 'PASS RUL-G04 1년차 완료이력 → 401 NotDue';
 ELSE BEGIN PRINT 'FAIL RUL-G04'; SET @Fail += 1; END
 
 SELECT @Pg = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T004';
-IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 1)
+IF ((SELECT [검진대상여부] FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2026-10-01')) = 1)
     PRINT 'PASS RUL-G05 2년차 완료이력 → 대상';
 ELSE BEGIN PRINT 'FAIL RUL-G05'; SET @Fail += 1; END
 
 -- RUL-G06 완료일 = 예약일 당일 → 완료이력으로 쓰지 않는다 (T016 의 완료일을 예약일로 준다)
 SELECT @Pg = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T016';
-IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2025-05-01')) = 1)
+IF ((SELECT [검진대상여부] FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2025-05-01')) = 1)
     PRINT 'PASS RUL-G06 완료일 당일은 완료이력으로 사용하지 않는다';
 ELSE BEGIN PRINT 'FAIL RUL-G06'; SET @Fail += 1; END
 
 -- RUL-G07 완료일 > 예약일 → 완료이력으로 쓰지 않는다
-IF ((SELECT Eligible FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2025-04-30')) = 1)
+IF ((SELECT [검진대상여부] FROM [dbo].[UFN_HC_검진대상확인](@Pg, '2025-04-30')) = 1)
     PRINT 'PASS RUL-G07 예약일 이후의 완료일은 완료이력으로 사용하지 않는다';
 ELSE BEGIN PRINT 'FAIL RUL-G07'; SET @Fail += 1; END
 
--- RUL-G08 존재하지 않는 PatientId → 0행
+-- RUL-G08 존재하지 않는 수검자ID → 0행
 IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_검진대상확인](-1, @Ref)) = 0)
     PRINT 'PASS RUL-G08 미존재 Patient 0행';
 ELSE BEGIN PRINT 'FAIL RUL-G08'; SET @Fail += 1; END
 
 -- ── NEX 구성 RUL-N01~N12 (스펙 §35.4) ────────────────────────────────────────
---   NEX-02 EX009  남 Age>=24 AND (Age-24)%4=0  /  여 Age>=40 AND (Age-40)%4=0
---   NEX-03 EX010  Age=40 AND HepatitisBExcluded=0   NEX-04 EX011  Age=56
---   NEX-05 EX012  Gender='F' AND Age IN (54,60,66)  NEX-06 EX013  Age IN (56,66)
+--   NEX-02 EX009  남 나이>=24 AND (나이-24)%4=0  /  여 나이>=40 AND (나이-40)%4=0
+--   NEX-03 EX010  나이=40 AND B형간염제외여부=0   NEX-04 EX011  나이=56
+--   NEX-05 EX012  성별='F' AND 나이 IN (54,60,66)  NEX-06 EX013  나이 IN (56,66)
 
 SELECT @P = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T001';   -- 만 19세, 비대상
 IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](@P, @Ref)) = 0)
@@ -197,46 +197,46 @@ IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](@P, @Ref)) = 8)
 ELSE BEGIN PRINT 'FAIL RUL-N02'; SET @Fail += 1; END
 
 -- RUL-N03  남 23(T003) / 24(T004) / 28(T005) → EX009 없음 / 있음 / 있음
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T003'), @Ref) WHERE ExamCode='EX009')
-   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T004'), @Ref) WHERE ExamCode='EX009')
-   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T005'), @Ref) WHERE ExamCode='EX009')
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T003'), @Ref) WHERE [검사항목코드]='EX009')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T004'), @Ref) WHERE [검사항목코드]='EX009')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T005'), @Ref) WHERE [검사항목코드]='EX009')
     PRINT 'PASS RUL-N03 남 23/24/28 → EX009 없음/있음/있음';
 ELSE BEGIN PRINT 'FAIL RUL-N03'; SET @Fail += 1; END
 
 -- RUL-N04  여 39(T006) / 40(T007) / 44(T018) → EX009 없음 / 있음 / 있음
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T006'), @Ref) WHERE ExamCode='EX009')
-   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T007'), @Ref) WHERE ExamCode='EX009')
-   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T018'), @Ref) WHERE ExamCode='EX009')
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T006'), @Ref) WHERE [검사항목코드]='EX009')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T007'), @Ref) WHERE [검사항목코드]='EX009')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T018'), @Ref) WHERE [검사항목코드]='EX009')
     PRINT 'PASS RUL-N04 여 39/40/44 → EX009 없음/있음/있음';
 ELSE BEGIN PRINT 'FAIL RUL-N04'; SET @Fail += 1; END
 
--- RUL-N05  만 40세, HepatitisBExcluded=0(T007) → EX010 있음 / =1(T008) → EX010 없음
-IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T007'), @Ref) WHERE ExamCode='EX010')
-   AND NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T008'), @Ref) WHERE ExamCode='EX010')
+-- RUL-N05  만 40세, B형간염제외여부=0(T007) → EX010 있음 / =1(T008) → EX010 없음
+IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T007'), @Ref) WHERE [검사항목코드]='EX010')
+   AND NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T008'), @Ref) WHERE [검사항목코드]='EX010')
     PRINT N'PASS RUL-N05 만 40세 — HepatitisBExcluded=1 이 EX010 을 제거한다';
 ELSE BEGIN PRINT 'FAIL RUL-N05'; SET @Fail += 1; END
 
 -- RUL-N06  만 55(T009) / 56(T010) → EX011 없음 / 있음
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T009'), @Ref) WHERE ExamCode='EX011')
-   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T010'), @Ref) WHERE ExamCode='EX011')
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T009'), @Ref) WHERE [검사항목코드]='EX011')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T010'), @Ref) WHERE [검사항목코드]='EX011')
     PRINT 'PASS RUL-N06 만 55/56 → EX011 없음/있음';
 ELSE BEGIN PRINT 'FAIL RUL-N06'; SET @Fail += 1; END
 
 -- RUL-N07  여 54(T011) / 60(T012) / 66(T013) → EX012 전부 있음
-IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T011'), @Ref) WHERE ExamCode='EX012')
-   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T012'), @Ref) WHERE ExamCode='EX012')
-   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T013'), @Ref) WHERE ExamCode='EX012')
+IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T011'), @Ref) WHERE [검사항목코드]='EX012')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T012'), @Ref) WHERE [검사항목코드]='EX012')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T013'), @Ref) WHERE [검사항목코드]='EX012')
     PRINT 'PASS RUL-N07 여 54/60/66 → EX012 있음';
 ELSE BEGIN PRINT 'FAIL RUL-N07'; SET @Fail += 1; END
 
 -- RUL-N08  남 54(T019) → EX012 없음 (NEX-05 는 여성 전용)
-IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T019'), @Ref) WHERE ExamCode='EX012')
+IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T019'), @Ref) WHERE [검사항목코드]='EX012')
     PRINT 'PASS RUL-N08 남 54세는 EX012 비대상';
 ELSE BEGIN PRINT 'FAIL RUL-N08 남성에게 EX012 가 나왔다'; SET @Fail += 1; END
 
 -- RUL-N09  만 56(T010) / 66(T013) → EX013 있음
-IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T010'), @Ref) WHERE ExamCode='EX013')
-   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T013'), @Ref) WHERE ExamCode='EX013')
+IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T010'), @Ref) WHERE [검사항목코드]='EX013')
+   AND EXISTS (SELECT 1 FROM [dbo].[UFN_HC_국가검사구성]((SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='T013'), @Ref) WHERE [검사항목코드]='EX013')
     PRINT 'PASS RUL-N09 만 56/66 → EX013 있음';
 ELSE BEGIN PRINT 'FAIL RUL-N09'; SET @Fail += 1; END
 
@@ -248,21 +248,21 @@ ELSE BEGIN PRINT 'FAIL RUL-N10'; SET @Fail += 1; END
 -- RUL-N11 모든 TGT 대상 프로필의 행수가 8~11 범위인지 전수 확인
 IF NOT EXISTS (
     SELECT 1 FROM [dbo].[수검자] p
-    CROSS APPLY (SELECT Cnt = COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](p.[수검자ID], @Ref)) n
+    CROSS APPLY (SELECT [건수] = COUNT(*) FROM [dbo].[UFN_HC_국가검사구성](p.[수검자ID], @Ref)) n
     CROSS APPLY [dbo].[UFN_HC_검진대상확인](p.[수검자ID], @Ref) g
-    WHERE g.Eligible = 1 AND (n.Cnt < 8 OR n.Cnt > 11))
+    WHERE g.[검진대상여부] = 1 AND (n.[건수] < 8 OR n.[건수] > 11))
     PRINT 'PASS RUL-N11 전 대상자 NEX 행수 8~11 범위';
 ELSE BEGIN PRINT 'FAIL RUL-N11 범위 벗어난 대상자 존재'; SET @Fail += 1; END
 
--- RUL-N12  정렬 = ExamCode ASC. 반환 순서와 정렬한 순서를 행번호로 맞대어 본다.
+-- RUL-N12  정렬 = 검사항목코드 ASC. 반환 순서와 정렬한 순서를 행번호로 맞대어 본다.
 SELECT @P = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T010';
 IF NOT EXISTS (
     SELECT 1
-    FROM (SELECT ExamCode, rn = ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
+    FROM (SELECT [검사항목코드], rn = ROW_NUMBER() OVER (ORDER BY (SELECT NULL))
             FROM [dbo].[UFN_HC_국가검사구성](@P, @Ref)) a
-    JOIN (SELECT ExamCode, rn = ROW_NUMBER() OVER (ORDER BY ExamCode)
+    JOIN (SELECT [검사항목코드], rn = ROW_NUMBER() OVER (ORDER BY [검사항목코드])
             FROM [dbo].[UFN_HC_국가검사구성](@P, @Ref)) b
-      ON a.rn = b.rn AND a.ExamCode <> b.ExamCode)
+      ON a.rn = b.rn AND a.[검사항목코드] <> b.[검사항목코드])
     PRINT 'PASS RUL-N12 ExamCode ASC 정렬';
 ELSE BEGIN PRINT 'FAIL RUL-N12 정렬 위반'; SET @Fail += 1; END
 
@@ -273,29 +273,29 @@ IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0
     PRINT 'PASS RUL-A01 정확히 7행';
 ELSE BEGIN PRINT 'FAIL RUL-A01'; SET @Fail += 1; END
 
--- RUL-A02  전부 미선택 → Selected·Requested 전부 0
+-- RUL-A02  전부 미선택 → 유효선택여부·요청선택여부 전부 0
 IF NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,0,0)
-                WHERE Selected = 1 OR Requested = 1)
+                WHERE [유효선택여부] = 1 OR [요청선택여부] = 1)
     PRINT 'PASS RUL-A02 전부 미선택 → Selected/Requested 전부 0';
 ELSE BEGIN PRINT 'FAIL RUL-A02'; SET @Fail += 1; END
 
 -- RUL-A03  남성(T015) + OPT03(유방초음파, 여성 전용) → 411
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,1,0,0,0,0)
-      WHERE OptionCode = 'OPT03') = 411)
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,1,0,0,0,0)
+      WHERE [추가검사코드] = 'OPT03') = 411)
     PRINT 'PASS RUL-A03 남성 OPT03 411 WrongGender';
 ELSE BEGIN PRINT 'FAIL RUL-A03'; SET @Fail += 1; END
 
 -- RUL-A04  여성(T010) + OPT05(PSA, 남성 전용) → 411
 SELECT @P = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T010';
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,1,0,0)
-      WHERE OptionCode = 'OPT05') = 411)
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,1,0,0)
+      WHERE [추가검사코드] = 'OPT05') = 411)
     PRINT 'PASS RUL-A04 여성 OPT05 411 WrongGender';
 ELSE BEGIN PRINT 'FAIL RUL-A04'; SET @Fail += 1; END
 
 -- RUL-A05  남성(T015) + OPT07(HPV, 여성 전용) → 411
 SELECT @P = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T015';
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,0,1)
-      WHERE OptionCode = 'OPT07') = 411)
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,0,1)
+      WHERE [추가검사코드] = 'OPT07') = 411)
     PRINT 'PASS RUL-A05 남성 OPT07 411 WrongGender';
 ELSE BEGIN PRINT 'FAIL RUL-A05'; SET @Fail += 1; END
 
@@ -305,44 +305,44 @@ ELSE BEGIN PRINT 'FAIL RUL-A05'; SET @Fail += 1; END
 --   OPT06 은 추가검사코드 의 값이다. PK 인 검사항목코드 로 찾으면 0행 UPDATE 가 되어
 --   410 을 관측할 수 없다 — 술어를 추가검사코드 로 쓴다.
 UPDATE [dbo].[검사코드] SET [추가검사사용여부] = 0 WHERE [추가검사코드] = 'OPT06';
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,1,0)
-      WHERE OptionCode = 'OPT06') = 410)
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,0,0,1,0)
+      WHERE [추가검사코드] = 'OPT06') = 410)
     PRINT 'PASS RUL-A06 비활성 항목 요청 410 ExamInactive';
 ELSE BEGIN PRINT 'FAIL RUL-A06'; SET @Fail += 1; END
 UPDATE [dbo].[검사코드] SET [추가검사사용여부] = 1 WHERE [추가검사코드] = 'OPT06';
 
 -- RUL-A07  NEX 에 EX012 가 있는 여 만 54세(T011)가 OPT04 요청 → 412
 SELECT @P = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T011';
-IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,1,0,0,0)
-      WHERE OptionCode = 'OPT04') = 412)
+IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 0,0,0,1,0,0,0)
+      WHERE [추가검사코드] = 'OPT04') = 412)
     PRINT 'PASS RUL-A07 NEX EX012 중복 412 ExamDuplicate';
 ELSE BEGIN PRINT 'FAIL RUL-A07'; SET @Fail += 1; END
 
--- RUL-A08  TGT 비대상(T001) + @UseSavedExams=0 → 7행 전부 CanSelect=0, Selected=0
+-- RUL-A08  TGT 비대상(T001) + @저장검사사용여부=0 → 7행 전부 선택가능=0, 유효선택여부=0
 SELECT @P = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T001';
 IF ((SELECT COUNT(*) FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 1,1,1,1,1,1,1)) = 7
     AND NOT EXISTS (SELECT 1 FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 1,1,1,1,1,1,1)
-                     WHERE CanSelect = 1 OR Selected = 1))
+                     WHERE [선택가능] = 1 OR [유효선택여부] = 1))
     PRINT 'PASS RUL-A08 TGT 비대상 → 7행 전부 CanSelect=0, Selected=0';
 ELSE BEGIN PRINT 'FAIL RUL-A08'; SET @Fail += 1; END
 
--- RUL-A09  @UseSavedExams=1 → 산출 NEX 가 아니라 저장 NEX 기준으로 중복 판정한다
+-- RUL-A09  @저장검사사용여부=1 → 산출 NEX 가 아니라 저장 NEX 기준으로 중복 판정한다
 --   T011(여 만 54세)의 RCP Work 는 저장 NEX 에 EX012 를 갖는다(tests/00b). 그래서 OPT04 는 412 다.
---   T014 는 남성이라 NEX-05 술어(Gender='F')가 성립하지 않아 저장 NEX 에 EX012 가 없다.
+--   T014 는 남성이라 NEX-05 술어(성별='F')가 성립하지 않아 저장 NEX 에 EX012 가 없다.
 DECLARE @Pa BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T011');
 DECLARE @Wa BIGINT = (SELECT TOP (1) [업무ID] FROM [dbo].[예약접수]
                        WHERE [수검자ID] = @Pa AND [상태코드] = 'RCP' ORDER BY [업무ID]);
 IF @Wa IS NULL
 BEGIN PRINT N'FAIL RUL-A09 사전조건 — T011 의 RCP Work 가 없다 (tests/00b 를 먼저 실행했는가)'; SET @Fail += 1; END
-ELSE IF ((SELECT ReasonCode FROM [dbo].[UFN_HC_추가검사확인](@Pa, @Ref, @Wa, 1, 0,0,0,1,0,0,0)
-           WHERE OptionCode = 'OPT04') = 412)
+ELSE IF ((SELECT [사유코드] FROM [dbo].[UFN_HC_추가검사확인](@Pa, @Ref, @Wa, 1, 0,0,0,1,0,0,0)
+           WHERE [추가검사코드] = 'OPT04') = 412)
     PRINT 'PASS RUL-A09 @UseSavedExams=1 은 저장 NEX 기준으로 중복 판정';
 ELSE BEGIN PRINT 'FAIL RUL-A09'; SET @Fail += 1; END
 
 -- RUL-A10  선택하지 않은 무효 항목은 사유만 표시하고 저장을 막지 않는다
 SELECT @P = [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = 'T015';   -- 남 → OPT03 무효
 IF EXISTS (SELECT 1 FROM [dbo].[UFN_HC_추가검사확인](@P, @Ref, NULL, 0, 1,0,0,0,0,0,0)
-            WHERE OptionCode = 'OPT03' AND CanSelect = 0 AND Requested = 0)
+            WHERE [추가검사코드] = 'OPT03' AND [선택가능] = 0 AND [요청선택여부] = 0)
     PRINT 'PASS RUL-A10 미선택 무효 항목은 사유만 표시된다';
 ELSE BEGIN PRINT 'FAIL RUL-A10'; SET @Fail += 1; END
 

@@ -1,3 +1,3 @@
 ﻿SET NOCOUNT ON;
-EXEC [dbo].[USP_HC_SELECT_변경이력] NULL, 1;
+EXEC [dbo].[USP_HC_변경이력_조회] NULL, 1;
 GO

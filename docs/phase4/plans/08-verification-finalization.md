@@ -20,7 +20,7 @@ GRANT 15건 유지 확인       -> 사용자 결정(2026-09-07)으로 Security �
 
 `[R3]` **업무시간 밖 회차도 판정한다 (`OFF-308`·`OFF-309`).** `tests/05`~`08` 은 창 밖에서
 `RETURN` 하지 않고 분기해 "창 안이면 성공했을 호출이 DB 를 바꾸지 않았다" 를 판정하고,
-Code 판정은 `tests/contract/OFF-308-01`·`OFF-309-01`·`OFF-309-02` 가 한다. 스펙 §33.2a.
+결과코드 판정은 `tests/contract/OFF-308-01`·`OFF-309-01`·`OFF-309-02` 가 한다. 스펙 §33.2a.
 `OFF-309` 는 업무일의 시간 밖에서만, `OFF-308` 은 일요일·활성 휴무일에만 성립한다.
 
 `[R3]` **회차 사이 비교는 `scripts/clean-rebuild-verify.sh` 로 옮겼다.** `tests/14` 는 한 회차의
@@ -43,10 +43,10 @@ Code 판정은 `tests/contract/OFF-308-01`·`OFF-309-01`·`OFF-309-02` 가 한�
 >
 > | 판정 대상 | 구현 위치 |
 > |---|---|
-> | RS0 의 `Success`·`Code`, RS 개수·컬럼·행수 | `tests/contract/<NN>_<시나리오>.sql` (`EXEC` 한 번) + `tools/verify-contract.js` + `expected-contracts.json` |
-> | DB 상태 불변조건 (행수·`StatusCode`·`RowVersion`·Detail 집합) | 이 파일의 `tests/<NN>_*.sql` |
+> | RS0 의 `성공여부`·`결과코드`, RS 개수·컬럼·행수 | `tests/contract/<NN>_<시나리오>.sql` (`EXEC` 한 번) + `tools/verify-contract.js` + `expected-contracts.json` |
+> | DB 상태 불변조건 (행수·`StatusCode`·`행버전`·Detail 집합) | 이 파일의 `tests/<NN>_*.sql` |
 >
-> 예시의 `IF ((SELECT Code FROM @RS0) = NNN)` 는 `expected-contracts.json` 의 `"rs0Code": NNN` 으로 옮긴다.
+> 예시의 `IF ((SELECT 결과코드 FROM @RS0) = NNN)` 는 `expected-contracts.json` 의 `"rs0Code": NNN` 으로 옮긴다.
 
 
 ## Task T33: `tests/08_Rollback_Tests.sql` — 부분저장 0건
@@ -67,7 +67,7 @@ Code 판정은 `tests/contract/OFF-308-01`·`OFF-309-01`·`OFF-309-02` 가 한�
 
 `[X 실측]` **창 밖에서 `RETURN` 하지 않고 분기한다.** `tests/08_Rollback_Tests.sql` 이 창 밖에서는 `RBK-OFF`(창 안이면 성공했을 인자로 Write SP 를 부른 뒤 DB 지문 불변 + `@@TRANCOUNT = 0`)를 판정하고 `NOT RUN RBK-001~008` 을 남긴다. `RBK-008`(실패 응답 RS 개수)은 `INSERT … EXEC` 금지와 DMV `Msg 11520` 때문에 T-SQL 로 셀 수 없어 `tools/verify-docs.js` 의 `V18` 정적 판정으로 옮겼다(스펙 §45.2 카탈로그가 `RBK` 산출 파일에 `verify-docs.js` 를 함께 적는다).
 
-**계약 시나리오**: `RBK-001` = `EXEC [dbo].[USP_HC_INSERT_예약] @P, 'NORMAL', '2026-11-17', 'AM', 0,0,1,0,0,0,0;` (남성 `T009` + OPT03) → 기대 RS0 `Code=411`.
+**계약 시나리오**: `RBK-001` = `EXEC [dbo].[USP_HC_예약_등록] @P, 'NORMAL', '2026-11-17', 'AM', 0,0,1,0,0,0,0;` (남성 `T009` + OPT03) → 기대 RS0 `결과코드=411`.
 
 **DB 상태 단언** — 부분저장이 없었는지는 SP 반환값이 아니라 **행수**로만 증명된다.
 
@@ -91,7 +91,7 @@ DECLARE @P  BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트�
 DECLARE @W0 INT = (SELECT COUNT(*) FROM [dbo].[예약접수]);
 DECLARE @D0 NVARCHAR(160) = (SELECT ISNULL([국가검사항목],N'') FROM [dbo].[예약접수] WHERE [업무ID] = (SELECT MIN([업무ID]) FROM [dbo].[예약접수]));
 
-EXEC [dbo].[USP_HC_INSERT_예약] @P, 'NORMAL', '2026-11-17', 'AM', 0,0,1,0,0,0,0;  -- 남성 + OPT03
+EXEC [dbo].[USP_HC_예약_등록] @P, 'NORMAL', '2026-11-17', 'AM', 0,0,1,0,0,0,0;  -- 남성 + OPT03
 
 IF ((SELECT COUNT(*) FROM [dbo].[예약접수])      = @W0
     AND (SELECT ISNULL([국가검사항목],N'') FROM [dbo].[예약접수] WHERE [업무ID] = (SELECT MIN([업무ID]) FROM [dbo].[예약접수])) = @D0)
@@ -103,15 +103,15 @@ ELSE BEGIN PRINT 'FAIL RBK-001 부분저장 발생'; SET @Fail += 1; END
 
 | Test ID | 실패 유도 | 불변조건 |
 |---|---|---|
-| `RBK-002` | `UPDATE_예약변경` 예약일 변경 후 TGT 비대상 `400` | Work의 `ReservationDate`·`TimeSlotCode`·`RowVersion` 및 Detail 전량 동일 |
+| `RBK-002` | `UPDATE_예약변경` 예약일 변경 후 TGT 비대상 `400` | Work의 `예약일`·`TimeSlotCode`·`행버전` 및 Detail 전량 동일 |
 | `RBK-003` | `UPDATE_예약변경` 정원 마감 `305` | 동일 |
-| `RBK-004` | `UPDATE_접수추가검사` 성별 위반 `411` | AEX Detail 집합·Work `RowVersion` 동일 |
-| `RBK-005` | `UPDATE_수검자정보` 주민번호 변경 차단 `205` | `수검자` 행 전체·`LastEditDate` 동일 |
-| `RBK-006` | `INSERT_수검자` ChartNo 중복 `201` | 신규 Patient 0건 (Sequence 결번은 허용) |
+| `RBK-004` | `UPDATE_접수추가검사` 성별 위반 `411` | AEX Detail 집합·Work `행버전` 동일 |
+| `RBK-005` | `UPDATE_수검자정보` 주민번호 변경 차단 `205` | `수검자` 행 전체·`최종수정일시` 동일 |
+| `RBK-006` | `INSERT_수검자` 차트번호 중복 `201` | 신규 Patient 0건 (Sequence 결번은 허용) |
 | `RBK-007` | 위 모든 실패 직후 | `@@TRANCOUNT = 0` |
 | `RBK-008` | 실패 응답 | Result Set 1개 (RS0만). `202`/`203` 만 예외 |
 
-`RBK-002` 의 불변 비교는 실패 전후의 `RowVersion` 을 직접 비교한다.
+`RBK-002` 의 불변 비교는 실패 전후의 `행버전` 을 직접 비교한다.
 
 ```sql
 -- 검사구성 스냅샷. 검사구성이 예약접수 행의 컬럼 2개이므로 문자열 하나로 비교한다 (04 §8.2.2).
@@ -128,7 +128,7 @@ DECLARE @Same BIT =
     CASE WHEN @Before = (SELECT ISNULL([국가검사항목], N'') + N'|' + ISNULL([추가검사항목], N'')
                            FROM [dbo].[예약접수] WHERE [업무ID] = @W)
          THEN 1 ELSE 0 END;
--- @Same = 1 이고 RowVersion 이 @RvBefore 와 같아야 한다
+-- @Same = 1 이고 [행버전] 이 @RvBefore 와 같아야 한다
 ```
 
 `[X]` **초안은 `FOR XML PATH` 를 쓰면서 "SQL Server 2005부터 있으므로 허용목록에 부합한다"고 적었다.** 허용목록 방식은 *"아래에 없는 기능은 쓰지 않는다"* 이고 `FOR XML PATH` 는 목록에 없다. 버전이 오래된 것은 허용 근거가 아니다. index 문서의 절대 금지 목록에도 `XML` 이 있다.
@@ -180,10 +180,10 @@ Expected: exit 0, 8건 PASS.
                             넘기지 않는다. 정의되지 않은 변수는 sqlcmd 가 즉시 실패시킨다.
                             -> 자원명은 시나리오 번호로 **세션 스크립트 안에서** 만든다.
                                CON-001 은 HASHBYTES 로 SSN 해시까지 그 안에서 계산한다.
-2  EXEC 예시의 인자 개수      R3 이 Write SP 8개에 @OperatorName 을 더했다. Step 2 의 예시는
+2  EXEC 예시의 인자 개수      R3 이 Write SP 8개에 @조작자명 을 더했다. Step 2 의 예시는
                             그 전 형태라 그대로 쓰면 Msg 201 이다. 12/12/3/3/10/3/14/14 개다.
 3  CON-004 판정식            "둘 다 성공 금지" 는 정상 직렬 결과를 FAIL 시킨다. 스펙 §38.6 으로 교체.
-4  CON-005·CON-008 시각      접수완료 성공이 필요해 접수마감 전이어야 한다. PM Slot 으로 구성해
+4  CON-005·CON-008 시각      접수완료 성공이 필요해 접수마감 전이어야 한다. PM 시간대 으로 구성해
                             11:00~15:50 창을 쓴다 (스펙 §38.7). AM 은 09:00~10:50 뿐이다.
 ```
 
@@ -194,7 +194,7 @@ Expected: exit 0, 8건 PASS.
                     barrier 는 HHMMSS 로 넘기고 세션 스크립트가 STUFF 로 콜론을 끼운다.
                     WAITFOR TIME 은 TIME 형을 거부한다(Msg 9815) -> VARCHAR(8).
 6  CON-005 최종상태  예약취소의 목표는 CNR 이다. Step 3 표의 CNC 는 접수취소(RCP->CNC)의 것이다.
-7  CON-004 인자      UPDATE_수검자정보 는 전체치환형이라 @LastEditDate·@ChartNo·@Name 이 전부
+7  CON-004 인자      UPDATE_수검자정보 는 전체치환형이라 @최종수정일시·@차트번호·@성명 이 전부
                     필수다. 주민번호만 넣으면 100 으로 끝나고, 그래도 최종 상태는 '아무것도
                     안 바뀜' 이라 판정이 **공허하게 PASS** 한다. 실제로 그렇게 통과했다.
                     -> concurrency-test.sh 가 로그의 100 을 세어 1건이라도 있으면 FAIL 한다.
@@ -204,8 +204,8 @@ Expected: exit 0, 8건 PASS.
 ```
 
 `[R3]` **`CON-006` 의 Session A 는 반드시 *실제 변경* 이어야 한다.** 동일 AEX 집합을 주면 A 가
-No-op(`Code=1`)으로 끝나 `RowVersion` 이 그대로 남고, B 도 No-op 이 되어 **`601` 이 영영 나오지 않는다.**
-A 는 AEX 를 실제로 바꾸고 B 는 그 전에 읽은(이제 stale 인) `RowVersion` 으로 또 다른 변경을 요청한다.
+No-op(`결과코드=1`)으로 끝나 `행버전` 이 그대로 남고, B 도 No-op 이 되어 **`601` 이 영영 나오지 않는다.**
+A 는 AEX 를 실제로 바꾸고 B 는 그 전에 읽은(이제 stale 인) `행버전` 으로 또 다른 변경을 요청한다.
 
 `[R3]` **`CON-001` 은 `Msg 2627` 0건을 함께 본다.** `UQ_수검자_SOCIAL_NUMBER` 가 applock 이 없어도
 두 번째 INSERT 를 막아 주므로 "행 1건" 만으로는 잠금이 동작했는지 알 수 없다. 스펙 §20 은 `2627` 을
@@ -289,15 +289,15 @@ PRINT 'INFO A 진입 ' + CONVERT(VARCHAR(30), SYSDATETIME(), 121);
 
 IF @Scen = 1
 BEGIN
-    -- R3: @HepatitisBExcluded · @ConfirmSimilarPatient · @OperatorName 을 포함해 14개다.
-    EXEC [dbo].[USP_HC_INSERT_수검자] 1, NULL, N'동시등록', '9505051000019',
+    -- R3: @B형간염제외여부 · @유사수검자확인여부 · @조작자명 을 포함해 14개다.
+    EXEC [dbo].[USP_HC_수검자_등록] 1, NULL, N'동시등록', '9505051000019',
          NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, N'CONC-A';
 END
 ELSE IF @Scen = 2
 BEGIN
     DECLARE @P BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호]='CONC1');   -- 09_Concurrency_Setup.sql 이 심는 전용 수검자
-    -- R3: @OperatorName 을 포함해 12개다.
-    EXEC [dbo].[USP_HC_INSERT_예약] @P, 'NORMAL', '2026-11-16', 'AM', 0,0,0,0,0,0,0, N'CONC-A';
+    -- R3: @조작자명 을 포함해 12개다.
+    EXEC [dbo].[USP_HC_예약_등록] @P, 'NORMAL', '2026-11-16', 'AM', 0,0,0,0,0,0,0, N'CONC-A';
 END
 -- … 시나리오 3~7
 GO
@@ -309,14 +309,14 @@ GO
 
 | # | Test ID | 시나리오 | Session A | Session B | DB 최종 상태 판정 |
 |---:|---|---|---|---|---|
-| 1 | `CON-001` | 동일 SocialNumber 동시등록 | `INSERT_수검자` | 동일 SSN | `SELECT COUNT(*) FROM 수검자 WHERE SocialNumber=…` = **1** |
-| 2 | `CON-002` | 19/20 Slot 동시 신규예약 | `INSERT_예약` | 다른 Patient, 같은 Slot | 해당 Slot `RSV+RCP` = **20** |
-| 3 | `CON-003` | 동일 Patient 다른 Slot 동시예약 | `INSERT_예약`(AM) | `INSERT_예약`(PM) | 해당 Patient 유효업무 = **1** |
+| 1 | `CON-001` | 동일 주민번호 동시등록 | `INSERT_수검자` | 동일 SSN | `SELECT COUNT(*) FROM 수검자 WHERE 주민번호=…` = **1** |
+| 2 | `CON-002` | 19/20 시간대 동시 신규예약 | `INSERT_예약` | 다른 Patient, 같은 시간대 | 해당 시간대 `RSV+RCP` = **20** |
+| 3 | `CON-003` | 동일 Patient 다른 시간대 동시예약 | `INSERT_예약`(AM) | `INSERT_예약`(PM) | 해당 Patient 유효업무 = **1** |
 | 4 | `CON-004` | 주민번호 변경 vs 신규예약 | `UPDATE_수검자정보`(만 46 -> 만 56 이 되는 SSN) | `INSERT_예약`(동일 Patient, 미래 예약일) | 저장된 `국가검사항목` 코드 집합 = 최종 수검자 상태 기준 `UFN_HC_국가검사구성` 결과 (`EXCEPT` 양방향 0). 스펙 §38.6 |
-| 5 | `CON-005` | 접수완료 vs 예약취소 (**오늘 PM Slot · 16:00 전**) | `UPDATE_접수완료` | `UPDATE_예약취소` | Work `상태코드` ∈ {`RCP`,`CNC`} 이고 **정확히 하나만** 전이. 패자 로그에 `502` |
-| 6 | `CON-006` | 같은 Work AEX 동시변경 | `UPDATE_접수추가검사` | 동일 stale `RowVersion` | 로그 중 하나에 **`601`** |
+| 5 | `CON-005` | 접수완료 vs 예약취소 (**오늘 PM 시간대 · 16:00 전**) | `UPDATE_접수완료` | `UPDATE_예약취소` | Work `상태코드` ∈ {`RCP`,`CNC`} 이고 **정확히 하나만** 전이. 패자 로그에 `502` |
+| 6 | `CON-006` | 같은 Work AEX 동시변경 | `UPDATE_접수추가검사` | 동일 stale `행버전` | 로그 중 하나에 **`601`** |
 | 7 | `CON-007` | 예약 교차이동 | `UPDATE_예약변경` S1→S2 | `UPDATE_예약변경` S2→S1 | **`Msg 1205` 및 `Msg 50002` 각 0건** |
-| **8** | **`CON-008`** | **접수완료 동시 실행** (스펙 §24.2·§38.5) **오늘 PM Slot · 16:00 전** | `INSERT_예약`(오늘 PM, `WALKIN`) | `UPDATE_접수완료`(같은 Slot 의 RSV 하나) | 해당 Slot `RSV+RCP` = **정확히 20**. 21이면 §24.2 결함 재발 |
+| **8** | **`CON-008`** | **접수완료 동시 실행** (스펙 §24.2·§38.5) **오늘 PM 시간대 · 16:00 전** | `INSERT_예약`(오늘 PM, `WALKIN`) | `UPDATE_접수완료`(같은 시간대 의 RSV 하나) | 해당 시간대 `RSV+RCP` = **정확히 20**. 21이면 §24.2 결함 재발 |
 
 `[I]` **`09_Concurrency_Setup.sql` 은 유효업무 없는 전용 수검자 `CONC1`·`CONC2` 를 심는다.** `F001`~`F019` 는 이미 유효업무를 가져 `306` 이 나오고, `T001`~`T017` 은 Rule 테스트가 쓰므로 오염시키면 안 된다. 주민번호는 `T10` 의 무효화 식으로 계산한 값을 쓴다.
 
@@ -335,8 +335,8 @@ IF CONVERT(TIME(0), SYSDATETIME()) >= CONVERT(TIME(0), '$(BarrierTime)')
 WAITFOR TIME '$(BarrierTime)';
 
 BEGIN TRAN;
-    -- 대상 자원을 SP 보다 먼저 잡아 B 가 반드시 대기하게 만든다 (rc=1 을 결정적으로 만든다)
-    DECLARE @rc INT;
+    -- 대상 자원을 SP 보다 먼저 잡아 B 가 반드시 대기하게 만든다 ([rc]=1 을 결정적으로 만든다)
+    DECLARE @잠금결과 INT;
     -- [X] $(LockResource) 를 쓰지 않는다. concurrency-test.sh 가 그 변수를 넘기지 않아
     --     sqlcmd 가 정의되지 않은 변수로 즉시 실패한다. 시나리오 번호로 여기서 만든다.
     DECLARE @Res NVARCHAR(255) =
@@ -350,14 +350,14 @@ BEGIN TRAN;
             WHEN 7 THEN N'HC|SLOT|' + CONVERT(CHAR(8), @D, 112) + N'|' + @S
             WHEN 8 THEN N'HC|SLOT|' + CONVERT(CHAR(8), CONVERT(DATE, SYSDATETIME()), 112) + N'|PM'
         END;
-    EXEC @rc = sp_getapplock @Resource = @Res, @LockMode = 'Exclusive',
+    EXEC @잠금결과 = sp_getapplock @Resource = @Res, @LockMode = 'Exclusive',
                              @LockOwner = 'Transaction', @LockTimeout = 5000;
-    PRINT 'INFO applock rc=' + CONVERT(VARCHAR(4), @rc);
+    PRINT 'INFO applock [rc]=' + CONVERT(VARCHAR(4), @잠금결과);
     WAITFOR DELAY '00:00:03';        -- B 가 이 자원을 기다리는 구간
 COMMIT;
 
 -- 선점을 놓은 뒤 실제 SP 를 호출한다
-EXEC [dbo].[USP_HC_INSERT_예약] ...;
+EXEC [dbo].[USP_HC_예약_등록] ...;
 ```
 
 `[X]` **로그 파일명에 run ID 와 시나리오 번호를 넣는다.** 초안은 `conc_A.log` 를 고정한 채 8회를 돌아 **시나리오 8의 로그만 남았다.** G15 가 요구한 *"각 회귀 실행의 run ID·시각"* 과 어긋나고, `rc=1` 이 어느 시나리오에서 났는지 사후 확인할 수 없다. → `conc_${RUN}_${SCEN}_A.log` 형식으로 저장한다.
@@ -367,11 +367,11 @@ EXEC [dbo].[USP_HC_INSERT_예약] ...;
 ```sql
 IF @Scen = 2
 BEGIN
-    DECLARE @Cnt INT = (SELECT COUNT(*) FROM [dbo].[예약접수]
+    DECLARE @건수 INT = (SELECT COUNT(*) FROM [dbo].[예약접수]
                          WHERE [예약일]='2026-11-16' AND [시간대코드]='AM'
                            AND [상태코드] IN ('RSV','RCP'));
-    IF @Cnt = 20 PRINT 'PASS CON-002 19/20 동시예약 2건 → 정확히 1건 성공 (최종 20)';
-    ELSE BEGIN PRINT 'FAIL CON-002 최종 인원 ' + CONVERT(VARCHAR(5), @Cnt); SET @Fail += 1; END
+    IF @건수 = 20 PRINT 'PASS CON-002 19/20 동시예약 2건 → 정확히 1건 성공 (최종 20)';
+    ELSE BEGIN PRINT 'FAIL CON-002 최종 인원 ' + CONVERT(VARCHAR(5), @건수); SET @Fail += 1; END
 END
 ```
 
@@ -395,7 +395,7 @@ done
 iconv -f UTF-16 -t UTF-8 artifacts/logs/conc_A.log artifacts/logs/conc_B.log 2>/dev/null | grep -c 'Msg 1205' || true
 ```
 
-Expected: `0`. 1205가 나오면 Slot 자원 정렬 획득이 제대로 구현되지 않은 것이다 — `T26` Step 5를 다시 본다.
+Expected: `0`. 1205가 나오면 시간대 자원 정렬 획득이 제대로 구현되지 않은 것이다 — `T26` Step 5를 다시 본다.
 
 - [x] **Step 6: 잠금 timeout 확인**
 
@@ -530,7 +530,7 @@ ELSE BEGIN PRINT 'FAIL RBD-004 인벤토리 지문 불일치  ' + @FP; SET @Fail
 -- (2) 정렬된 메타데이터 덤프 — diff 용. 개수로는 못 잡는 차이를 잡는다.
 PRINT '--- OBJECTS ---';
 SELECT 'OBJ|' + o.type + '|' + o.name
-FROM sys.objects o WHERE o.is_ms_shipped = 0 AND o.type IN ('U','P','IF','SO','PK','UQ','C','D','F')
+FROM sys.objects o WHERE o.is_ms_shipped = 0 AND o.type IN ('U','P','IF','SO','PK','UQ','[코드]','D','F')
 ORDER BY o.type, o.name;
 
 PRINT '--- COLUMNS ---';
@@ -546,7 +546,7 @@ SELECT 'IDX|' + t.name + '|' + i.name + '|' + CONVERT(VARCHAR(1), i.is_unique)
      + '|' + CONVERT(VARCHAR(3), k.key_ordinal) + '|' + c2.name
 FROM sys.indexes i JOIN sys.tables t ON t.object_id=i.object_id AND t.is_ms_shipped=0
 -- [X] 초안은 CROSS APPLY (SELECT name_list = MAX(c2.name) … WHERE k.key_ordinal = 1) 이었다.
---     첫 Key 컬럼 하나만 기록하므로 (Name, Birthday) 가 (Name, Gender) 로 바뀌어도 지문이 동일하다.
+--     첫 Key 컬럼 하나만 기록하므로 ([성명], [생년월일]) 가 ([성명], [성별]) 로 바뀌어도 지문이 동일하다.
 --     이름이 name_list 라 전건 목록으로 오해하기도 쉽다. INCLUDE 컬럼도 전혀 잡지 못한다.
 --     → index_columns 를 행 단위로 펼쳐 key_ordinal 과 컬럼명을 그대로 덤프한다.
 JOIN sys.index_columns k
@@ -629,7 +629,7 @@ RC=0
 # RBD-006  2회 Rebuild 후 Seed 19행 전건 값 동일 (개수가 아니라 값이다)
 sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -o artifacts/logs/seed_now.txt \
   -Q "SET NOCOUNT ON; SELECT ExamItemCode+'|'+ExamItemName+'|'+ISNULL(NexRuleCode,'-')+'|'+CONVERT(VARCHAR(1),AdditionalActive) FROM dbo.검사코드 ORDER BY ExamItemCode;
-      SELECT CONVERT(VARCHAR(10),HolidayDate,120)+'|'+HolidayName FROM dbo.휴무일 ORDER BY HolidayDate;"
+      SELECT CONVERT(VARCHAR(10),HolidayDate,120)+'|'+휴무일명 FROM dbo.휴무일 ORDER BY HolidayDate;"
 diff artifacts/logs/seed_first.txt artifacts/logs/seed_now.txt \
   && echo "PASS RBD-006 2회 Rebuild 후 Seed 19+2행 값까지 동일" \
   || { echo "FAIL RBD-006 Seed 값 불일치"; RC=1; }
@@ -707,7 +707,7 @@ Expected: `PASS RBD-009`. `otherdb_before.txt` 는 **`T04` Step 7 이 만든다*
 
 - [x] **Step 1: Write SP 시나리오 추가**
 
-`[X 실측]` **파일명이 `12_`~`22_` 가 아니라 `PWR-`·`RWR-`·`CWR-` 이고(추가로 `OFF-`·`SEL-`) 11개가 아니라 110 시나리오다.** `tools/expected-contracts.json` 이 SP 16/16 을 덮는다 — 계획의 15 에 R3 이 신설한 `USP_HC_SELECT_변경이력`(SP-LOG-01)이 더해졌다. 성공/실패 경로는 계획 의도대로 SP 마다 짝으로 있다.
+`[X 실측]` **파일명이 `12_`~`22_` 가 아니라 `PWR-`·`RWR-`·`CWR-` 이고(추가로 `OFF-`·`SEL-`) 11개가 아니라 110 시나리오다.** `tools/expected-contracts.json` 이 SP 16/16 을 덮는다 — 계획의 15 에 R3 이 신설한 `USP_HC_변경이력_조회`(SP-LOG-01)이 더해졌다. 성공/실패 경로는 계획 의도대로 SP 마다 짝으로 있다.
 
 Write SP는 **성공 경로와 실패 경로를 각각** 호출한다. 실패 경로는 RS0 1개만 나와야 한다.
 
@@ -729,124 +729,124 @@ Write SP는 **성공 경로와 실패 경로를 각각** 호출한다. 실패 �
 
 - [x] **Step 2: Parameter 계약 검증 (SQL만)**
 
-`[X 실측]` **`tests/01_Schema_Tests.sql` 의 `SCH-019` 가 SP 별 Parameter 개수를 `EXCEPT` 양방향 대조한다** — 합계는 계획 본문의 95 도 아래 표의 87 도 아닌 99 다(R3 이 Write SP 8개에 `@OperatorName` 을, 목록에 SP-LOG-01 을 더했다). 다만 이름·순서·타입의 기대값 대조는 없다. 그 셋은 `tests/14` 의 `--- PARAMETERS ---` 99행으로 덤프되어 커밋된 `artifacts/reports/object-inventory.txt` 에 남고, 회차 사이 `diff`(`RBD-005`·`007`·`008`)와 git 이력으로만 드리프트를 잡는다.
+`[X 실측]` **`tests/01_Schema_Tests.sql` 의 `SCH-019` 가 SP 별 Parameter 개수를 `EXCEPT` 양방향 대조한다** — 합계는 계획 본문의 95 도 아래 표의 87 도 아닌 99 다(R3 이 Write SP 8개에 `@조작자명` 을, 목록에 SP-LOG-01 을 더했다). 다만 이름·순서·타입의 기대값 대조는 없다. 그 셋은 `tests/14` 의 `--- PARAMETERS ---` 99행으로 덤프되어 커밋된 `artifacts/reports/object-inventory.txt` 에 남고, 회차 사이 `diff`(`RBD-005`·`007`·`008`)와 git 이력으로만 드리프트를 잡는다.
 
 ```sql
 -- [X] 초안은 SELECT 로 덤프만 하고 눈으로 보라고 했다. 이름·순서·타입이 틀려도 조회는 정상 종료하므로
 --     완료조건 "Parameter 95개 일치" 를 근거 없이 주장할 수 있다. EXCEPT 양방향 + THROW 로 바꾼다.
 DECLARE @ExpParam TABLE (SpName SYSNAME, Ord INT, ParamName SYSNAME, TypeName VARCHAR(50), PRIMARY KEY (SpName, Ord));
 INSERT INTO @ExpParam (SpName, Ord, ParamName, TypeName) VALUES
- -- 95행 전건. 기준선 05 §7~§12 에서 기계 생성했다(Write SP 8개의 @OperatorName 포함).
- -- USP_HC_SELECT_공통업무상태 는 무인자라 이 표에 나타나지 않는다 (14 SP × 95 Parameter).
- -- USP_HC_SELECT_수검자목록 5개
- (N'USP_HC_SELECT_수검자목록',  1, N'@ChartNo',               'nvarchar(100)'),
- (N'USP_HC_SELECT_수검자목록',  2, N'@Name',                  'nvarchar(100)'),
- (N'USP_HC_SELECT_수검자목록',  3, N'@SocialNumber',          'varchar(13)'),
- (N'USP_HC_SELECT_수검자목록',  4, N'@Birthday',              'varchar(8)'),
- (N'USP_HC_SELECT_수검자목록',  5, N'@MobilePhone',           'varchar(13)'),
- -- USP_HC_SELECT_수검자상세 1개
- (N'USP_HC_SELECT_수검자상세',  1, N'@PatientId',             'bigint'),
- -- USP_HC_SELECT_수검자유효업무 1개
- (N'USP_HC_SELECT_수검자유효업무',  1, N'@PatientId',             'bigint'),
- -- USP_HC_SELECT_예약접수목록 5개
- (N'USP_HC_SELECT_예약접수목록',  1, N'@FromDate',              'date'),
- (N'USP_HC_SELECT_예약접수목록',  2, N'@ToDate',                'date'),
- (N'USP_HC_SELECT_예약접수목록',  3, N'@Status',                'char(3)'),
- (N'USP_HC_SELECT_예약접수목록',  4, N'@ChartNo',               'nvarchar(100)'),
- (N'USP_HC_SELECT_예약접수목록',  5, N'@Name',                  'nvarchar(100)'),
- -- USP_HC_SELECT_예약접수상세 1개
- (N'USP_HC_SELECT_예약접수상세',  1, N'@WorkId',                'bigint'),
- -- USP_HC_SELECT_예약가능정보 13개
- (N'USP_HC_SELECT_예약가능정보',  1, N'@PatientId',             'bigint'),
- (N'USP_HC_SELECT_예약가능정보',  2, N'@WorkId',                'bigint'),
- (N'USP_HC_SELECT_예약가능정보',  3, N'@RowVersion',            'binary(8)'),
- (N'USP_HC_SELECT_예약가능정보',  4, N'@ReservationType',       'varchar(10)'),
- (N'USP_HC_SELECT_예약가능정보',  5, N'@ReservationDate',       'date'),
- (N'USP_HC_SELECT_예약가능정보',  6, N'@TimeSlot',              'char(2)'),
- (N'USP_HC_SELECT_예약가능정보',  7, N'@AexOpt01Selected',      'bit'),
- (N'USP_HC_SELECT_예약가능정보',  8, N'@AexOpt02Selected',      'bit'),
- (N'USP_HC_SELECT_예약가능정보',  9, N'@AexOpt03Selected',      'bit'),
- (N'USP_HC_SELECT_예약가능정보', 10, N'@AexOpt04Selected',      'bit'),
- (N'USP_HC_SELECT_예약가능정보', 11, N'@AexOpt05Selected',      'bit'),
- (N'USP_HC_SELECT_예약가능정보', 12, N'@AexOpt06Selected',      'bit'),
- (N'USP_HC_SELECT_예약가능정보', 13, N'@AexOpt07Selected',      'bit'),
- -- USP_HC_INSERT_수검자 12개
- (N'USP_HC_INSERT_수검자',  1, N'@AutoChartNo',           'bit'),
- (N'USP_HC_INSERT_수검자',  2, N'@ChartNo',               'nvarchar(100)'),
- (N'USP_HC_INSERT_수검자',  3, N'@Name',                  'nvarchar(100)'),
- (N'USP_HC_INSERT_수검자',  4, N'@SocialNumber',          'varchar(13)'),
- (N'USP_HC_INSERT_수검자',  5, N'@MobilePhone',           'varchar(13)'),
- (N'USP_HC_INSERT_수검자',  6, N'@Phone',                 'varchar(13)'),
- (N'USP_HC_INSERT_수검자',  7, N'@Email',                 'varchar(200)'),
- (N'USP_HC_INSERT_수검자',  8, N'@Zipcode',               'varchar(10)'),
- (N'USP_HC_INSERT_수검자',  9, N'@Address',               'nvarchar(200)'),
- (N'USP_HC_INSERT_수검자', 10, N'@AddressDetail',         'nvarchar(200)'),
- (N'USP_HC_INSERT_수검자', 11, N'@Memo',                  'nvarchar(max)'),
- (N'USP_HC_INSERT_수검자', 12, N'@ConfirmSimilarPatient', 'bit'),
- (N'USP_HC_INSERT_수검자', 13, N'@OperatorName',          'nvarchar(50)'),
- -- USP_HC_UPDATE_수검자정보 12개
- (N'USP_HC_UPDATE_수검자정보',  1, N'@PatientId',             'bigint'),
- (N'USP_HC_UPDATE_수검자정보',  2, N'@LastEditDate',          'datetime'),
- (N'USP_HC_UPDATE_수검자정보',  3, N'@ChartNo',               'nvarchar(100)'),
- (N'USP_HC_UPDATE_수검자정보',  4, N'@Name',                  'nvarchar(100)'),
- (N'USP_HC_UPDATE_수검자정보',  5, N'@SocialNumber',          'varchar(13)'),
- (N'USP_HC_UPDATE_수검자정보',  6, N'@MobilePhone',           'varchar(13)'),
- (N'USP_HC_UPDATE_수검자정보',  7, N'@Phone',                 'varchar(13)'),
- (N'USP_HC_UPDATE_수검자정보',  8, N'@Email',                 'varchar(200)'),
- (N'USP_HC_UPDATE_수검자정보',  9, N'@Zipcode',               'varchar(10)'),
- (N'USP_HC_UPDATE_수검자정보', 10, N'@Address',               'nvarchar(200)'),
- (N'USP_HC_UPDATE_수검자정보', 11, N'@AddressDetail',         'nvarchar(200)'),
- (N'USP_HC_UPDATE_수검자정보', 12, N'@Memo',                  'nvarchar(max)'),
- (N'USP_HC_UPDATE_수검자정보', 13, N'@OperatorName',          'nvarchar(50)'),
- -- USP_HC_INSERT_예약 11개
- (N'USP_HC_INSERT_예약',  1, N'@PatientId',             'bigint'),
- (N'USP_HC_INSERT_예약',  2, N'@ReservationType',       'varchar(10)'),
- (N'USP_HC_INSERT_예약',  3, N'@ReservationDate',       'date'),
- (N'USP_HC_INSERT_예약',  4, N'@TimeSlot',              'char(2)'),
- (N'USP_HC_INSERT_예약',  5, N'@AexOpt01Selected',      'bit'),
- (N'USP_HC_INSERT_예약',  6, N'@AexOpt02Selected',      'bit'),
- (N'USP_HC_INSERT_예약',  7, N'@AexOpt03Selected',      'bit'),
- (N'USP_HC_INSERT_예약',  8, N'@AexOpt04Selected',      'bit'),
- (N'USP_HC_INSERT_예약',  9, N'@AexOpt05Selected',      'bit'),
- (N'USP_HC_INSERT_예약', 10, N'@AexOpt06Selected',      'bit'),
- (N'USP_HC_INSERT_예약', 11, N'@AexOpt07Selected',      'bit'),
- (N'USP_HC_INSERT_예약', 12, N'@OperatorName',          'nvarchar(50)'),
- -- USP_HC_UPDATE_예약변경 11개
- (N'USP_HC_UPDATE_예약변경',  1, N'@WorkId',                'bigint'),
- (N'USP_HC_UPDATE_예약변경',  2, N'@RowVersion',            'binary(8)'),
- (N'USP_HC_UPDATE_예약변경',  3, N'@ReservationDate',       'date'),
- (N'USP_HC_UPDATE_예약변경',  4, N'@TimeSlot',              'char(2)'),
- (N'USP_HC_UPDATE_예약변경',  5, N'@AexOpt01Selected',      'bit'),
- (N'USP_HC_UPDATE_예약변경',  6, N'@AexOpt02Selected',      'bit'),
- (N'USP_HC_UPDATE_예약변경',  7, N'@AexOpt03Selected',      'bit'),
- (N'USP_HC_UPDATE_예약변경',  8, N'@AexOpt04Selected',      'bit'),
- (N'USP_HC_UPDATE_예약변경',  9, N'@AexOpt05Selected',      'bit'),
- (N'USP_HC_UPDATE_예약변경', 10, N'@AexOpt06Selected',      'bit'),
- (N'USP_HC_UPDATE_예약변경', 11, N'@AexOpt07Selected',      'bit'),
- (N'USP_HC_UPDATE_예약변경', 12, N'@OperatorName',          'nvarchar(50)'),
- -- USP_HC_UPDATE_예약취소 2개
- (N'USP_HC_UPDATE_예약취소',  1, N'@WorkId',                'bigint'),
- (N'USP_HC_UPDATE_예약취소',  2, N'@RowVersion',            'binary(8)'),
- (N'USP_HC_UPDATE_예약취소', 3, N'@OperatorName',          'nvarchar(50)'),
- -- USP_HC_UPDATE_접수완료 2개
- (N'USP_HC_UPDATE_접수완료',  1, N'@WorkId',                'bigint'),
- (N'USP_HC_UPDATE_접수완료',  2, N'@RowVersion',            'binary(8)'),
- (N'USP_HC_UPDATE_접수완료', 3, N'@OperatorName',          'nvarchar(50)'),
- -- USP_HC_UPDATE_접수추가검사 9개
- (N'USP_HC_UPDATE_접수추가검사',  1, N'@WorkId',                'bigint'),
- (N'USP_HC_UPDATE_접수추가검사',  2, N'@RowVersion',            'binary(8)'),
- (N'USP_HC_UPDATE_접수추가검사',  3, N'@AexOpt01Selected',      'bit'),
- (N'USP_HC_UPDATE_접수추가검사',  4, N'@AexOpt02Selected',      'bit'),
- (N'USP_HC_UPDATE_접수추가검사',  5, N'@AexOpt03Selected',      'bit'),
- (N'USP_HC_UPDATE_접수추가검사',  6, N'@AexOpt04Selected',      'bit'),
- (N'USP_HC_UPDATE_접수추가검사',  7, N'@AexOpt05Selected',      'bit'),
- (N'USP_HC_UPDATE_접수추가검사',  8, N'@AexOpt06Selected',      'bit'),
- (N'USP_HC_UPDATE_접수추가검사',  9, N'@AexOpt07Selected',      'bit'),
- (N'USP_HC_UPDATE_접수추가검사', 10, N'@OperatorName',          'nvarchar(50)'),
- -- USP_HC_UPDATE_접수취소 2개
- (N'USP_HC_UPDATE_접수취소',  1, N'@WorkId',                'bigint'),
- (N'USP_HC_UPDATE_접수취소',  2, N'@RowVersion',            'binary(8)'),
- (N'USP_HC_UPDATE_접수취소', 3, N'@OperatorName',          'nvarchar(50)');
+ -- 95행 전건. 기준선 05 §7~§12 에서 기계 생성했다(Write SP 8개의 @조작자명 포함).
+ -- USP_HC_공통업무상태_조회 는 무인자라 이 표에 나타나지 않는다 (14 SP × 95 Parameter).
+ -- USP_HC_수검자목록_조회 5개
+ (N'USP_HC_수검자목록_조회',  1, N'@차트번호',               'nvarchar(100)'),
+ (N'USP_HC_수검자목록_조회',  2, N'@성명',                  'nvarchar(100)'),
+ (N'USP_HC_수검자목록_조회',  3, N'@주민번호',          'varchar(13)'),
+ (N'USP_HC_수검자목록_조회',  4, N'@생년월일',              'varchar(8)'),
+ (N'USP_HC_수검자목록_조회',  5, N'@휴대전화',           'varchar(13)'),
+ -- USP_HC_수검자상세_조회 1개
+ (N'USP_HC_수검자상세_조회',  1, N'@수검자ID',             'bigint'),
+ -- USP_HC_수검자유효업무_조회 1개
+ (N'USP_HC_수검자유효업무_조회',  1, N'@수검자ID',             'bigint'),
+ -- USP_HC_예약접수목록_조회 5개
+ (N'USP_HC_예약접수목록_조회',  1, N'@시작일',              'date'),
+ (N'USP_HC_예약접수목록_조회',  2, N'@종료일',                'date'),
+ (N'USP_HC_예약접수목록_조회',  3, N'@상태코드',                'char(3)'),
+ (N'USP_HC_예약접수목록_조회',  4, N'@차트번호',               'nvarchar(100)'),
+ (N'USP_HC_예약접수목록_조회',  5, N'@성명',                  'nvarchar(100)'),
+ -- USP_HC_예약접수상세_조회 1개
+ (N'USP_HC_예약접수상세_조회',  1, N'@업무ID',                'bigint'),
+ -- USP_HC_예약가능정보_조회 13개
+ (N'USP_HC_예약가능정보_조회',  1, N'@수검자ID',             'bigint'),
+ (N'USP_HC_예약가능정보_조회',  2, N'@업무ID',                'bigint'),
+ (N'USP_HC_예약가능정보_조회',  3, N'@행버전',            'binary(8)'),
+ (N'USP_HC_예약가능정보_조회',  4, N'@예약구분',       'varchar(10)'),
+ (N'USP_HC_예약가능정보_조회',  5, N'@예약일',       'date'),
+ (N'USP_HC_예약가능정보_조회',  6, N'@시간대코드',              'char(2)'),
+ (N'USP_HC_예약가능정보_조회',  7, N'@추가검사01선택여부',      'bit'),
+ (N'USP_HC_예약가능정보_조회',  8, N'@추가검사02선택여부',      'bit'),
+ (N'USP_HC_예약가능정보_조회',  9, N'@추가검사03선택여부',      'bit'),
+ (N'USP_HC_예약가능정보_조회', 10, N'@추가검사04선택여부',      'bit'),
+ (N'USP_HC_예약가능정보_조회', 11, N'@추가검사05선택여부',      'bit'),
+ (N'USP_HC_예약가능정보_조회', 12, N'@추가검사06선택여부',      'bit'),
+ (N'USP_HC_예약가능정보_조회', 13, N'@추가검사07선택여부',      'bit'),
+ -- USP_HC_수검자_등록 12개
+ (N'USP_HC_수검자_등록',  1, N'@차트번호자동발급여부',           'bit'),
+ (N'USP_HC_수검자_등록',  2, N'@차트번호',               'nvarchar(100)'),
+ (N'USP_HC_수검자_등록',  3, N'@성명',                  'nvarchar(100)'),
+ (N'USP_HC_수검자_등록',  4, N'@주민번호',          'varchar(13)'),
+ (N'USP_HC_수검자_등록',  5, N'@휴대전화',           'varchar(13)'),
+ (N'USP_HC_수검자_등록',  6, N'@전화번호',                 'varchar(13)'),
+ (N'USP_HC_수검자_등록',  7, N'@이메일',                 'varchar(200)'),
+ (N'USP_HC_수검자_등록',  8, N'@우편번호',               'varchar(10)'),
+ (N'USP_HC_수검자_등록',  9, N'@주소',               'nvarchar(200)'),
+ (N'USP_HC_수검자_등록', 10, N'@상세주소',         'nvarchar(200)'),
+ (N'USP_HC_수검자_등록', 11, N'@비고',                  'nvarchar(max)'),
+ (N'USP_HC_수검자_등록', 12, N'@유사수검자확인여부', 'bit'),
+ (N'USP_HC_수검자_등록', 13, N'@조작자명',          'nvarchar(50)'),
+ -- USP_HC_수검자정보_수정 12개
+ (N'USP_HC_수검자정보_수정',  1, N'@수검자ID',             'bigint'),
+ (N'USP_HC_수검자정보_수정',  2, N'@최종수정일시',          'datetime'),
+ (N'USP_HC_수검자정보_수정',  3, N'@차트번호',               'nvarchar(100)'),
+ (N'USP_HC_수검자정보_수정',  4, N'@성명',                  'nvarchar(100)'),
+ (N'USP_HC_수검자정보_수정',  5, N'@주민번호',          'varchar(13)'),
+ (N'USP_HC_수검자정보_수정',  6, N'@휴대전화',           'varchar(13)'),
+ (N'USP_HC_수검자정보_수정',  7, N'@전화번호',                 'varchar(13)'),
+ (N'USP_HC_수검자정보_수정',  8, N'@이메일',                 'varchar(200)'),
+ (N'USP_HC_수검자정보_수정',  9, N'@우편번호',               'varchar(10)'),
+ (N'USP_HC_수검자정보_수정', 10, N'@주소',               'nvarchar(200)'),
+ (N'USP_HC_수검자정보_수정', 11, N'@상세주소',         'nvarchar(200)'),
+ (N'USP_HC_수검자정보_수정', 12, N'@비고',                  'nvarchar(max)'),
+ (N'USP_HC_수검자정보_수정', 13, N'@조작자명',          'nvarchar(50)'),
+ -- USP_HC_예약_등록 11개
+ (N'USP_HC_예약_등록',  1, N'@수검자ID',             'bigint'),
+ (N'USP_HC_예약_등록',  2, N'@예약구분',       'varchar(10)'),
+ (N'USP_HC_예약_등록',  3, N'@예약일',       'date'),
+ (N'USP_HC_예약_등록',  4, N'@시간대코드',              'char(2)'),
+ (N'USP_HC_예약_등록',  5, N'@추가검사01선택여부',      'bit'),
+ (N'USP_HC_예약_등록',  6, N'@추가검사02선택여부',      'bit'),
+ (N'USP_HC_예약_등록',  7, N'@추가검사03선택여부',      'bit'),
+ (N'USP_HC_예약_등록',  8, N'@추가검사04선택여부',      'bit'),
+ (N'USP_HC_예약_등록',  9, N'@추가검사05선택여부',      'bit'),
+ (N'USP_HC_예약_등록', 10, N'@추가검사06선택여부',      'bit'),
+ (N'USP_HC_예약_등록', 11, N'@추가검사07선택여부',      'bit'),
+ (N'USP_HC_예약_등록', 12, N'@조작자명',          'nvarchar(50)'),
+ -- USP_HC_예약_변경 11개
+ (N'USP_HC_예약_변경',  1, N'@업무ID',                'bigint'),
+ (N'USP_HC_예약_변경',  2, N'@행버전',            'binary(8)'),
+ (N'USP_HC_예약_변경',  3, N'@예약일',       'date'),
+ (N'USP_HC_예약_변경',  4, N'@시간대코드',              'char(2)'),
+ (N'USP_HC_예약_변경',  5, N'@추가검사01선택여부',      'bit'),
+ (N'USP_HC_예약_변경',  6, N'@추가검사02선택여부',      'bit'),
+ (N'USP_HC_예약_변경',  7, N'@추가검사03선택여부',      'bit'),
+ (N'USP_HC_예약_변경',  8, N'@추가검사04선택여부',      'bit'),
+ (N'USP_HC_예약_변경',  9, N'@추가검사05선택여부',      'bit'),
+ (N'USP_HC_예약_변경', 10, N'@추가검사06선택여부',      'bit'),
+ (N'USP_HC_예약_변경', 11, N'@추가검사07선택여부',      'bit'),
+ (N'USP_HC_예약_변경', 12, N'@조작자명',          'nvarchar(50)'),
+ -- USP_HC_예약_취소 2개
+ (N'USP_HC_예약_취소',  1, N'@업무ID',                'bigint'),
+ (N'USP_HC_예약_취소',  2, N'@행버전',            'binary(8)'),
+ (N'USP_HC_예약_취소', 3, N'@조작자명',          'nvarchar(50)'),
+ -- USP_HC_접수_완료 2개
+ (N'USP_HC_접수_완료',  1, N'@업무ID',                'bigint'),
+ (N'USP_HC_접수_완료',  2, N'@행버전',            'binary(8)'),
+ (N'USP_HC_접수_완료', 3, N'@조작자명',          'nvarchar(50)'),
+ -- USP_HC_접수추가검사_변경 9개
+ (N'USP_HC_접수추가검사_변경',  1, N'@업무ID',                'bigint'),
+ (N'USP_HC_접수추가검사_변경',  2, N'@행버전',            'binary(8)'),
+ (N'USP_HC_접수추가검사_변경',  3, N'@추가검사01선택여부',      'bit'),
+ (N'USP_HC_접수추가검사_변경',  4, N'@추가검사02선택여부',      'bit'),
+ (N'USP_HC_접수추가검사_변경',  5, N'@추가검사03선택여부',      'bit'),
+ (N'USP_HC_접수추가검사_변경',  6, N'@추가검사04선택여부',      'bit'),
+ (N'USP_HC_접수추가검사_변경',  7, N'@추가검사05선택여부',      'bit'),
+ (N'USP_HC_접수추가검사_변경',  8, N'@추가검사06선택여부',      'bit'),
+ (N'USP_HC_접수추가검사_변경',  9, N'@추가검사07선택여부',      'bit'),
+ (N'USP_HC_접수추가검사_변경', 10, N'@조작자명',          'nvarchar(50)'),
+ -- USP_HC_접수_취소 2개
+ (N'USP_HC_접수_취소',  1, N'@업무ID',                'bigint'),
+ (N'USP_HC_접수_취소',  2, N'@행버전',            'binary(8)'),
+ (N'USP_HC_접수_취소', 3, N'@조작자명',          'nvarchar(50)');
 
 ;WITH Act AS (
     SELECT SpName = p.name, Ord = pa.parameter_id, ParamName = pa.name,
@@ -879,26 +879,26 @@ END
 
 | SP | Parameter 수 |
 |---|---:|
-| `USP_HC_SELECT_공통업무상태` | 0 |
-| `USP_HC_SELECT_수검자목록` | 5 |
-| `USP_HC_SELECT_수검자상세` | 1 |
-| `USP_HC_INSERT_수검자` | 12 |
-| `USP_HC_UPDATE_수검자정보` | 12 |
-| `USP_HC_SELECT_수검자유효업무` | 1 |
-| `USP_HC_SELECT_예약가능정보` | 13 |
-| `USP_HC_INSERT_예약` | 11 |
-| `USP_HC_UPDATE_예약변경` | 11 |
-| `USP_HC_UPDATE_예약취소` | 2 |
-| `USP_HC_SELECT_예약접수목록` | 5 |
-| `USP_HC_SELECT_예약접수상세` | 1 |
-| `USP_HC_UPDATE_접수완료` | 2 |
-| `USP_HC_UPDATE_접수추가검사` | 9 |
-| `USP_HC_UPDATE_접수취소` | 2 |
+| `USP_HC_공통업무상태_조회` | 0 |
+| `USP_HC_수검자목록_조회` | 5 |
+| `USP_HC_수검자상세_조회` | 1 |
+| `USP_HC_수검자_등록` | 12 |
+| `USP_HC_수검자정보_수정` | 12 |
+| `USP_HC_수검자유효업무_조회` | 1 |
+| `USP_HC_예약가능정보_조회` | 13 |
+| `USP_HC_예약_등록` | 11 |
+| `USP_HC_예약_변경` | 11 |
+| `USP_HC_예약_취소` | 2 |
+| `USP_HC_예약접수목록_조회` | 5 |
+| `USP_HC_예약접수상세_조회` | 1 |
+| `USP_HC_접수_완료` | 2 |
+| `USP_HC_접수추가검사_변경` | 9 |
+| `USP_HC_접수_취소` | 2 |
 | **합계** | **87** |
 
 - [x] **Step 3: RS0 메타데이터 15/15 검증 (SQL만)**
 
-`[X 실측]` **`CTR-RS0-A`·`B`·`C` 는 구현하지 않았다** — DMV 가 `sp_getapplock` 을 부르는 Write SP 8개에서 `Msg 11520` 이라 16/16 이 원리적으로 불가능하다(파일 머리 `[R3]` · 스펙 §36). 스펙이 나눈 세 경로 중 타입은 `verify-docs.js` 의 `V17`(배포 SQL 의 RS0 블록 42개 전부 5컬럼 명시 `CAST`)이, 컬럼명·RS 개수·행수는 `tools/verify-contract.js` 가 실측 출력으로 판정한다.
+`[X 실측]` **`CTR-RS0-A`·`B`·`코드` 는 구현하지 않았다** — DMV 가 `sp_getapplock` 을 부르는 Write SP 8개에서 `Msg 11520` 이라 16/16 이 원리적으로 불가능하다(파일 머리 `[R3]` · 스펙 §36). 스펙이 나눈 세 경로 중 타입은 `verify-docs.js` 의 `V17`(배포 SQL 의 RS0 블록 42개 전부 5컬럼 명시 `CAST`)이, 컬럼명·RS 개수·행수는 `tools/verify-contract.js` 가 실측 출력으로 판정한다.
 
 ```sql
 DECLARE @Rs0 TABLE (SpName SYSNAME, Ordinal INT NULL, ColName SYSNAME NULL,
@@ -912,9 +912,9 @@ WHERE p.name LIKE 'USP[_]HC[_]%';
 
 DECLARE @Expected TABLE (Ordinal INT PRIMARY KEY, ColName SYSNAME, TypeName NVARCHAR(256));
 INSERT INTO @Expected VALUES
- (1, N'Success',    N'bit'),          (2, N'Code',       N'int'),
- (3, N'Message',    N'nvarchar(300)'),(4, N'Field',      N'varchar(50)'),
- (5, N'ServerTime', N'datetime2(7)');
+ (1, N'[성공여부]',    N'bit'),          (2, N'[결과코드]',       N'int'),
+ (3, N'[결과메시지]',    N'nvarchar(300)'),(4, N'[오류항목]',      N'varchar(50)'),
+ (5, N'[서버시각]', N'datetime2(7)');
 
 -- (1) 총 행수 = 15 SP × 5컬럼 = 75
 -- [X] ELSE 쪽 PRINT 인자에 (SELECT COUNT(*) FROM @Rs0) 이 들어 있었다. Msg 1046 은 컴파일 오류라
@@ -939,8 +939,8 @@ IF NOT EXISTS (SELECT SpName FROM @Rs0 s
                               EXCEPT SELECT r.Ordinal, r.ColName, r.TypeName FROM @Rs0 r WHERE r.SpName = s.SpName)
                    OR EXISTS (SELECT r.Ordinal, r.ColName, r.TypeName FROM @Rs0 r WHERE r.SpName = s.SpName
                               EXCEPT SELECT e.Ordinal, e.ColName, e.TypeName FROM @Expected e))
-    PRINT 'PASS CTR-RS0-C 16개 SP 의 RS0 컬럼·순서·타입 전건 일치';
-ELSE BEGIN PRINT 'FAIL CTR-RS0-C RS0 스키마 불일치 SP 존재'; SET @Fail += 1; END
+    PRINT 'PASS CTR-RS0-[코드] 16개 SP 의 RS0 컬럼·순서·타입 전건 일치';
+ELSE BEGIN PRINT 'FAIL CTR-RS0-[코드] RS0 스키마 불일치 SP 존재'; SET @Fail += 1; END
 ```
 
 `[X]` **초안의 `CROSS APPLY` + `WHERE NOT (…)` 는 거짓 양성이었다.** DMV가 결과셋을 결정하지 못하면 `name`/`column_ordinal` 이 `NULL` 인 error 행을 돌려주는데, `NULL` 비교가 `UNKNOWN` → `NOT UNKNOWN = UNKNOWN` 이라 `COUNT(*)` 에 잡히지 않는다. `CROSS APPLY` 라 0행을 내는 SP 는 아예 사라진다. **SP 가 14개여도, RS0 이 완전히 깨져 있어도 `@Bad = 0` → PASS** 했다. `OUTER APPLY` + 총 행수 75 + `error_number` + `EXCEPT` 양방향 세 단계로 교체한다.
@@ -970,36 +970,36 @@ Expected: 전부 `PASS`, exit 0.
 
 `[X 실측]` **`T35` Step 7 과 같은 커밋 `4db86b8` 이다.**
 
-**완료조건:** Parameter 95행 `EXCEPT` 차집합 0, RS0 메타 75행 + `error_number` 0건, **15/15 SP** 의 후속 RS 시나리오 전부 PASS, 관측 RS0 `Code` 가 전건 `tools/allowed-codes.json` 의 해당 SP 허용집합 안. **G09 충족.**
+**완료조건:** Parameter 95행 `EXCEPT` 차집합 0, RS0 메타 75행 + `error_number` 0건, **15/15 SP** 의 후속 RS 시나리오 전부 PASS, 관측 RS0 `결과코드` 가 전건 `tools/allowed-codes.json` 의 해당 SP 허용집합 안. **G09 충족.**
 
-- [x] **Step 5: `tools/allowed-codes.json` 생성 및 미관측 Code 보고**
+- [x] **Step 5: `tools/allowed-codes.json` 생성 및 미관측 결과코드 보고**
 
-`[X 실측]` **파일은 앞선 커밋 `c8fc6d9` 에서 신설됐고 16 SP 를 담는다**(`USP_HC_SELECT_변경이력` 포함). `verify-contract.js` 가 `rs0Code` 일치와 허용집합 포함을 함께 판정하고, 파일이 없으면 `NOT RUN` 을 남기도록 돼 있다. **다만 회차마다 미관측 Code 목록을 보고서에 남기는 집계는 없다** — 06 §33.2a 에 일회 실측(Catalog 38개 중 미관측 7개에 `308`·`309` 가 있었고 `OFF-*` 신설로 해소)만 기록됐다.
+`[X 실측]` **파일은 앞선 커밋 `c8fc6d9` 에서 신설됐고 16 SP 를 담는다**(`USP_HC_변경이력_조회` 포함). `verify-contract.js` 가 `rs0Code` 일치와 허용집합 포함을 함께 판정하고, 파일이 없으면 `NOT RUN` 을 남기도록 돼 있다. **다만 회차마다 미관측 결과코드 목록을 보고서에 남기는 집계는 없다** — 06 §33.2a 에 일회 실측(Catalog 38개 중 미관측 7개에 `308`·`309` 가 있었고 `OFF-*` 신설로 해소)만 기록됐다.
 
-`[X]` 스펙 §36.4 가 요구한 **`allowed-codes.json` 이 계획 전체에 한 번도 없었다.** 이것이 없으면 `verify-contract.js` 는 컬럼명·RS 개수·행수만 보고 **RS0 의 `Success`·`Code` 를 한 번도 읽지 않는다** — G09 의 절반이 비어 있다.
+`[X]` 스펙 §36.4 가 요구한 **`allowed-codes.json` 이 계획 전체에 한 번도 없었다.** 이것이 없으면 `verify-contract.js` 는 컬럼명·RS 개수·행수만 보고 **RS0 의 `성공여부`·`결과코드` 를 한 번도 읽지 않는다** — G09 의 절반이 비어 있다.
 
 ```json
 // tools/allowed-codes.json — 기준선 05 §13 에서 기계 생성했다(범위 표기 a~b 는 전개했다).
 {
-  "USP_HC_SELECT_공통업무상태": [0],
-  "USP_HC_SELECT_수검자목록": [0, 101, 103],
-  "USP_HC_SELECT_수검자상세": [0, 100, 200],
-  "USP_HC_INSERT_수검자": [0, 2, 100, 101, 102, 201, 202, 203, 206, 308, 309],
-  "USP_HC_UPDATE_수검자정보": [0, 1, 100, 101, 102, 200, 201, 204, 205, 308, 309, 600],
-  "USP_HC_SELECT_수검자유효업무": [0, 100, 200, 701],
-  "USP_HC_SELECT_예약가능정보": [0, 100, 101, 102, 200, 500, 501, 502, 601, 700, 701],
-  "USP_HC_INSERT_예약": [0, 100, 101, 102, 200, 300, 301, 302, 303, 304, 305, 306, 308, 309, 400, 401, 410, 411, 412, 700, 701],
-  "USP_HC_UPDATE_예약변경": [0, 1, 100, 101, 102, 300, 301, 302, 303, 304, 305, 306, 308, 309, 400, 401, 410, 411, 412, 500, 502, 601, 700, 701],
-  "USP_HC_UPDATE_예약취소": [0, 100, 308, 309, 500, 502, 601],
-  "USP_HC_SELECT_예약접수목록": [0, 101, 103, 104],
-  "USP_HC_SELECT_예약접수상세": [0, 100, 500, 701],
-  "USP_HC_UPDATE_접수완료": [0, 100, 304, 308, 309, 500, 502, 503, 601, 701],
-  "USP_HC_UPDATE_접수추가검사": [0, 1, 100, 308, 309, 410, 411, 412, 500, 502, 601, 700, 701],
-  "USP_HC_UPDATE_접수취소": [0, 100, 308, 309, 500, 502, 601]
+  "USP_HC_공통업무상태_조회": [0],
+  "USP_HC_수검자목록_조회": [0, 101, 103],
+  "USP_HC_수검자상세_조회": [0, 100, 200],
+  "USP_HC_수검자_등록": [0, 2, 100, 101, 102, 201, 202, 203, 206, 308, 309],
+  "USP_HC_수검자정보_수정": [0, 1, 100, 101, 102, 200, 201, 204, 205, 308, 309, 600],
+  "USP_HC_수검자유효업무_조회": [0, 100, 200, 701],
+  "USP_HC_예약가능정보_조회": [0, 100, 101, 102, 200, 500, 501, 502, 601, 700, 701],
+  "USP_HC_예약_등록": [0, 100, 101, 102, 200, 300, 301, 302, 303, 304, 305, 306, 308, 309, 400, 401, 410, 411, 412, 700, 701],
+  "USP_HC_예약_변경": [0, 1, 100, 101, 102, 300, 301, 302, 303, 304, 305, 306, 308, 309, 400, 401, 410, 411, 412, 500, 502, 601, 700, 701],
+  "USP_HC_예약_취소": [0, 100, 308, 309, 500, 502, 601],
+  "USP_HC_예약접수목록_조회": [0, 101, 103, 104],
+  "USP_HC_예약접수상세_조회": [0, 100, 500, 701],
+  "USP_HC_접수_완료": [0, 100, 304, 308, 309, 500, 502, 503, 601, 701],
+  "USP_HC_접수추가검사_변경": [0, 1, 100, 308, 309, 410, 411, 412, 500, 502, 601, 700, 701],
+  "USP_HC_접수_취소": [0, 100, 308, 309, 500, 502, 601]
 }
 ```
 
-`verify-contract.js` 는 시나리오마다 (1) 관측 RS0 `Code` 가 `expected-contracts.json` 의 `rs0Code` 와 같은가, (2) 그 `Code` 가 해당 SP 의 허용집합 안인가 를 **함께** 판정한다. 마지막에 **Catalog 38개 중 한 번도 관측되지 않은 Code 목록**을 보고서에 남긴다 — `05` §18 이 *"사용되지 않는 ResultCode 0개"* 를 PASS 로 확정했으므로 미관측 목록이 비어 있지 않으면 그 자체가 정보다.
+`verify-contract.js` 는 시나리오마다 (1) 관측 RS0 `결과코드` 가 `expected-contracts.json` 의 `rs0Code` 와 같은가, (2) 그 `결과코드` 가 해당 SP 의 허용집합 안인가 를 **함께** 판정한다. 마지막에 **Catalog 38개 중 한 번도 관측되지 않은 결과코드 목록**을 보고서에 남긴다 — `05` §18 이 *"사용되지 않는 ResultCode 0개"* 를 PASS 로 확정했으므로 미관측 목록이 비어 있지 않으면 그 자체가 정보다.
 
 ---
 
@@ -1159,7 +1159,7 @@ Expected: `PASS G13-b` 2줄. `(c)` 는 보고서에 **`REVIEWED`** 로만 적는
 
 ```text
 - 상태          CANDIDATE → FINAL / GO (실행 검증 완료)
-- 문서 버전      v0.4 → v1.0 (SQL 실행검증 완료 시점에 CANDIDATE 해제)
+- 문서 버전      v0.4 → v1.0 (SQL 실행검증 완료 시점에 CANDIDATE 해제) → v1.1 (R4 한글화 반영, §46)
 - §42 Gate 표    PLANNED → 실제 관측 결과(PASS / FAIL / SKIP)로 전부 교체
 - §43 알려진 한계 실행 중 확인된 항목 추가 (예: 업무시간 밖 SKIP 건수)
 - §44 Deviation  실행 중 새로 발견된 이탈 추가

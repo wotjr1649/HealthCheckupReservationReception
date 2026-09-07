@@ -15,6 +15,26 @@ DROP TABLE IF EXISTS [dbo].[휴무일];
 DROP TABLE IF EXISTS [dbo].[검사코드];
 DROP TABLE IF EXISTS [dbo].[수검자];
 DROP SEQUENCE IF EXISTS [dbo].[SEQ_HC_CHART_NO];
+
+-- R4 한글화 이전 이름 16개를 지운다. SP 는 CREATE OR ALTER 라 새 이름으로 배포해도
+-- 옛 이름이 그대로 남는다 — 기존 DB 에 배포하면 VER-003 이 16 이 아니라 32 를 센다.
+-- rebuild.sh(DROP DATABASE) 경로에서는 아무 일도 하지 않는다.
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_SELECT_공통업무상태];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_SELECT_수검자목록];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_SELECT_수검자상세];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_SELECT_수검자유효업무];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_SELECT_예약가능정보];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_SELECT_예약접수목록];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_SELECT_예약접수상세];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_SELECT_변경이력];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_INSERT_수검자];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_UPDATE_수검자정보];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_INSERT_예약];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_UPDATE_예약변경];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_UPDATE_예약취소];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_UPDATE_접수완료];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_UPDATE_접수추가검사];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_UPDATE_접수취소];
 GO
 CREATE TABLE [dbo].[수검자]
 (
@@ -260,7 +280,7 @@ BEGIN
     );
 END
 GO
--- 대상 행 하나의 변경 내역을 최신순으로 읽는다. USP_HC_SELECT_변경이력 의 유일한 조회 경로다
+-- 대상 행 하나의 변경 내역을 최신순으로 읽는다. USP_HC_변경이력_조회 의 유일한 조회 경로다
 -- (04 §8.6.4). 이 테이블은 clean-create 대상이 아니라 CREATE TABLE 가드 밖에서 따로 만든다 -
 -- 테이블이 이미 있고 인덱스만 없는 상태가 가능하기 때문이다.
 IF NOT EXISTS (SELECT 1 FROM sys.indexes

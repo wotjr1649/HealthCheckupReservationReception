@@ -11,12 +11,12 @@ GO
 -- 정상 체크디지트 = (11 - (가중합 % 11)) % 10   /   무효 체크디지트 = (정상 + 1) % 10
 -- 주민번호를 손으로 계산하지 않는다. 13번째 자리는 SQL 이 만든다. SSN-006 이 무효임을 증명한다.
 -- 생년월일·성별은 계산열이라 INSERT 에 넣을 수 없다 (Msg 271). 주민번호에서 DB 가 유도한다.
--- 아래 VALUES 의 Birthday·Gender 는 그 유도 결과의 기대값으로 남겨 FIX-DERIVE 가 대조한다.
+-- 아래 VALUES 의 생년월일·성별 는 그 유도 결과의 기대값으로 남겨 FIX-DERIVE 가 대조한다.
 INSERT INTO [dbo].[수검자]
     ([차트번호], [성명], [주민번호], [휴대전화])
 SELECT
-      p.ChartNo
-    , p.Name
+      p.[차트번호]
+    , p.[성명]
     , p.Prefix12 + CONVERT(CHAR(1),
         ( ( ( 11 - (
               ( CAST(SUBSTRING(p.Prefix12, 1,1) AS INT)*2 + CAST(SUBSTRING(p.Prefix12, 2,1) AS INT)*3
@@ -48,7 +48,7 @@ FROM (VALUES
     , ('T018', N'테스트사사', '821001200018', '19821001', 'F')   -- 만 44세 여 → NEX-02 (44-40)%4=0 성립
     , ('T019', N'테스트오사남', '721001100019', '19721001', 'M') -- 만 54세 남 → NEX-05 는 여성 전용이라 EX012 없음
     , ('T020', N'테스트경계녀', '721120200020', '19721120', 'F') -- RWR-031 전용. 11-17 에 만 53세, 11-20 에 만 54세
-) p (ChartNo, Name, Prefix12, Birthday, Gender);
+) p ([차트번호], [성명], Prefix12, [생년월일], [성별]);
 GO
 -- 정원용 F001~F020. RP-06 때문에 한 수검자는 유효업무를 둘 이상 가질 수 없어
 -- 2026-11-16 AM 슬롯을 19/20 으로 채우는 데만 19명이 필요하고, F020 은 RWR-012 가
@@ -75,19 +75,19 @@ GO
 -- 기본검사(NEX-01) 문자열을 검사코드에서 유도한다. 손으로 적으면 Seed 와 어긋난다.
 -- 검사구성이 예약접수의 컬럼이므로 INSERT 와 같은 배치에 있어야 한다 (GO 는 변수 경계다).
 DECLARE @Basic NVARCHAR(100) = N'', @BC VARCHAR(10);
-DECLARE @BCodes TABLE (C VARCHAR(10) PRIMARY KEY);
-INSERT INTO @BCodes (C) SELECT [검사항목코드] FROM [dbo].[검사코드] WHERE [국가검사규칙코드] = 'NEX-01';
+DECLARE @BCodes TABLE ([코드] VARCHAR(10) PRIMARY KEY);
+INSERT INTO @BCodes ([코드]) SELECT [검사항목코드] FROM [dbo].[검사코드] WHERE [국가검사규칙코드] = 'NEX-01';
 WHILE EXISTS (SELECT 1 FROM @BCodes)
 BEGIN
-    SELECT TOP (1) @BC = C FROM @BCodes ORDER BY C;
+    SELECT TOP (1) @BC = [코드] FROM @BCodes ORDER BY [코드];
     SET @Basic = @Basic + @BC + N',';
-    DELETE FROM @BCodes WHERE C = @BC;
+    DELETE FROM @BCodes WHERE [코드] = @BC;
 END
 SET @Basic = LEFT(@Basic, LEN(@Basic) - 1);
 
 -- LIKE 'F0%' 만 쓰면 F020 까지 RSV 가 되어 슬롯이 20/20 이 된다.
 -- CON-002(19/20 경합 → 최종 20) 의 사전조건이 깨지므로 F020 을 제외하고, 별도로 CNR 을 넣는다.
--- Slot 날짜는 리터럴 하나로 통일한다. 2026-11-16 은 월요일이다.
+-- 시간대 날짜는 리터럴 하나로 통일한다. 2026-11-16 은 월요일이다.
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드], [국가검사항목], [추가검사항목])
 SELECT [수검자ID], '2026-11-16', 'AM', 'RSV', @Basic, NULL
 FROM [dbo].[수검자] WHERE [차트번호] LIKE 'F0%' AND [차트번호] <> 'F020';
@@ -120,13 +120,13 @@ GO
 -- 1년차 완료이력을 붙이면 TGT 401 NotDue 비대상이 되어 NEX 0행이 나온다. 401 전담은 T016 이다.
 -- 기본검사(NEX-01) 문자열을 검사코드에서 유도한다. 손으로 적으면 Seed 와 어긋난다.
 DECLARE @Basic NVARCHAR(100) = N'', @BC VARCHAR(10);
-DECLARE @BCodes TABLE (C VARCHAR(10) PRIMARY KEY);
-INSERT INTO @BCodes (C) SELECT [검사항목코드] FROM [dbo].[검사코드] WHERE [국가검사규칙코드] = 'NEX-01';
+DECLARE @BCodes TABLE ([코드] VARCHAR(10) PRIMARY KEY);
+INSERT INTO @BCodes ([코드]) SELECT [검사항목코드] FROM [dbo].[검사코드] WHERE [국가검사규칙코드] = 'NEX-01';
 WHILE EXISTS (SELECT 1 FROM @BCodes)
 BEGIN
-    SELECT TOP (1) @BC = C FROM @BCodes ORDER BY C;
+    SELECT TOP (1) @BC = [코드] FROM @BCodes ORDER BY [코드];
     SET @Basic = @Basic + @BC + N',';
-    DELETE FROM @BCodes WHERE C = @BC;
+    DELETE FROM @BCodes WHERE [코드] = @BC;
 END
 SET @Basic = LEFT(@Basic, LEN(@Basic) - 1);
 
@@ -160,13 +160,13 @@ PRINT '--- CORRUPT 구획 (701 검증 전용) ---';
 GO
 -- CORRUPT-1: 동일 Patient 에 유효업무 2건  → 701
 DECLARE @Basic NVARCHAR(100) = N'', @BC VARCHAR(10);
-DECLARE @BCodes TABLE (C VARCHAR(10) PRIMARY KEY);
-INSERT INTO @BCodes (C) SELECT [검사항목코드] FROM [dbo].[검사코드] WHERE [국가검사규칙코드] = 'NEX-01';
+DECLARE @BCodes TABLE ([코드] VARCHAR(10) PRIMARY KEY);
+INSERT INTO @BCodes ([코드]) SELECT [검사항목코드] FROM [dbo].[검사코드] WHERE [국가검사규칙코드] = 'NEX-01';
 WHILE EXISTS (SELECT 1 FROM @BCodes)
 BEGIN
-    SELECT TOP (1) @BC = C FROM @BCodes ORDER BY C;
+    SELECT TOP (1) @BC = [코드] FROM @BCodes ORDER BY [코드];
     SET @Basic = @Basic + @BC + N',';
-    DELETE FROM @BCodes WHERE C = @BC;
+    DELETE FROM @BCodes WHERE [코드] = @BC;
 END
 SET @Basic = LEFT(@Basic, LEN(@Basic) - 1);
 INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드], [국가검사항목], [추가검사항목])

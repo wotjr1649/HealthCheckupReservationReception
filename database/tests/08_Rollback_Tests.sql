@@ -10,7 +10,7 @@ DECLARE @Fail INT = 0;
 --     바꾸지 않는다** 는 것은 계약이지 시험 사정이 아니다 (05 §5 우선순위 9번).
 --     SKIP 은 PASS 가 아니므로(CLAUDE.md §10) 창 밖에서는 그 계약을 실제로 판정한다.
 --     아래 호출들은 **창 안이면 성공했을 인자**다. 그래서 "실패라 안 바뀌었다" 가 아니라
---     "업무시간 밖이라 성공 경로가 차단됐다" 를 본다. RS0 Code 판정은 tests/contract/OFF-* 가 한다.
+--     "업무시간 밖이라 성공 경로가 차단됐다" 를 본다. RS0 결과코드 판정은 tests/contract/OFF-* 가 한다.
 DECLARE @BizOk BIT = CASE WHEN DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
                            AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
                            AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
@@ -35,8 +35,8 @@ BEGIN
     DECLARE @OPt BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T015');
     DECLARE @OP9 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T009');
 
-    EXEC [dbo].[USP_HC_INSERT_예약] @OP9, 'NORMAL', '2026-11-17', 'AM', 0,0,0,0,0,0,0, N'TEST';
-    EXEC [dbo].[USP_HC_INSERT_수검자] 1, NULL, N'창밖롤백', '9601011000018',
+    EXEC [dbo].[USP_HC_예약_등록] @OP9, 'NORMAL', '2026-11-17', 'AM', 0,0,0,0,0,0,0, N'TEST';
+    EXEC [dbo].[USP_HC_수검자_등록] 1, NULL, N'창밖롤백', '9601011000018',
          NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, N'TEST';
 
     DECLARE @Off1 VARCHAR(300) =
@@ -76,13 +76,13 @@ DELETE FROM [dbo].[예약접수] WHERE [수검자ID] IN (@P09, @P16);
 UPDATE [dbo].[예약접수] SET [상태코드] = 'CNR' WHERE [수검자ID] = @Pf;
 
 DECLARE @Basic NVARCHAR(100) = N'', @BC VARCHAR(10);
-DECLARE @BCodes TABLE (C VARCHAR(10) PRIMARY KEY);
-INSERT INTO @BCodes (C) SELECT [검사항목코드] FROM [dbo].[검사코드] WHERE [국가검사규칙코드] = 'NEX-01';
+DECLARE @BCodes TABLE ([코드] VARCHAR(10) PRIMARY KEY);
+INSERT INTO @BCodes ([코드]) SELECT [검사항목코드] FROM [dbo].[검사코드] WHERE [국가검사규칙코드] = 'NEX-01';
 WHILE EXISTS (SELECT 1 FROM @BCodes)
 BEGIN
-    SELECT TOP (1) @BC = C FROM @BCodes ORDER BY C;
+    SELECT TOP (1) @BC = [코드] FROM @BCodes ORDER BY [코드];
     SET @Basic = @Basic + @BC + N',';
-    DELETE FROM @BCodes WHERE C = @BC;
+    DELETE FROM @BCodes WHERE [코드] = @BC;
 END
 SET @Basic = LEFT(@Basic, LEN(@Basic) - 1);
 
@@ -95,7 +95,7 @@ DECLARE @Cnt0 INT, @H0 INT;
 ----------------------------------------------------------------------------
 SET @Cnt0 = (SELECT COUNT(*) FROM [dbo].[예약접수]);
 SET @H0 = (SELECT COUNT(*) FROM [dbo].[변경이력]);
-EXEC [dbo].[USP_HC_INSERT_예약] @P09, 'NORMAL', '2026-11-17', 'AM', 0,0,1,0,0,0,0, N'TEST';
+EXEC [dbo].[USP_HC_예약_등록] @P09, 'NORMAL', '2026-11-17', 'AM', 0,0,1,0,0,0,0, N'TEST';
 IF ((SELECT COUNT(*) FROM [dbo].[예약접수]) = @Cnt0
     AND (SELECT COUNT(*) FROM [dbo].[변경이력]) = @H0)
     PRINT 'PASS RBK-001 AEX 성별 위반 실패가 Work 도 감사행도 남기지 않았다';
@@ -114,7 +114,7 @@ SELECT @Rv = [행버전], @D = [예약일], @S = [시간대코드]
      , @Cfg = ISNULL([국가검사항목], N'') + N'|' + ISNULL([추가검사항목], N'')
   FROM [dbo].[예약접수] WHERE [업무ID] = @W;
 
-EXEC [dbo].[USP_HC_UPDATE_예약변경] @W, @Rv, '2026-11-25', 'PM', 0,0,0,0,0,0,0, N'TEST';
+EXEC [dbo].[USP_HC_예약_변경] @W, @Rv, '2026-11-25', 'PM', 0,0,0,0,0,0,0, N'TEST';
 
 IF ((SELECT [예약일] FROM [dbo].[예약접수] WHERE [업무ID] = @W) = @D
     AND (SELECT [시간대코드] FROM [dbo].[예약접수] WHERE [업무ID] = @W) = @S
@@ -132,11 +132,11 @@ DELETE FROM [dbo].[예약접수] WHERE [업무ID] = @W;
 --   정원 판정이 TGT·AEX 보다 앞이라 이 Work 의 EX012 는 관여하지 않는다 (05 §11.2 검증순서).
 ----------------------------------------------------------------------------
 UPDATE [dbo].[예약접수] SET [상태코드] = 'RSV' WHERE [수검자ID] = @Pf;
-DECLARE @Slot INT = (SELECT COUNT(*) FROM [dbo].[예약접수]
+DECLARE @시간대인원 INT = (SELECT COUNT(*) FROM [dbo].[예약접수]
                       WHERE [예약일] = '2026-11-16' AND [시간대코드] = 'AM'
                         AND [상태코드] IN ('RSV', 'RCP'));
-IF @Slot = 20 PRINT 'PASS RBK-003 사전조건 20/20 성립';
-ELSE BEGIN PRINT 'FAIL RBK-003 사전조건 Slot=' + CONVERT(VARCHAR(5), @Slot); SET @Fail += 1; END
+IF @시간대인원 = 20 PRINT 'PASS RBK-003 사전조건 20/20 성립';
+ELSE BEGIN PRINT 'FAIL RBK-003 사전조건 Slot=' + CONVERT(VARCHAR(5), @시간대인원); SET @Fail += 1; END
 
 SET @W = (SELECT TOP (1) w.[업무ID] FROM [dbo].[예약접수] w
            JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
@@ -145,7 +145,7 @@ SELECT @Rv = [행버전], @D = [예약일], @S = [시간대코드]
      , @Cfg = ISNULL([국가검사항목], N'') + N'|' + ISNULL([추가검사항목], N'')
   FROM [dbo].[예약접수] WHERE [업무ID] = @W;
 
-EXEC [dbo].[USP_HC_UPDATE_예약변경] @W, @Rv, '2026-11-16', 'AM', 0,0,0,1,0,0,0, N'TEST';
+EXEC [dbo].[USP_HC_예약_변경] @W, @Rv, '2026-11-16', 'AM', 0,0,0,1,0,0,0, N'TEST';
 
 IF ((SELECT [예약일] FROM [dbo].[예약접수] WHERE [업무ID] = @W) = @D
     AND (SELECT [시간대코드] FROM [dbo].[예약접수] WHERE [업무ID] = @W) = @S
@@ -175,7 +175,7 @@ BEGIN
       FROM [dbo].[예약접수] WHERE [업무ID] = @W;
 
     -- OPT03(EX016)은 여성 전용이고 T014 는 남성이다.
-    EXEC [dbo].[USP_HC_UPDATE_접수추가검사] @W, @Rv, 1,0,1,0,0,0,0, N'TEST';
+    EXEC [dbo].[USP_HC_접수추가검사_변경] @W, @Rv, 1,0,1,0,0,0,0, N'TEST';
 
     IF ((SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @W) = @Rv
         AND (SELECT ISNULL([국가검사항목], N'') + N'|' + ISNULL([추가검사항목], N'')
@@ -194,7 +194,7 @@ SELECT @Pid = [수검자ID], @Led = [최종수정일시]
   FROM [dbo].[수검자] WHERE [차트번호] = N'F001';
 
 -- F001 은 2026-11-16 AM 의 RSV Work 를 가진다. 주민번호 변경은 205 로 막힌다 (00 EP-08).
-EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Pid, @Led, N'F001', N'바뀐이름', '8001011999998',
+EXEC [dbo].[USP_HC_수검자정보_수정] @Pid, @Led, N'F001', N'바뀐이름', '8001011999998',
      NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'TEST';
 
 IF ((SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Pid) = @Led
@@ -210,7 +210,7 @@ ELSE BEGIN PRINT 'FAIL RBK-005 205 인데 수검자 행이 바뀌었다'; SET @F
 ----------------------------------------------------------------------------
 SET @Cnt0 = (SELECT COUNT(*) FROM [dbo].[수검자]);
 SET @H0 = (SELECT COUNT(*) FROM [dbo].[변경이력]);
-EXEC [dbo].[USP_HC_INSERT_수검자] 0, N'T001', N'중복차트롤백', '9401011000017',
+EXEC [dbo].[USP_HC_수검자_등록] 0, N'T001', N'중복차트롤백', '9401011000017',
      NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, N'TEST';
 IF ((SELECT COUNT(*) FROM [dbo].[수검자]) = @Cnt0
     AND (SELECT COUNT(*) FROM [dbo].[변경이력]) = @H0

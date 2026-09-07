@@ -1,976 +1,976 @@
 {
   "01_공통업무상태": {
-    "sp": "USP_HC_SELECT_공통업무상태",
+    "sp": "USP_HC_공통업무상태_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "Today",
-          "DayName",
-          "HolidayName",
-          "OpenTime",
-          "CloseTime",
-          "IsBusinessDay",
-          "WithinHours",
-          "CanWorkNow",
-          "BlockCode",
-          "BlockMessage"
+          "오늘날짜",
+          "요일명",
+          "휴무일명",
+          "운영시작시각",
+          "운영종료시각",
+          "업무일여부",
+          "운영시간내여부",
+          "현재업무가능",
+          "차단코드",
+          "차단메시지"
         ],
         "rows": 1
       }
     ]
   },
   "02_수검자목록_조건없음": {
-    "sp": "USP_HC_SELECT_수검자목록",
+    "sp": "USP_HC_수검자목록_조회",
     "rs0Success": 0,
     "rs0Code": 103,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "03_수검자목록_ChartNo": {
-    "sp": "USP_HC_SELECT_수검자목록",
+    "sp": "USP_HC_수검자목록_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "PatientId",
-          "ChartNo",
-          "Name",
-          "SocialNumber",
-          "Birthday",
-          "Gender",
-          "MobilePhone",
-          "Phone",
-          "Email",
-          "Zipcode",
-          "Address"
+          "수검자ID",
+          "차트번호",
+          "성명",
+          "주민번호",
+          "생년월일",
+          "성별",
+          "휴대전화",
+          "전화번호",
+          "이메일",
+          "우편번호",
+          "주소"
         ],
         "rows": 1
       }
     ]
   },
   "04_수검자목록_0건": {
-    "sp": "USP_HC_SELECT_수검자목록",
+    "sp": "USP_HC_수검자목록_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "PatientId",
-          "ChartNo",
-          "Name",
-          "SocialNumber",
-          "Birthday",
-          "Gender",
-          "MobilePhone",
-          "Phone",
-          "Email",
-          "Zipcode",
-          "Address"
+          "수검자ID",
+          "차트번호",
+          "성명",
+          "주민번호",
+          "생년월일",
+          "성별",
+          "휴대전화",
+          "전화번호",
+          "이메일",
+          "우편번호",
+          "주소"
         ],
         "rows": 0
       }
     ]
   },
   "05_수검자목록_주민번호형식": {
-    "sp": "USP_HC_SELECT_수검자목록",
+    "sp": "USP_HC_수검자목록_조회",
     "rs0Success": 0,
     "rs0Code": 101,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "06_수검자상세_PatientId없음": {
-    "sp": "USP_HC_SELECT_수검자상세",
+    "sp": "USP_HC_수검자상세_조회",
     "rs0Success": 0,
     "rs0Code": 100,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "07_수검자상세_미존재": {
-    "sp": "USP_HC_SELECT_수검자상세",
+    "sp": "USP_HC_수검자상세_조회",
     "rs0Success": 0,
     "rs0Code": 200,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "08_수검자상세_정상": {
-    "sp": "USP_HC_SELECT_수검자상세",
+    "sp": "USP_HC_수검자상세_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "PatientId",
-          "ChartNo",
-          "Name",
-          "SocialNumber",
-          "Birthday",
-          "Gender",
-          "MobilePhone",
-          "Phone",
-          "Email",
-          "Zipcode",
-          "Address",
-          "AddressDetail",
-          "Memo",
-          "HepatitisBExcluded",
-          "LastEditDate"
+          "수검자ID",
+          "차트번호",
+          "성명",
+          "주민번호",
+          "생년월일",
+          "성별",
+          "휴대전화",
+          "전화번호",
+          "이메일",
+          "우편번호",
+          "주소",
+          "상세주소",
+          "비고",
+          "B형간염제외여부",
+          "최종수정일시"
         ],
         "rows": 1
       }
     ]
   },
   "09_수검자유효업무_0건": {
-    "sp": "USP_HC_SELECT_수검자유효업무",
+    "sp": "USP_HC_수검자유효업무_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "ReservationDate",
-          "TimeSlot",
-          "Status",
-          "StatusName",
-          "IsToday",
-          "RowVersion"
+          "업무ID",
+          "예약일",
+          "시간대코드",
+          "상태코드",
+          "상태명",
+          "오늘여부",
+          "행버전"
         ],
         "rows": 0
       }
     ]
   },
   "10_수검자유효업무_2건701": {
-    "sp": "USP_HC_SELECT_수검자유효업무",
+    "sp": "USP_HC_수검자유효업무_조회",
     "rs0Success": 0,
     "rs0Code": 701,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "11_예약접수목록_날짜역전": {
-    "sp": "USP_HC_SELECT_예약접수목록",
+    "sp": "USP_HC_예약접수목록_조회",
     "rs0Success": 0,
     "rs0Code": 104,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "12_예약접수목록_조건없음": {
-    "sp": "USP_HC_SELECT_예약접수목록",
+    "sp": "USP_HC_예약접수목록_조회",
     "rs0Success": 0,
     "rs0Code": 103,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "13_예약접수목록_날짜범위": {
-    "sp": "USP_HC_SELECT_예약접수목록",
+    "sp": "USP_HC_예약접수목록_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "PatientId",
-          "ReservationDate",
-          "TimeSlot",
-          "Status",
-          "StatusName",
-          "Name",
-          "ChartNo",
-          "Gender",
-          "Birthday",
-          "MobilePhone"
+          "업무ID",
+          "수검자ID",
+          "예약일",
+          "시간대코드",
+          "상태코드",
+          "상태명",
+          "성명",
+          "차트번호",
+          "성별",
+          "생년월일",
+          "휴대전화"
         ],
         "rows": 24
       }
     ]
   },
   "14_예약접수상세_미존재": {
-    "sp": "USP_HC_SELECT_예약접수상세",
+    "sp": "USP_HC_예약접수상세_조회",
     "rs0Success": 0,
     "rs0Code": 500,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "15_예약접수상세_NEX0행701": {
-    "sp": "USP_HC_SELECT_예약접수상세",
+    "sp": "USP_HC_예약접수상세_조회",
     "rs0Success": 0,
     "rs0Code": 701,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "16_예약접수상세_정상": {
-    "sp": "USP_HC_SELECT_예약접수상세",
+    "sp": "USP_HC_예약접수상세_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "PatientId",
-          "ChartNo",
-          "Name",
-          "Birthday",
-          "Gender",
-          "MobilePhone",
-          "ReservationDate",
-          "TimeSlot",
-          "Status",
-          "StatusName",
-          "Capacity",
-          "CurrentCount",
-          "SeatsLeft",
-          "RowVersion"
+          "업무ID",
+          "수검자ID",
+          "차트번호",
+          "성명",
+          "생년월일",
+          "성별",
+          "휴대전화",
+          "예약일",
+          "시간대코드",
+          "상태코드",
+          "상태명",
+          "정원",
+          "현재인원",
+          "잔여자리",
+          "행버전"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "ExamCode",
-          "ExamName",
-          "ExamType",
-          "RuleCode"
+          "검사항목코드",
+          "검사항목명",
+          "국가검사구분",
+          "국가검사규칙코드"
         ],
         "rowsMin": 8,
         "rowsMax": 11
       },
       {
         "columns": [
-          "OptionCode",
-          "ExamCode",
-          "ExamName"
+          "추가검사코드",
+          "검사항목코드",
+          "검사항목명"
         ],
         "rowsMin": 0,
         "rowsMax": 7
       },
       {
         "columns": [
-          "ActionCode",
-          "Allowed",
-          "ReasonCode",
-          "ReasonMessage"
+          "업무동작코드",
+          "허용여부",
+          "사유코드",
+          "사유메시지"
         ],
         "rows": 5
       }
     ]
   },
   "17_예약가능정보_RowVersion단독": {
-    "sp": "USP_HC_SELECT_예약가능정보",
+    "sp": "USP_HC_예약가능정보_조회",
     "rs0Success": 0,
     "rs0Code": 102,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "18_예약가능정보_AEX_NULL": {
-    "sp": "USP_HC_SELECT_예약가능정보",
+    "sp": "USP_HC_예약가능정보_조회",
     "rs0Success": 0,
     "rs0Code": 100,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "19_예약가능정보_WALKIN_날짜불일치": {
-    "sp": "USP_HC_SELECT_예약가능정보",
+    "sp": "USP_HC_예약가능정보_조회",
     "rs0Success": 0,
     "rs0Code": 102,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "20_예약가능정보_휴무일": {
-    "sp": "USP_HC_SELECT_예약가능정보",
+    "sp": "USP_HC_예약가능정보_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "Scope",
-          "PatientId",
-          "WorkId",
-          "ReservationType",
-          "ReservationDate",
-          "TimeSlot",
-          "DateChanged",
-          "SlotChanged",
-          "ExtraChanged",
-          "CanWorkNow",
-          "OtherWorkId",
-          "CanSave",
-          "BlockCode",
-          "BlockMessage"
+          "변경범위",
+          "수검자ID",
+          "업무ID",
+          "예약구분",
+          "예약일",
+          "시간대코드",
+          "예약일변경여부",
+          "시간대변경여부",
+          "추가검사변경여부",
+          "현재업무가능",
+          "다른업무ID",
+          "저장가능",
+          "차단코드",
+          "차단메시지"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "TimeSlot",
-          "SlotName",
-          "Capacity",
-          "CurrentCount",
-          "AfterCount",
-          "SeatsLeft",
-          "IsOpen",
-          "CutoffTime",
-          "CutoffPassed",
-          "CanSelect",
-          "BlockCode",
-          "BlockMessage"
+          "시간대코드",
+          "시간대명",
+          "정원",
+          "현재인원",
+          "적용후인원",
+          "잔여자리",
+          "운영여부",
+          "마감시각",
+          "마감경과여부",
+          "선택가능",
+          "차단코드",
+          "차단메시지"
         ],
         "rows": 2
       },
       {
         "columns": [
-          "Eligible",
-          "Age",
-          "LastCheckupDate",
-          "ReasonCode",
-          "ReasonMessage"
+          "검진대상여부",
+          "나이",
+          "최근완료일자",
+          "사유코드",
+          "사유메시지"
         ],
         "rows": 0
       },
       {
         "columns": [
-          "ExamCode",
-          "ExamName",
-          "ExamType",
-          "RuleCode"
+          "검사항목코드",
+          "검사항목명",
+          "국가검사구분",
+          "국가검사규칙코드"
         ],
         "rows": 0
       },
       {
         "columns": [
-          "OptionCode",
-          "ExamCode",
-          "ExamName",
-          "Requested",
-          "Selected",
-          "CanSelect",
-          "ReasonCode",
-          "ReasonMessage"
+          "추가검사코드",
+          "검사항목코드",
+          "검사항목명",
+          "요청선택여부",
+          "유효선택여부",
+          "선택가능",
+          "사유코드",
+          "사유메시지"
         ],
         "rows": 0
       }
     ]
   },
   "21_예약가능정보_Scope_ALL": {
-    "sp": "USP_HC_SELECT_예약가능정보",
+    "sp": "USP_HC_예약가능정보_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "Scope",
-          "PatientId",
-          "WorkId",
-          "ReservationType",
-          "ReservationDate",
-          "TimeSlot",
-          "DateChanged",
-          "SlotChanged",
-          "ExtraChanged",
-          "CanWorkNow",
-          "OtherWorkId",
-          "CanSave",
-          "BlockCode",
-          "BlockMessage"
+          "변경범위",
+          "수검자ID",
+          "업무ID",
+          "예약구분",
+          "예약일",
+          "시간대코드",
+          "예약일변경여부",
+          "시간대변경여부",
+          "추가검사변경여부",
+          "현재업무가능",
+          "다른업무ID",
+          "저장가능",
+          "차단코드",
+          "차단메시지"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "TimeSlot",
-          "SlotName",
-          "Capacity",
-          "CurrentCount",
-          "AfterCount",
-          "SeatsLeft",
-          "IsOpen",
-          "CutoffTime",
-          "CutoffPassed",
-          "CanSelect",
-          "BlockCode",
-          "BlockMessage"
+          "시간대코드",
+          "시간대명",
+          "정원",
+          "현재인원",
+          "적용후인원",
+          "잔여자리",
+          "운영여부",
+          "마감시각",
+          "마감경과여부",
+          "선택가능",
+          "차단코드",
+          "차단메시지"
         ],
         "rows": 2
       },
       {
         "columns": [
-          "Eligible",
-          "Age",
-          "LastCheckupDate",
-          "ReasonCode",
-          "ReasonMessage"
+          "검진대상여부",
+          "나이",
+          "최근완료일자",
+          "사유코드",
+          "사유메시지"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "ExamCode",
-          "ExamName",
-          "ExamType",
-          "RuleCode"
+          "검사항목코드",
+          "검사항목명",
+          "국가검사구분",
+          "국가검사규칙코드"
         ],
         "rowsMin": 8,
         "rowsMax": 11
       },
       {
         "columns": [
-          "OptionCode",
-          "ExamCode",
-          "ExamName",
-          "Requested",
-          "Selected",
-          "CanSelect",
-          "ReasonCode",
-          "ReasonMessage"
+          "추가검사코드",
+          "검사항목코드",
+          "검사항목명",
+          "요청선택여부",
+          "유효선택여부",
+          "선택가능",
+          "사유코드",
+          "사유메시지"
         ],
         "rows": 7
       }
     ]
   },
   "22_예약가능정보_Scope_SLOT": {
-    "sp": "USP_HC_SELECT_예약가능정보",
+    "sp": "USP_HC_예약가능정보_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "Scope",
-          "PatientId",
-          "WorkId",
-          "ReservationType",
-          "ReservationDate",
-          "TimeSlot",
-          "DateChanged",
-          "SlotChanged",
-          "ExtraChanged",
-          "CanWorkNow",
-          "OtherWorkId",
-          "CanSave",
-          "BlockCode",
-          "BlockMessage"
+          "변경범위",
+          "수검자ID",
+          "업무ID",
+          "예약구분",
+          "예약일",
+          "시간대코드",
+          "예약일변경여부",
+          "시간대변경여부",
+          "추가검사변경여부",
+          "현재업무가능",
+          "다른업무ID",
+          "저장가능",
+          "차단코드",
+          "차단메시지"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "TimeSlot",
-          "SlotName",
-          "Capacity",
-          "CurrentCount",
-          "AfterCount",
-          "SeatsLeft",
-          "IsOpen",
-          "CutoffTime",
-          "CutoffPassed",
-          "CanSelect",
-          "BlockCode",
-          "BlockMessage"
+          "시간대코드",
+          "시간대명",
+          "정원",
+          "현재인원",
+          "적용후인원",
+          "잔여자리",
+          "운영여부",
+          "마감시각",
+          "마감경과여부",
+          "선택가능",
+          "차단코드",
+          "차단메시지"
         ],
         "rows": 2
       },
       {
         "columns": [
-          "Eligible",
-          "Age",
-          "LastCheckupDate",
-          "ReasonCode",
-          "ReasonMessage"
+          "검진대상여부",
+          "나이",
+          "최근완료일자",
+          "사유코드",
+          "사유메시지"
         ],
         "rows": 0
       },
       {
         "columns": [
-          "ExamCode",
-          "ExamName",
-          "ExamType",
-          "RuleCode"
+          "검사항목코드",
+          "검사항목명",
+          "국가검사구분",
+          "국가검사규칙코드"
         ],
         "rows": 0
       },
       {
         "columns": [
-          "OptionCode",
-          "ExamCode",
-          "ExamName",
-          "Requested",
-          "Selected",
-          "CanSelect",
-          "ReasonCode",
-          "ReasonMessage"
+          "추가검사코드",
+          "검사항목코드",
+          "검사항목명",
+          "요청선택여부",
+          "유효선택여부",
+          "선택가능",
+          "사유코드",
+          "사유메시지"
         ],
         "rows": 0
       }
     ]
   },
   "23_예약가능정보_Scope_EXTRA": {
-    "sp": "USP_HC_SELECT_예약가능정보",
+    "sp": "USP_HC_예약가능정보_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "Scope",
-          "PatientId",
-          "WorkId",
-          "ReservationType",
-          "ReservationDate",
-          "TimeSlot",
-          "DateChanged",
-          "SlotChanged",
-          "ExtraChanged",
-          "CanWorkNow",
-          "OtherWorkId",
-          "CanSave",
-          "BlockCode",
-          "BlockMessage"
+          "변경범위",
+          "수검자ID",
+          "업무ID",
+          "예약구분",
+          "예약일",
+          "시간대코드",
+          "예약일변경여부",
+          "시간대변경여부",
+          "추가검사변경여부",
+          "현재업무가능",
+          "다른업무ID",
+          "저장가능",
+          "차단코드",
+          "차단메시지"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "TimeSlot",
-          "SlotName",
-          "Capacity",
-          "CurrentCount",
-          "AfterCount",
-          "SeatsLeft",
-          "IsOpen",
-          "CutoffTime",
-          "CutoffPassed",
-          "CanSelect",
-          "BlockCode",
-          "BlockMessage"
+          "시간대코드",
+          "시간대명",
+          "정원",
+          "현재인원",
+          "적용후인원",
+          "잔여자리",
+          "운영여부",
+          "마감시각",
+          "마감경과여부",
+          "선택가능",
+          "차단코드",
+          "차단메시지"
         ],
         "rows": 0
       },
       {
         "columns": [
-          "Eligible",
-          "Age",
-          "LastCheckupDate",
-          "ReasonCode",
-          "ReasonMessage"
+          "검진대상여부",
+          "나이",
+          "최근완료일자",
+          "사유코드",
+          "사유메시지"
         ],
         "rows": 0
       },
       {
         "columns": [
-          "ExamCode",
-          "ExamName",
-          "ExamType",
-          "RuleCode"
+          "검사항목코드",
+          "검사항목명",
+          "국가검사구분",
+          "국가검사규칙코드"
         ],
         "rows": 0
       },
       {
         "columns": [
-          "OptionCode",
-          "ExamCode",
-          "ExamName",
-          "Requested",
-          "Selected",
-          "CanSelect",
-          "ReasonCode",
-          "ReasonMessage"
+          "추가검사코드",
+          "검사항목코드",
+          "검사항목명",
+          "요청선택여부",
+          "유효선택여부",
+          "선택가능",
+          "사유코드",
+          "사유메시지"
         ],
         "rows": 7
       }
     ]
   },
   "24_예약가능정보_Scope_SLOT_EXTRA": {
-    "sp": "USP_HC_SELECT_예약가능정보",
+    "sp": "USP_HC_예약가능정보_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "Scope",
-          "PatientId",
-          "WorkId",
-          "ReservationType",
-          "ReservationDate",
-          "TimeSlot",
-          "DateChanged",
-          "SlotChanged",
-          "ExtraChanged",
-          "CanWorkNow",
-          "OtherWorkId",
-          "CanSave",
-          "BlockCode",
-          "BlockMessage"
+          "변경범위",
+          "수검자ID",
+          "업무ID",
+          "예약구분",
+          "예약일",
+          "시간대코드",
+          "예약일변경여부",
+          "시간대변경여부",
+          "추가검사변경여부",
+          "현재업무가능",
+          "다른업무ID",
+          "저장가능",
+          "차단코드",
+          "차단메시지"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "TimeSlot",
-          "SlotName",
-          "Capacity",
-          "CurrentCount",
-          "AfterCount",
-          "SeatsLeft",
-          "IsOpen",
-          "CutoffTime",
-          "CutoffPassed",
-          "CanSelect",
-          "BlockCode",
-          "BlockMessage"
+          "시간대코드",
+          "시간대명",
+          "정원",
+          "현재인원",
+          "적용후인원",
+          "잔여자리",
+          "운영여부",
+          "마감시각",
+          "마감경과여부",
+          "선택가능",
+          "차단코드",
+          "차단메시지"
         ],
         "rows": 2
       },
       {
         "columns": [
-          "Eligible",
-          "Age",
-          "LastCheckupDate",
-          "ReasonCode",
-          "ReasonMessage"
+          "검진대상여부",
+          "나이",
+          "최근완료일자",
+          "사유코드",
+          "사유메시지"
         ],
         "rows": 0
       },
       {
         "columns": [
-          "ExamCode",
-          "ExamName",
-          "ExamType",
-          "RuleCode"
+          "검사항목코드",
+          "검사항목명",
+          "국가검사구분",
+          "국가검사규칙코드"
         ],
         "rows": 0
       },
       {
         "columns": [
-          "OptionCode",
-          "ExamCode",
-          "ExamName",
-          "Requested",
-          "Selected",
-          "CanSelect",
-          "ReasonCode",
-          "ReasonMessage"
+          "추가검사코드",
+          "검사항목코드",
+          "검사항목명",
+          "요청선택여부",
+          "유효선택여부",
+          "선택가능",
+          "사유코드",
+          "사유메시지"
         ],
         "rows": 7
       }
     ]
   },
   "25_예약가능정보_Scope_NONE": {
-    "sp": "USP_HC_SELECT_예약가능정보",
+    "sp": "USP_HC_예약가능정보_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "Scope",
-          "PatientId",
-          "WorkId",
-          "ReservationType",
-          "ReservationDate",
-          "TimeSlot",
-          "DateChanged",
-          "SlotChanged",
-          "ExtraChanged",
-          "CanWorkNow",
-          "OtherWorkId",
-          "CanSave",
-          "BlockCode",
-          "BlockMessage"
+          "변경범위",
+          "수검자ID",
+          "업무ID",
+          "예약구분",
+          "예약일",
+          "시간대코드",
+          "예약일변경여부",
+          "시간대변경여부",
+          "추가검사변경여부",
+          "현재업무가능",
+          "다른업무ID",
+          "저장가능",
+          "차단코드",
+          "차단메시지"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "TimeSlot",
-          "SlotName",
-          "Capacity",
-          "CurrentCount",
-          "AfterCount",
-          "SeatsLeft",
-          "IsOpen",
-          "CutoffTime",
-          "CutoffPassed",
-          "CanSelect",
-          "BlockCode",
-          "BlockMessage"
+          "시간대코드",
+          "시간대명",
+          "정원",
+          "현재인원",
+          "적용후인원",
+          "잔여자리",
+          "운영여부",
+          "마감시각",
+          "마감경과여부",
+          "선택가능",
+          "차단코드",
+          "차단메시지"
         ],
         "rows": 0
       },
       {
         "columns": [
-          "Eligible",
-          "Age",
-          "LastCheckupDate",
-          "ReasonCode",
-          "ReasonMessage"
+          "검진대상여부",
+          "나이",
+          "최근완료일자",
+          "사유코드",
+          "사유메시지"
         ],
         "rows": 0
       },
       {
         "columns": [
-          "ExamCode",
-          "ExamName",
-          "ExamType",
-          "RuleCode"
+          "검사항목코드",
+          "검사항목명",
+          "국가검사구분",
+          "국가검사규칙코드"
         ],
         "rows": 0
       },
       {
         "columns": [
-          "OptionCode",
-          "ExamCode",
-          "ExamName",
-          "Requested",
-          "Selected",
-          "CanSelect",
-          "ReasonCode",
-          "ReasonMessage"
+          "추가검사코드",
+          "검사항목코드",
+          "검사항목명",
+          "요청선택여부",
+          "유효선택여부",
+          "선택가능",
+          "사유코드",
+          "사유메시지"
         ],
         "rows": 0
       }
@@ -981,540 +981,540 @@
     "resultSets": []
   },
   "PWR-001_신규등록_자동차트": {
-    "sp": "USP_HC_INSERT_수검자",
+    "sp": "USP_HC_수검자_등록",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "PatientId",
-          "ChartNo",
-          "Name",
-          "SocialNumber",
-          "Birthday",
-          "Gender",
-          "MobilePhone",
-          "LastEditDate"
+          "수검자ID",
+          "차트번호",
+          "성명",
+          "주민번호",
+          "생년월일",
+          "성별",
+          "휴대전화",
+          "최종수정일시"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-002_동일주민_동일이름": {
-    "sp": "USP_HC_INSERT_수검자",
+    "sp": "USP_HC_수검자_등록",
     "rs0Success": 1,
     "rs0Code": 2,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "PatientId",
-          "ChartNo",
-          "Name",
-          "SocialNumber",
-          "Birthday",
-          "Gender",
-          "MobilePhone",
-          "LastEditDate"
+          "수검자ID",
+          "차트번호",
+          "성명",
+          "주민번호",
+          "생년월일",
+          "성별",
+          "휴대전화",
+          "최종수정일시"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-003_동일주민_다른이름": {
-    "sp": "USP_HC_INSERT_수검자",
+    "sp": "USP_HC_수검자_등록",
     "rs0Success": 0,
     "rs0Code": 202,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "PatientId",
-          "ChartNo",
-          "Name",
-          "SocialNumber",
-          "Birthday",
-          "Gender",
-          "MobilePhone",
-          "LastEditDate"
+          "수검자ID",
+          "차트번호",
+          "성명",
+          "주민번호",
+          "생년월일",
+          "성별",
+          "휴대전화",
+          "최종수정일시"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-004_주민번호_12자리": {
-    "sp": "USP_HC_INSERT_수검자",
+    "sp": "USP_HC_수검자_등록",
     "rs0Success": 0,
     "rs0Code": 101,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-005_주민번호_없는날짜": {
-    "sp": "USP_HC_INSERT_수검자",
+    "sp": "USP_HC_수검자_등록",
     "rs0Success": 0,
     "rs0Code": 101,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-007_수동차트_NULL": {
-    "sp": "USP_HC_INSERT_수검자",
+    "sp": "USP_HC_수검자_등록",
     "rs0Success": 0,
     "rs0Code": 102,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-008_수동차트_중복": {
-    "sp": "USP_HC_INSERT_수검자",
+    "sp": "USP_HC_수검자_등록",
     "rs0Success": 0,
     "rs0Code": 201,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-009_유사후보_미확인": {
-    "sp": "USP_HC_INSERT_수검자",
+    "sp": "USP_HC_수검자_등록",
     "rs0Success": 0,
     "rs0Code": 203,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "PatientId",
-          "ChartNo",
-          "Name",
-          "SocialNumber",
-          "Birthday",
-          "Gender",
-          "MobilePhone",
-          "LastEditDate"
+          "수검자ID",
+          "차트번호",
+          "성명",
+          "주민번호",
+          "생년월일",
+          "성별",
+          "휴대전화",
+          "최종수정일시"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-010_유사후보_확인후등록": {
-    "sp": "USP_HC_INSERT_수검자",
+    "sp": "USP_HC_수검자_등록",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "PatientId",
-          "ChartNo",
-          "Name",
-          "SocialNumber",
-          "Birthday",
-          "Gender",
-          "MobilePhone",
-          "LastEditDate"
+          "수검자ID",
+          "차트번호",
+          "성명",
+          "주민번호",
+          "생년월일",
+          "성별",
+          "휴대전화",
+          "최종수정일시"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-013_주민번호_14자리_경계절단": {
-    "sp": "USP_HC_INSERT_수검자",
+    "sp": "USP_HC_수검자_등록",
     "rs0Success": 1,
     "rs0Code": 2,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "PatientId",
-          "ChartNo",
-          "Name",
-          "SocialNumber",
-          "Birthday",
-          "Gender",
-          "MobilePhone",
-          "LastEditDate"
+          "수검자ID",
+          "차트번호",
+          "성명",
+          "주민번호",
+          "생년월일",
+          "성별",
+          "휴대전화",
+          "최종수정일시"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-014_주민번호_비숫자": {
-    "sp": "USP_HC_INSERT_수검자",
+    "sp": "USP_HC_수검자_등록",
     "rs0Success": 0,
     "rs0Code": 101,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-020_수정_Noop": {
-    "sp": "USP_HC_UPDATE_수검자정보",
+    "sp": "USP_HC_수검자정보_수정",
     "rs0Success": 1,
     "rs0Code": 1,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "PatientId",
-          "ChartNo",
-          "LastEditDate"
+          "수검자ID",
+          "차트번호",
+          "최종수정일시"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-021_수정_stale_LastEditDate": {
-    "sp": "USP_HC_UPDATE_수검자정보",
+    "sp": "USP_HC_수검자정보_수정",
     "rs0Success": 0,
     "rs0Code": 600,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-022_수정_이름변경": {
-    "sp": "USP_HC_UPDATE_수검자정보",
+    "sp": "USP_HC_수검자정보_수정",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "PatientId",
-          "ChartNo",
-          "LastEditDate"
+          "수검자ID",
+          "차트번호",
+          "최종수정일시"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-023_주민번호변경_RSV보유": {
-    "sp": "USP_HC_UPDATE_수검자정보",
+    "sp": "USP_HC_수검자정보_수정",
     "rs0Success": 0,
     "rs0Code": 205,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-024_차트번호변경_RSV보유": {
-    "sp": "USP_HC_UPDATE_수검자정보",
+    "sp": "USP_HC_수검자정보_수정",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "PatientId",
-          "ChartNo",
-          "LastEditDate"
+          "수검자ID",
+          "차트번호",
+          "최종수정일시"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-025_주민번호_타수검자사용중": {
-    "sp": "USP_HC_UPDATE_수검자정보",
+    "sp": "USP_HC_수검자정보_수정",
     "rs0Success": 0,
     "rs0Code": 204,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-026_수정_미존재_PatientId": {
-    "sp": "USP_HC_UPDATE_수검자정보",
+    "sp": "USP_HC_수검자정보_수정",
     "rs0Success": 0,
     "rs0Code": 200,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-027_주민번호변경_RCP보유": {
-    "sp": "USP_HC_UPDATE_수검자정보",
+    "sp": "USP_HC_수검자정보_수정",
     "rs0Success": 0,
     "rs0Code": 205,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "PWR-028_차트번호변경_RCP보유": {
-    "sp": "USP_HC_UPDATE_수검자정보",
+    "sp": "USP_HC_수검자정보_수정",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "PatientId",
-          "ChartNo",
-          "LastEditDate"
+          "수검자ID",
+          "차트번호",
+          "최종수정일시"
         ],
         "rows": 1
       }
     ]
   },
   "SEL-021_변경이력_정상": {
-    "sp": "USP_HC_SELECT_변경이력",
+    "sp": "USP_HC_변경이력_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "LogId",
-          "RecordedAt",
-          "OperatorName",
-          "ColumnName",
-          "BeforeValue",
-          "AfterValue"
+          "이력ID",
+          "기록일시",
+          "조작자명",
+          "컬럼명",
+          "변경전",
+          "변경후"
         ],
         "rows": 2
       }
     ]
   },
   "SEL-022_변경이력_기록0건": {
-    "sp": "USP_HC_SELECT_변경이력",
+    "sp": "USP_HC_변경이력_조회",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "LogId",
-          "RecordedAt",
-          "OperatorName",
-          "ColumnName",
-          "BeforeValue",
-          "AfterValue"
+          "이력ID",
+          "기록일시",
+          "조작자명",
+          "컬럼명",
+          "변경전",
+          "변경후"
         ],
         "rows": 0
       }
     ]
   },
   "SEL-023_변경이력_TargetTable_허용밖": {
-    "sp": "USP_HC_SELECT_변경이력",
+    "sp": "USP_HC_변경이력_조회",
     "rs0Success": 0,
     "rs0Code": 101,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "SEL-024_변경이력_TargetTable_NULL": {
-    "sp": "USP_HC_SELECT_변경이력",
+    "sp": "USP_HC_변경이력_조회",
     "rs0Success": 0,
     "rs0Code": 100,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
@@ -1525,582 +1525,582 @@
     "resultSets": []
   },
   "RWR-001_신규예약_과거일": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
     "rs0Code": 300,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-002_신규예약_일요일": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
     "rs0Code": 301,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-003_신규예약_휴무일": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
     "rs0Code": 302,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-004_신규예약_토요일PM": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
     "rs0Code": 303,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-005_신규예약_WALKIN_날짜불일치": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
     "rs0Code": 102,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-006_신규예약_TGT_미달": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
     "rs0Code": 400,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-007_신규예약_AEX_성별불충족": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
     "rs0Code": 411,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-008_신규예약_성공": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-010_신규예약_타유효업무1건": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
     "rs0Code": 306,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-011_신규예약_타유효업무2건": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
     "rs0Code": 701,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-012_신규예약_정원마감": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
     "rs0Code": 305,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-020_예약변경_변경없음": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 1,
     "rs0Code": 1,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-021_예약변경_시간대만": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-022_예약변경_AEX만": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-023_예약변경_예약일만": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-024_예약변경_시간대_AEX": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-025_예약변경_stale_RowVersion": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 0,
     "rs0Code": 601,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-026_예약변경_CNR_Work": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 0,
     "rs0Code": 502,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-027_예약변경_미존재_WorkId": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 0,
     "rs0Code": 500,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-028_예약변경_자기Work_오탐없음": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-029_예약변경_TGT_비대상": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 0,
     "rs0Code": 401,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-030_예약변경_정원유지": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-031_예약변경_나이경계_AEX중복": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 0,
     "rs0Code": 412,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-032_신규예약_타유효업무1건_재확인": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
     "rs0Code": 306,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-033_신규예약_타유효업무2건_재확인": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
     "rs0Code": 701,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-034_예약변경_NEX상한초과": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 0,
     "rs0Code": 701,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-040_예약취소_미존재_WorkId": {
-    "sp": "USP_HC_UPDATE_예약취소",
+    "sp": "USP_HC_예약_취소",
     "rs0Success": 0,
     "rs0Code": 500,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-041_예약취소_stale_RowVersion": {
-    "sp": "USP_HC_UPDATE_예약취소",
+    "sp": "USP_HC_예약_취소",
     "rs0Success": 0,
     "rs0Code": 601,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-042_예약취소_이미_CNR": {
-    "sp": "USP_HC_UPDATE_예약취소",
+    "sp": "USP_HC_예약_취소",
     "rs0Success": 0,
     "rs0Code": 502,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "RWR-043_예약취소_성공": {
-    "sp": "USP_HC_UPDATE_예약취소",
+    "sp": "USP_HC_예약_취소",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
@@ -2115,414 +2115,414 @@
     "resultSets": []
   },
   "CWR-001_접수완료_미존재_WorkId": {
-    "sp": "USP_HC_UPDATE_접수완료",
+    "sp": "USP_HC_접수_완료",
     "rs0Success": 0,
     "rs0Code": 500,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-002_접수완료_미래예약일": {
-    "sp": "USP_HC_UPDATE_접수완료",
+    "sp": "USP_HC_접수_완료",
     "rs0Success": 0,
     "rs0Code": 503,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-003_접수완료_stale_RowVersion": {
-    "sp": "USP_HC_UPDATE_접수완료",
+    "sp": "USP_HC_접수_완료",
     "rs0Success": 0,
     "rs0Code": 601,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-004_접수완료_CNR_Work": {
-    "sp": "USP_HC_UPDATE_접수완료",
+    "sp": "USP_HC_접수_완료",
     "rs0Success": 0,
     "rs0Code": 502,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-005_접수완료_NEX0행": {
-    "sp": "USP_HC_UPDATE_접수완료",
+    "sp": "USP_HC_접수_완료",
     "rs0Success": 0,
     "rs0Code": 701,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-006_접수완료_성공": {
-    "sp": "USP_HC_UPDATE_접수완료",
+    "sp": "USP_HC_접수_완료",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-007_접수완료_이미_RCP": {
-    "sp": "USP_HC_UPDATE_접수완료",
+    "sp": "USP_HC_접수_완료",
     "rs0Success": 0,
     "rs0Code": 502,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-008_접수완료_과거예약일": {
-    "sp": "USP_HC_UPDATE_접수완료",
+    "sp": "USP_HC_접수_완료",
     "rs0Success": 0,
     "rs0Code": 503,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-009_접수완료_마감경과": {
-    "sp": "USP_HC_UPDATE_접수완료",
+    "sp": "USP_HC_접수_완료",
     "rs0Success": 0,
     "rs0Code": 304,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-011_접수완료_Master역할불일치": {
-    "sp": "USP_HC_UPDATE_접수완료",
+    "sp": "USP_HC_접수_완료",
     "rs0Success": 0,
     "rs0Code": 701,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-020_접수추가검사_동일집합": {
-    "sp": "USP_HC_UPDATE_접수추가검사",
+    "sp": "USP_HC_접수추가검사_변경",
     "rs0Success": 1,
     "rs0Code": 1,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-021_접수추가검사_실제변경": {
-    "sp": "USP_HC_UPDATE_접수추가검사",
+    "sp": "USP_HC_접수추가검사_변경",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-022_접수추가검사_전체해제": {
-    "sp": "USP_HC_UPDATE_접수추가검사",
+    "sp": "USP_HC_접수추가검사_변경",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-023_접수추가검사_성별불충족": {
-    "sp": "USP_HC_UPDATE_접수추가검사",
+    "sp": "USP_HC_접수추가검사_변경",
     "rs0Success": 0,
     "rs0Code": 411,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-024_접수추가검사_NEX중복": {
-    "sp": "USP_HC_UPDATE_접수추가검사",
+    "sp": "USP_HC_접수추가검사_변경",
     "rs0Success": 0,
     "rs0Code": 412,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-025_접수추가검사_RSV상태": {
-    "sp": "USP_HC_UPDATE_접수추가검사",
+    "sp": "USP_HC_접수추가검사_변경",
     "rs0Success": 0,
     "rs0Code": 502,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-026_접수추가검사_stale_RowVersion": {
-    "sp": "USP_HC_UPDATE_접수추가검사",
+    "sp": "USP_HC_접수추가검사_변경",
     "rs0Success": 0,
     "rs0Code": 601,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-040_접수취소_RSV상태": {
-    "sp": "USP_HC_UPDATE_접수취소",
+    "sp": "USP_HC_접수_취소",
     "rs0Success": 0,
     "rs0Code": 502,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-041_접수취소_stale_RowVersion": {
-    "sp": "USP_HC_UPDATE_접수취소",
+    "sp": "USP_HC_접수_취소",
     "rs0Success": 0,
     "rs0Code": 601,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-042_접수취소_성공": {
-    "sp": "USP_HC_UPDATE_접수취소",
+    "sp": "USP_HC_접수_취소",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       },
       {
         "columns": [
-          "WorkId",
-          "Status",
-          "RowVersion"
+          "업무ID",
+          "상태코드",
+          "행버전"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-043_접수취소_이미_CNC": {
-    "sp": "USP_HC_UPDATE_접수취소",
+    "sp": "USP_HC_접수_취소",
     "rs0Success": 0,
     "rs0Code": 502,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "CWR-044_CNC_예약변경_불가": {
-    "sp": "USP_HC_UPDATE_예약변경",
+    "sp": "USP_HC_예약_변경",
     "rs0Success": 0,
     "rs0Code": 502,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
@@ -2537,51 +2537,51 @@
     "resultSets": []
   },
   "OFF-308-01_업무일아님_수검자등록": {
-    "sp": "USP_HC_INSERT_수검자",
+    "sp": "USP_HC_수검자_등록",
     "rs0Success": 0,
     "rs0Code": 308,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "OFF-309-01_업무시간밖_수검자등록": {
-    "sp": "USP_HC_INSERT_수검자",
+    "sp": "USP_HC_수검자_등록",
     "rs0Success": 0,
     "rs0Code": 309,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }
     ]
   },
   "OFF-309-02_업무시간밖_예약등록": {
-    "sp": "USP_HC_INSERT_예약",
+    "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
     "rs0Code": 309,
     "resultSets": [
       {
         "columns": [
-          "Success",
-          "Code",
-          "Message",
-          "Field",
-          "ServerTime"
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
         ],
         "rows": 1
       }

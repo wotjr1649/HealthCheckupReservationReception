@@ -260,8 +260,12 @@ function splitFences(src) {
   const hits = [];
   for (const [n, s] of Object.entries(plans))
     s.split('\n').forEach((l, i) => {
+      // 개명표의 '현재' 칸은 사라진 이름을 적을 수밖에 없다. 같은 줄이 살아 있는 이름을
+      // 함께 적고 있으면 그것은 개명 한 행이지 매달린 참조가 아니다.
+      // 홀로 있는 미정의 이름은 그대로 걸린다 — 게이트가 약해지지 않는다.
+      const renameRow = (l.match(OBJ) || []).some(o => known.has(o));
       for (const o of [...(l.match(OBJ) || []), ...(l.match(TBLR2) || [])])
-        if (!known.has(o)) hits.push(n + ':' + (i + 1) + ': ' + o);
+        if (!known.has(o) && !renameRow) hits.push(n + ':' + (i + 1) + ': ' + o);
       for (const m of l.matchAll(TBLR3))
         if (!known.has(m[1])) hits.push(n + ':' + (i + 1) + ': ' + m[1]);
     });
@@ -316,7 +320,7 @@ function splitFences(src) {
   const known = new Set();
   for (const m of sec04Table.matchAll(/\`([A-Za-z가-힣][A-Za-z0-9_가-힣]*)\`/g)) known.add(m[1]);   // 04 §8 컬럼·제약·인덱스
   for (const m of spec.matchAll(/\[([A-Za-z가-힣][A-Za-z0-9_가-힣]*)\]/g)) known.add(m[1]);            // 06 대괄호 식별자
-  for (const m of read(BASE05).matchAll(/\`@?([A-Za-z][A-Za-z0-9_]*)\`/g)) known.add(m[1]);          // 05 반환 컬럼·Parameter
+  for (const m of read(BASE05).matchAll(/\`@?([A-Za-z가-힣][A-Za-z0-9_가-힣]*)\`/g)) known.add(m[1]); // 05 반환 컬럼·Parameter (R4 로 한글이 되었다 — ASCII 만 모으면 fail-open 한다)
   for (const n of ['tables','columns','types','indexes','index_columns','key_constraints','foreign_keys',
                    'check_constraints','default_constraints','sequences','triggers','table_types','objects',
                    'procedures','parameters','database_principals','database_permissions',
@@ -574,19 +578,21 @@ function splitFences(src) {
 //   verify-contract.js 는 실측 출력에서 **컬럼명**만 보므로 타입이 비어 있었다. 여기서 메꾼다.
 {
   const files = fs.readdirSync('deploy').filter(f => /^0[4-7]_.*\.sql$/.test(f));
+  // R4 한글화 뒤 RS0 은 [성공여부]·[결과코드]·[결과메시지]·[오류항목]·[서버시각] 이다.
+  // [오류항목] 은 담기는 값이 한글 Parameter 이름이 되었으므로 NVARCHAR(50) 이다 (05 §3.1).
   const want = [
-    [/CAST\([^()]*(?:\([^()]*\))?[^()]*AS BIT\)\s*AS Success/,               'Success BIT'],
-    [/CAST\([^()]*AS INT\)\s*AS Code/,                                        'Code INT'],
-    [/CAST\([^()]*AS NVARCHAR\(300\)\)\s*AS Message/,                        'Message NVARCHAR(300)'],
-    [/CAST\([^()]*AS VARCHAR\(50\)\)\s*AS Field/,                            'Field VARCHAR(50)'],
-    [/CAST\([^()]*AS DATETIME2\(7\)\)\s*AS ServerTime/,                      'ServerTime DATETIME2(7)'],
+    [/CAST\([^()]*(?:\([^()]*\))?[^()]*AS BIT\)\s*AS \[성공여부\]/,          '성공여부 BIT'],
+    [/CAST\([^()]*AS INT\)\s*AS \[결과코드\]/,                                '결과코드 INT'],
+    [/CAST\([^()]*AS NVARCHAR\(300\)\)\s*AS \[결과메시지\]/,                  '결과메시지 NVARCHAR(300)'],
+    [/CAST\([^()]*AS NVARCHAR\(50\)\)\s*AS \[오류항목\]/,                     '오류항목 NVARCHAR(50)'],
+    [/CAST\([^()]*AS DATETIME2\(7\)\)\s*AS \[서버시각\]/,                     '서버시각 DATETIME2(7)'],
   ];
   const bad = []; let blocks = 0;
   for (const f of files) {
     const sql = fs.readFileSync('deploy/' + f, 'utf8');
     const lines = sql.split(/\r?\n/);
     lines.forEach((l, i) => {
-      if (!/\bAS Success\b/.test(l)) return;
+      if (!/AS \[성공여부\]/.test(l)) return;
       blocks++;
       // RS0 는 5줄 연속이다. 여유를 두고 8줄을 본다.
       const win = lines.slice(i, i + 8).join('\n');

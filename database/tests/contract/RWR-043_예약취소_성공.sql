@@ -5,5 +5,5 @@ DECLARE @W BIGINT = (SELECT TOP (1) w.[업무ID] FROM [dbo].[예약접수] w
                      WHERE p.[차트번호] LIKE 'F0%' AND p.[차트번호] <> N'F020'
                        AND w.[상태코드] = 'RSV' ORDER BY w.[업무ID]);
 DECLARE @Rv BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @W);
-EXEC [dbo].[USP_HC_UPDATE_예약취소] @W, @Rv, N'TEST';
+EXEC [dbo].[USP_HC_예약_취소] @W, @Rv, N'TEST';
 GO

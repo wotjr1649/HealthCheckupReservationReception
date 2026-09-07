@@ -3,8 +3,8 @@ DECLARE @Fail INT = 0;
 
 -- SED-001 Exam Master 전건 값 EXCEPT 양방향  (04 §4.6)
 --   개수·표본 확인으로는 어떤 행의 역할·성별·Active 가 틀려도 통과한다.
-DECLARE @ExpExam TABLE (Code VARCHAR(10) PRIMARY KEY, Nm NVARCHAR(100),
-                        Nex VARCHAR(10) NULL, Aex VARCHAR(10) NULL, G CHAR(1) NULL, Act BIT);
+DECLARE @ExpExam TABLE (Cd VARCHAR(10) PRIMARY KEY, Nm NVARCHAR(100),
+                        NexRule VARCHAR(10) NULL, AexCd VARCHAR(10) NULL, G CHAR(1) NULL, Act BIT);
 INSERT INTO @ExpExam VALUES
  ('EX001', N'문진/진찰',    'NEX-01', NULL,    NULL, 0), ('EX002', N'신체계측',     'NEX-01', NULL,    NULL, 0),
  ('EX003', N'혈압',         'NEX-01', NULL,    NULL, 0), ('EX004', N'시력·청력',    'NEX-01', NULL,    NULL, 0),
@@ -17,17 +17,17 @@ INSERT INTO @ExpExam VALUES
  ('EX017', N'PSA',          NULL,     'OPT05', 'M',  1), ('EX018', N'HbA1c',        NULL,     'OPT06', 'A',  1),
  ('EX019', N'HPV 검사',     NULL,     'OPT07', 'F',  1);
 
-IF NOT EXISTS (SELECT Code,Nm,Nex,Aex,G,Act FROM @ExpExam
+IF NOT EXISTS (SELECT Cd,Nm,NexRule,AexCd,G,Act FROM @ExpExam
                EXCEPT SELECT [검사항목코드],[검사항목명],[국가검사규칙코드],[추가검사코드],
                              [추가검사성별코드],[추가검사사용여부] FROM [dbo].[검사코드])
    AND NOT EXISTS (SELECT [검사항목코드],[검사항목명],[국가검사규칙코드],[추가검사코드],
                           [추가검사성별코드],[추가검사사용여부] FROM [dbo].[검사코드]
-                   EXCEPT SELECT Code,Nm,Nex,Aex,G,Act FROM @ExpExam)
+                   EXCEPT SELECT Cd,Nm,NexRule,AexCd,G,Act FROM @ExpExam)
     PRINT 'PASS SED-001 Exam Master 전건 값 일치';
 ELSE
 BEGIN
     PRINT 'FAIL SED-001 Exam Master 불일치';
-    SELECT '기대에만' AS Side, * FROM (SELECT Code,Nm,Nex,Aex,G,Act FROM @ExpExam
+    SELECT '기대에만' AS Side, * FROM (SELECT Cd,Nm,NexRule,AexCd,G,Act FROM @ExpExam
         EXCEPT SELECT [검사항목코드],[검사항목명],[국가검사규칙코드],[추가검사코드],
                       [추가검사성별코드],[추가검사사용여부] FROM [dbo].[검사코드]) a;
     SET @Fail += 1;
@@ -113,14 +113,14 @@ SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
 IF @Bad = 0 PRINT 'PASS SSN-003 앞 6자리가 실제 날짜';
 ELSE BEGIN PRINT 'FAIL SSN-003 날짜 아님 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
--- SSN-004 Birthday 파생값 일치
+-- SSN-004 생년월일 파생값 일치
 SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
  WHERE [생년월일] <> CASE WHEN SUBSTRING([주민번호],7,1) IN ('1','2') THEN '19' ELSE '20' END
                      + SUBSTRING([주민번호], 1, 6);
 IF @Bad = 0 PRINT 'PASS SSN-004 Birthday 파생값 일치';
 ELSE BEGIN PRINT 'FAIL SSN-004 Birthday 불일치 ' + CONVERT(VARCHAR(5), @Bad) + '건'; SET @Fail += 1; END
 
--- SSN-005 Gender 파생값 일치
+-- SSN-005 성별 파생값 일치
 SELECT @Bad = COUNT(*) FROM [dbo].[수검자]
  WHERE [성별] <> CASE WHEN SUBSTRING([주민번호],7,1) IN ('1','3') THEN 'M' ELSE 'F' END;
 IF @Bad = 0 PRINT 'PASS SSN-005 Gender 파생값 일치';

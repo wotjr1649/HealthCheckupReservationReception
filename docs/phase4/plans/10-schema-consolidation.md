@@ -99,7 +99,7 @@ ORDER BY m.[검사항목코드]
 ### 2.3 부수 효과 ― 동시성 계약이 단순해진다
 
 `04` §4.3 은 "AEX 또는 NEX/AEX Detail 이 실제로 변경되면 같은 Transaction 에서
-Work `LastEditDate` 를 갱신하여 Aggregate `RowVersion` 도 변경한다"를 요구한다.
+Work `최종수정일시` 를 갱신하여 Aggregate `행버전` 도 변경한다"를 요구한다.
 검사가 `예약접수` 의 컬럼이 되면 **같은 행이라 자동으로 변한다.** 별도 갱신 규칙이 사라진다.
 동일집합 No-op 도 문자열 비교로 자연히 판정된다.
 
@@ -174,7 +174,7 @@ SP 를 신설하지 않으므로 `05` §1.3 의 외부 호출 SP 15개 계약과
 
 ```text
 이력ID     BIGINT IDENTITY   PK. 기록 순서
-기록일시   DATETIME2(0)      SP 의 @StoredNow
+기록일시   DATETIME2(0)      SP 의 @저장시각
 조작자명   NVARCHAR(50) NULL 인증되지 않은 자기신고 문자열 (04 §14 L4)
 대상테이블 NVARCHAR(10)      수검자 · 예약접수 · 완료이력
 대상키     BIGINT NULL       수검자ID 또는 업무ID
@@ -213,7 +213,7 @@ SP 를 신설하지 않으므로 `05` §1.3 의 외부 호출 SP 15개 계약과
 - `01_Schema.sql` 컬럼 2개 추가. **이 단계에서는 NULL 허용**으로 만든다 ―
   Fixture 가 채우기 전에 NOT NULL 이면 배포가 죽는다. `T52` 가 NOT NULL 로 승격한다.
 - `03_Functions.sql` `UFN_HC_추가검사확인` 의 저장 NEX 조회를 새 컬럼으로 바꾼다
-- `04_Procedures_Select.sql` RS2 · RS3 · AEX 집합 비교 · EXTRA Scope 가드 · 저장 NEX 0행 판정
+- `04_Procedures_Select.sql` RS2 · RS3 · AEX 집합 비교 · EXTRA 변경범위 가드 · 저장 NEX 0행 판정
 - `tests/00` · `00b` 가 검사항목과 새 컬럼을 **둘 다** 채운다(이 단계 한정 이중 유지)
 - `[!]` 검사항목 테이블은 아직 지우지 않는다. 판독처 전환과 삭제를 나눠야 되돌리기가 쉽다
 - `[X]` **Fixture 문자열이 Seed 를 복제한다.** 지금은 `검사코드` 를 `CROSS JOIN` 해서 8행을 만든다.
@@ -221,7 +221,7 @@ SP 를 신설하지 않으므로 `05` §1.3 의 외부 호출 SP 15개 계약과
   **문자열과 `검사코드` 가 일치하는지 단언하는 시험을 `tests/00` 에 함께 넣는다** ―
   국가검사규칙코드가 `NEX-01` 인 행 전부가 문자열 안에 있고 그 반대도 참인지 양방향으로 본다
 - `[X]` **"RS2/RS3 동일"은 실행 가능한 판정이어야 한다.** 전환 전에
-  `USP_HC_SELECT_예약접수상세` 출력을 `artifacts/reports/rs23-before.txt` 로 저장하고,
+  `USP_HC_예약접수상세_조회` 출력을 `artifacts/reports/rs23-before.txt` 로 저장하고,
   전환 후 같은 호출의 출력과 `diff` 로 대조한다. 차이 0줄이 완료조건이다
 - 완료조건: `test.sh` PASS 유지 · 계약 25건 유지 · RS2/RS3 `diff` 차이 0줄 ·
   Fixture 문자열 양방향 단언 PASS

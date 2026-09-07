@@ -36,7 +36,7 @@ DECLARE @FP VARCHAR(200) = 'INVENTORY|'
      + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[검사코드]))                                        + '|'
      + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[휴무일]));
 
--- Table 6 | TVF 4 | SP 16 | Seq 1 | PK 6 | FK 2 | UQ 2 | UX 1 | NCI 5 | CK 24 | DF 8 | Trg 0 | TVP 0 | Exam 19 | Hol 2
+-- Table 6 | TVF 4 | SP 16 | 순번값 1 | PK 6 | FK 2 | UQ 2 | UX 1 | NCI 5 | CK 24 | DF 8 | Trg 0 | TVP 0 | Exam 19 | Hol 2
 IF @FP = 'INVENTORY|6|4|16|1|6|2|2|1|5|24|8|0|0|19|2'
     PRINT 'PASS RBD-004 인벤토리 지문 일치  ' + @FP;
 ELSE BEGIN PRINT 'FAIL RBD-004 인벤토리 지문 불일치  ' + @FP; SET @Fail += 1; END
@@ -48,18 +48,18 @@ ELSE BEGIN PRINT 'FAIL RBD-004 인벤토리 지문 불일치  ' + @FP; SET @Fail
 --         회차 사이의 값 동일성은 (4) 덤프를 clean-rebuild-verify.sh 가 diff 해서 본다.
 --     역할 분포는 06 §13 과 §17.2a 가 고정한 구조적 사실이다.
 ----------------------------------------------------------------------------
-DECLARE @Nex INT = (SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [국가검사규칙코드] IS NOT NULL);
-DECLARE @Aex INT = (SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [추가검사코드] IS NOT NULL);
+DECLARE @국가검사 INT = (SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [국가검사규칙코드] IS NOT NULL);
+DECLARE @추가검사 INT = (SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [추가검사코드] IS NOT NULL);
 DECLARE @Both INT = (SELECT COUNT(*) FROM [dbo].[검사코드]
                       WHERE [국가검사규칙코드] IS NOT NULL AND [추가검사코드] IS NOT NULL);
 DECLARE @ActiveAex INT = (SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [추가검사사용여부] = 1);
 
 -- NEX 역할 13 + AEX 역할 7 - 겸용 1 = 19행. 겸용이 EX012 하나뿐인 것이 412 의 유일한 발생조건이다.
-IF (@Nex = 13 AND @Aex = 7 AND @Both = 1 AND @ActiveAex = 7)
+IF (@국가검사 = 13 AND @추가검사 = 7 AND @Both = 1 AND @ActiveAex = 7)
     PRINT 'PASS RBD-006 Seed 역할 분포 NEX 13 / AEX 7 / 겸용 1 / AEX Active 7';
 ELSE BEGIN PRINT 'FAIL RBD-006 Seed 역할 분포 불일치'
-                 + ' NEX=' + CONVERT(VARCHAR(5), @Nex)
-                 + ' AEX=' + CONVERT(VARCHAR(5), @Aex)
+                 + ' NEX=' + CONVERT(VARCHAR(5), @국가검사)
+                 + ' AEX=' + CONVERT(VARCHAR(5), @추가검사)
                  + ' 겸용=' + CONVERT(VARCHAR(5), @Both)
                  + ' Active=' + CONVERT(VARCHAR(5), @ActiveAex); SET @Fail += 1; END
 

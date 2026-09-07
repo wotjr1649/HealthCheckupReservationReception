@@ -7,5 +7,5 @@ SELECT @Pid=[수검자ID], @Led=[최종수정일시], @Cn=[차트번호], @Nm=[�
        @Mo=[휴대전화], @Ph=[전화번호], @Em=[이메일], @Zip=[우편번호],
        @Ad=[주소], @Ad2=[상세주소], @Me=[비고], @Hep=[B형간염제외여부]
   FROM [dbo].[수검자] WHERE [차트번호] = N'T014';
-EXEC [dbo].[USP_HC_UPDATE_수검자정보] @Pid, @Led, @Cn, @Nm, '7010011999997', @Mo, @Ph, @Em, @Zip, @Ad, @Ad2, @Me, @Hep, N'TEST';
+EXEC [dbo].[USP_HC_수검자정보_수정] @Pid, @Led, @Cn, @Nm, '7010011999997', @Mo, @Ph, @Em, @Zip, @Ad, @Ad2, @Me, @Hep, N'TEST';
 GO

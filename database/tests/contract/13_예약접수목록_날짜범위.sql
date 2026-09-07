@@ -1,3 +1,3 @@
 ﻿SET NOCOUNT ON;
-EXEC [dbo].[USP_HC_SELECT_예약접수목록] '2026-11-01', '2026-11-30', NULL, NULL, NULL;
+EXEC [dbo].[USP_HC_예약접수목록_조회] '2026-11-01', '2026-11-30', NULL, NULL, NULL;
 GO

@@ -1,8 +1,8 @@
 ﻿SET NOCOUNT ON;
 DECLARE @Fail INT = 0;
 
-DECLARE @Expected TABLE (Name SYSNAME PRIMARY KEY);
-INSERT INTO @Expected (Name) VALUES
+DECLARE @Expected TABLE ([객체명] SYSNAME PRIMARY KEY);
+INSERT INTO @Expected ([객체명]) VALUES
  ('수검자'),('예약접수'),
  ('검사코드'),('휴무일'),
  ('완료이력'),('변경이력');
@@ -13,8 +13,8 @@ IF ((SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0) = 6)
 ELSE BEGIN PRINT 'FAIL SCH-001 사용자 테이블 수 불일치'; SET @Fail += 1; END
 
 -- SCH-002 테이블 이름 집합 정확 일치
-IF NOT EXISTS (SELECT Name FROM @Expected EXCEPT SELECT name FROM sys.tables WHERE is_ms_shipped = 0)
-   AND NOT EXISTS (SELECT name FROM sys.tables WHERE is_ms_shipped = 0 EXCEPT SELECT Name FROM @Expected)
+IF NOT EXISTS (SELECT [객체명] FROM @Expected EXCEPT SELECT name FROM sys.tables WHERE is_ms_shipped = 0)
+   AND NOT EXISTS (SELECT name FROM sys.tables WHERE is_ms_shipped = 0 EXCEPT SELECT [객체명] FROM @Expected)
     PRINT 'PASS SCH-002 테이블 이름 집합 일치';
 ELSE BEGIN PRINT 'FAIL SCH-002 테이블 이름 집합 불일치'; SET @Fail += 1; END
 
@@ -85,8 +85,8 @@ IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 16)
 ELSE BEGIN PRINT 'FAIL SCH-014 SP 수 불일치 (T30 이전이면 정상)'; SET @Fail += 1; END
 
 -- SCH-015 컬럼 48개 전건 EXCEPT 양방향  (04 §8)
-DECLARE @ExpCol TABLE (T SYSNAME, C SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, C));
-INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
+DECLARE @ExpCol TABLE (T SYSNAME, Col SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, Col));
+INSERT INTO @ExpCol (T, Col, Ty, Len, Nul) VALUES
  -- 48행 전건. 기준선 04 §8 의 컬럼 표에서 기계 생성했다(개수·타입·길이·NULL 모두 그 표가 출처다).
  -- Len 은 문자·이진형만 채운다. nvarchar/nchar 는 문자 수, MAX 는 -1, 그 밖은 NULL.
  -- 수검자 16행
@@ -146,8 +146,8 @@ INSERT INTO @ExpCol (T, C, Ty, Len, Nul) VALUES
  (N'변경이력', N'변경전',               N'nvarchar',  4000,  1),
  (N'변경이력', N'변경후',               N'nvarchar',  4000,  1);
 
-DECLARE @ActCol TABLE (T SYSNAME, C SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, C));
-INSERT INTO @ActCol (T, C, Ty, Len, Nul)
+DECLARE @ActCol TABLE (T SYSNAME, Col SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, Col));
+INSERT INTO @ActCol (T, Col, Ty, Len, Nul)
 SELECT t.name, c.name, y.name
      , CASE WHEN y.name IN ('nvarchar','nchar') AND c.max_length > 0 THEN c.max_length / 2
             WHEN y.name IN ('varchar','char','binary','varbinary') THEN c.max_length
@@ -158,14 +158,14 @@ JOIN sys.columns c ON c.object_id = t.object_id
 JOIN sys.types  y ON y.user_type_id = c.user_type_id
 WHERE t.is_ms_shipped = 0;
 
-IF NOT EXISTS (SELECT T,C,Ty,Len,Nul FROM @ExpCol EXCEPT SELECT T,C,Ty,Len,Nul FROM @ActCol)
-   AND NOT EXISTS (SELECT T,C,Ty,Len,Nul FROM @ActCol EXCEPT SELECT T,C,Ty,Len,Nul FROM @ExpCol)
+IF NOT EXISTS (SELECT T,Col,Ty,Len,Nul FROM @ExpCol EXCEPT SELECT T,Col,Ty,Len,Nul FROM @ActCol)
+   AND NOT EXISTS (SELECT T,Col,Ty,Len,Nul FROM @ActCol EXCEPT SELECT T,Col,Ty,Len,Nul FROM @ExpCol)
     PRINT 'PASS SCH-015 컬럼 48개 전건 일치';
 ELSE
 BEGIN
     PRINT 'FAIL SCH-015 컬럼 불일치';
-    SELECT '기대에만 있음' AS Side, * FROM (SELECT T,C,Ty,Len,Nul FROM @ExpCol EXCEPT SELECT T,C,Ty,Len,Nul FROM @ActCol) a;
-    SELECT '실측에만 있음' AS Side, * FROM (SELECT T,C,Ty,Len,Nul FROM @ActCol EXCEPT SELECT T,C,Ty,Len,Nul FROM @ExpCol) b;
+    SELECT '기대에만 있음' AS Side, * FROM (SELECT T,Col,Ty,Len,Nul FROM @ExpCol EXCEPT SELECT T,Col,Ty,Len,Nul FROM @ActCol) a;
+    SELECT '실측에만 있음' AS Side, * FROM (SELECT T,Col,Ty,Len,Nul FROM @ActCol EXCEPT SELECT T,Col,Ty,Len,Nul FROM @ExpCol) b;
     SET @Fail += 1;
 END
 
@@ -259,105 +259,105 @@ END
 DECLARE @ExpP TABLE (SpName SYSNAME, Ord INT, ParamName SYSNAME, TypeName SYSNAME,
                      PRIMARY KEY (SpName, Ord));
 INSERT INTO @ExpP (SpName, Ord, ParamName, TypeName) VALUES
-   (N'USP_HC_INSERT_수검자', 1, '@AutoChartNo', 'bit')
- , (N'USP_HC_INSERT_수검자', 2, '@ChartNo', 'nvarchar')
- , (N'USP_HC_INSERT_수검자', 3, '@Name', 'nvarchar')
- , (N'USP_HC_INSERT_수검자', 4, '@SocialNumber', 'varchar')
- , (N'USP_HC_INSERT_수검자', 5, '@MobilePhone', 'varchar')
- , (N'USP_HC_INSERT_수검자', 6, '@Phone', 'varchar')
- , (N'USP_HC_INSERT_수검자', 7, '@Email', 'varchar')
- , (N'USP_HC_INSERT_수검자', 8, '@Zipcode', 'varchar')
- , (N'USP_HC_INSERT_수검자', 9, '@Address', 'nvarchar')
- , (N'USP_HC_INSERT_수검자', 10, '@AddressDetail', 'nvarchar')
- , (N'USP_HC_INSERT_수검자', 11, '@Memo', 'nvarchar')
- , (N'USP_HC_INSERT_수검자', 12, '@HepatitisBExcluded', 'bit')
- , (N'USP_HC_INSERT_수검자', 13, '@ConfirmSimilarPatient', 'bit')
- , (N'USP_HC_INSERT_수검자', 14, '@OperatorName', 'nvarchar')
- , (N'USP_HC_INSERT_예약', 1, '@PatientId', 'bigint')
- , (N'USP_HC_INSERT_예약', 2, '@ReservationType', 'varchar')
- , (N'USP_HC_INSERT_예약', 3, '@ReservationDate', 'date')
- , (N'USP_HC_INSERT_예약', 4, '@TimeSlot', 'char')
- , (N'USP_HC_INSERT_예약', 5, '@AexOpt01Selected', 'bit')
- , (N'USP_HC_INSERT_예약', 6, '@AexOpt02Selected', 'bit')
- , (N'USP_HC_INSERT_예약', 7, '@AexOpt03Selected', 'bit')
- , (N'USP_HC_INSERT_예약', 8, '@AexOpt04Selected', 'bit')
- , (N'USP_HC_INSERT_예약', 9, '@AexOpt05Selected', 'bit')
- , (N'USP_HC_INSERT_예약', 10, '@AexOpt06Selected', 'bit')
- , (N'USP_HC_INSERT_예약', 11, '@AexOpt07Selected', 'bit')
- , (N'USP_HC_INSERT_예약', 12, '@OperatorName', 'nvarchar')
- , (N'USP_HC_SELECT_변경이력', 1, '@TargetTable', 'nvarchar')
- , (N'USP_HC_SELECT_변경이력', 2, '@TargetKey', 'bigint')
- , (N'USP_HC_SELECT_수검자목록', 1, '@ChartNo', 'nvarchar')
- , (N'USP_HC_SELECT_수검자목록', 2, '@Name', 'nvarchar')
- , (N'USP_HC_SELECT_수검자목록', 3, '@SocialNumber', 'varchar')
- , (N'USP_HC_SELECT_수검자목록', 4, '@Birthday', 'varchar')
- , (N'USP_HC_SELECT_수검자목록', 5, '@MobilePhone', 'varchar')
- , (N'USP_HC_SELECT_수검자상세', 1, '@PatientId', 'bigint')
- , (N'USP_HC_SELECT_수검자유효업무', 1, '@PatientId', 'bigint')
- , (N'USP_HC_SELECT_예약가능정보', 1, '@PatientId', 'bigint')
- , (N'USP_HC_SELECT_예약가능정보', 2, '@WorkId', 'bigint')
- , (N'USP_HC_SELECT_예약가능정보', 3, '@RowVersion', 'binary')
- , (N'USP_HC_SELECT_예약가능정보', 4, '@ReservationType', 'varchar')
- , (N'USP_HC_SELECT_예약가능정보', 5, '@ReservationDate', 'date')
- , (N'USP_HC_SELECT_예약가능정보', 6, '@TimeSlot', 'char')
- , (N'USP_HC_SELECT_예약가능정보', 7, '@AexOpt01Selected', 'bit')
- , (N'USP_HC_SELECT_예약가능정보', 8, '@AexOpt02Selected', 'bit')
- , (N'USP_HC_SELECT_예약가능정보', 9, '@AexOpt03Selected', 'bit')
- , (N'USP_HC_SELECT_예약가능정보', 10, '@AexOpt04Selected', 'bit')
- , (N'USP_HC_SELECT_예약가능정보', 11, '@AexOpt05Selected', 'bit')
- , (N'USP_HC_SELECT_예약가능정보', 12, '@AexOpt06Selected', 'bit')
- , (N'USP_HC_SELECT_예약가능정보', 13, '@AexOpt07Selected', 'bit')
- , (N'USP_HC_SELECT_예약접수목록', 1, '@FromDate', 'date')
- , (N'USP_HC_SELECT_예약접수목록', 2, '@ToDate', 'date')
- , (N'USP_HC_SELECT_예약접수목록', 3, '@Status', 'char')
- , (N'USP_HC_SELECT_예약접수목록', 4, '@ChartNo', 'nvarchar')
- , (N'USP_HC_SELECT_예약접수목록', 5, '@Name', 'nvarchar')
- , (N'USP_HC_SELECT_예약접수상세', 1, '@WorkId', 'bigint')
- , (N'USP_HC_UPDATE_수검자정보', 1, '@PatientId', 'bigint')
- , (N'USP_HC_UPDATE_수검자정보', 2, '@LastEditDate', 'datetime')
- , (N'USP_HC_UPDATE_수검자정보', 3, '@ChartNo', 'nvarchar')
- , (N'USP_HC_UPDATE_수검자정보', 4, '@Name', 'nvarchar')
- , (N'USP_HC_UPDATE_수검자정보', 5, '@SocialNumber', 'varchar')
- , (N'USP_HC_UPDATE_수검자정보', 6, '@MobilePhone', 'varchar')
- , (N'USP_HC_UPDATE_수검자정보', 7, '@Phone', 'varchar')
- , (N'USP_HC_UPDATE_수검자정보', 8, '@Email', 'varchar')
- , (N'USP_HC_UPDATE_수검자정보', 9, '@Zipcode', 'varchar')
- , (N'USP_HC_UPDATE_수검자정보', 10, '@Address', 'nvarchar')
- , (N'USP_HC_UPDATE_수검자정보', 11, '@AddressDetail', 'nvarchar')
- , (N'USP_HC_UPDATE_수검자정보', 12, '@Memo', 'nvarchar')
- , (N'USP_HC_UPDATE_수검자정보', 13, '@HepatitisBExcluded', 'bit')
- , (N'USP_HC_UPDATE_수검자정보', 14, '@OperatorName', 'nvarchar')
- , (N'USP_HC_UPDATE_예약변경', 1, '@WorkId', 'bigint')
- , (N'USP_HC_UPDATE_예약변경', 2, '@RowVersion', 'binary')
- , (N'USP_HC_UPDATE_예약변경', 3, '@ReservationDate', 'date')
- , (N'USP_HC_UPDATE_예약변경', 4, '@TimeSlot', 'char')
- , (N'USP_HC_UPDATE_예약변경', 5, '@AexOpt01Selected', 'bit')
- , (N'USP_HC_UPDATE_예약변경', 6, '@AexOpt02Selected', 'bit')
- , (N'USP_HC_UPDATE_예약변경', 7, '@AexOpt03Selected', 'bit')
- , (N'USP_HC_UPDATE_예약변경', 8, '@AexOpt04Selected', 'bit')
- , (N'USP_HC_UPDATE_예약변경', 9, '@AexOpt05Selected', 'bit')
- , (N'USP_HC_UPDATE_예약변경', 10, '@AexOpt06Selected', 'bit')
- , (N'USP_HC_UPDATE_예약변경', 11, '@AexOpt07Selected', 'bit')
- , (N'USP_HC_UPDATE_예약변경', 12, '@OperatorName', 'nvarchar')
- , (N'USP_HC_UPDATE_예약취소', 1, '@WorkId', 'bigint')
- , (N'USP_HC_UPDATE_예약취소', 2, '@RowVersion', 'binary')
- , (N'USP_HC_UPDATE_예약취소', 3, '@OperatorName', 'nvarchar')
- , (N'USP_HC_UPDATE_접수완료', 1, '@WorkId', 'bigint')
- , (N'USP_HC_UPDATE_접수완료', 2, '@RowVersion', 'binary')
- , (N'USP_HC_UPDATE_접수완료', 3, '@OperatorName', 'nvarchar')
- , (N'USP_HC_UPDATE_접수추가검사', 1, '@WorkId', 'bigint')
- , (N'USP_HC_UPDATE_접수추가검사', 2, '@RowVersion', 'binary')
- , (N'USP_HC_UPDATE_접수추가검사', 3, '@AexOpt01Selected', 'bit')
- , (N'USP_HC_UPDATE_접수추가검사', 4, '@AexOpt02Selected', 'bit')
- , (N'USP_HC_UPDATE_접수추가검사', 5, '@AexOpt03Selected', 'bit')
- , (N'USP_HC_UPDATE_접수추가검사', 6, '@AexOpt04Selected', 'bit')
- , (N'USP_HC_UPDATE_접수추가검사', 7, '@AexOpt05Selected', 'bit')
- , (N'USP_HC_UPDATE_접수추가검사', 8, '@AexOpt06Selected', 'bit')
- , (N'USP_HC_UPDATE_접수추가검사', 9, '@AexOpt07Selected', 'bit')
- , (N'USP_HC_UPDATE_접수추가검사', 10, '@OperatorName', 'nvarchar')
- , (N'USP_HC_UPDATE_접수취소', 1, '@WorkId', 'bigint')
- , (N'USP_HC_UPDATE_접수취소', 2, '@RowVersion', 'binary')
- , (N'USP_HC_UPDATE_접수취소', 3, '@OperatorName', 'nvarchar')
+   (N'USP_HC_수검자_등록', 1, N'@차트번호자동발급여부', 'bit')
+ , (N'USP_HC_수검자_등록', 2, N'@차트번호', 'nvarchar')
+ , (N'USP_HC_수검자_등록', 3, N'@성명', 'nvarchar')
+ , (N'USP_HC_수검자_등록', 4, N'@주민번호', 'varchar')
+ , (N'USP_HC_수검자_등록', 5, N'@휴대전화', 'varchar')
+ , (N'USP_HC_수검자_등록', 6, N'@전화번호', 'varchar')
+ , (N'USP_HC_수검자_등록', 7, N'@이메일', 'varchar')
+ , (N'USP_HC_수검자_등록', 8, N'@우편번호', 'varchar')
+ , (N'USP_HC_수검자_등록', 9, N'@주소', 'nvarchar')
+ , (N'USP_HC_수검자_등록', 10, N'@상세주소', 'nvarchar')
+ , (N'USP_HC_수검자_등록', 11, N'@비고', 'nvarchar')
+ , (N'USP_HC_수검자_등록', 12, N'@B형간염제외여부', 'bit')
+ , (N'USP_HC_수검자_등록', 13, N'@유사수검자확인여부', 'bit')
+ , (N'USP_HC_수검자_등록', 14, N'@조작자명', 'nvarchar')
+ , (N'USP_HC_예약_등록', 1, N'@수검자ID', 'bigint')
+ , (N'USP_HC_예약_등록', 2, N'@예약구분', 'varchar')
+ , (N'USP_HC_예약_등록', 3, N'@예약일', 'date')
+ , (N'USP_HC_예약_등록', 4, N'@시간대코드', 'char')
+ , (N'USP_HC_예약_등록', 5, N'@추가검사01선택여부', 'bit')
+ , (N'USP_HC_예약_등록', 6, N'@추가검사02선택여부', 'bit')
+ , (N'USP_HC_예약_등록', 7, N'@추가검사03선택여부', 'bit')
+ , (N'USP_HC_예약_등록', 8, N'@추가검사04선택여부', 'bit')
+ , (N'USP_HC_예약_등록', 9, N'@추가검사05선택여부', 'bit')
+ , (N'USP_HC_예약_등록', 10, N'@추가검사06선택여부', 'bit')
+ , (N'USP_HC_예약_등록', 11, N'@추가검사07선택여부', 'bit')
+ , (N'USP_HC_예약_등록', 12, N'@조작자명', 'nvarchar')
+ , (N'USP_HC_변경이력_조회', 1, N'@대상테이블', 'nvarchar')
+ , (N'USP_HC_변경이력_조회', 2, N'@대상키', 'bigint')
+ , (N'USP_HC_수검자목록_조회', 1, N'@차트번호', 'nvarchar')
+ , (N'USP_HC_수검자목록_조회', 2, N'@성명', 'nvarchar')
+ , (N'USP_HC_수검자목록_조회', 3, N'@주민번호', 'varchar')
+ , (N'USP_HC_수검자목록_조회', 4, N'@생년월일', 'varchar')
+ , (N'USP_HC_수검자목록_조회', 5, N'@휴대전화', 'varchar')
+ , (N'USP_HC_수검자상세_조회', 1, N'@수검자ID', 'bigint')
+ , (N'USP_HC_수검자유효업무_조회', 1, N'@수검자ID', 'bigint')
+ , (N'USP_HC_예약가능정보_조회', 1, N'@수검자ID', 'bigint')
+ , (N'USP_HC_예약가능정보_조회', 2, N'@업무ID', 'bigint')
+ , (N'USP_HC_예약가능정보_조회', 3, N'@행버전', 'binary')
+ , (N'USP_HC_예약가능정보_조회', 4, N'@예약구분', 'varchar')
+ , (N'USP_HC_예약가능정보_조회', 5, N'@예약일', 'date')
+ , (N'USP_HC_예약가능정보_조회', 6, N'@시간대코드', 'char')
+ , (N'USP_HC_예약가능정보_조회', 7, N'@추가검사01선택여부', 'bit')
+ , (N'USP_HC_예약가능정보_조회', 8, N'@추가검사02선택여부', 'bit')
+ , (N'USP_HC_예약가능정보_조회', 9, N'@추가검사03선택여부', 'bit')
+ , (N'USP_HC_예약가능정보_조회', 10, N'@추가검사04선택여부', 'bit')
+ , (N'USP_HC_예약가능정보_조회', 11, N'@추가검사05선택여부', 'bit')
+ , (N'USP_HC_예약가능정보_조회', 12, N'@추가검사06선택여부', 'bit')
+ , (N'USP_HC_예약가능정보_조회', 13, N'@추가검사07선택여부', 'bit')
+ , (N'USP_HC_예약접수목록_조회', 1, N'@시작일', 'date')
+ , (N'USP_HC_예약접수목록_조회', 2, N'@종료일', 'date')
+ , (N'USP_HC_예약접수목록_조회', 3, N'@상태코드', 'char')
+ , (N'USP_HC_예약접수목록_조회', 4, N'@차트번호', 'nvarchar')
+ , (N'USP_HC_예약접수목록_조회', 5, N'@성명', 'nvarchar')
+ , (N'USP_HC_예약접수상세_조회', 1, N'@업무ID', 'bigint')
+ , (N'USP_HC_수검자정보_수정', 1, N'@수검자ID', 'bigint')
+ , (N'USP_HC_수검자정보_수정', 2, N'@최종수정일시', 'datetime')
+ , (N'USP_HC_수검자정보_수정', 3, N'@차트번호', 'nvarchar')
+ , (N'USP_HC_수검자정보_수정', 4, N'@성명', 'nvarchar')
+ , (N'USP_HC_수검자정보_수정', 5, N'@주민번호', 'varchar')
+ , (N'USP_HC_수검자정보_수정', 6, N'@휴대전화', 'varchar')
+ , (N'USP_HC_수검자정보_수정', 7, N'@전화번호', 'varchar')
+ , (N'USP_HC_수검자정보_수정', 8, N'@이메일', 'varchar')
+ , (N'USP_HC_수검자정보_수정', 9, N'@우편번호', 'varchar')
+ , (N'USP_HC_수검자정보_수정', 10, N'@주소', 'nvarchar')
+ , (N'USP_HC_수검자정보_수정', 11, N'@상세주소', 'nvarchar')
+ , (N'USP_HC_수검자정보_수정', 12, N'@비고', 'nvarchar')
+ , (N'USP_HC_수검자정보_수정', 13, N'@B형간염제외여부', 'bit')
+ , (N'USP_HC_수검자정보_수정', 14, N'@조작자명', 'nvarchar')
+ , (N'USP_HC_예약_변경', 1, N'@업무ID', 'bigint')
+ , (N'USP_HC_예약_변경', 2, N'@행버전', 'binary')
+ , (N'USP_HC_예약_변경', 3, N'@예약일', 'date')
+ , (N'USP_HC_예약_변경', 4, N'@시간대코드', 'char')
+ , (N'USP_HC_예약_변경', 5, N'@추가검사01선택여부', 'bit')
+ , (N'USP_HC_예약_변경', 6, N'@추가검사02선택여부', 'bit')
+ , (N'USP_HC_예약_변경', 7, N'@추가검사03선택여부', 'bit')
+ , (N'USP_HC_예약_변경', 8, N'@추가검사04선택여부', 'bit')
+ , (N'USP_HC_예약_변경', 9, N'@추가검사05선택여부', 'bit')
+ , (N'USP_HC_예약_변경', 10, N'@추가검사06선택여부', 'bit')
+ , (N'USP_HC_예약_변경', 11, N'@추가검사07선택여부', 'bit')
+ , (N'USP_HC_예약_변경', 12, N'@조작자명', 'nvarchar')
+ , (N'USP_HC_예약_취소', 1, N'@업무ID', 'bigint')
+ , (N'USP_HC_예약_취소', 2, N'@행버전', 'binary')
+ , (N'USP_HC_예약_취소', 3, N'@조작자명', 'nvarchar')
+ , (N'USP_HC_접수_완료', 1, N'@업무ID', 'bigint')
+ , (N'USP_HC_접수_완료', 2, N'@행버전', 'binary')
+ , (N'USP_HC_접수_완료', 3, N'@조작자명', 'nvarchar')
+ , (N'USP_HC_접수추가검사_변경', 1, N'@업무ID', 'bigint')
+ , (N'USP_HC_접수추가검사_변경', 2, N'@행버전', 'binary')
+ , (N'USP_HC_접수추가검사_변경', 3, N'@추가검사01선택여부', 'bit')
+ , (N'USP_HC_접수추가검사_변경', 4, N'@추가검사02선택여부', 'bit')
+ , (N'USP_HC_접수추가검사_변경', 5, N'@추가검사03선택여부', 'bit')
+ , (N'USP_HC_접수추가검사_변경', 6, N'@추가검사04선택여부', 'bit')
+ , (N'USP_HC_접수추가검사_변경', 7, N'@추가검사05선택여부', 'bit')
+ , (N'USP_HC_접수추가검사_변경', 8, N'@추가검사06선택여부', 'bit')
+ , (N'USP_HC_접수추가검사_변경', 9, N'@추가검사07선택여부', 'bit')
+ , (N'USP_HC_접수추가검사_변경', 10, N'@조작자명', 'nvarchar')
+ , (N'USP_HC_접수_취소', 1, N'@업무ID', 'bigint')
+ , (N'USP_HC_접수_취소', 2, N'@행버전', 'binary')
+ , (N'USP_HC_접수_취소', 3, N'@조작자명', 'nvarchar')
     ;
 
 DECLARE @ActP TABLE (SpName SYSNAME, Ord INT, ParamName SYSNAME, TypeName SYSNAME,

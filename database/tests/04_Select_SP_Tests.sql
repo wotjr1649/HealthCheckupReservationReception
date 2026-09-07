@@ -1,7 +1,7 @@
 ﻿SET NOCOUNT ON;
 DECLARE @Fail INT = 0;
 
--- 이 파일은 DB 상태 불변조건만 판정한다. RS0 Code 와 RS 형상은
+-- 이 파일은 DB 상태 불변조건만 판정한다. RS0 결과코드 와 RS 형상은
 -- tests/contract/* + tools/verify-contract.js 가 판정한다 (스펙 §33.1a).
 --
 -- SELECT SP 는 읽기 전용이므로 여기서 판정할 것은 "아무것도 바뀌지 않았다" 하나다.
@@ -22,37 +22,37 @@ DECLARE @Before VARCHAR(100) =
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[휴무일]));
 
 -- 성공 경로와 실패 경로를 모두 지난다. 실패 경로도 아무것도 쓰지 않아야 한다.
-EXEC [dbo].[USP_HC_SELECT_공통업무상태];
-EXEC [dbo].[USP_HC_SELECT_수검자목록] N'T001', NULL, NULL, NULL, NULL;
-EXEC [dbo].[USP_HC_SELECT_수검자목록] NULL, NULL, NULL, NULL, NULL;
+EXEC [dbo].[USP_HC_공통업무상태_조회];
+EXEC [dbo].[USP_HC_수검자목록_조회] N'T001', NULL, NULL, NULL, NULL;
+EXEC [dbo].[USP_HC_수검자목록_조회] NULL, NULL, NULL, NULL, NULL;
 
-EXEC [dbo].[USP_HC_SELECT_수검자상세] NULL;
+EXEC [dbo].[USP_HC_수검자상세_조회] NULL;
 -- EXEC sp (SELECT …) 는 인자가 아니라 별도 SELECT 문으로 파싱된다 — SP 는 인자를 못 받아 실패한다(실측).
 -- 인자는 변수로 받는다.
 DECLARE @P15 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T015');
-EXEC [dbo].[USP_HC_SELECT_수검자상세] @P15;
+EXEC [dbo].[USP_HC_수검자상세_조회] @P15;
 
 DECLARE @P12 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T012');
-EXEC [dbo].[USP_HC_SELECT_수검자유효업무] @P15;
-EXEC [dbo].[USP_HC_SELECT_수검자유효업무] @P12;
+EXEC [dbo].[USP_HC_수검자유효업무_조회] @P15;
+EXEC [dbo].[USP_HC_수검자유효업무_조회] @P12;
 
-EXEC [dbo].[USP_HC_SELECT_예약접수목록] '2026-11-01', '2026-11-30', NULL, NULL, NULL;
-EXEC [dbo].[USP_HC_SELECT_예약접수목록] NULL, NULL, NULL, NULL, NULL;
+EXEC [dbo].[USP_HC_예약접수목록_조회] '2026-11-01', '2026-11-30', NULL, NULL, NULL;
+EXEC [dbo].[USP_HC_예약접수목록_조회] NULL, NULL, NULL, NULL, NULL;
 DECLARE @Wn BIGINT = (SELECT TOP (1) w.[업무ID] FROM [dbo].[예약접수] w
                         JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
                        WHERE p.[차트번호] = N'T020' AND w.[상태코드] = 'RSV' ORDER BY w.[업무ID]);
-EXEC [dbo].[USP_HC_SELECT_예약접수상세] @Wn;
-EXEC [dbo].[USP_HC_SELECT_예약접수상세] -1;
+EXEC [dbo].[USP_HC_예약접수상세_조회] @Wn;
+EXEC [dbo].[USP_HC_예약접수상세_조회] -1;
 
-EXEC [dbo].[USP_HC_SELECT_예약가능정보] @P15, NULL, NULL, 'NORMAL', '2026-11-16', 'AM', 1,0,0,0,0,0,1;
-EXEC [dbo].[USP_HC_SELECT_예약가능정보] @P15, NULL, NULL, 'NORMAL', '2026-12-25', 'AM', 0,0,0,0,0,0,0;
-EXEC [dbo].[USP_HC_SELECT_예약가능정보] @P15, NULL, NULL, 'WALKIN', '2026-11-16', 'AM', 0,0,0,0,0,0,0;
+EXEC [dbo].[USP_HC_예약가능정보_조회] @P15, NULL, NULL, 'NORMAL', '2026-11-16', 'AM', 1,0,0,0,0,0,1;
+EXEC [dbo].[USP_HC_예약가능정보_조회] @P15, NULL, NULL, 'NORMAL', '2026-12-25', 'AM', 0,0,0,0,0,0,0;
+EXEC [dbo].[USP_HC_예약가능정보_조회] @P15, NULL, NULL, 'WALKIN', '2026-11-16', 'AM', 0,0,0,0,0,0,0;
 
 -- SP-LOG-01. 이 SP 는 변경이력을 남기지 않는다 (05 §8.3) — 지문에 그것이 걸린다.
-EXEC [dbo].[USP_HC_SELECT_변경이력] N'수검자', @P15;
-EXEC [dbo].[USP_HC_SELECT_변경이력] N'완료이력', 1;
+EXEC [dbo].[USP_HC_변경이력_조회] N'수검자', @P15;
+EXEC [dbo].[USP_HC_변경이력_조회] N'완료이력', 1;
 
-DECLARE @After VARCHAR(100) =
+DECLARE @적용후 VARCHAR(100) =
       CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[수검자]))   + '|'
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[예약접수])) + '|'
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[완료이력])) + '|'
@@ -60,9 +60,9 @@ DECLARE @After VARCHAR(100) =
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[검사코드])) + '|'
     + CONVERT(VARCHAR(10), (SELECT COUNT(*) FROM [dbo].[휴무일]));
 
-IF @Before = @After
-    PRINT 'PASS FIX-RO-01 SELECT SP 호출이 DB 상태를 바꾸지 않았다  ' + @After;
-ELSE BEGIN PRINT 'FAIL FIX-RO-01 읽기전용 위반  before=' + @Before + '  after=' + @After; SET @Fail += 1; END
+IF @Before = @적용후
+    PRINT 'PASS FIX-RO-01 SELECT SP 호출이 DB 상태를 바꾸지 않았다  ' + @적용후;
+ELSE BEGIN PRINT 'FAIL FIX-RO-01 읽기전용 위반  before=' + @Before + '  after=' + @적용후; SET @Fail += 1; END
 
 IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
 PRINT '=== 04_Select_SP_Tests 완료 ===';

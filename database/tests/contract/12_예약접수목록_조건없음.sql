@@ -1,3 +1,3 @@
 ﻿SET NOCOUNT ON;
-EXEC [dbo].[USP_HC_SELECT_예약접수목록] NULL, NULL, NULL, NULL, NULL;
+EXEC [dbo].[USP_HC_예약접수목록_조회] NULL, NULL, NULL, NULL, NULL;
 GO
