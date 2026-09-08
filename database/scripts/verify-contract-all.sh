@@ -94,9 +94,13 @@ done
 LEFT=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
   DELETE FROM dbo.휴무일 WHERE [휴무일명] = N'OFF-308 시험용 임시 휴무일';
   SELECT CONVERT(VARCHAR(5), @@ROWCOUNT) + '/' + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM dbo.휴무일));" | tr -d ' \r')
+# [X] 여기서 총계까지 세면 Seed 건수의 **세 번째 사본**이 된다(ROOT AGENTS.md §6).
+#     총계 판정은 SED-008 · VER-007 · RBD-004 가 이미 한다. 이 게이트가 지키는 것은
+#     "OFF-308 이 심은 임시 행이 남지 않았다" 하나뿐이므로 잔여만 본다.
+#     R8 에서 Seed 가 2 -> 41 이 되며 이 줄이 거짓이 되었고, 아무도 그것을 보지 않았다.
 case "$LEFT" in
-  0/41) echo "PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 · 휴무일 Seed 41건" >> "$OUT" ;;
-  *)   echo "FAIL OFF-308-CLEAN 임시 휴무일 잔여/총계 = $LEFT (기대 0/41)" >> "$OUT"; FAILED=1 ;;
+  0/*) echo "PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 (총계 $LEFT — 총계는 SED-008·VER-007 이 판정한다)" >> "$OUT" ;;
+  *)   echo "FAIL OFF-308-CLEAN 임시 휴무일이 남았다 — 잔여/총계 = $LEFT" >> "$OUT"; FAILED=1 ;;
 esac
 
 cat "$OUT"

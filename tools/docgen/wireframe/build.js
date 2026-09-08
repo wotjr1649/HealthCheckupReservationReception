@@ -19,7 +19,7 @@ pptx.layout = 'W16';
 pptx.author = '검진 예약·접수 관리 프로그램';
 pptx.title = '검진 예약·접수 화면설계서';
 
-let n = 0;
+let n = 0, bad = 0;
 const emit = (key, page) => {
   const c = new Canvas();
   page.draw(c);
@@ -39,7 +39,12 @@ const emit = (key, page) => {
     `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:#fff}</style>${svg}`, 'utf8');
   n++;
   console.log(`${String(n).padStart(2)}. ${key}  도형 ${c.items.length}` + (page.fullWidth ? '' : ` / 설명표 ${info.descHeight.toFixed(2)}in`));
+  // [X] 경고를 **출력만** 하고 있었다. 그래서 겹친 채로 두 회차가 통과했다.
+  //     경고는 실패다 — 화면설계서는 사람이 열어 봐야만 틀린 것이 보이는 산출물이라
+  //     기계가 잡지 않으면 아무도 잡지 않는다.
+  const over = c.checkOverlaps();
   if (c.warnings.length) c.warnings.forEach(w => console.log('     ! ' + w));
+  if (over) bad++;
 };
 
 for (const name of names) {
@@ -49,5 +54,11 @@ for (const name of names) {
 }
 
 pptx.writeFile({ fileName: path.join(OUT, FILE) })
-  .then(f => console.log(`\n${n}장 → ${f}`))
+  .then(f => {
+    console.log(`\n${n}장 → ${f}`);
+    if (bad) {
+      console.log(`=== 컨트롤이 겹치는 화면 ${bad}장 — 이 산출물은 사람이 열어야만 틀린 것이 보인다 ===`);
+      process.exit(1);
+    }
+  })
   .catch(e => { console.error(e); process.exit(1); });

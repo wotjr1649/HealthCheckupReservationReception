@@ -42,7 +42,7 @@ class Canvas {
   sorted() { return this.items.map((it, i) => [it, i]).sort((a, b) => (a[0].z - b[0].z) || (a[1] - b[1])).map(p => p[0]); }
 
   rect(x, y, w, h, o = {}) {
-    this.items.push({ t: 'rect', z: o.z ?? this.layer, x, y, w, h, stroke: o.stroke ?? S.C.ink, sw: o.sw ?? S.W.ctrl, fill: o.fill ?? null, dash: o.dash ?? null });
+    this.items.push({ t: 'rect', z: o.z ?? this.layer, x, y, w, h, stroke: o.stroke ?? S.C.ink, sw: o.sw ?? S.W.ctrl, fill: o.fill ?? null, dash: o.dash ?? null, ctl: !!o.ctl });
     return this;
   }
   line(x1, y1, x2, y2, o = {}) {
@@ -62,9 +62,11 @@ class Canvas {
     });
     return this;
   }
-  // 라벨이 담긴 박스 — 레퍼런스의 기본 어휘
+  // 라벨이 담긴 박스 — 레퍼런스의 기본 어휘.
+  // `ctl: true` 로 표시해 둔다. 겹침 검사(checkOverlaps)가 보는 것은 이 부류뿐이다 —
+  // 패널·그리드칸은 rect() 로 그리며 자식을 품는 것이 정상이라 대상이 아니다.
   box(x, y, w, h, label, o = {}) {
-    this.rect(x, y, w, h, { stroke: o.stroke ?? (o.dim ? S.C.dim : S.C.ink), sw: o.sw ?? S.W.ctrl, fill: o.fill ?? null, dash: o.dash });
+    this.rect(x, y, w, h, { stroke: o.stroke ?? (o.dim ? S.C.dim : S.C.ink), sw: o.sw ?? S.W.ctrl, fill: o.fill ?? null, dash: o.dash, ctl: true });
     if (label != null && label !== '') {
       this.text(x, y, w, h, label, {
         size: o.size ?? S.TEXT.label, bold: o.bold, align: o.align ?? 'center',
@@ -88,6 +90,40 @@ class Canvas {
   markTop(x, y, label) { return this.callout(x + 0.06, y, label); }
   // 영역 강조 (빨간 사각형, 채움 없음)
   zone(x, y, w, h) { return this.rect(x, y, w, h, { z: 1, stroke: S.C.red, sw: 1.75 }); }
+
+  // --- 겹침 검사 ----------------------------------------------------------
+  // [X] 이런 검사가 없었다. searchBand 안의 자체 경고 하나뿐이었고 그마저 build.js 가
+  //     **출력만 하고 실패시키지 않았다** — 초록인 채 아무것도 막지 않는 그 형태다.
+  //     그 사이 DLG-HOL-01 의 [삭제] 와 modal 하단 [닫기] 가 0.81 x 0.13in 겹친 채
+  //     R7·R8 두 회차를 통과했다. 사람이 pptx 를 열어야만 보였다.
+  //
+  //     대상은 box() 로 그린 컨트롤(버튼·입력칸·탭)뿐이다. 패널·그리드칸은 rect() 라
+  //     자식을 품는 것이 정상이므로 보지 않는다. z 가 다르면 의도적으로 겹쳐 올린 것이다
+  //     (콜아웃·모달 제목탭). 맞닿은 변은 겹침이 아니므로 EPS 만큼 물러서서 판정한다.
+  //     반환값은 **이번에 찾은 겹침 수**다. `설명 44자 초과` 같은 기존 연성 경고와
+  //     같은 배열에 담기되 실패 판정은 이 수로만 한다 — 오래 참아 온 미용 경고를
+  //     지금 와서 실패로 만들면 13장이 한꺼번에 막히고, 그것은 이 결함과 무관하다.
+  checkOverlaps() {
+    const EPS = 0.01;                       // in. 선 두께·반올림으로 생기는 접촉을 흘린다
+    let found = 0;
+    const b = this.items.filter(i => i.t === 'rect' && i.ctl);
+    for (let i = 0; i < b.length; i++) {
+      for (let j = i + 1; j < b.length; j++) {
+        const a = b[i], d = b[j];
+        if (a.z !== d.z) continue;
+        const ox = Math.min(a.x + a.w, d.x + d.w) - Math.max(a.x, d.x);
+        const oy = Math.min(a.y + a.h, d.y + d.h) - Math.max(a.y, d.y);
+        if (ox > EPS && oy > EPS) {
+          found++;
+          this.warnings.push(
+            `컨트롤 겹침 ${ox.toFixed(2)}x${oy.toFixed(2)}in — ` +
+            `(${a.x.toFixed(2)},${a.y.toFixed(2)} ${a.w.toFixed(2)}x${a.h.toFixed(2)}) 와 ` +
+            `(${d.x.toFixed(2)},${d.y.toFixed(2)} ${d.w.toFixed(2)}x${d.h.toFixed(2)})`);
+        }
+      }
+    }
+    return found;
+  }
 
   // --- 렌더러 -------------------------------------------------------------
   toSvg(px = 1600) {

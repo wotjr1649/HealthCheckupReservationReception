@@ -25,9 +25,13 @@ const COLS = [
 ];
 
 function draw(c) {
+  // [X] 처음엔 [추가][수정][삭제] 를 입력 패널 안 우측 하단에 그렸다. 그 자리는 modal 이
+  //     [닫기] 를 놓는 자리와 겹친다 — 실측 0.81 x 0.13in. 게다가 패널이 inner 를 0.40in
+  //     넘어가고 있었다. 원문 03 §24.3 의 목업은 처음부터 네 버튼을 **한 줄**에 두었고,
+  //     modal() 이 우측 정렬로 그 순서를 그대로 만든다. 계약 쪽이 옳았다.
   const m = K.modal(c, {
-    w: 8.60, h: 4.10, title: '휴무일 관리',
-    buttons: [{ t: '닫기', primary: true }],
+    w: 8.60, h: 4.30, title: '휴무일 관리',
+    buttons: [{ t: '추가' }, { t: '수정' }, { t: '삭제' }, { t: '닫기', primary: true }],
     parent: 'MainForm 상단 Navigation [휴무일 관리] (WF-00)',
   });
   const i = m.inner;
@@ -49,28 +53,22 @@ function draw(c) {
   c.markLeft(i.x, wY, wH, '2');
 
   // 목록
-  const gY = wY + wH + 0.12, gH = 1.42;
+  const gY = wY + wH + 0.12, gH = 1.15;
   const p = K.panel(c, i.x, gY, i.w, gH, '휴무일 목록  ·  휴무일자 오름차순 고정');
   const cols = K.cols(p.w, COLS);
   K.grid(c, p.x, p.y, cols, ROWS);
   c.markLeft(i.x, gY, gH, '3');
   c.markLeft(p.x + cols[0].w + cols[1].w, p.y, K.ROW, '4');
 
-  // 입력행 — 자체휴무일 전용. 법정·대체 행을 고르면 통째로 Disabled 된다.
-  const eY = gY + gH + 0.12, eH = 1.00;
+  // 입력행 — 자체휴무일 전용. 법정·대체 행을 고르면 입력행과 [수정]·[삭제] 가 함께 Disabled 된다.
+  // 버튼은 여기가 아니라 modal 하단 줄에 있다 (위 [X] 참조).
+  const eY = gY + gH + 0.12, eH = 0.95;
   const e = K.panel(c, i.x, eY, i.w, eH, '자체휴무일 입력  ·  법정·대체 공휴일 행을 고르면 비활성');
   let fx = e.x;
   fx = K.field(c, fx, e.y, 0.68, 1.15, '휴무일자', '2027-03-14') + 0.18;
   fx = K.field(c, fx, e.y, 0.68, 2.05, '휴무일명', '센터 정기 휴진일') + 0.18;
   K.field(c, fx, e.y, 0.68, 0.55, '사용여부', 'Y');
   K.field(c, e.x, e.y + 0.34, 0.68, 4.55, '비고', '설비 점검');
-
-  let bx = e.x + e.w - 0.14;
-  ['삭제', '수정', '추가'].forEach(t => {
-    bx -= 0.86;
-    c.box(bx, e.y + 0.34, 0.86, K.FIELD_H + 0.02, t, { sw: S.W.panel });
-    bx -= 0.08;
-  });
   c.markLeft(i.x, eY, eH, '5');
 }
 
