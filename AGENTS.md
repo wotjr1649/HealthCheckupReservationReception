@@ -85,7 +85,7 @@ node tools/docgen/build_all.js
 
 ```text
 docs/baseline/      봉인된 계약 00~06 (+ 07 예정) · output/
-docs/phase4/        Phase 4 **기록** — plans/ · 초안 · 기각안. 계약은 여기 없다
+docs/phase4/        Phase 4 **기록** — plans/ · 재봉인 이력. 계약은 여기 없다
 docs/phase5/        Phase 5 작업 공간. 07 을 여기서 쓰고 완성되면 입주시킨다
 database/           Phase 4 DB 의 SQL·스크립트·테스트·증거   → database/AGENTS.md
 winforms/           C# WinForms. Phase 5 의 구현 대상

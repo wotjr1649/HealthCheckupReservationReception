@@ -32,7 +32,7 @@ node tools/verify-docs.js      # FAIL 0
 ./scripts/verify-baseline.sh   # 봉인 전건 일치
 ```
 
-돌아가는 게이트: `verify-baseline` · `verify-docs`(V01~V22) · `verify-rs-contract` ·
+돌아가는 게이트: `verify-baseline` · `verify-docs`(V01~V23) · `verify-rs-contract` ·
 `verify-schema-doc` · `verify-winforms-unchanged` · `verify-tsql-allowlist` ·
 `allowlist-review`(G13-c) · `verify-no-secret` · `verify-red` · `csharp-probe` · `r4-rename check`.
 `verify_output` 은 산출물 쪽이라 `test.sh` 밖이며 `tools/docgen/build_all.js` 가 부른다.
@@ -238,10 +238,18 @@ ResultCode 가 05 §13 의 SP별 허용집합 안인가
 시간 의존 경로가 있어 회귀는 시각에 따라 판정 대상이 달라진다.
 
 ```text
-창 안   월~토 11:10~15:50   Write SP 성공 경로 · CON-001~008
-AM 창   09:00~11:00        접수마감(AM 11:00) 전 경로
-창 밖                       OFF-308 · OFF-309
+CON 창   월~토 11:00~15:50   CON-001~008 · Write SP 성공 경로
+                             PM 시간대 접수마감 16:00 - 10분 여유. AM 마감(11:00) 뒤라야 PM 이 산다
+계약 창  월~토 11:10~15:50   위에 CWR-009 가 더 붙어 계약 전건이 판정되는 구간
+                             CWR-009 는 AM 마감(11:00)이 **지나야** 성립해 10분 여유를 더한다
+AM 창    09:00~11:00         접수마감(AM 11:00) 전 경로
+창 밖                        OFF-308 · OFF-309
 ```
+
+`[!]` **두 창은 다른 것이다.** `11:10` 은 `11:00` 보다 좁고, 예전에 이 표가 둘을 뭉쳐
+`CON-001~008` 에 `11:10` 을 붙여 두었다. 값의 소유자는 문서가 아니라 스크립트다 —
+`concurrency-test.sh`(CON) 와 `verify-contract-all.sh`·`tests/07`(CUTAM·CUTPM) 이 갖고 있고
+근거는 `06` §38.7 이다. 운영시간 `09:00~18:00` 과 마감 4종은 `deploy/03_Functions.sql` 이 확정한다.
 
 시각을 옮기는 것은 **사람이 한다.** 되돌리지 못한 채 죽는 자동화를 만들지 마라.
 

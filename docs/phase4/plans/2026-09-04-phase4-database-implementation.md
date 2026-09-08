@@ -84,7 +84,7 @@ SKIP 을 PASS 로 승격하는 것
 | 6 | Patient Write SP 2개 | `04-patient-write-procedures.md` | `T23`~`T24` |
 | 7 | 예약 Write SP 3개 | `05-reservation-write-locking.md` | `T25`~`T27` |
 | 8 | 접수 Write SP 3개 | `06-reception-write-procedures.md` | `T28`~`T30` |
-| 9 | Security | `07-security.md` | `T31`~`T32` |
+| 9 | Security | `07-security.md` (폐기 · 2026-09-08 작업트리에서 제거. 이력에만 있다) | `T31`~`T32` |
 | 10 | Rollback·Concurrency | `08-verification-finalization.md` | `T33`~`T34` |
 | 11 | Clean Rebuild | `08-verification-finalization.md` | `T35`~`T36` |
 | 12 | 문서 최종화 | `08-verification-finalization.md` | `T37` |

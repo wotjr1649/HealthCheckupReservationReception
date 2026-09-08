@@ -757,5 +757,70 @@ function splitFences(src) {
   else P('V22', '.sql ' + files.length + '개 전부 UTF-8 BOM (§5)');
 }
 
+// V23 살아 있는 문서가 가리키던 파일이 사라졌는가.
+// V21 이 §번호를 지키듯 이것은 **경로**를 지킨다. 실제로 `06` 이 docs/phase4 -> docs/baseline 으로
+// 입주한 뒤에도 database/README.md 가 옛 경로를 가리킨 채 두 회차를 통과했다(실측).
+//
+// 대상은 **지시로 읽히는 문서**뿐이다. 기록(docs/phase4/plans · database/docs)은 뺀다 —
+// 그때 그 파일이 있었다는 것이 사실이므로 기록을 고쳐 쓰지 않는다.
+//
+// 판정은 "없다" 가 아니라 **"있었는데 사라졌다"** 다. 아직 안 만든 파일(`07`)이나 폐기한 설계
+// (`tests/13_Security_Tests.sql`)를 예외 목록으로 관리하면 그 목록이 또 손으로 맞춰야 하는 값이 된다.
+// 이력이 대신 판정하므로 목록이 필요 없다.
+{
+  const LIVE = [];
+  const addLive = p => { if (fs.existsSync(path.join(REPO, p))) LIVE.push(p); };
+  addLive('AGENTS.md'); addLive('CLAUDE.md'); addLive('README.md');
+  addLive('database/AGENTS.md'); addLive('database/README.md');
+  addLive('docs/phase4/reseal-history.md');
+  for (const d of ['docs/baseline', 'docs/phase5'])
+    for (const f of fs.readdirSync(path.join(REPO, d)))
+      if (f.endsWith('.md')) addLive(d + '/' + f);
+
+  // [X] `git log --diff-filter=A` 로는 부족하다 — 이름이 바뀌어 들어온 파일이 `A` 로 안 잡힌다.
+  //     `06` 이 `_CANDIDATE.md` 에서 개명된 탓에 실제 낡은 참조 하나를 놓쳤다(실측). 트리 전수를 쓴다.
+  let ever;
+  try {
+    ever = new Set(require('child_process')
+      .execSync('git rev-list --objects --all', { cwd: REPO, maxBuffer: 1e8 })
+      .toString().split('\n').map(l => l.slice(41).trim()).filter(Boolean));
+  } catch (e) { ever = null; }
+
+  if (!ever) F('V23', 'git 이력을 읽지 못해 경로 실재를 판정할 수 없다 - 미실행은 PASS 가 아니다');
+  else {
+    const EXT = 'md|sql|js|sh|json|xlsx|txt|sln|csproj|cs';
+    // 줄번호 접미(`파일.md:1903`)와 **경로 없는 파일명**도 받는다 — 문서가 이웃 파일을 이름만으로
+    // 부르는 일이 흔하고 그 이름이 사라진 것도 썩은 참조다. 오탐은 아래 이력 조회가 막는다.
+    const PRE = new RegExp('`([A-Za-z0-9_./\\-]+\\.(?:' + EXT + '))(?::[0-9]+)?`', 'g');
+    // 문서는 경로를 자기 기준으로도 쓴다 — `06` 은 database/ 기준, docgen 문서는 tools/docgen 기준이다.
+    const ROOTS = ['.', 'database', 'tools/docgen'];
+    const hits = [];
+    let seen = 0;
+    for (const rel of LIVE) {
+      const buf = fs.readFileSync(path.join(REPO, rel));
+      const src = buf.slice(buf[0] === 0xEF ? 3 : 0).toString('utf8');
+      const roots = [...ROOTS.map(r => path.join(REPO, r)), path.dirname(path.join(REPO, rel))];
+      src.split(/\r?\n/).forEach((line, i) => {
+        // 사라졌다는 것을 **설명하는** 문장은 위반이 아니다 — verify-tsql-allowlist.sh 가 주석을
+        // 지우고 검사하는 것과 같은 처리다. `06` §32 의 "08_Security.sql 은 파일째 삭제했고" 가 그 예다.
+        if (/삭제|지웠|없앴|폐기/.test(line)) return;
+        for (const m of line.matchAll(PRE)) {
+          const t = m[1];
+          if (/[*<>?]/.test(t)) continue;              // 와일드카드·자리표시자
+          if (/^~|^[A-Za-z]:/.test(t)) continue;       // 홈·절대경로 (저장소 밖)
+          seen++;
+          if (roots.some(r => fs.existsSync(path.resolve(r, t)))) continue;
+          const cands = roots.map(r => path.relative(REPO, path.resolve(r, t)).split(path.sep).join('/'));
+          const gone = cands.find(c => ever.has(c));
+          if (!gone) continue;                         // 한 번도 없던 파일 = 계획·폐기. 썩은 것이 아니다
+          hits.push(rel + ':' + (i + 1) + '  `' + t + '` -> ' + gone + ' 이 사라졌다');
+        }
+      });
+    }
+    hits.length ? F('V23', '가리키던 파일이 사라진 참조 ' + hits.length + '건', hits.join('\n'))
+                : P('V23', '살아 있는 문서 ' + LIVE.length + '개의 경로 참조 ' + seen + '건 전부 실재');
+  }
+}
+
 console.log('\n=== verify-docs: PASS ' + pass + ' / FAIL ' + fail + ' ===');
 process.exit(fail ? 1 : 0);

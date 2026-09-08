@@ -2,7 +2,7 @@
 
 `HealthCheckupReservationReceptionDb` 의 스키마·Seed·Inline TVF·Stored Procedure·보안·테스트 일체.
 설계 계약은 `../docs/baseline/04_DB_Design.md` 와 `../docs/baseline/05_DB_Rule_SP_Contract.md`,
-구현 스펙은 `../docs/phase4/06_DB_Transaction_Security_Seed.md` 다.
+구현 스펙은 `../docs/baseline/06_DB_Transaction_Security_Seed.md` 다 — 2026-09-08 봉인 입주했다.
 
 ## 대상 환경
 

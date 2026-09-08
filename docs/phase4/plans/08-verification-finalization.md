@@ -1153,6 +1153,9 @@ Expected: `PASS G13-b` 2줄. `(c)` 는 보고서에 **`REVIEWED`** 로만 적는
 갈라진다 — CANDIDATE 를 rename 하고 살아 있는 참조 15개를 따라 고쳤다(`tools/verify-docs.js` 의
 `SPEC` 상수 포함). `docs/prompts/*` 는 그때의 기록이므로 손대지 않았다.
 
+`[X 2026-09-08]` 그 `database/docs/prompts/*` 8개는 공개 정리로 작업트리에서 제거했다 — 이력에만 있다.
+이 문장을 고쳐 쓰지 않는 이유는 그때 손대지 않은 것이 사실이기 때문이다.
+
 `[실측]` 버전을 v1.0 으로 올리자 `V06` 이 계획 색인의 `v0.4, CANDIDATE` 선언을 즉시 잡아냈다.
 
 `06_DB_Transaction_Security_Seed.md` 를 기반으로 다음을 갱신한다.
