@@ -87,17 +87,29 @@ else ./scripts/verify-red.sh; FAILED=1; fi
 # 항상 FAIL 했다 — 반복 가능한 게이트로 옮겼다 (스펙 §9.2 · plans/08 T37 Step 4).
 ./scripts/verify-tsql-allowlist.sh > /dev/null || { ./scripts/verify-tsql-allowlist.sh; FAILED=1; }
 
+# G13-c (§9.2 허용목록 준수) 의 검토 기록. 위 스캔은 **금지 블랙리스트**만 보므로
+# 그 BAN 에 없는 TVP·Trigger·FK Cascade 는 아무도 보지 않았다(실측). 검토 파일을 손으로
+# 남기면 다음 회차에 썩으니 매 회차 다시 만들고, 목록 밖이 나오면 회귀를 깨뜨린다.
+if node tools/allowlist-review.js > /dev/null; then
+  echo "PASS G13-c §9.2 허용목록 검토 재생성 · 목록 밖 0건 (artifacts/reports/allowlist-review.md)"
+else
+  node tools/allowlist-review.js; FAILED=1
+fi
+
 # 기준선·WinForms·스키마 대조 (G00·G01·G05).
 # [X] 셋 다 회귀 밖에 있었다. §42 를 채우려고 손으로 돌린 증거는 다음 회차에 썩는다 —
 #     G13-b 와 같은 실패 방식이다. 회귀가 매번 판정하게 한다.
 # [X] 결과와 무관하게 PASS 를 찍지 않는다. 셋 다 성공했을 때만 한 줄을 남긴다.
+# [X] 봉인 건수를 이 줄에 적어 두었더니 06 이 입주해 7건이 된 뒤에도 "6/6" 을 찍었다.
+#     매 회차 거짓을 출력하면서 아무도 잡지 않았다 (ROOT AGENTS.md §6). 세는 곳을 하나로 둔다 —
+#     게이트가 낸 값을 그대로 옮긴다.
 G0=0
-./scripts/verify-baseline.sh           > /dev/null || { ./scripts/verify-baseline.sh;           G0=1; }
+BL=$(./scripts/verify-baseline.sh 2>&1 | tail -1) || { echo "$BL"; ./scripts/verify-baseline.sh; G0=1; }
 ./scripts/verify-winforms-unchanged.sh > /dev/null || { ./scripts/verify-winforms-unchanged.sh; G0=1; }
 ./scripts/verify-winforms-unchanged.sh selftest > /dev/null || { ./scripts/verify-winforms-unchanged.sh selftest; G0=1; }
 ./scripts/verify-schema-doc.sh         > /dev/null || { ./scripts/verify-schema-doc.sh;         G0=1; }
 if [ "$G0" -eq 0 ]; then
-  echo "PASS G00 기준선 6/6 · G01 WinForms 변경 0건(+변조 감지 자체시험) · G05 스키마↔04 양방향 대조"
+  echo "PASS G00 기준선 $(echo "$BL" | tr -d '= ') · G01 WinForms 변경 0건(+변조 감지 자체시험) · G05 스키마↔04 양방향 대조"
 else
   echo "FAIL G00/G01/G05 중 하나 이상 실패 — 위 출력을 보라"; FAILED=1
 fi
