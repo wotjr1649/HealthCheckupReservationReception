@@ -13,13 +13,13 @@
 | `Rebuild.sql` | 61 |
 | `deploy/00_Preflight.sql` | 50 |
 | `deploy/01_Schema.sql` | 353 |
-| `deploy/02_Seed.sql` | 91 |
+| `deploy/02_Seed.sql` | 92 |
 | `deploy/03_Functions.sql` | 251 |
 | `deploy/04_Procedures_Select.sql` | 1022 |
-| `deploy/05_Procedures_Patient_Write.sql` | 714 |
+| `deploy/05_Procedures_Patient_Write.sql` | 723 |
 | `deploy/06_Procedures_Reservation_Write.sql` | 1029 |
 | `deploy/07_Procedures_Reception_Write.sql` | 759 |
-| `deploy/07a_Procedures_Holiday.sql` | 397 |
+| `deploy/07a_Procedures_Holiday.sql` | 404 |
 | `deploy/08_Verify.sql` | 65 |
 | `tests/00_Test_Harness.sql` | 194 |
 | `tests/00b_Test_Harness_RCP.sql` | 66 |
@@ -32,11 +32,11 @@
 | `tests/07_Reception_Write_Tests.sql` | 413 |
 | `tests/08_Rollback_Tests.sql` | 248 |
 | `tests/09_Concurrency_Setup.sql` | 114 |
-| `tests/10_Concurrency_Session_A.sql` | 110 |
+| `tests/10_Concurrency_Session_A.sql` | 113 |
 | `tests/11_Concurrency_Session_B.sql` | 72 |
 | `tests/12_Concurrency_Verify.sql` | 116 |
 | `tests/14_Clean_Rebuild_Verify.sql` | 133 |
-| `tests/15_Holiday_Tests.sql` | 150 |
+| `tests/15_Holiday_Tests.sql` | 177 |
 | `tests/contract/01_공통업무상태.sql` | 4 |
 | `tests/contract/02_수검자목록_조건없음.sql` | 4 |
 | `tests/contract/03_수검자목록_ChartNo.sql` | 4 |
@@ -86,6 +86,13 @@
 | `tests/contract/CWR-043_접수취소_이미_CNC.sql` | 7 |
 | `tests/contract/CWR-044_CNC_예약변경_불가.sql` | 7 |
 | `tests/contract/CWR-099_cleanup.sql` | 11 |
+| `tests/contract/HOL-001_휴무일목록_정상.sql` | 6 |
+| `tests/contract/HOL-002_휴무일목록_시작일_NULL.sql` | 5 |
+| `tests/contract/HOL-003_휴무일목록_기간역전.sql` | 5 |
+| `tests/contract/HOL-004_휴무일목록_구분_허용밖.sql` | 5 |
+| `tests/contract/HOL-005_자체휴무일_등록_날짜중복.sql` | 6 |
+| `tests/contract/HOL-006_자체휴무일_수정_법정공휴일.sql` | 7 |
+| `tests/contract/HOL-007_자체휴무일_삭제_미존재.sql` | 5 |
 | `tests/contract/OFF-308-01_업무일아님_수검자등록.sql` | 37 |
 | `tests/contract/OFF-309-01_업무시간밖_수검자등록.sql` | 7 |
 | `tests/contract/OFF-309-02_업무시간밖_예약등록.sql` | 6 |
@@ -147,7 +154,7 @@
 | `tests/contract/SEL-022_변경이력_기록0건.sql` | 6 |
 | `tests/contract/SEL-023_변경이력_TargetTable_허용밖.sql` | 5 |
 | `tests/contract/SEL-024_변경이력_TargetTable_NULL.sql` | 4 |
-| **합계 138개** | **9148** |
+| **합계 145개** | **9234** |
 
 ## 2. §9.2 허용목록 대조
 
@@ -212,6 +219,6 @@
 | 항목 | 값 |
 |---|---|
 | 검토자 | Claude Opus 5 (세션 실행) |
-| 시각 | 2026-09-08 13:36 KST |
+| 시각 | 2026-09-08 13:52 KST |
 | 생성 | `node tools/allowlist-review.js` |
 | 대상 커밋 | (커밋 직전 트리) |

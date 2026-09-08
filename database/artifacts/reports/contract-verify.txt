@@ -48,6 +48,13 @@ PASS CWR-042_접수취소_성공 Result Set 계약 일치 (2개 RS · RS0 Code=0
 PASS CWR-043_접수취소_이미_CNC Result Set 계약 일치 (1개 RS · RS0 Code=502)
 PASS CWR-044_CNC_예약변경_불가 Result Set 계약 일치 (1개 RS · RS0 Code=502)
 PASS CWR-099_cleanup Result Set 계약 일치 (0개 RS · RS0 Code=undefined)
+PASS HOL-001_휴무일목록_정상 Result Set 계약 일치 (3개 RS · RS0 Code=0)
+PASS HOL-002_휴무일목록_시작일_NULL Result Set 계약 일치 (1개 RS · RS0 Code=100)
+PASS HOL-003_휴무일목록_기간역전 Result Set 계약 일치 (1개 RS · RS0 Code=104)
+PASS HOL-004_휴무일목록_구분_허용밖 Result Set 계약 일치 (1개 RS · RS0 Code=101)
+PASS HOL-005_자체휴무일_등록_날짜중복 Result Set 계약 일치 (1개 RS · RS0 Code=801)
+PASS HOL-006_자체휴무일_수정_법정공휴일 Result Set 계약 일치 (1개 RS · RS0 Code=802)
+PASS HOL-007_자체휴무일_삭제_미존재 Result Set 계약 일치 (1개 RS · RS0 Code=800)
 PASS OFF-308-01_업무일아님_수검자등록 Result Set 계약 일치 (1개 RS · RS0 Code=308)
 SKIP OFF-309-01_업무시간밖_수검자등록 업무시간 안이거나 업무일이 아님 — 309 는 업무일의 시간 밖에서만 나온다
 SKIP OFF-309-02_업무시간밖_예약등록 업무시간 안이거나 업무일이 아님 — 309 는 업무일의 시간 밖에서만 나온다
@@ -109,4 +116,4 @@ PASS SEL-021_변경이력_정상 Result Set 계약 일치 (2개 RS · RS0 Code=0
 PASS SEL-022_변경이력_기록0건 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS SEL-023_변경이력_TargetTable_허용밖 Result Set 계약 일치 (1개 RS · RS0 Code=101)
 PASS SEL-024_변경이력_TargetTable_NULL Result Set 계약 일치 (1개 RS · RS0 Code=100)
-PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 · 휴무일 Seed 40건
+PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 · 휴무일 Seed 41건
