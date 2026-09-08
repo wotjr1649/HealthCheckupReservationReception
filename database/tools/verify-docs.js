@@ -588,7 +588,9 @@ function splitFences(src) {
 //   Write SP 8개가 전부 그 부류라 DMV 로는 16/16 을 볼 수 없다(스펙 §36 [X 실측]).
 //   verify-contract.js 는 실측 출력에서 **컬럼명**만 보므로 타입이 비어 있었다. 여기서 메꾼다.
 {
-  const files = fs.readdirSync('deploy').filter(f => /^0[4-7]_.*\.sql$/.test(f));
+  // [X] 여기만 상대경로였다 — 저장소 루트에서 돌리면 ENOENT 로 죽었다. 다른 검사는 전부 절대경로다.
+  const DBV17 = path.resolve(__dirname, '..');
+  const files = fs.readdirSync(path.join(DBV17, 'deploy')).filter(f => /^0[4-7]_.*\.sql$/.test(f));
   // R4 한글화 뒤 RS0 은 [성공여부]·[결과코드]·[결과메시지]·[오류항목]·[서버시각] 이다.
   // [오류항목] 은 담기는 값이 한글 Parameter 이름이 되었으므로 NVARCHAR(50) 이다 (05 §3.1).
   const want = [
@@ -600,7 +602,7 @@ function splitFences(src) {
   ];
   const bad = []; let blocks = 0;
   for (const f of files) {
-    const sql = fs.readFileSync('deploy/' + f, 'utf8');
+    const sql = fs.readFileSync(path.join(DBV17, 'deploy', f), 'utf8');
     const lines = sql.split(/\r?\n/);
     lines.forEach((l, i) => {
       if (!/AS \[성공여부\]/.test(l)) return;
@@ -627,7 +629,7 @@ function splitFences(src) {
   let bodies = 0;
   for (const f of ['05_Procedures_Patient_Write.sql', '06_Procedures_Reservation_Write.sql',
                    '07_Procedures_Reception_Write.sql']) {
-    const txt = fs.readFileSync(path.join('deploy', f), 'utf8');
+    const txt = fs.readFileSync(path.join(path.resolve(__dirname, '..'), 'deploy', f), 'utf8');
     for (const body of txt.split(/CREATE OR ALTER PROCEDURE/).slice(1)) {
       const a = body.indexOf('-- [6] ');   // 문구가 SP 마다 다르다 — 번호만 본다
       const b = body.indexOf('-- [7] 감사 기록');
@@ -650,7 +652,7 @@ function splitFences(src) {
 //   실패에도 RS1 을 동반한다. 그 둘 말고 rs0Success = 0 인 시나리오가 RS 를 2개 이상
 //   선언했다면 계약 위반이거나 기대값이 틀린 것이다.
 {
-  const cp = 'tools/expected-contracts.json';
+  const cp = path.join(__dirname, 'expected-contracts.json');
   if (!fs.existsSync(cp)) F('V18', cp + ' 이 없다 - 미실행은 PASS 가 아니다');
   else {
     const j = JSON.parse(fs.readFileSync(cp, 'utf8'));

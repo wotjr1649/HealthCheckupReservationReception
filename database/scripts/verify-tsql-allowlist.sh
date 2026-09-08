@@ -19,6 +19,10 @@ BAN='STRING_SPLIT|STRING_AGG|OPENJSON|FOR JSON|FOR XML|JSON_VALUE|JSON_QUERY|JSO
 BAN="$BAN"'|SESSION_CONTEXT|CONTEXT_INFO|AT TIME ZONE|CONCAT_WS|TRANSLATE\(|DATEDIFF_BIG'
 BAN="$BAN"'|COMPRESS\(|DECOMPRESS\(|GREATEST\(|LEAST\(|GENERATE_SERIES|APPROX_COUNT_DISTINCT'
 BAN="$BAN"'|REGEXP_|\bTRIM\(|DECLARE +[A-Za-z_@]+ +CURSOR|\bCOLLATE\b|\bEXEC *\(|sp_executesql'
+# [X] 스펙 §9.2 가 금지한 TVP·업무 Trigger·FK Cascade 가 이 목록에 **없었다** — 금지 목록이
+#     금지를 안 담고 있었고 아무도 그것을 보지 않았다. tools/allowlist-review.js 가 §3 에서
+#     따로 훑고 있지만, 여기 없으면 "블랙리스트 0건" 이 그 셋을 통과시킨 결과가 된다.
+BAN="$BAN"'|CREATE +TYPE[^;]*AS +TABLE|CREATE +(OR +ALTER +)?TRIGGER|ON +(DELETE|UPDATE) +CASCADE'
 
 OUT=artifacts/reports/tsql-allowlist.txt
 mkdir -p artifacts/reports
