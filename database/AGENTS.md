@@ -30,9 +30,9 @@ C# 코드, 화면, 문서 본문은 이 디렉터리의 책임이 아니다.
 **ROOT `tools/` 와 `../docs/baseline/output/` 도 이 계열이 쓴다** (2026-09-07 사용자 승인.
 인수 경위는 `../docs/phase4/reseal-history.md`). 산출물 규칙은 ROOT `AGENTS.md` §3 이다.
 
-`build_00.js` 와 `proc/slides/*.js`·`wireframe/screens/*.js` 는 내용이 **하드코딩**돼 있어
-기준선을 고쳐도 산출물이 따라오지 않는다. 기준선을 열었으면 그 생성기도 함께 연다.
-`build_02.js`·`build_04.js`·`build_05.js` 는 원본을 파싱하므로 다시 돌리기만 하면 된다.
+생성기 일부는 본문이 **하드코딩**돼 있어 기준선을 고쳐도 산출물이 따라오지 않는다.
+**기준선을 열었으면 그 생성기도 함께 연다** — `verify-docs.js` 의 `V24` 가 판정한다.
+어느 생성기가 어느 기준선을 비추는지는 `V24` 의 대응표가 단일 출처다(여기에 베끼지 않는다).
 
 `wireframe/build.js` 만 `pptxgenjs` 를 절대경로 상수 없이 bare `require` 한다 —
 `NODE_PATH='D:/tmp/hcwork/gen/node_modules'` 없이 실행하면 `MODULE_NOT_FOUND` 로 죽는다(실측 확인).

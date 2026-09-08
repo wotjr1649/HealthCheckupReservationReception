@@ -822,5 +822,60 @@ function splitFences(src) {
   }
 }
 
+// V24 하드코딩 생성기가 기준선보다 뒤처졌는가.
+//
+// `tools/docgen` 의 생성기는 두 부류다(실측).
+//   파싱형   build_02(JSZip 로 xlsx) · build_04 · build_05 · erd_04 — 실행 시점에 기준선을 읽는다.
+//            기준선이 바뀌면 **다시 돌리기만** 하면 산출물이 따라온다. 검사할 것이 없다.
+//   하드코딩  build_00(<-00) · proc/slides/*(<-01) · wireframe/screens/*(<-03) — 본문을 품고 있다.
+//            기준선이 바뀌어도 **따라오지 않는다.** 사람이 함께 열어야 한다 (database/AGENTS.md §3).
+//
+// 그 규칙은 지금까지 문장으로만 있었다. git 이력이 그것을 판정할 수 있다 —
+// 기준선의 마지막 커밋이 생성기의 마지막 커밋의 조상이면(또는 같으면) 생성기가 뒤처지지 않았다.
+// 값을 저장하지 않으므로 손으로 맞출 것이 없다 (ROOT AGENTS.md §6).
+{
+  const cp = require('child_process');
+  const git = a => cp.execSync('git ' + a, { cwd: REPO, maxBuffer: 1e8 }).toString().trim();
+  // 기준선 -> 그 본문을 품은 생성기. 파싱형은 여기 없다.
+  const MIRROR = {
+    'docs/baseline/00_Project_Policy.md': 'tools/docgen/xlsx/build_00.js',
+    'docs/baseline/01_Process_Definition.md': 'tools/docgen/proc',
+    'docs/baseline/03_Wireframe_Definition.md': 'tools/docgen/wireframe',
+  };
+  const bad = [], missing = [];
+  let n = 0;
+  try {
+    // 작업트리에서 고쳐진 것도 본다 — 재봉인 커밋을 만들기 **전에** 알려주는 쪽이 낫다.
+    const dirty = new Set(git('status --porcelain').split('\n')
+      .map(l => l.slice(3).trim()).filter(Boolean));
+    const touched = p => [...dirty].some(d => d === p || d.startsWith(p + '/'));
+
+    for (const [base, gen] of Object.entries(MIRROR)) {
+      if (!fs.existsSync(path.join(REPO, base)) || !fs.existsSync(path.join(REPO, gen))) {
+        missing.push(base + ' 또는 ' + gen + ' 이 없다'); continue;
+      }
+      n++;
+      if (touched(base) && !touched(gen)) {
+        bad.push(gen + ' — 기준선 ' + path.basename(base) + ' 이 작업트리에서 바뀌었는데 생성기는 그대로다');
+        continue;
+      }
+      const bc = git('log -1 --format=%H -- "' + base + '"');
+      const gc = git('log -1 --format=%H -- "' + gen + '"');
+      if (!bc || !gc) { bad.push(gen + ' 또는 ' + base + ' 에 커밋 이력이 없다'); continue; }
+      if (bc === gc) continue;
+      let anc = false;
+      try { cp.execSync('git merge-base --is-ancestor ' + bc + ' ' + gc, { cwd: REPO }); anc = true; } catch (e) { anc = false; }
+      if (!anc) bad.push(gen + ' — 기준선은 ' + bc.slice(0, 7) + ' 에서 바뀌었는데 생성기의 마지막 커밋은 ' + gc.slice(0, 7) + ' 이다');
+    }
+  } catch (e) {
+    F('V24', 'git 이력을 읽지 못해 생성기 뒤처짐을 판정할 수 없다 - 미실행은 PASS 가 아니다: ' + e.message.split('\n')[0]);
+    n = -1;
+  }
+  if (n === 0) F('V24', '기준선-생성기 대응을 하나도 확인하지 못했다 - 미실행은 PASS 가 아니다', missing.join('\n'));
+  else if (n > 0) (bad.length || missing.length)
+    ? F('V24', '기준선보다 뒤처진 하드코딩 생성기 ' + (bad.length + missing.length) + '건', [...bad, ...missing].join('\n'))
+    : P('V24', '하드코딩 생성기 ' + n + '개가 기준선보다 뒤처지지 않았다 (파싱형은 다시 돌리면 따라오므로 대상 아님)');
+}
+
 console.log('\n=== verify-docs: PASS ' + pass + ' / FAIL ' + fail + ' ===');
 process.exit(fail ? 1 : 0);
