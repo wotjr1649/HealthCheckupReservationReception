@@ -97,8 +97,7 @@ function build(ctx) {
 
   function drawLogical(ws) {
     M.merge(ws, 2, 1, 2, 12);
-    M.put(ws, 2, 1, '04 §4.1 Entity · §4.4 Cardinality · §4.5 논리 ERD 에서 생성 · '
-                  + '실선 = Foreign Key 2개 · 점선 = FK 가 아닌 코드 문자열 참조', { font: NOTE });
+    M.put(ws, 2, 1, '실선 = Foreign Key 2개  ·  점선 = FK 가 아닌 코드 문자열 참조', { font: NOTE });
 
     const mk = (t, r, g) => M.entity(ws, {
       r, c: G[g], w: 2, title: t, sub: meta[t].kind, rows: [['PK', meta[t].pk]],
@@ -131,16 +130,16 @@ function build(ctx) {
           { font: { size: 8, bold: true, color: { argb: 'FF8B6914' } }, align: CTR });
 
     M.merge(ws, 24, G[1], 24, G[3] + 1);
-    M.put(ws, 24, G[1], '휴무일 · 변경이력 은 관계선이 없다 — 04 §4.5', { font: NOTE, align: CTR });
+    M.put(ws, 24, G[1], '휴무일 · 변경이력 은 관계선이 없다', { font: NOTE, align: CTR });
 
-    let y = table(ws, 27, 2, '관계 (04 §4.4)', ['부모', '자식', '관계', '의미'], rel44.rows);
-    y = table(ws, y, 2, 'Entity (04 §4.1)', ['테이블', '구분', 'PK', '책임'],
+    let y = table(ws, 27, 2, '관계 (04)', ['부모', '자식', '관계', '의미'], rel44.rows);
+    y = table(ws, y, 2, 'Entity (04)', ['테이블', '구분', 'PK', '책임'],
               TABLES.map(t => [t, meta[t].kind, meta[t].pk, meta[t].duty]));
-    y = table(ws, y, 2, '§4.5 mermaid 원문', ['관계선'], mermaid.map(l => [l]));
+    // mermaid 원문 표는 넣지 않는다 — 독자에게 필요한 것은 그림이지 그림의 소스가 아니다.
 
     if (note45) {
       M.merge(ws, y, 2, y, 11);
-      M.put(ws, y, 2, '04 §4.5 — ' + note45,
+      M.put(ws, y, 2, note45,
             { font: { size: 9, color: { argb: 'FF44546A' } }, align: { wrapText: true, vertical: 'top' } });
       ws.getRow(y).height = 32;
     }
@@ -154,8 +153,7 @@ function build(ctx) {
 
   function drawPhysical(ws) {
     M.merge(ws, 2, 1, 2, 16);
-    M.put(ws, 2, 1, '04 §7 · §8 에서 생성 · 실선 = Foreign Key · '
-                  + 'NULL 열은 04 §8 표기 그대로다 (X = NOT NULL · O = NULL 허용)', { font: NOTE });
+    M.put(ws, 2, 1, '실선 = Foreign Key  ·  NULL 열:  X = NOT NULL   O = NULL 허용', { font: NOTE });
 
     const mk = (t, r, g) => {
       const k = keys[t];
@@ -196,12 +194,12 @@ function build(ctx) {
     M.put(ws, 22, P[1] + 2, '1 : N   ' + fk완료, { font: { size: 8, bold: true } });
 
     let y = 36;
-    M.put(ws, y, 2, '관계선이 없는 이유 (04 §4.5)', { font: { size: 11, bold: true, color: { argb: M.NAVY } } });
+    M.put(ws, y, 2, '관계선이 없는 이유 (04)', { font: { size: 11, bold: true, color: { argb: M.NAVY } } });
     y++;
     for (const [t, why] of [
       ['검사코드', '예약접수·완료이력 의 검사구성 문자열이 코드로 참조한다. FK 가 아니다'],
       ['휴무일', '날짜로만 조회되는 독립 Master 다'],
-      ['변경이력', 'Foreign Key 를 갖지 않는다 — 감사 기록은 대상 행보다 오래 산다 (04 §8.6.3)'],
+      ['변경이력', 'Foreign Key 를 갖지 않는다 — 감사 기록은 대상 행보다 오래 산다 (04)'],
     ]) {
       M.put(ws, y, 2, t, { font: { size: 9, bold: true } });
       M.merge(ws, y, 3, y, 12);
@@ -212,7 +210,7 @@ function build(ctx) {
 
     const fkRows = [];
     for (const t of TABLES) for (const f of keys[t].fk) fkRows.push([t, f.name, f.col, f.ref]);
-    table(ws, y, 2, 'Foreign Key (04 §8)', ['자식 테이블', '이름', '컬럼', '참조'], fkRows);
+    table(ws, y, 2, 'Foreign Key (04)', ['자식 테이블', '이름', '컬럼', '참조'], fkRows);
   }
 
   return {

@@ -8,7 +8,7 @@ const pages = tablePages('부록 D.  Ribbon Action · 마감 Matrix', [
     lines: ['예약 관리와 접수 관리는 같은 Workbench 화면을 Context만 바꿔 공유한다. 두 Context의 Ribbon 구성이 다르므로 아래 두 표를 함께 읽어야 한다. Reception이 Reservation의 상위집합이 아니다 — [예약취소]는 예약 Context 전용이다.'],
   },
   {
-    kind: 'table', caption: 'D-1.  예약 Context Ribbon  ·  [조회] [예약변경] [예약취소] [접수] [변경이력] [컬럼설정] (§9.6)',
+    kind: 'table', caption: 'D-1.  예약 Context Ribbon  ·  [조회] [예약변경] [예약취소] [접수] [변경이력] [컬럼설정]',
     cols: [
       { t: '선택 상태', w: 2.60, align: 'left' },
       { t: '예약변경', flex: 1 }, { t: '예약취소', flex: 1 }, { t: '접수', flex: 1 },
@@ -26,10 +26,10 @@ const pages = tablePages('부록 D.  Ribbon Action · 마감 Matrix', [
   {
     kind: 'note',
     lines: ['[접수]는 상태변경 버튼이 아니라 접수 Context / P03으로 연결하는 Shortcut이다.',
-      '[변경이력]은 상태와 무관하게 행이 선택되면 열린다 — 취소된 업무의 변경 내역도 남아 있고 그것을 보는 것이 열람의 목적이다 (§23). 조회 Action이라 데이터를 바꾸지 않으므로 308/309의 차단 대상이 아니고, 그래서 공통 업무불가에도 열린다 (§23.4).'],
+      '[변경이력]은 상태와 무관하게 행이 선택되면 열린다 — 취소된 업무의 변경 내역도 남아 있고 그것을 보는 것이 열람의 목적이다. 조회 Action이라 데이터를 바꾸지 않으므로 308/309의 차단 대상이 아니고, 그래서 공통 업무불가에도 열린다.'],
   },
   {
-    kind: 'table', caption: 'D-2.  접수 Context Ribbon  ·  [조회] [현장 당일예약] [예약변경] [접수] [추가검사변경] [접수취소] [변경이력] [컬럼설정] (§9.7)',
+    kind: 'table', caption: 'D-2.  접수 Context Ribbon  ·  [조회] [현장 당일예약] [예약변경] [접수] [추가검사변경] [접수취소] [변경이력] [컬럼설정]',
     cols: [
       { t: '선택 상태', w: 2.60, align: 'left' },
       { t: '현장 당일예약', flex: 1 }, { t: '예약변경', flex: 1 }, { t: '접수', flex: 1 },
@@ -46,11 +46,11 @@ const pages = tablePages('부록 D.  Ribbon Action · 마감 Matrix', [
   },
   {
     kind: 'note',
-    lines: ['[현장 당일예약]은 선택행과 무관한 독립 Action이다. 이 버튼 하나가 「수검자 확정 → 당일 업무 확인 → 신규예약 WalkIn(예약일 = 오늘 ReadOnly) → Workbench 자동선택 → 접수 처리」 흐름의 유일한 진입점이다 (§9.8).',
-      '[변경이력]은 §9.6과 같다 — 상태와 무관하게 행이 선택되면 열리고, 조회 Action이라 공통 업무불가에도 열린다 (§23.4).'],
+    lines: ['[현장 당일예약]은 선택행과 무관한 독립 Action이다. 이 버튼 하나가 「수검자 확정 → 당일 업무 확인 → 신규예약 WalkIn(예약일 = 오늘 ReadOnly) → Workbench 자동선택 → 접수 처리」 흐름의 유일한 진입점이다.',
+      '[변경이력]은 예약 Context Ribbon과 같다 — 상태와 무관하게 행이 선택되면 열리고, 조회 Action이라 공통 업무불가에도 열린다.'],
   },
   {
-    kind: 'table', caption: 'D-3.  수검자 관리 Ribbon (§5.2)',
+    kind: 'table', caption: 'D-3.  수검자 관리 Ribbon',
     cols: [
       { t: '선택 상태', w: 2.60, align: 'left' },
       { t: '조회', flex: 1 }, { t: '신규등록', flex: 1 }, { t: '정보수정', flex: 1 },
@@ -64,10 +64,10 @@ const pages = tablePages('부록 D.  Ribbon Action · 마감 Matrix', [
   },
   {
     kind: 'note',
-    lines: ['[변경이력]은 조회 Action이라 공통 업무불가에도 열린다 — 데이터를 바꾸지 않으므로 308/309의 차단 대상이 아니다 (§5.2, §23.4). 행 미선택에서는 대상 행이 없으므로 닫힌다.'],
+    lines: ['[변경이력]은 조회 Action이라 공통 업무불가에도 열린다 — 데이터를 바꾸지 않으므로 308/309의 차단 대상이 아니다. 행 미선택에서는 대상 행이 없으므로 닫힌다.'],
   },
   {
-    kind: 'table', caption: 'D-4.  당일 예약 · 접수 마감 (§8.6)',
+    kind: 'table', caption: 'D-4.  당일 예약 · 접수 마감',
     cols: [{ t: '구분', w: 3.00, align: 'left' }, { t: '오전 (AM)', flex: 1 }, { t: '오후 (PM)', flex: 1 }],
     rows: [
       ['일반 당일예약  ·  평일', '10:00 전', '15:00 전'],
@@ -81,7 +81,7 @@ const pages = tablePages('부록 D.  Ribbon Action · 마감 Matrix', [
     lines: ['마감시각 이전(<)만 허용하며 마감시각과 같은 시각부터 불가하다. 모든 마감은 운영시간(09:00 ≤ 현재시각 < 18:00) 안에서만 적용한다.'],
   },
   {
-    kind: 'table', caption: 'D-5.  신규 예약 Single Instance · Reset (§8.10)',
+    kind: 'table', caption: 'D-5.  신규 예약 Single Instance · Reset',
     cols: [
       { t: '이벤트', w: 2.20, align: 'left' }, { t: '예약일/시간대', flex: 1, align: 'left' },
       { t: 'TGT', flex: 1, align: 'left' }, { t: 'NEX', flex: 1, align: 'left' },

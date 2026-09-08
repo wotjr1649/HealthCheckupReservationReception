@@ -658,5 +658,28 @@ function splitFences(src) {
   }
 }
 
+// V20 화면·C# 이름 ↔ DB 계약 이름의 다리 (05 §16.5).
+// R4 가 04·05 를 한글로 바꾸면서 00·01·03 의 영문 호출계약과 이름이 갈렸다. 두 계층이
+// 공존하는 것은 §16.2 의 결정이지만, **대응표가 없으면 00→05 를 따라 읽는 사람이 끊긴다.**
+// 실제로 04 가 "와이어프레임의 PatientId" 를 한글로 잘못 바꿔 인용이 거짓이 된 적이 있다.
+// 표가 썩는 두 방향을 다 본다 — 화면 이름이 00·01·03 에 없거나, DB 이름이 05 에 없거나.
+{
+  const ui = ['00_Project_Policy.md', '01_Process_Definition.md', '03_Wireframe_Definition.md']
+    .map(f => read(path.join(ROOT, 'baseline', f))).join('\n');
+  const sec = sliceSection(read(BASE05), '화면·C# 이름 ↔ DB 계약 이름 대응');
+  const rows = [...sec.matchAll(/^\|\s*`([A-Za-z][A-Za-z0-9_]*)`\s*\|\s*`([^`]+)`\s*\|/gm)];
+  const base05 = read(BASE05);
+  const bad = [];
+  for (const [, en, ko] of rows) {
+    if (!new RegExp('(?<![A-Za-z0-9_])' + en + '(?![A-Za-z0-9_])').test(ui))
+      bad.push('화면 이름 `' + en + '` 이 00·01·03 에 없다 — 죽은 행이다');
+    if (!base05.includes('`' + ko + '`') && !base05.includes('@' + ko))
+      bad.push('DB 이름 `' + ko + '` 이 05 에 없다 — 지어낸 이름이다');
+  }
+  if (!rows.length) F('V20', '05 §16.5 대응표를 찾지 못했다 - 미실행은 PASS 가 아니다');
+  else if (bad.length) F('V20', '이름 대응표가 어긋난다 ' + bad.length + '건', bad.join('\n'));
+  else P('V20', '화면·C# ↔ DB 이름 대응 ' + rows.length + '종 양방향 실재 (05 §16.5)');
+}
+
 console.log('\n=== verify-docs: PASS ' + pass + ' / FAIL ' + fail + ' ===');
 process.exit(fail ? 1 : 0);

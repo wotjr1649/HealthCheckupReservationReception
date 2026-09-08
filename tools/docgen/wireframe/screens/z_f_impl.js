@@ -6,7 +6,7 @@ const { tablePages } = require('../tablepage');
 
 const pages = tablePages('부록 F.  구현 기준', [
   {
-    kind: 'table', caption: 'F-1.  주민등록번호 입력 · 파생값 (§6.2)',
+    kind: 'table', caption: 'F-1.  주민등록번호 입력 · 파생값',
     cols: [
       { t: '7번째 자리', w: 1.60 }, { t: '세기', w: 1.60 }, { t: '성별', w: 1.20 },
       { t: '예시 (입력 → 파생)', flex: 1, align: 'left' },
@@ -27,11 +27,11 @@ const pages = tablePages('부록 F.  구현 기준', [
         + '7번째 자리 세기 · 성별 해석  →  Birthday / Gender 자동산출  →  중복 · 변경조건 검증',
       '· 실제 행정번호 존재 여부와 체크디지트 검증은 하지 않는다.',
       '· 형식 · 날짜 · 파생 실패 시 Birthday / Gender를 Clear하고 저장을 비활성화한다.',
-      '· 화면에는 전체값을 표시하고 DB에는 - 를 제거한 숫자 13자리를 저장한다 (§5.6 SocialNumber).',
+      '· 화면에는 전체값을 표시하고 DB에는 - 를 제거한 숫자 13자리를 저장한다 (SocialNumber).',
     ],
   },
   {
-    kind: 'table', caption: 'F-2.  DevExpress 20.2 구현 기준 (§1.4)',
+    kind: 'table', caption: 'F-2.  DevExpress 20.2 구현 기준',
     cols: [{ t: '영역', w: 3.40, align: 'left' }, { t: '기준 Control / 구현 방식', flex: 1, align: 'left' }],
     rows: [
       ['MainForm', 'RibbonForm + RibbonControl 1개'],
@@ -46,7 +46,7 @@ const pages = tablePages('부록 F.  구현 기준', [
     ],
   },
   {
-    kind: 'table', caption: 'F-3.  구현 원칙 (§1.4)',
+    kind: 'table', caption: 'F-3.  구현 원칙',
     cols: [{ t: '원칙', flex: 1, align: 'left' }],
     rows: [
       ['고정 Pixel 중심 배치를 피하고 Layout / Dock / Splitter를 사용한다.'],

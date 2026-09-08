@@ -70,12 +70,12 @@ function draw(c) {
 const desc = [
   { n: '', text: 'DLG-RSV-01  예약 변경 · Modal · P02-06 · F-RSV-002' },
   { n: '1', text: '예약(RSV) 상태에서만 진입한다. 수검자는 변경할 수 없다 (RP-09)' },
-  { n: '2', text: '예약일 변경 → 일정 → TGT → NEX → AEX 순으로 전부 재평가 (§10.3)' },
+  { n: '2', text: '예약일 변경 → 일정 → TGT → NEX → AEX 순으로 전부 재평가' },
   { n: '3', text: '시간대만 변경 → 일정·마감·정원만 재평가. TGT/NEX/AEX는 유지' },
   { n: '4', text: '예약일 변경 후 비대상이면 저장하지 않고 기존 예약을 유지한다' },
   { n: '5', text: '예약일이 바뀌면 자동 재구성된다. 사용자 변경 불가 (NEX-07)' },
-  { n: '6', text: 'AEX만 변경해도 Work의 RowVersion이 갱신된다 (§16)' },
-  { n: '7', text: '원본 RowVersion을 보관했다가 저장 시 함께 전달한다 (§10.2)' },
+  { n: '6', text: 'AEX만 변경해도 Work의 RowVersion이 갱신된다' },
+  { n: '7', text: '원본 RowVersion을 보관했다가 저장 시 함께 전달한다' },
   { n: '', text: '일정·중복 검증에서 현재 WorkId 자체는 제외하고 다른 RSV/RCP 업무만 충돌로 판단한다. 실제 변경이 없으면 No-op으로 처리한다.' },
 ];
 

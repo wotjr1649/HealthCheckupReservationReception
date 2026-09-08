@@ -1,4 +1,4 @@
-/*
+﻿/*
  * 00_검진_예약접수_업무정책.xlsx 생성기
  *
  * 입력(읽기 전용): docs/baseline/00_Project_Policy.md
@@ -367,8 +367,7 @@ function build() {
 /* ================================================================== *
  * 검증
  * ================================================================== */
-const BANNED = ['FINAL', 'READ-ONLY', '기준선', 'HC-RSV-RCP', '변경 통제', '최종 검수', '최종 판정',
-  'PASS', '과제', 'Seed/Test', 'v1.2', '13종', '후속 Phase'];
+// 공개 적합성 목록은 tools/docgen/verify_output.js 에 있다 (한자리 · 정확 · 실패시킴).
 
 const RULE_IDS = [];
 const push = (p, n) => { for (let i = 1; i <= n; i++) RULE_IDS.push(p + '-' + String(i).padStart(2, '0')); };
@@ -403,27 +402,13 @@ async function verify() {
 
   const text = all.join('\n');
 
-  console.log('\n===== [2] 금지 문자열 검증 =====');
-  let bad = 0;
-  for (const b of BANNED) {
-    const hits = all.filter((t) => t.includes(b));
-    if (hits.length) {
-      bad++;
-      console.log(`- [HIT] "${b}" ${hits.length}건`);
-      hits.forEach((h) => console.log(`    > ${h.slice(0, 120)}`));
-    } else {
-      console.log(`- [OK ] "${b}" 0건`);
-    }
-  }
-  console.log(`금지 문자열 적중 항목 수: ${bad}`);
-
-  // 참고 검사
-  console.log('\n--- 참고 grep (업무 문장 잔존 확인) ---');
-  ['최종 검증', '기준일', 'Seed', '테스트'].forEach((k) => {
-    const hits = all.filter((t) => t.includes(k));
-    console.log(`- "${k}" ${hits.length}건`);
-    hits.forEach((h) => console.log(`    > ${h.slice(0, 120)}`));
-  });
+  // [2] 공개 적합성 검사는 여기 있지 않다.
+  //
+  // 예전에는 이 자리에 BANNED 부분일치 목록이 있었다. 두 가지가 잘못이었다.
+  //   1. 부분일치라 '검사결과 입력·판독·최종 판정'(업무 범위)과 '폐기능'(폐+기능)을 잡았다.
+  //   2. 적중해도 실패시키지 않고 숫자만 찍어 아무 힘이 없었다 — 실제로 1건이 계속 떠 있었다.
+  // 여섯 종을 한자리에서 정확하게 보는 tools/docgen/verify_output.js 로 옮겼다.
+  // 거기서는 한 건이라도 남으면 exit 1 이고, build_all.js 가 생성 뒤에 반드시 부른다.
 
   console.log('\n===== [3] Rule ID 대조 (54개) =====');
   const missing = RULE_IDS.filter((id) => !text.includes(id));
@@ -431,7 +416,7 @@ async function verify() {
   if (missing.length) console.log('누락 ID:', missing.join(', '));
   else console.log('누락 없음 — CP-01~06, EP-01~10, RP-01~10, RCP-01~06, TGT-01~05, NEX-01~07, AEX-01~05, HOL-01~05 전부 존재');
 
-  return { bad, missing };
+  return { missing };
 }
 
 (async () => {
@@ -440,5 +425,6 @@ async function verify() {
   console.log('생성 완료:', OUT);
   const r = await verify();
   console.log('\n===== 판정 =====');
-  console.log(`금지 문자열 적중 ${r.bad}건 / Rule ID 누락 ${r.missing.length}건`);
+  console.log(`Rule ID 누락 ${r.missing.length}건`);
+  if (r.missing.length) process.exit(1);
 })().catch((e) => { console.error(e); process.exit(1); });

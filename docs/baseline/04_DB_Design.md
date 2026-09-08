@@ -141,7 +141,7 @@ RS0.오류항목 을 VARCHAR(50) -> NVARCHAR(50) 으로                      05 
 - 본 문서는 테이블명·컬럼명·타입·NULL·키·제약·최소 Index·Sequence·AEX 입력경계를 확정한다.
 - 정확한 UDF/SP 이름·시그니처·Result Set·ResultCode·검증 우선순위는 `05_DB_Rule_SP_Contract.md`를 따른다.
 - 잠금 SQL·Transaction 격리·Seed/Test Data·권한은 `06_DB_Transaction_Security_Seed.md`에서 확정한다.
-- 와이어프레임의 `수검자ID`, `업무ID` 호출계약은 본 문서의 물리 PK로 구현한다.
+- 와이어프레임의 `PatientId`, `WorkId` 호출계약은 본 문서의 물리 PK `수검자ID`, `업무ID`로 구현한다. `00`·`01`·`03`은 화면·C# 계층의 영문 이름을 쓰고 `04`·`05`는 DB 계약의 한글 이름을 쓴다 — 두 계층의 이름 대응은 `05_DB_Rule_SP_Contract.md` §16.5가 전건을 적는다.
 - `SEQUENCE`, UDF, Stored Procedure는 DB 객체이지만 물리 테이블 수 6개에는 포함하지 않는다.
 
 ## 0.4 기준선 고정 및 후속 변경 통제

@@ -57,7 +57,7 @@ const desc = [
   { n: '2', text: '예약일 · 시간대 · NEX는 변경할 수 없다 (RCP-05)' },
   { n: '3', text: '예약 상태와 동일한 AEX-01~05 Rule을 적용한다' },
   { n: '4', text: '실제 변경 시 상태는 RCP를 유지하고 Work RowVersion만 갱신' },
-  { n: '', text: 'AEX 선택집합이 동일하면 Detail과 Work를 갱신하지 않고 No-op으로 처리한다 (§12, §16).' },
+  { n: '', text: 'AEX 선택집합이 동일하면 Detail과 Work를 갱신하지 않고 No-op으로 처리한다.' },
   { n: '', text: '가격·할인·수납·결제는 이 시스템의 범위가 아니다 (AEX-05).' },
 ];
 

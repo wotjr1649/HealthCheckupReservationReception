@@ -75,15 +75,15 @@ function draw(c) {
 
 const desc = [
   { n: '', text: 'WF-WRK-01  예약/접수 공통 Workbench · Main Tab · P02-05, P03-04 · F-COM-001' },
-  { n: '1', text: '[예약 관리]·[접수 관리]가 같은 Tab을 Context만 바꿔 공유한다 (§9.1)' },
-  { n: '2', text: 'Tab Caption과 같은 접수 Context 구성이다 (§9.7)' },
-  { n: '', text: '예약 Context는 [현장 당일예약]·[추가검사변경]·[접수취소] 없이 [예약취소]가 대신 있다 (§9.6). [변경이력]은 두 Context 공통이며 조회 Action이라 공통 업무불가에도 열린다 (§23.4). 상태별 활성/비활성은 부록 D 참조. 접수 Context 미선택 상태에서 활성인 것은 [조회]·[컬럼설정]·[현장 당일예약]뿐이다.' },
-  { n: '3', text: '최소 1개 실질 조건 필요. 상태 `전체`만은 조건으로 보지 않는다 (§9.3)' },
+  { n: '1', text: '[예약 관리]·[접수 관리]가 같은 Tab을 Context만 바꿔 공유한다' },
+  { n: '2', text: 'Tab Caption과 같은 접수 Context 구성이다' },
+  { n: '', text: '예약 Context는 [현장 당일예약]·[추가검사변경]·[접수취소] 없이 [예약취소]가 대신 있다. [변경이력]은 두 Context 공통이며 조회 Action이라 공통 업무불가에도 열린다. 상태별 활성/비활성은 부록 D 참조. 접수 Context 미선택 상태에서 활성인 것은 [조회]·[컬럼설정]·[현장 당일예약]뿐이다.' },
+  { n: '3', text: '최소 1개 실질 조건 필요. 상태 `전체`만은 조건으로 보지 않는다' },
   { n: '4', text: '날짜는 양끝 포함. From>To는 Inline 오류. 시간대는 조회조건 제외' },
-  { n: '5', text: '단일 행 선택. 재조회 시 선택·상세·Action을 모두 초기화 (§9.4)' },
-  { n: '6', text: '정원은 현재 조회값이며 저장 Snapshot 컬럼이 아니다 (§9.5)' },
-  { n: '7', text: 'NEX/AEX는 실제 저장된 구성. 이 화면에서는 ReadOnly (§14.2)' },
-  { n: '8', text: 'WorkId·PatientId·주민등록번호는 이 Grid에 노출하지 않는다 (§9.4)' },
+  { n: '5', text: '단일 행 선택. 재조회 시 선택·상세·Action을 모두 초기화' },
+  { n: '6', text: '정원은 현재 조회값이며 저장 Snapshot 컬럼이 아니다' },
+  { n: '7', text: 'NEX/AEX는 실제 저장된 구성. 이 화면에서는 ReadOnly' },
+  { n: '8', text: 'WorkId·PatientId·주민등록번호는 이 Grid에 노출하지 않는다' },
 ];
 
 module.exports = { title: '예약 · 접수 공통 Workbench', draw, desc };

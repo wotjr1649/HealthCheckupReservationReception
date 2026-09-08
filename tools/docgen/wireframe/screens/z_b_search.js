@@ -4,7 +4,7 @@ const { tablePages } = require('../tablepage');
 
 const pages = tablePages('부록 B.  조회 · 검색 계약', [
   {
-    kind: 'table', caption: 'B-1.  수검자 조회 (WF-PAT-01 · DLG-PAT-02, §5.3)',
+    kind: 'table', caption: 'B-1.  수검자 조회 (WF-PAT-01 · DLG-PAT-02)',
     cols: [{ t: '항목', w: 3.20, align: 'left' }, { t: '계약', flex: 1, align: 'left' }],
     rows: [
       ['조회조건', '차트번호 / 이름 / 주민번호 / 생년월일 / 휴대전화'],
@@ -18,7 +18,7 @@ const pages = tablePages('부록 B.  조회 · 검색 계약', [
     ],
   },
   {
-    kind: 'table', caption: 'B-2.  예약·접수 업무내역 조회 (WF-WRK-01, §9.3)',
+    kind: 'table', caption: 'B-2.  예약·접수 업무내역 조회 (WF-WRK-01)',
     cols: [{ t: '항목', w: 3.20, align: 'left' }, { t: '계약', flex: 1, align: 'left' }],
     rows: [
       ['조회조건', '예약/접수일 From ~ To  ·  상태(전체 / 예약 / 접수완료 / 예약취소 / 접수취소)  ·  차트번호  ·  이름'],
@@ -31,7 +31,7 @@ const pages = tablePages('부록 B.  조회 · 검색 계약', [
     ],
   },
   {
-    kind: 'table', caption: 'B-3.  Grid 컬럼 (§5.5 · §9.4)',
+    kind: 'table', caption: 'B-3.  Grid 컬럼',
     cols: [{ t: '화면', w: 2.60, align: 'left' }, { t: '기본 컬럼', w: 4.20, align: 'left' },
       { t: '선택 컬럼', w: 2.40, align: 'left' }, { t: '전 Grid 제외', flex: 1, align: 'left' }],
     rows: [
@@ -44,7 +44,7 @@ const pages = tablePages('부록 B.  조회 · 검색 계약', [
     ],
   },
   {
-    kind: 'table', caption: 'B-4.  Column Chooser 정책 (§18)',
+    kind: 'table', caption: 'B-4.  Column Chooser 정책',
     cols: [{ t: '구분', w: 1.60, align: 'left' }, { t: '내용', flex: 1, align: 'left' }],
     rows: [
       ['제공', '표시 / 숨김,  기본값 복원'],

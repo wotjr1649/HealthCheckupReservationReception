@@ -77,6 +77,39 @@ function fences(text, lang) {
 }
 
 /* ------------------------------------------------------------------ *
+ * 공개 정리 — 산출물 독자는 docs/baseline/*.md 를 갖고 있지 않다.
+ * 기준선 본문에서 그대로 흘러드는 § 절 참조는 따라갈 수 없는 표시라 잡음이다.
+ * 셀에 값을 쓰는 모든 경로가 이 함수를 지난다.
+ *
+ * [!] 문장 한가운데 홀로 남은 참조는 지우지 않는다 — '§8.2.3의 정렬 누수' 를 지우면
+ *     '의 정렬 누수' 가 되어 말이 깨진다. 대신 남겨 두고 emit() 이 실패시킨다.
+ *     사람이 그 문장을 다시 쓰게 만드는 것이 조용히 뭉개는 것보다 낫다.
+ * ------------------------------------------------------------------ */
+const REF = '§\s*\d+(?:\.\d+[a-z]?)*';
+const LEFTOVER = [];
+/*
+ * 문장 한가운데 참조는 기계로 지울 수 없다. 뜻을 지키는 다시쓰기를 이름으로 적어 둔다.
+ * 기준선을 고치지 않는다 — 기준선에서 § 는 정당한 상호참조이고, 공개본에서만 잡음이다.
+ */
+const PROSE = [
+  ['§8.2.3의 정렬 누수', '예약접수 검사구성 제약과 같은 정렬 누수'],
+];
+
+function pub(v) {
+  if (typeof v !== 'string' || v.indexOf('§') < 0) return v;
+  for (const [from, to] of PROSE) v = v.split(from).join(to);
+  let s = v.replace(new RegExp('\s*\((?:' + REF + ')(?:\s*[,·]\s*(?:' + REF + '))*\)', 'g'), '');
+  s = s.replace(/\(([^()]*)\)/g, (m, inner) => {
+    if (!new RegExp(REF).test(inner)) return m;
+    const t = inner.replace(new RegExp(REF, 'g'), '')
+      .replace(/^[\s,·]+|[\s,·]+$/g, '').replace(/[\s,·]*,[\s,·]*/g, ', ');
+    return t ? '(' + t + ')' : '';
+  });
+  if (s.indexOf('§') >= 0) LEFTOVER.push(s.replace(/\s+/g, ' ').slice(0, 130));
+  return s;
+}
+
+/* ------------------------------------------------------------------ *
  * 서식 — build_00.js 와 같은 모양으로 맞춘다.
  * ------------------------------------------------------------------ */
 const NAVY = 'FF1F3864';
@@ -132,7 +165,7 @@ function workbook(creator, sheets) {
       const xl = ws.getRow(r);
       row.forEach((v, i) => {
         const c = xl.getCell(i + 1);
-        c.value = v === '' ? null : v;
+        c.value = v === '' ? null : pub(v);
         c.font = { size: 10 };
         c.alignment = { vertical: 'top', wrapText: true,
                         horizontal: (s.ctr || []).includes(i) ? 'center' : 'left' };
@@ -166,6 +199,11 @@ async function emit(wb, outName, checks) {
   //     같다고 보기 때문이다. 그런데 Excel 의 실제 기본은 8.43 이라 그림이 조용히 어긋난다.
   //     지정한 너비가 파일에 살아남았는지 왕복으로 대조한다. 9 를 쓰지 않는 것으로 피한다.
   let fail = 0;
+  if (LEFTOVER.length) {
+    fail++;
+    console.log('FAIL 산출물에 따라갈 수 없는 절 참조가 남았다 ' + LEFTOVER.length + '건 — 문장을 다시 써라');
+    [...new Set(LEFTOVER)].forEach(l => console.log('        ' + l));
+  }
   for (const spec of (wb.__sheets || [])) {
     const ws = re.getWorksheet(spec.name);
     const got = ws.columns.map(c => c.width);
@@ -183,7 +221,7 @@ async function emit(wb, outName, checks) {
   if (fail) process.exit(1);
 }
 
-module.exports = { read, cell, sections, tables, fences, workbook, emit, OUTDIR };
+module.exports = { read, cell, pub, sections, tables, fences, workbook, emit, OUTDIR };
 
 /* ================================================================== *
  * 그리기 킷 — ERD 용.
@@ -213,7 +251,7 @@ function rect(ws, r1, c1, r2, c2, style) {
 
 function put(ws, r, c, v, o) {
   const cell = ws.getCell(r, c);
-  cell.value = v === '' ? null : v;
+  cell.value = v === '' ? null : pub(v);
   cell.font = Object.assign({ size: 9 }, (o || {}).font);
   cell.alignment = Object.assign({ vertical: 'middle', horizontal: 'left' }, (o || {}).align);
   if ((o || {}).fill) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: o.fill } };

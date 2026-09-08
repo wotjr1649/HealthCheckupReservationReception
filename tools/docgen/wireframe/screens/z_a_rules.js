@@ -4,7 +4,7 @@ const { tablePages } = require('../tablepage');
 
 const pages = tablePages('부록 A.  화면 동작 규칙', [
   {
-    kind: 'table', caption: 'A-1.  검증 표현 원칙 (§15.1)',
+    kind: 'table', caption: 'A-1.  검증 표현 원칙',
     cols: [{ t: '상황', w: 4.20, align: 'left' }, { t: 'UI 표현', flex: 1, align: 'left' }],
     rows: [
       ['미리 판단 가능한 선택불가', 'Disabled + 사유 표시'],
@@ -14,7 +14,7 @@ const pages = tablePages('부록 A.  화면 동작 규칙', [
     ],
   },
   {
-    kind: 'table', caption: 'A-2.  화면별 NEX / AEX 편집 가부 (§14.2)',
+    kind: 'table', caption: 'A-2.  화면별 NEX / AEX 편집 가부',
     cols: [{ t: '화면', w: 4.20, align: 'left' }, { t: 'NEX', flex: 1 }, { t: 'AEX', flex: 1 }],
     rows: [
       ['Workbench 상세 (WF-WRK-01)', 'ReadOnly', 'ReadOnly'],
@@ -26,7 +26,7 @@ const pages = tablePages('부록 A.  화면 동작 규칙', [
     ],
   },
   {
-    kind: 'table', caption: 'A-3.  업무 상태별 Action 가부 (§14.3)',
+    kind: 'table', caption: 'A-3.  업무 상태별 Action 가부',
     cols: [
       { t: '상태', w: 2.20, align: 'left' }, { t: '예약변경', flex: 1 }, { t: '예약취소', flex: 1 },
       { t: '접수', flex: 1 }, { t: '접수완료 AEX 변경', flex: 1 }, { t: '접수취소', flex: 1 },
@@ -39,7 +39,7 @@ const pages = tablePages('부록 A.  화면 동작 규칙', [
     ],
   },
   {
-    kind: 'table', caption: 'A-4.  Refresh · 동시성 · No-op 계약 (§16)',
+    kind: 'table', caption: 'A-4.  Refresh · 동시성 · No-op 계약',
     cols: [{ t: '항목', w: 3.20, align: 'left' }, { t: '계약', flex: 1, align: 'left' }],
     rows: [
       ['수검자 Edit Modal', '원본 LastEditDate를 숨은 값으로 유지한다.'],
@@ -52,7 +52,7 @@ const pages = tablePages('부록 A.  화면 동작 규칙', [
     ],
   },
   {
-    kind: 'table', caption: 'A-5.  DB 실패 후 UI 처리 (§15.3)',
+    kind: 'table', caption: 'A-5.  DB 실패 후 UI 처리',
     cols: [{ t: '원칙', flex: 1, align: 'left' }],
     rows: [
       ['DB 오류 ResultCode를 화면 업무문구로 매핑한다.'],
