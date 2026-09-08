@@ -20,8 +20,9 @@ ELSE IF EXISTS (SELECT 1 FROM [dbo].[휴무일] WHERE [휴무일자] = @D)
     THROW 51040, N'오늘 날짜에 비활성 휴무일 행이 있습니다. 손대지 않고 중단합니다.', 1;
 ELSE
 BEGIN
-    INSERT INTO [dbo].[휴무일] ([휴무일자], [휴무일명], [사용여부])
-    VALUES (@D, N'OFF-308 시험용 임시 휴무일', 1);
+    -- [휴무구분] 은 NOT NULL 이고 Default 가 없다 (04 §8.4.3). 시험이 심는 행도 구분을 명시한다.
+    INSERT INTO [dbo].[휴무일] ([휴무일자], [휴무일명], [휴무구분], [사용여부])
+    VALUES (@D, N'OFF-308 시험용 임시 휴무일', N'자체휴무일', 1);
     SET @Seeded = 1;
 END
 

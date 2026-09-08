@@ -158,9 +158,12 @@ const REWRITES = [
   // 업무Rule
   { sheet: '업무Rule', row: 8, col: 5, find: '과제용 완료이력 Seed/Test Data를', rep: '완료이력 초기 데이터를' },
   { sheet: '업무Rule', row: 8, col: 9, find: 'Seed/Test Data', rep: '초기 데이터' },
-  { sheet: '업무Rule', row: 39, col: 5, find: 'Seed Data로 제공하고', rep: '초기 데이터로 제공하고' },
-  { sheet: '업무Rule', row: 39, col: 5, find: '1건의 테스트 휴무일을 준비한다.', rep: '1건을 등록한다.' },
+  { sheet: '업무Rule', row: 39, col: 5, find: 'Seed Data로 제공한다', rep: '초기 데이터로 제공한다' },
   { sheet: '업무Rule', row: 39, col: 9, find: 'Seed Data', rep: '초기 데이터' },
+  // HOL-06 · F-COM-009 — R7 에서 새로 등재한 행들도 같은 어휘로 내보낸다.
+  { sheet: '업무Rule', row: 40, col: 5, find: 'Seed Data', rep: '초기 데이터' },
+  { sheet: '업무Rule', row: 40, col: 9, find: 'Seed Data', rep: '초기 데이터' },
+  { sheet: '기능정의', row: 41, col: 7, find: 'Seed Data', rep: '초기 데이터' },
 
   // 개발범위
   { sheet: '개발범위', row: 20, col: 5, find: 'DB Seed/Test Data', rep: 'DB 초기 데이터' },
@@ -168,7 +171,6 @@ const REWRITES = [
   { sheet: '개발범위', row: 22, col: 5, find: 'DB Master/Seed', rep: 'DB Master/초기 데이터' },
   { sheet: '개발범위', row: 23, col: 5, find: 'DB Master/Seed', rep: 'DB Master/초기 데이터' },
   { sheet: '개발범위', row: 24, col: 5, find: 'DB Master/Seed', rep: 'DB Master/초기 데이터' },
-  { sheet: '개발범위', row: 24, col: 8, find: '평일1+토요일1 테스트', rep: '평일1+토요일1' },
   { sheet: '개발범위', row: 25, col: 6, find: '과제 범위', rep: '범위 정책' },
   { sheet: '개발범위', row: 26, col: 6, find: '과제 범위', rep: '범위 정책' },
   { sheet: '개발범위', row: 27, col: 6, find: '과제 범위', rep: '범위 정책' },
@@ -227,7 +229,7 @@ const FIRST_DATA_ROW = 4;
 
 /* ------------------------------------------------------------------ *
  * 0. 문서 안내 시트
- *   36개 기능행 전부가 EP/CP/RP/RCP·P01~P03 코드를 인용하는데 원본의 문서정보 시트를
+ *   38개 기능행 전부가 EP/CP/RP/RCP·P01~P03 코드를 인용하는데 원본의 문서정보 시트를
  *   빼면서 "그 코드가 어느 문서에 정의돼 있는가"까지 같이 사라졌다. 그 항로 표지를 되살린다.
  *   값은 전부 00~03 기준선에서 옮긴 것이고 이 시트는 원본 대조(검증 2) 대상이 아니다.
  * ------------------------------------------------------------------ */
@@ -241,12 +243,12 @@ const GUIDE_HEAD = ['구분', '항목', '내용'];
 const GUIDE_ROWS = [
   ['동반 문서', '00_검진_예약접수_업무정책', 'CP · EP · RP · RCP 정책과 TGT · NEX · AEX · HOL Rule의 개별 내용. 본 파일 「관련 Policy·Rule」 열이 가리키는 문서다.'],
   ['동반 문서', '01_검진_예약접수_업무프로세스', 'P01 ~ P03 프로세스의 단계 · 분기 · 종료점 · 상태전이. 본 파일 「관련 Process」 열이 가리키는 문서다.'],
-  ['동반 문서', '02_검진_예약접수_기능정의', '본 파일. Function ID 16개 / 기능행 36개의 기능 계약, 업무 Rule, 개발 범위, DB 추적.'],
+  ['동반 문서', '02_검진_예약접수_기능정의', '본 파일. Function ID 18개 / 기능행 38개의 기능 계약, 업무 Rule, 개발 범위, DB 추적.'],
   ['동반 문서', '03_검진_예약접수_화면설계서', '화면 13개의 구성 · 필드 · 검증 · Ribbon Action · 화면 전이.'],
   ['동반 문서', '읽는 순서', '업무정책 → 업무프로세스 → 기능정의 → 화면설계서. 네 문서는 하나의 세트이며 정책 ID · 프로세스 ID · 기능 ID로 서로를 참조한다.'],
 
   ['시트 안내', '설계근거', '기능 정의를 그렇게 확정한 판단 근거 22행.'],
-  ['시트 안내', '기능정의', 'Function ID 16개 / 기능행 36행. 본 파일의 본체다.'],
+  ['시트 안내', '기능정의', 'Function ID 18개 / 기능행 38행. 본 파일의 본체다.'],
   ['시트 안내', '업무Rule', 'TGT 5 / NEX 7 / AEX 5 / HOL 5 및 검사코드 Master(EX001~EX019, OPT01~OPT07).'],
   ['시트 안내', '개발범위', '구현 포함 21행 / 제외 8행.'],
   ['시트 안내', 'DB추적', 'Function ID별 주요 테이블과 핵심 입출력 16행.'],
@@ -257,7 +259,7 @@ const GUIDE_ROWS = [
   ['코드 체계', 'RCP-01~06', '접수 정책 — 예약 전제 · 접수 가능조건 · 중복접수 · 접수 처리 · 접수 변경 · 접수 취소.'],
   // P03은 「접수 관리」다. 「접수 처리」는 하위 단계 P03-01의 이름이라 섞으면 안 된다. (01_Process_Definition.md P03)
   ['코드 체계', 'P01 / P02 / P03', '수검자 확인·관리 / 예약 관리 / 접수 관리 프로세스. 하위 단계는 P01-01 형식으로 표기한다.'],
-  ['코드 체계', 'F-PAT / F-RSV / F-RCP / F-COM', '수검자 / 예약 / 접수 / 공통 기능. 본 파일이 정의하는 16개 Function ID의 계열이다.'],
+  ['코드 체계', 'F-PAT / F-RSV / F-RCP / F-COM', '수검자 / 예약 / 접수 / 공통 기능. 본 파일이 정의하는 18개 Function ID의 계열이다.'],
 
   ['용어', 'TGT', '일반건강검진 대상판정 Rule (Target Eligibility). 대상판정 기준일은 예약일이다.'],
   ['용어', 'NEX', '국가검진 검사오더 생성 Rule (National Examination). 기본 8종 + 조건부 0~3종 = 실제 8~11종.'],
@@ -455,8 +457,8 @@ async function verify(srcSheets, applied, noteText) {
   const fnRows = fn.rowCount - (FIRST_DATA_ROW - 1);
   const ids = new Set();
   for (let r = FIRST_DATA_ROW; r <= fn.rowCount; r++) ids.add(norm(fn.getCell(r, 2).value));
-  say(fnRows === 37, `기능정의 데이터 37행 (실측 ${fnRows})`);
-  say(ids.size === 17, `기능정의 고유 Function ID 17개 (실측 ${ids.size})`);
+  say(fnRows === 38, `기능정의 데이터 38행 (실측 ${fnRows})`);
+  say(ids.size === 18, `기능정의 고유 Function ID 18개 (실측 ${ids.size})`);
 
   console.log('\n[검증 2] 원본 대비 셀 단위 대조 (원본을 다시 파싱해 무손상 값과 비교)');
   const diffs = [];
@@ -522,8 +524,9 @@ async function verify(srcSheets, applied, noteText) {
   const fnIds = new Set(fnRows.map(r => fn.cells.get(r).get(2)));
   const fnCols = Math.max(...fnRows.map(r => Math.max(...fn.cells.get(r).keys())));
   console.log(`[원본] 시트 ${sheets.size}개 / 기능정의 ${fnRows.length}행 x ${fnCols}열 / 고유 Function ID ${fnIds.size}개`);
-  // F-COM-008(변경기록 열람) 등재로 36행 16개 -> 37행 17개가 되었다 (00 CP-06 · 03 §23).
-  if (fnRows.length !== 37 || fnCols !== 9 || fnIds.size !== 17) throw new Error('원본 파싱 결과가 기대와 다르다');
+  // F-COM-008(변경기록 열람) 등재로 36행 16개 -> 37행 17개,
+  // F-COM-009(휴무일 관리) 등재로 37행 17개 -> 38행 18개가 되었다 (00 HOL-05 · 03 §24).
+  if (fnRows.length !== 38 || fnCols !== 9 || fnIds.size !== 18) throw new Error('원본 파싱 결과가 기대와 다르다');
 
   // 삭제되는 문서정보 시트에만 있는 '논리 기능' 값을 개발범위 상단에 보존
   const logical = sheets.get('문서정보').cells.get(4).get(6);

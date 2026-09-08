@@ -107,9 +107,12 @@ M.emit(wb, '04_검진_예약접수_DB설계서.xlsx', [
   ['ERD 관계선 (§4.5 mermaid)', erd.stat.mermaid, 2],
   ['ERD Foreign Key (§8)', erd.stat.fk, 2],
   ['테이블 수', S1.length, 6],
+  // [!] 여기 `['컬럼 전건 (04 §8 실측)', S2.length, 48]` 이 한 줄 더 있었다. 바로 윗줄이
+  //     `declared`(§8 소제목의 (N) 합계)로 이미 같은 것을 보고 있었으므로 48 은 같은 값의
+  //     손으로 유지하는 사본이었다(ROOT AGENTS.md §6). R7 에서 53 이 되자 윗줄은 스스로
+  //     따라왔고 이 줄만 깨졌다. 컬럼 집합의 진짜 방어는 DOC-001(04 §8 <-> 실제 DB)이다.
   ['컬럼 전건 (§8 선언 합계와 대조)', S2.length, declared],
-  ['컬럼 전건 (04 §8 실측)', S2.length, 48],
-  ['제약 전건', S3.length, 43],
+  ['제약 전건', S3.length, 47],
   ['인덱스 전건', S4.length, 8],
   ['명명규칙 행', S5.length, 12],
 ]).catch(e => { console.error(e); process.exit(1); });

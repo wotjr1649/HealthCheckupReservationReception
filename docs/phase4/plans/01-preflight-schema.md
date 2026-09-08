@@ -1122,6 +1122,8 @@ Expected: exit **1**, `FAIL SCH-001`. 테스트 하네스가 실제로 실패를
 
   `[X 실측]` 검사는 16건이 아니라 19건이다 — `SCH-001`~`SCH-018` 에 `SCH-019`(SP 별 Parameter 전건 · 합계 99)가 더해졌고 기대값도 테이블 6 · NCI 5 · SP 16 · CHECK 24 로 바뀌었다.
 
+  `[X R7]` 계약 재설계로 다시 넓어졌다 — `SP 20` · `CHECK 26` · `Default 10` 이다. 휴무일이 `휴무구분`·감사·행버전을 얻어 CHECK 가 1 -> 3, Default 가 1 -> 3 이 되었고 휴무일 CRUD SP 4개가 늘었다 (`04` §8.4).
+
 ```sql
 SET NOCOUNT ON;
 DECLARE @Fail INT = 0;
@@ -1294,7 +1296,7 @@ BEGIN
     SET @Fail += 1;
 END
 
--- SCH-016 CHECK 제약 이름 24개 EXCEPT 양방향  (04 §8.1.3 7 + §8.2.3 5 + §8.3.3 8 + §8.4.2 1 + §8.5.3 1 + §8.6.3 2)
+-- SCH-016 CHECK 제약 이름 26개 EXCEPT 양방향  (04 §8.1.3 7 + §8.2.3 5 + §8.3.3 8 + §8.4.3 3 + §8.5.3 1 + §8.6.3 2)
 DECLARE @ExpCk TABLE (N SYSNAME PRIMARY KEY);
 INSERT INTO @ExpCk (N) VALUES
  (N'CK_수검자_CHART_NO_NOT_BLANK'), (N'CK_수검자_NAME_NOT_BLANK'),
@@ -1317,7 +1319,7 @@ IF NOT EXISTS (SELECT N FROM @ExpCk EXCEPT SELECT name FROM sys.check_constraint
     PRINT 'PASS SCH-016 CHECK 제약 이름 전건 일치';
 ELSE BEGIN PRINT 'FAIL SCH-016 CHECK 제약 집합 불일치'; SET @Fail += 1; END
 
--- SCH-017 Default 제약 이름 8개 EXCEPT 양방향  (04 §8.1.4 3 + §8.2.3 2 + §8.3.3 1 + §8.4.2 1 + §8.6.3 1)
+-- SCH-017 Default 제약 이름 10개 EXCEPT 양방향  (04 §8.1.4 3 + §8.2.3 2 + §8.3.3 1 + §8.4.3 3 + §8.6.3 1)
 -- [X] 초안의 14개 이름은 기준선 04 §8 의 것이 아니었다(`DF_수검자_JOB` 은 존재하지 않는 Job 컬럼을
 --     가리켰고 `..._GENDER`·`..._MEMO`·`..._ADDRESS` 등은 04 §8.1.4 에 없다). T06 의 DDL 이 기준선과 일치하므로
 --     틀린 쪽은 이 기대값이다. 04 §8.1.4 / §8.2.3 / §8.4.3 / §8.5.2 의 이름을 그대로 옮겨 적는다.

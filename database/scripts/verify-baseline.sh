@@ -6,13 +6,13 @@ const fs=require("fs"),path=require("path"),c=require("crypto");
 const DIR="../docs/baseline";
 // 봉인 목록. 문서가 FINAL 이 되어 입주할 때 한 줄이 늘어난다 (ROOT AGENTS.md §2.1).
 const exp={
- "00_Project_Policy.md":"b748098b7d1090028e8c9532b37629a24893025ab842bbd88eea408278bbb3a6",
+ "00_Project_Policy.md":"4e8f70fe07ca0f459aa9c41a5dadb88c0df5c33539cdf34eb2596fe2a8100722",
  "01_Process_Definition.md":"079891e98f69d40082d822b53ad50ba81f16d21ee74ce3e45fd5b499e80811a0",
- "02_Function_Definition.xlsx":"6ef02f8edcf232fd8fa01865b2a5ba84ab9b78d0200c47174dd85fdfc30b8401",
- "03_Wireframe_Definition.md":"66b81a5f04eee7a4858c6361b9875e5d46aa548d11f0f98c3843b9521a1f2d9c",
- "04_DB_Design.md":"e3191c8fec66bb9b9018ae665de2d715554ffce19dbe443a0aa2d62e6ded62fa",
- "05_DB_Rule_SP_Contract.md":"c1da5eb502a7a2ee9c288d26ef4ac9642c28728a8319a5bb2ef34bd85692bbc8",
- "06_DB_Transaction_Security_Seed.md":"537c18c9f69f63e30f559fe6235be87d315af00f83b5900a93ee96dc411ba002"};
+ "02_Function_Definition.xlsx":"cd616207717d4cbb8c2ed3284061d728af4933af00dac75acf835650865798c0",
+ "03_Wireframe_Definition.md":"71bb97d09cb0156212f56da495641faf6cef9498adc00e77453f1a3cbc45f2f4",
+ "04_DB_Design.md":"fbcc9688f129472315c8fc1321121bd6e823864adb6661759a1f028339774b8e",
+ "05_DB_Rule_SP_Contract.md":"305e2a736490cabd280dc904a1b21121c28afcc86f0c0da6f22594148c89ac65",
+ "06_DB_Transaction_Security_Seed.md":"d72944120af5cb37729491788aaaad887461eaa5ef32462be8d95d649834ced0"};
 const N=Object.keys(exp).length;
 let ok=0;
 for(const [n,e] of Object.entries(exp)){

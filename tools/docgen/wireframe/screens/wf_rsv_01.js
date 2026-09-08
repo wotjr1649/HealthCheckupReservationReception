@@ -24,7 +24,7 @@ const AEX = [
 
 function draw(c) {
   const v = K.shell(c, {
-    nav: ['수검자 관리', '신규 예약', '예약 관리', '접수 관리'], navActive: 1,
+    navActive: 1,
     ribbon: [{ name: '예약', buttons: [{ t: '예약저장', bold: true, mark: '2' }] }],
     tabs: ['수검자 관리', '신규 예약'], tabActive: 1,
     marks: { nav: '1', status: '9' },

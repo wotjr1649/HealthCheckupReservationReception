@@ -37,6 +37,9 @@ run tests/08_Rollback_Tests.sql           08
 # Security(계정·권한)는 2026-09-07 사용자 결정으로 **폐기**했다 (06 §32 · §39).
 # NOT RUN 으로 미루지 않는다 — 미룬 것이 아니라 산출물이 아니므로 잔여를 남기지 않는다.
 # 남은 SEC-010(secret 스캔)은 scripts/verify-no-secret.sh 가 아래에서 판정한다.
+run tests/15_Holiday_Tests.sql            15      # R7 — 기준정보 SP 4개. Seed 를 건드리므로 자기가 심은 것을 자기가 지운다.
+                                                  #   14 보다 **앞**에 둔다. 14 의 Seed 덤프가 RBD-005 의 diff 대상이라
+                                                  #   15 가 남긴 행이 하나라도 있으면 그 diff 가 깨진다 — 그것을 14 가 잡게 한다.
 run tests/14_Clean_Rebuild_Verify.sql     14
 
 # 계약 검증 (G09) — 스펙 §8.4 가 test.sh 범위로 지정했다
@@ -116,6 +119,11 @@ fi
 
 # 문서 정합성 게이트 (스펙 §45.3)
 node tools/verify-docs.js || FAILED=1
+
+# 공휴일 Seed 만료·사본 일치 (00 HOL-06 · 06 §14.7). DB 없이 돈다.
+# [!] 이 게이트는 **날짜가 지나면 저절로 red 가 된다.** 그것이 목적이다 —
+#     공휴일 Seed 는 만료해도 아무것도 실패하지 않고 조용히 오판정을 낸다.
+./scripts/verify-holiday-seed.sh || FAILED=1
 
 # R4-2 기대값 ↔ 기준선 (06 §46.3). verify-contract.js 는 기대값과 실행결과를 맞출 뿐이라
 # 둘이 **같이** 틀리면 통과한다 — 06 §44.8 의 결함이 그 축으로 살아남았다.

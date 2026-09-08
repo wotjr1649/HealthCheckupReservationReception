@@ -3,9 +3,10 @@
 - **문서명:** `06_DB_Transaction_Security_Seed.md`
 - **상태:** `FINAL / GO / READ-ONLY` — SQL 실행검증 완료. §42 Gate 판정은 전부 실측이다
 - **위치:** `docs/baseline/` — 2026-09-08 입주. 이제 이 문서를 고치는 것도 재봉인이다 (ROOT `AGENTS.md` §2)
-- **문서 버전:** v1.3  (v1.0 → R4 한글화 반영. v1.1 → R5 에서 §42 Gate 세 칸을 실측에 맞췄다. v1.2 → R6 에서 §42 의 미래 단정 한 줄을 걷었다)
+- **문서 버전:** v1.4  (v1.0 → R4 한글화 반영. v1.1 → R5 에서 §42 Gate 세 칸을 실측에 맞췄다. v1.2 → R6 에서 §42 의 미래 단정 한 줄을 걷었다. v1.3 → R7 계약 재설계)
 - **기준일:** 2026-09-08  ·  **실행검증일:** 2026-09-07(R3 회귀) · 2026-09-08(R4 회귀 · R5 회귀 회차 `C`)
-- **기준선 ID:** `HC-RSV-RCP-20260908-R6`  (직전 `HC-RSV-RCP-20260908-R5`)
+- **기준선 ID:** `HC-RSV-RCP-20260908-R7`  (직전 `HC-RSV-RCP-20260908-R6`)
+- **R7 반영 범위:** 계약 재설계다. 휴무일이 `휴무구분`·감사·`행버전`을 얻고 자체휴무일 CRUD SP 4개가 생겨 SP 16 → 20 이 되었다. 동시성 토큰이 `행버전` 하나로 통일되며 §26 의 `+4ms` 단조증가가 **사라진다**. 공휴일 Seed 가 2년치로 늘고 만료 경고 게이트가 붙는다. §42 `G05` 는 수치 사본을 걷고 포인터가 된다
 - **R5 반영 범위:** 계약은 한 줄도 바뀌지 않았다. §42 의 `G00`·`G13`·`G16` 이 실제 게이트와 어긋나 있던 것을 고치고 회차 `C` 를 등재했다 — 이 문서가 봉인 안으로 들어와 `06` 이 7번째 봉인이 되었는데 `G00` 은 여전히 `6/6` 이었고, `G13 (c)` 는 이 문서가 요구한 증거 파일 없이 `REVIEWED` 였으며, `G16` 은 `v1.0` 을 근거로 들고 있었다
 - **R4 반영 범위:** 이 문서의 SP 이름·Parameter·Result Set 컬럼 표기를 `05` v3.0 에 맞췄다. Transaction·잠금·Seed·시험 계약의 **내용**은 바뀌지 않는다 — 이름만 바뀌었다. 절차·건수·판정은 그대로다
 - **대상 SQL Server:** `.\SQLEXPRESS` — Microsoft SQL Server 2025 Express `17.0.1125.2` (RTM), 로컬 전용
@@ -51,12 +52,12 @@
 
 ```text
 물리 스키마 DDL   6 Table + PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 / Sequence 1
-Master Seed       검사코드 19행 + 휴무일 2행
+Master Seed       검사코드 19행 + 휴무일 40행 (§14)
 Inline TVF 4개 구현
-Stored Procedure 16개 구현
-Write SP 8개의 Transaction 경계·오류 처리·부분저장 차단
-Patient / 주민번호 / 차트번호 / Work / 시간대 직렬화 및 잠금 획득 총순서
-Patient 최종수정일시 단조증가, Work 행버전 갱신, No-op 경계
+Stored Procedure 20개 구현
+Write SP 11개의 Transaction 경계·오류 처리·부분저장 차단
+Patient / 주민번호 / 차트번호 / Work / 시간대 / 휴무일 직렬화 및 잠금 획득 총순서
+행버전 단일 동시성 토큰, No-op 경계
 Database Role / User WITHOUT LOGIN / GRANT EXECUTE 15건
 Test Fixture, Rule Test, SP Contract Test, Rollback / Concurrency / Security / Clean Rebuild Test
 배포·재구축 Script, 로그·증거 산출물
@@ -93,16 +94,16 @@ Extended Events / trace flag 세션 (서버 수준 객체)
 
 | 파일 | 버전 | 상태 | 기준선 ID |
 |---|---|---|---|
-| `00_Project_Policy.md` | v2.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
+| `00_Project_Policy.md` | v2.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
 | `01_Process_Definition.md` | v2.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
-| `02_Function_Definition.xlsx` | v2.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
-| `03_Wireframe_Definition.md` | v1.3 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
-| `04_DB_Design.md` | v3.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R5` |
-| `05_DB_Rule_SP_Contract.md` | v3.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R4` |
-| `06_DB_Transaction_Security_Seed.md` | v1.3 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R6` |
+| `02_Function_Definition.xlsx` | v2.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
+| `03_Wireframe_Definition.md` | v1.4 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
+| `04_DB_Design.md` | v3.2 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
+| `05_DB_Rule_SP_Contract.md` | v3.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
+| `06_DB_Transaction_Security_Seed.md` | v1.4 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
 
 `[!]` **기준선 ID 는 문서마다 "마지막 봉인 회차" 다** — 세트 하나에 ID 하나가 아니다.
-`00`~`03` 은 R4 에서 한 바이트도 열지 않아 R3 표기를 유지한다 (ROOT `AGENTS.md` §2.2).
+R7 은 여섯을 함께 열었으므로 `01` 만 R3 표기를 유지한다 — `01_Process_Definition.md` 는 한 바이트도 열지 않았다 (ROOT `AGENTS.md` §2.2).
 
 동일 디렉터리 및 `docs` 전체에서 `(1)`·`Candidate`·`후보`·`개선본`·`백업`·`old`·`copy` 사본 **0건**을 확인했다.
 
@@ -132,15 +133,17 @@ Extended Events / trace flag 세션 (서버 수준 객체)
 | 3 | `업무Rule` | `A1:J39` | `A1:J39` | OK |
 | 4 | `개발범위` | `A1:H32` | `A1:H32` | OK |
 | 5 | `설계근거` | `A1:F25` | `A1:F25` | OK |
-| 6 | `DB추적` | `A1:G19` | `A1:G19` | OK |
+| 6 | `DB추적` | `A1:G20` | `A1:G20` | OK |
 | 7 | `최종검수` | `A1:E33` | `A1:E33` | OK |
+
+`[R7]` 위 표는 R3 시점 실측이다. R7 에서 `기능정의`·`DB추적`·`업무Rule` 이 한 행씩 늘고 `문서정보` 머리가 바뀌었다 — 현재 값은 `tools/docgen/xlsx/build_02.js` 가 매 실행에서 파싱해 단언한다(38행 / 9열 / 고유 ID 18).
 
 고정값 실측 결과:
 
 ```text
-Function ID 16개          F-PAT 3 / F-RSV 3 / F-RCP 3 / F-COM 7
-기능행 36행               행 4~39
-TGT 5 / NEX 7 / AEX 5 / HOL 5
+Function ID 18개          F-PAT 3 / F-RSV 3 / F-RCP 3 / F-COM 9
+기능행 38행               행 4~41
+TGT 5 / NEX 7 / AEX 5 / HOL 6
 AEX Master OPT01~OPT07 7종
 DB추적 6 Table + SEQ_HC_CHART_NO
 "NEX 실제 8~11행"          DB추적 F-COM-004 비고에 명시
@@ -261,7 +264,7 @@ database/
 ├─ deploy/
 │  ├─ 00_Preflight.sql                서버·DB·KST·버전·안전가드 검증
 │  ├─ 01_Schema.sql                   FK 역순 DROP IF EXISTS → 6 Table + 제약 + Index + Sequence
-│  ├─ 02_Seed.sql                     검사코드 19행 + 휴무일 2행
+│  ├─ 02_Seed.sql                     검사코드 19행 + 휴무일 40행
 │  ├─ 03_Functions.sql                Inline TVF 4개 (CREATE OR ALTER)
 │  ├─ 04_Procedures_Select.sql        SELECT SP 8개 (SP-LOG-01 포함)
 │  ├─ 05_Procedures_Patient_Write.sql Patient Write SP 2개
@@ -287,7 +290,7 @@ database/
 │  ├─ 13_Security_Tests.sql
 │  ├─ 14_Clean_Rebuild_Verify.sql
 │  └─ contract/                       SP별 호출 시나리오 — EXEC 한 번, DB 상태 단언 없음
-│     └─ 01_*.sql ~ 25_*.sql · PWR-*·SEL-02* 등 Test ID 명 16개 SP 전건. RS0 결과코드·RS 형상 판정용 원본
+│     └─ 01_*.sql ~ 25_*.sql · PWR-*·SEL-02* 등 Test ID 명 20개 SP 전건. RS0 결과코드·RS 형상 판정용 원본
 │
 ├─ scripts/
 │  ├─ deploy.sh  rebuild.sh  test.sh  concurrency-test.sh
@@ -481,7 +484,7 @@ shell script는 역할에 따라 두 가지를 쓴다.
 
 ## 9.3 별도 lint script 미작성 · G13 증거의 한계 `[D4-004]` `[X 수정]`
 
-규칙이 허용목록이고 대상 객체가 26개(Table 6 + TVF 4 + SP 16)뿐이므로 별도 정적검사 script를 만들지 않는다. 객체 수가 크게 늘거나 다수 인원이 SQL을 추가하게 되면 그때 도입한다.
+규칙이 허용목록이고 대상 객체가 30개(Table 6 + TVF 4 + SP 20)뿐이므로 별도 정적검사 script를 만들지 않는다. 객체 수가 크게 늘거나 다수 인원이 SQL을 추가하게 되면 그때 도입한다.
 
 `[X]` **다만 블랙리스트 `grep` 0건을 "허용목록 준수 PASS"로 승격하지 않는다.** 초안의 `T37` Step 4는 알려진 신기능 문자열 일부만 `grep` 하고 그 결과 0건을 G13 증거로 삼았다. 논리적으로 성립하지 않는다 — grep 목록에 없는 2012 이후 기능은 그대로 통과하고, 주석·문자열 안의 금지 단어는 오탐한다.
 
@@ -535,10 +538,10 @@ Isolation          기본 READ COMMITTED. SET TRANSACTION ISOLATION LEVEL 문을
 
 | No | Table | 역할 | 컬럼 수 | PK |
 |---:|---|---|---:|---|
-| 1 | `수검자` | 수검자 Master | **16** | `수검자ID` `BIGINT IDENTITY(1,1)` Clustered |
+| 1 | `수검자` | 수검자 Master | **17** | `수검자ID` `BIGINT IDENTITY(1,1)` Clustered |
 | 2 | `예약접수` | 예약·접수 업무 Master + 검사구성 | 10 | `업무ID` `BIGINT IDENTITY(1,1)` Clustered |
 | 3 | `검사코드` | 통합 검사 Master | 6 | `검사항목코드` Clustered |
-| 4 | `휴무일` | 휴무일 Master | 4 | `휴무일자` Clustered |
+| 4 | `휴무일` | 휴무일 Master | 8 | `휴무일자` Clustered |
 | 5 | `완료이력` | TGT 완료이력 + 검사구성 | 4 | `(수검자ID, 완료일자)` Clustered |
 | 6 | `변경이력` | 데이터 변경기록 (컬럼 단위) | 8 | `이력ID` `BIGINT IDENTITY(1,1)` Clustered |
 
@@ -668,18 +671,104 @@ Deploy가 clean-create이므로 Seed는 **단순 `INSERT`**만 사용한다. `ME
 
 ---
 
-# 14. `휴무일` Seed `[I]`
+# 14. `휴무일` Seed 40행 `[I]`
 
-`00` HOL-05: *"테스트용 평일 휴무일 1건과 토요일 휴무일 1건을 준비한다."*
+`00` HOL-06 이 정한 등재 범위 **2026-01-01 ~ 2027-12-31** 을 편다. 법정공휴일·대체공휴일 39행과
+자체휴무일 1행, 합계 **40행**이다.
 
-| HolidayDate | 요일(실측 `%7`) | 휴무일명 | Active | 비고 |
-|---|:---:|---|:---:|---|
-| `2026-12-25` | **4 = 금요일** | 성탄절 | 1 | 평일 휴무일 |
-| `2026-12-26` | **5 = 토요일** | 센터 휴진일 | 1 | 토요일 휴무일 |
+## 14.1 근거 — 기억으로 적지 않는다
 
-- **고정 날짜**를 사용한다. 배포 시각 기준 상대날짜로 계산하면 실행할 때마다 값이 달라져 G14(Rebuild 후 동일 결과)가 성립하지 않는다.
-- 일요일은 Seed하지 않고 요일 Rule(`%7 = 6`)로 차단한다 (`04` §8.5.2).
-- 요일은 §5.3-8에서 실측 확인했다.
+`[!]` **대체공휴일 규칙은 두 번 바뀌었고 2026 에 또 바뀌었다.** 이 표는 현행 법령과 월력요항을 조회해 만든 것이며
+기억으로 적은 것이 아니다. 다음 갱신에서도 같은 절차를 밟는다.
+
+| 확인 | 결과 |
+|---|---|
+| 대체공휴일 근거 | 「관공서의 공휴일에 관한 규정」 제3조 |
+| 설날·추석 | **일요일과 겹칠 때만** 대체. 토요일과 겹쳐도 대체가 없다 |
+| 현충일 | 토·일과 겹쳐도 대체가 **없다**. 2026-06-06(토)·2027-06-06(일) 둘 다 대체 0건으로 교차확인 |
+| 제헌절 | 2008 년 공휴일에서 빠졌다가 **2026 년 복귀**. 「공휴일에 관한 법률」 개정, 시행 2026-05-11 |
+| 노동절 | `근로자의 날` → `노동절` 개칭과 함께 관공서 공휴일 승격. 시행 2026-05-01 |
+| 2026 월력요항 | 위 두 법 개정보다 **먼저** 나왔다. 그래서 2026 에는 제헌절(7/17 금)·노동절(5/1 금)을 더한다. 둘 다 금요일이라 대체공휴일은 늘지 않는다 |
+| 2027 교차검증 | 일요일 52 + 비일요일 24 = 76, 설날·현충일·광복절·개천절이 일요일과 겹쳐 −4 = **72**. 월력요항의 산식과 일치한다 |
+
+## 14.2 등재하지 않는 것
+
+- **일요일은 Seed 하지 않는다.** HOL-01 의 요일 Rule(`%7 = 6`)이 이미 차단하므로 넣어도 판정이 달라지지 않는다.
+  2026 은 `03-01`(삼일절)·`05-24`(부처님오신날) 둘, 2027 은 `02-07`(설날)·`06-06`(현충일)·`08-15`(광복절)·`10-03`(개천절) 넷이 여기서 빠진다.
+- 임시공휴일·선거일은 넣지 않는다. 지정 시점이 유동적이라 다음 Seed 갱신에서 반영한다(`03` §24.7).
+
+## 14.3 2026 — 법정·대체 19행
+
+| 휴무일자 | 요일 | 휴무일명 | 휴무구분 |
+|---|:---:|---|---|
+| `2026-01-01` | 목 | 신정 | 법정공휴일 |
+| `2026-02-16` | 월 | 설날 연휴 | 법정공휴일 |
+| `2026-02-17` | 화 | 설날 | 법정공휴일 |
+| `2026-02-18` | 수 | 설날 연휴 | 법정공휴일 |
+| `2026-03-02` | 월 | 삼일절 대체공휴일 | 대체공휴일 |
+| `2026-05-01` | 금 | 노동절 | 법정공휴일 |
+| `2026-05-05` | 화 | 어린이날 | 법정공휴일 |
+| `2026-05-25` | 월 | 부처님오신날 대체공휴일 | 대체공휴일 |
+| `2026-06-06` | 토 | 현충일 | 법정공휴일 |
+| `2026-07-17` | 금 | 제헌절 | 법정공휴일 |
+| `2026-08-15` | 토 | 광복절 | 법정공휴일 |
+| `2026-08-17` | 월 | 광복절 대체공휴일 | 대체공휴일 |
+| `2026-09-24` | 목 | 추석 연휴 | 법정공휴일 |
+| `2026-09-25` | 금 | 추석 | 법정공휴일 |
+| `2026-09-26` | 토 | 추석 연휴 | 법정공휴일 |
+| `2026-10-03` | 토 | 개천절 | 법정공휴일 |
+| `2026-10-05` | 월 | 개천절 대체공휴일 | 대체공휴일 |
+| `2026-10-09` | 금 | 한글날 | 법정공휴일 |
+| `2026-12-25` | 금 | 성탄절 | 법정공휴일 |
+
+## 14.4 2027 — 법정·대체 20행
+
+| 휴무일자 | 요일 | 휴무일명 | 휴무구분 |
+|---|:---:|---|---|
+| `2027-01-01` | 금 | 신정 | 법정공휴일 |
+| `2027-02-06` | 토 | 설날 연휴 | 법정공휴일 |
+| `2027-02-08` | 월 | 설날 연휴 | 법정공휴일 |
+| `2027-02-09` | 화 | 설날 대체공휴일 | 대체공휴일 |
+| `2027-03-01` | 월 | 삼일절 | 법정공휴일 |
+| `2027-05-01` | 토 | 노동절 | 법정공휴일 |
+| `2027-05-03` | 월 | 노동절 대체공휴일 | 대체공휴일 |
+| `2027-05-05` | 수 | 어린이날 | 법정공휴일 |
+| `2027-05-13` | 목 | 부처님오신날 | 법정공휴일 |
+| `2027-07-17` | 토 | 제헌절 | 법정공휴일 |
+| `2027-07-19` | 월 | 제헌절 대체공휴일 | 대체공휴일 |
+| `2027-08-16` | 월 | 광복절 대체공휴일 | 대체공휴일 |
+| `2027-09-14` | 화 | 추석 연휴 | 법정공휴일 |
+| `2027-09-15` | 수 | 추석 | 법정공휴일 |
+| `2027-09-16` | 목 | 추석 연휴 | 법정공휴일 |
+| `2027-10-04` | 월 | 개천절 대체공휴일 | 대체공휴일 |
+| `2027-10-09` | 토 | 한글날 | 법정공휴일 |
+| `2027-10-11` | 월 | 한글날 대체공휴일 | 대체공휴일 |
+| `2027-12-25` | 토 | 성탄절 | 법정공휴일 |
+| `2027-12-27` | 월 | 성탄절 대체공휴일 | 대체공휴일 |
+
+## 14.5 자체휴무일 1행
+
+| 휴무일자 | 요일 | 휴무일명 | 휴무구분 | 비고 |
+|---|:---:|---|---|---|
+| `2026-12-26` | 토 | 센터 휴진일 | 자체휴무일 | 토요일 휴무일 시험 대상 |
+
+`00` HOL-05 가 요구하던 *"평일 1건 · 토요일 1건"* 은 이제 `2026-12-25`(금, 법정공휴일)와
+`2026-12-26`(토, 자체휴무일)이 함께 만족한다. `RUL-D04`·`RUL-D05`·`SED-009`·`SED-010` 이 이 두 날짜를
+그대로 붙들고 있으므로 시험을 옮기지 않아도 된다.
+
+## 14.6 고정 날짜를 쓰는 이유
+
+**배포 시각 기준 상대날짜로 계산하지 않는다.** 실행할 때마다 값이 달라지면 `G14`(Rebuild 2회 후 정렬 덤프 diff 0줄)가
+성립하지 않는다. 요일은 `DATEDIFF(DAY, 0, 휴무일자) % 7` 로 시험이 실측 판정한다 — 위 표의 요일 칸을 사람이 믿지 않는다.
+
+## 14.7 만료
+
+`00` §7.4 가 등재 범위와 경고 임계(잔여 180일)를 정한다. 이 Seed 의 공휴일 최종일은 `2027-12-27` 이다.
+잔여가 임계 미만이 되면 `scripts/verify-holiday-seed.sh` 가 **FAIL** 한다.
+
+`[!]` **경고가 아니라 실패다.** `00` HOL-06 은 "경고한다" 고 적지만, 이 저장소에서 실패시키지 않는 검사는
+초록인 채 아무것도 검증하지 않다가 잊힌다(§44.8 이 그 사건들이다). 잔여 180일은 사람이 Seed 를 갱신하기에
+넉넉한 창이고, 그 창을 넘겼다면 회귀가 멈추는 편이 낫다.
 
 ---
 
@@ -864,7 +953,7 @@ NEX-06  EX013  나이 IN (56,66)
 
 ---
 
-# 18. 16개 SP 구현 Matrix `[B]`
+# 18. 20개 SP 구현 Matrix `[B]`
 
 | SP | 구분 | Param | Result Set | 관련 정책·Rule | Transaction | Lock | Test file |
 |---|:---:|---:|:---:|---|:---:|---|---|
@@ -884,8 +973,14 @@ NEX-06  EX013  나이 IN (56,66)
 | `USP_HC_접수_완료` | UPDATE | 3 | 2 | RCP-01~04 | **O** | **`PAT` → `WORK` → `SLOT`** | `07_Reception_Write_Tests.sql` |
 | `USP_HC_접수추가검사_변경` | UPDATE | 10 | 2 | RCP-05, AEX | **O** | `WORK` | `07_Reception_Write_Tests.sql` |
 | `USP_HC_접수_취소` | UPDATE | 3 | 2 | RCP-06, CP-05 | **O** | `WORK` | `07_Reception_Write_Tests.sql` |
+| `USP_HC_휴무일목록_조회` | SELECT | 3 | 3 (RS0~RS2) | HOL-03~06 | X | X | `15_Holiday_Tests.sql` |
+| `USP_HC_자체휴무일_등록` | INSERT | 4 | 2 | HOL-04~05 | **O** | `HOL` | `15_Holiday_Tests.sql` |
+| `USP_HC_자체휴무일_수정` | UPDATE | 5 | 2 | HOL-04~05 | **O** | `HOL` | `15_Holiday_Tests.sql` |
+| `USP_HC_자체휴무일_삭제` | DELETE | 2 | 1 (RS0) | HOL-05 | **O** | `HOL` | `15_Holiday_Tests.sql` |
 
-합계: SELECT 8 / INSERT 2 / UPDATE 6 = **16개**. DELETE SP **0개**. Param 합계 **99개**(§36).
+합계: SELECT 9 / INSERT 3 / UPDATE 7 / DELETE 1 = **20개**. Param 합계 **113개**(§36).
+
+`[R7]` **DELETE SP 가 0개에서 1개가 되었다.** `§2.2`·`G06` 이 *"DELETE SP 0개"* 를 금지 조건으로 들고 있었는데, 그것은 **업무 데이터를 지우는 SP** 를 막는 규칙이었다(취소는 상태전이이지 삭제가 아니다 — `00` CP-05). `USP_HC_자체휴무일_삭제` 는 기준정보 1행을 지우며 업무 데이터를 건드리지 않는다. `G06` 의 조건을 *"업무 테이블(`수검자`·`예약접수`·`완료이력`)을 지우는 SP 0개"* 로 좁힌다.
 
 `[R3]` **Param 열은 R3 재봉인을 반영한 값이다.** Write SP 8개에 `@조작자명` 이, 수검자 Write 2개에
 `@B형간염제외여부` 가 더해졌다. `USP_HC_수검자정보_수정` 의 Lock 은 §24.1 이 조건부(`SSN?`·`CHART?`)에서
@@ -927,7 +1022,7 @@ SELECT
 ```text
 SELECT SP 8개   DMV 로 40행 · error_number 0건 · 5컬럼 타입 문자열 대조
 Write SP 8개    verify-contract.js 가 계약 시나리오의 **실측 출력 헤더**로 컬럼명·순서를 판정
-전체 16개       verify-docs.js V17 이 배포 SQL 의 RS0 CAST 패턴을 정적으로 대조해 타입을 메꾼다
+전체 20개       verify-docs.js V17 이 배포 SQL 의 RS0 CAST 패턴을 정적으로 대조해 타입을 메꾼다
 ```
 
 `서버시각`은 SP 시작 시 캡처한 `@서버시각`을 그대로 사용하며, 실패 경로에서도 동일 값을 반환한다.
@@ -1139,13 +1234,16 @@ IF @@TRANCOUNT > 0
 | SP | 입력 정규화 | 사전조회 | Transaction 시작 | App Lock | Row Lock | 재검증 | 변경대상 | Commit | 성공 반환 | 예상 실패 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | `INSERT_수검자` | Trim/NULL화/UPPER, 주민번호 13자리·날짜·세기·성별 검증, 생년월일/성별 산출 | 없음 | 잠금 직전 | `SSN` → `CHART`(수동) | 없음 | 공통 업무가능 → 동일 SSN 조회 → 성명+생년월일 후보 → 차트번호 고유성 → Sequence 발급 | `수검자` 1행 INSERT + `변경이력` 컬럼 수만큼(트랜잭션 밖) | O | RS0(0 또는 2) + RS1 수검자결과 | 100~102, 201~203, 206, 308~309 (202/203은 RS1 동반) |
-| `UPDATE_수검자정보` | 동일 | `수검자ID`(입력) | 잠금 직전 | **`SSN` → `CHART` → `PAT`** (조건 없이 항상, §24.1) | 없음 | Patient 존재 → `최종수정일시` → 실제 변경 여부(**NULL-safe**, §28.2) → 공통 업무가능 → 차트번호/SSN 고유성 → SSN 변경 시 RSV/RCP 부재 | `수검자` 1행 UPDATE (No-op이면 없음) + `변경이력` 바뀐 컬럼 수만큼(트랜잭션 밖) | O | RS0(0 또는 1) + RS1(수검자ID, 차트번호, 최종수정일시) | 100~102, 200~201, 204~205, 600, 308~309 |
+| `UPDATE_수검자정보` | 동일 | `수검자ID`(입력) | 잠금 직전 | **`SSN` → `CHART` → `PAT`** (조건 없이 항상, §24.1) | 없음 | Patient 존재 → `행버전` → 실제 변경 여부(**NULL-safe**, §28.2) → 공통 업무가능 → 차트번호/SSN 고유성 → SSN 변경 시 RSV/RCP 부재 | `수검자` 1행 UPDATE (No-op이면 없음) + `변경이력` 바뀐 컬럼 수만큼(트랜잭션 밖) | O | RS0(0 또는 1) + RS1(수검자ID, 차트번호, 행버전) | 100~102, 200~201, 204~205, 601, 308~309 |
 | `INSERT_예약` | 허용값·AEX 7 BIT NOT NULL·WalkIn 날짜 | 없음 | 잠금 직전 | `PAT` → `SLOT(신규)` | 없음 | Patient 존재 → 검사 Master 구성 → 공통 업무가능 → 다른 유효업무(2건↑ 701, 1건 306) → 일정·마감 → 정원 → TGT → NEX → AEX | `예약접수` INSERT(RSV) + `검사항목` NEX 전체 + 유효선택여부 AEX + `변경이력` 1행(트랜잭션 밖) | O | RS0(0) + RS1(업무ID, 상태코드, 행버전) | 100~102, 200, 300~306, 308~309, 400~401, 410~412, 700~701 |
 | `UPDATE_예약변경` | 허용값·AEX 7 BIT NOT NULL | `업무ID` → `수검자ID`, 현재 Date/시간대/AEX 집합 | 잠금 직전 | `PAT` → `WORK` → `SLOT(기존·신규 정렬)` | 없음 | Work 존재 → 상태코드=RSV → 행버전 → 변경범위 계산 → 변경범위별 Rule(§29) | 변경범위에 따라 Work / NEX·AEX Detail (No-op이면 없음) + `변경이력` 1행(트랜잭션 밖) | O | RS0(0 또는 1) + RS1 | 100~102, 300~306, 308~309, 400~401, 410~412, 500, 502, 601, 700~701 |
 | `UPDATE_예약취소` | 필수값 | `업무ID` → `수검자ID` | 잠금 직전 | `WORK` | 없음 | Work 존재 → 상태코드=RSV → 행버전 → 공통 업무가능 | `예약접수.StatusCode='CNR'` 조건부 UPDATE. Detail 보존 + `변경이력` 1행(트랜잭션 밖) | O | RS0(0) + RS1 | 100, 500, 502, 601, 308~309 |
 | `UPDATE_접수완료` | 필수값 | `업무ID` → `수검자ID`, `예약일`, `TimeSlotCode` | 잠금 직전 | **`PAT` → `WORK` → `SLOT`** (§24.2) | 없음 | Work 존재 → 상태코드=RSV → 행버전 → 검사구성 무결성(NEX≥1 **및 Master 역할 일치**) → 공통 업무가능 → `예약일=@오늘날짜` → 접수마감 전 | `StatusCode='RCP'` 조건부 UPDATE. Date/시간대/NEX/AEX 불변 + `변경이력` 1행(트랜잭션 밖) | O | RS0(0) + RS1 | 100, 304, 308~309, 500, 502~503, 601, 701 |
 | `UPDATE_접수추가검사` | AEX 7 BIT NOT NULL | `업무ID`, 현재 AEX 집합 | 잠금 직전 | `WORK` | 없음 | Work 존재 → 상태코드=RCP → 행버전 → 저장 NEX·AEX 확인 → 집합 비교 → 동일이면 No-op → 변경이면 Master 구성·성별·NEX 중복 | AEX Detail DELETE/INSERT + Work `최종수정일시` UPDATE (No-op이면 없음) + `변경이력` 1행(트랜잭션 밖) | O | RS0(0 또는 1) + RS1 | 100, 308~309, 410~412, 500, 502, 601, 700~701 |
 | `UPDATE_접수취소` | 필수값 | `업무ID` | 잠금 직전 | `WORK` | 없음 | Work 존재 → 상태코드=RCP → 행버전 → 공통 업무가능 | `StatusCode='CNC'` 조건부 UPDATE. Detail 보존 + `변경이력` 1행(트랜잭션 밖) | O | RS0(0) + RS1 | 100, 308~309, 500, 502, 601 |
+| `INSERT_자체휴무일` | 필수값 | `휴무일자` | 잠금 직전 | `HOL` | 없음 | 휴무일명 공백 아님 → 같은 날짜 부재 | `휴무일` 1행 INSERT (`휴무구분` = `자체휴무일` 고정). **`변경이력` 없음** | O | RS0(0) + RS1 | 100~101, 801 |
+| `UPDATE_자체휴무일` | 필수값 | `휴무일자` | 잠금 직전 | `HOL` | 없음 | 휴무일 존재 → 휴무구분=자체휴무일 → 행버전 → 실제 변경 여부 | `휴무일` 1행 UPDATE (No-op이면 없음). **`변경이력` 없음** | O | RS0(0 또는 1) + RS1 | 100~101, 601, 800, 802 |
+| `DELETE_자체휴무일` | 필수값 | `휴무일자` | 잠금 직전 | `HOL` | 없음 | 휴무일 존재 → 휴무구분=자체휴무일 → 행버전 | `휴무일` 1행 DELETE. **`변경이력` 없음** | O | RS0(0) | 100, 601, 800, 802 |
 
 `Row Lock` 열이 전부 "없음"인 이유는 §24.2에 있다.
 
@@ -1210,6 +1308,7 @@ HC|CHART|{차트번호}
 HC|PAT|{수검자ID}
 HC|WORK|{업무ID}
 HC|SLOT|{yyyyMMdd}|{AM|PM}          예: HC|SLOT|20260910|AM
+HC|HOL|{yyyyMMdd}                   예: HC|HOL|20270314
 ```
 
 | 항목 | 값 | 근거 |
@@ -1241,6 +1340,9 @@ HC|SLOT|{yyyyMMdd}|{AM|PM}          예: HC|SLOT|20260910|AM
 | `UPDATE_접수완료` | SLOT | `HC\|SLOT\|{yyyyMMdd}\|{AM\|PM}` | Exclusive | Transaction | 5000 | 5 | 자동 | `THROW 50001` |
 | `UPDATE_접수추가검사` | WORK | `HC\|WORK\|{업무ID}` | Exclusive | Transaction | 5000 | 4 | 자동 | `THROW 50001` |
 | `UPDATE_접수취소` | WORK | `HC\|WORK\|{업무ID}` | Exclusive | Transaction | 5000 | 4 | 자동 | `THROW 50001` |
+| `INSERT_자체휴무일` | HOL | `HC\|HOL\|{yyyyMMdd}` | Exclusive | Transaction | 5000 | 6 | 자동 | `THROW 50001` |
+| `UPDATE_자체휴무일` | HOL | `HC\|HOL\|{yyyyMMdd}` | Exclusive | Transaction | 5000 | 6 | 자동 | `THROW 50001` |
+| `DELETE_자체휴무일` | HOL | `HC\|HOL\|{yyyyMMdd}` | Exclusive | Transaction | 5000 | 6 | 자동 | `THROW 50001` |
 
 ---
 
@@ -1254,7 +1356,18 @@ HC|SLOT|{yyyyMMdd}|{AM|PM}          예: HC|SLOT|20260910|AM
 3. PAT     HC|PAT|…
 4. WORK    HC|WORK|…
 5. SLOT    HC|SLOT|…      (동종 복수는 자원명 문자열 오름차순)
+6. HOL     HC|HOL|…
 ```
+
+## 23.0 `HOL` 이 왜 맨 뒤인가 `[R7]`
+
+휴무일 Write SP 세 개는 **`HOL` 하나만** 잡고, 업무 SP 는 `HOL` 을 잡지 않는다. 두 무리가 만나지 않으므로
+교착이 성립하지 않고 전역 순서에서 어디에 두든 결과가 같다. 순서를 정해 두는 것은 다음에 `HOL` 과 다른 자원을
+함께 잡는 SP 가 생겼을 때 그 자리를 다시 논의하지 않기 위해서다.
+
+`[!]` **PK 만으로 충분하지 않은가** — `휴무일자` 가 PK 라 중복 INSERT 는 어차피 막힌다. 그런데 잠금 없이
+동시 INSERT 하면 한쪽이 `Msg 2627` 로 죽고, `G11` 이 `2627` **0건**을 요구한다. 제약 위반을 잡아 `801` 로
+번역하는 대신 앞에서 직렬화한다 — 이 저장소가 `SSN`·`CHART` 에 쓰는 방식과 같다.
 
 ## 23.1 예약 이동의 결정적 순서
 
@@ -1295,6 +1408,9 @@ HC|SLOT|20260910|AM  <  HC|SLOT|20260910|PM  <  HC|SLOT|20260911|AM
 | `UPDATE_예약취소` | `WORK` | `05` §14 "업무ID" |
 | **`UPDATE_접수완료`** | **`PAT` → `WORK` → `SLOT`** | `05` §14 "업무ID" **+ §24.2 (RSV→RCP 인덱스 이동)** |
 | `UPDATE_접수추가검사` | `WORK` | `05` §14 "업무ID" |
+| `INSERT_자체휴무일` | `HOL` | `05` §14 "휴무일자" |
+| `UPDATE_자체휴무일` | `HOL` | `05` §14 "휴무일자" |
+| `DELETE_자체휴무일` | `HOL` | `05` §14 "휴무일자" |
 | `UPDATE_접수취소` | `WORK` | `05` §14 "업무ID" |
 
 `[I]` **`UPDATE_수검자정보`는 SSN/CHART를 조건 없이 항상 잡는다.** "변경 시에만"으로 두면 변경 여부를 알기 위해 현재 행을 먼저 읽어야 하고, 자연스러운 구현이 `PAT`(랭크 3)을 먼저 잡은 뒤 `SSN`(랭크 1)을 잡게 되어 **§23 전역 순서가 뒤집힌다.** 요청값 `@주민번호`·`@차트번호`는 입력이므로 사전조회 없이 자원명을 만들 수 있다. 잠금 2개 추가 비용은 무의미하다.
@@ -1405,30 +1521,48 @@ C#은 이를 `SqlException`으로 받아 재시도 안내를 표시한다. **Num
 
 ---
 
-# 26. `수검자.최종수정일시` 단조증가 `[B]` `[I]`
+# 26. `수검자.행버전` 낙관적 동시성 `[B]` `[I]`
 
-`[X]` **이 규칙의 소재지는 이 문서다.** 초안은 `04` §8.1.3 을 출처로 인용했으나 그런 문장은 `04`·`05`·`00` 어디에도 없다(`단조`·`4ms`·`3.33` 전체 검색 0건). `04` 가 고정한 것은 `수검자` 시각의 타입이 `DATETIME` 이라는 것뿐이고(§8.1.2), 단조증가 구현은 그 타입 위에서 이 절이 정한다.
+`[R7]` **이 절은 원래 `수검자.최종수정일시` 단조증가(`+4ms`) 규칙이었다.** 그 규칙은 사라졌다.
 
-> 수정 SP 는 행을 잠근 뒤 새 시각이 기존값보다 크지 않으면 기존값에 최소 4ms 를 더해 단조 증가시킨다.
+무엇이 있었고 왜 없앴는지는 남긴다 — 되돌리려는 다음 사람이 같은 곳에 다시 빠지지 않도록.
 
-```sql
-DECLARE @새최종수정일시 DATETIME = CONVERT(DATETIME, @서버시각);
-IF @새최종수정일시 <= @기존최종수정일시
-    SET @새최종수정일시 = DATEADD(MILLISECOND, 4, @기존최종수정일시);
-
-UPDATE [dbo].[수검자]
-   SET ..., [최종수정일시] = @새최종수정일시
- WHERE [수검자ID]    = @수검자ID
-   AND [최종수정일시] = @기존최종수정일시;      -- 낙관적 동시성
-
-IF @@ROWCOUNT = 0 → 600 PatientChanged
+```text
+있었던 것   수검자 동시성 토큰 = 최종수정일시 (DATETIME)
+문제        DATETIME 은 약 3.33ms 틱이라 같은 눈금 안에서 두 번 수정하면 토큰이 변하지 않는다
+회피        새 시각이 기존값 이하이면 기존값 + 4ms 로 밀어 단조 증가시켰다
+원인        감사 정보(언제 바뀌었나)와 동시성 토큰(누가 먼저 바꿨나)이 한 컬럼에 겹쳐 있었다
+R7          두 역할을 분리했다. 토큰은 행버전, 최종수정일시는 감사 정보다 (04 §1.2)
 ```
 
-**실측 근거** (§5.3-5): `DATETIME`은 약 3.33ms 틱이라 `+1ms`는 값이 변하지 않고 `+4ms`는 `.000` → `.003`으로 반드시 전진한다. 따라서 `4`가 최소 안전값이다.
+`+4ms` 는 **저장된 시각을 사실과 다르게 만드는** 보정이기도 했다. 3ms 뒤로 밀린 `최종수정일시`는
+그 행이 실제로 수정된 시각이 아니다. 감사 정보로서는 거짓이었고, 그 거짓의 유일한 이유가 동시성이었다.
 
-`CK_수검자_EDIT_DATE (최종수정일시 >= CreationDate)`도 항상 만족한다.
+## 26.1 지금 규칙
 
-성공 시 RS1로 **새 `최종수정일시`** 를 반환한다. C#은 이를 원본값으로 교체한다 (`05` §16.3).
+```sql
+UPDATE [dbo].[수검자]
+   SET ..., [최종수정일시] = CONVERT(DATETIME, @서버시각)
+ WHERE [수검자ID] = @수검자ID
+   AND [행버전]   = @행버전;              -- 낙관적 동시성
+
+IF @@ROWCOUNT = 0 → 601 RowChanged
+```
+
+- `행버전`은 `ROWVERSION` 이라 **UPDATE 마다 DB 가 반드시 바꾼다.** 같은 값이 두 번 나오지 않는다.
+- 밀어 올릴 것이 없으므로 `@기존최종수정일시` Parameter 도, `DATEADD(MILLISECOND, 4, …)` 도 없다.
+- `CK_수검자_EDIT_DATE (최종수정일시 >= 생성일시)` 는 서버시각이 단조라 그대로 만족한다.
+- 성공 시 RS1 로 **UPDATE 이후 다시 읽은 새 `행버전`** 을 반환한다 (`05` §16.3). `예약접수`와 같은 절차다(§27).
+
+## 26.2 세 테이블이 같은 절차를 쓴다
+
+| 테이블 | 토큰 | 실패 코드 |
+|---|---|---|
+| `수검자` | `행버전` | `601` |
+| `예약접수` | `행버전` | `601` |
+| `휴무일` | `행버전` | `601` |
+
+`600 PatientChanged` 는 폐지했고 재사용하지 않는다 (`05` §4.4).
 
 ---
 
@@ -1446,7 +1580,7 @@ IF @@ROWCOUNT = 0 → 600 PatientChanged
 
 | SP | No-op 조건 | 동작 | 반환 |
 |---|---|---|---|
-| `UPDATE_수검자정보` | 12개 입력이 현재값과 전부 동일 | 행을 갱신하지 않음 | RS0 `결과코드=1`, RS1에 **기존 `최종수정일시`** |
+| `UPDATE_수검자정보` | 12개 입력이 현재값과 전부 동일 | 행을 갱신하지 않음 | RS0 `결과코드=1`, RS1에 **기존 `행버전`** |
 | `UPDATE_예약변경` | `예약일변경여부=0` ∧ `시간대변경여부=0` ∧ `추가검사변경여부=0` | Work·Detail 모두 미갱신 | RS0 `결과코드=1`, RS1에 **기존 `행버전`** |
 | `UPDATE_접수추가검사` | 요청 AEX 집합 = 현재 AEX 집합 | Detail DELETE/INSERT 없음, Work UPDATE 없음 | RS0 `결과코드=1`, RS1에 **기존 `행버전`** |
 
@@ -1477,7 +1611,7 @@ ELSE
 요청  비고 = N'당뇨 병력',  이메일 = NULL      ← 사용자가 비고 입력 + 이메일 삭제
 
 WHERE 비고 <> @비고 OR 이메일 <> @이메일   →  둘 다 UNKNOWN  →  "변경 없음"
-→ 결과코드=1 반환, 행 미갱신, 최종수정일시 불변
+→ 결과코드=1 반환, 행 미갱신, 행버전 불변
 → C#은 성공으로 처리하고 화면을 닫는다.  사용자 편집이 조용히 소실된다.
 ```
 
@@ -1614,7 +1748,7 @@ ALTER ROLE [HC_APP_ROLE] ADD MEMBER [HC_APP_TEST];
 ```
 
 `[R3]` **위 `GRANT` 목록은 15건이라 `USP_HC_변경이력_조회`(SP-LOG-01)이 빠져 있다.** R3 재봉인으로
-SP 가 16개가 되었으므로 구현한다면 16건이어야 한다 — `05` §1.3 과 §18 SP 구현 Matrix 를 참조한다.
+SP 가 20개가 되었으므로 구현한다면 20건이어야 한다 — `05` §1.3 과 §18 SP 구현 Matrix 를 참조한다.
 
 `[사용자 결정 2026-09-07]` **Security(`T31`·`T32`)를 구현하지 않는다.** 과제 범위에서 권한 경계는
 요구되지 않고 개발 속도만 늦춘다는 판단이다. `deploy/08_Security.sql` 은 **파일째 삭제했고**
@@ -1652,7 +1786,7 @@ ALTER ROLE [HC_APP_ROLE] ADD MEMBER [DOMAIN\AppServiceAccount];
 ```text
 tests/00_Test_Harness.sql     Fixture 직접 INSERT (§15.2) + 손상 데이터 구획
 tests/01_Schema_Tests.sql     객체 인벤토리·제약 수·금지 객체 0건
-tests/02_Seed_Tests.sql       Exam 19행 / Holiday 2행 / 주민번호 체크디지트 무효
+tests/02_Seed_Tests.sql       Exam 19행 / Holiday 40행 / 주민번호 체크디지트 무효
 tests/03_Rule_Tests.sql       TVF 4종 결정적 경계 (@서버시각 주입)
 tests/04_Select_SP_Tests.sql  SELECT SP 8개 계약
 tests/05~07_*_Write_Tests.sql Write SP 8개 계약
@@ -1673,7 +1807,7 @@ tools/verify-contract.js      후속 Result Set 형상 검증
 | SP 내부 `ROLLBACK` | **`Msg 3915`** — INSERT-EXEC 문 내에서는 ROLLBACK 불가 |
 | 진입 시 `@@TRANCOUNT` | **1** (평범한 `EXEC` 는 0) — **C# 호출과 다른 경로를 시험하게 된다** |
 
-16개 SP 전부가 RS를 2개 이상 반환하므로 이 패턴은 **구조적으로 성립하지 않는다.** 초안은 *"`INSERT … EXEC` 는 첫 번째 Result Set만 받는다"* 라는 잘못된 전제 위에 약 50곳의 단언을 세웠다.
+19개 SP 가 RS 를 2개 이상 반환하므로(`DELETE_자체휴무일` 만 RS0 하나다) 이 패턴은 **구조적으로 성립하지 않는다.** 초안은 *"`INSERT … EXEC` 는 첫 번째 Result Set만 받는다"* 라는 잘못된 전제 위에 약 50곳의 단언을 세웠다.
 
 ### 대체 구조 — 역할을 둘로 나눈다
 
@@ -1855,9 +1989,9 @@ TVF 에 시각을 주입해 실측했다.
 | `SCH-012` | `USP_HC_DELETE_%` 객체 수 | **0** |
 | `SCH-013` | Inline TVF 수 (`type='IF'`) | **4** |
 | `SCH-014` | Stored Procedure 수 (`USP_HC_%`) | **15** |
-| `SCH-015` | **47개 컬럼 전부**의 `(테이블, 컬럼, 타입, 길이, NULL 허용)` 을 `04` §8 기대 `VALUES` 와 **`EXCEPT` 양방향** 대조 | 차집합 0 |
-| `SCH-016` | **제약 이름 22종** 을 `04` §8 기대 `VALUES` 와 **`EXCEPT` 양방향** 대조 | 차집합 0 |
-| `SCH-017` | Default 제약 이름 8개 `EXCEPT` 양방향 | 차집합 0 |
+| `SCH-015` | **53개 컬럼 전부**의 `(테이블, 컬럼, 타입, 길이, NULL 허용)` 을 `04` §8 기대 `VALUES` 와 **`EXCEPT` 양방향** 대조 | 차집합 0 |
+| `SCH-016` | **제약 이름 26종** 을 `04` §8 기대 `VALUES` 와 **`EXCEPT` 양방향** 대조 | 차집합 0 |
+| `SCH-017` | Default 제약 이름 10개 `EXCEPT` 양방향 | 차집합 0 |
 | `SCH-018` | 4개 Nonclustered Index 이름 + Key 컬럼 순서 `EXCEPT` 양방향 | 차집합 0 |
 
 `[X]` **초안 오류**: `SCH-015`는 55개 컬럼 중 **2개**(`주민번호`, `행버전`)만 `EXISTS`로 확인했고, `SCH-016`은 `COUNT(*) >= 20` 이었다. 제약 하나가 사라져도 PASS하고 제약 **이름**은 대조하지 않았다. `04` §13 말미가 *"정확한 타입 길이·NULL·제약명은 8장 정의를 기준으로 한다"*고 못박았으므로 개수 비교를 "전건 일치" 증거로 쓸 수 없다. 모든 인벤토리 검증을 **`EXCEPT` 양방향**으로 통일한다.
@@ -1952,7 +2086,7 @@ TVF 에 시각을 주입해 실측했다.
 
 ## 36.1 Parameter 검증 (SQL만) — `EXCEPT` 양방향 `[X 수정]`
 
-`05` §7~§12의 Parameter 99개를 `(SpName, ParamOrdinal, ParamName, TypeName, IsNullable)` 기대 `VALUES` 인라인 테이블로 두고 `sys.parameters` + `sys.types` 실측과 **`EXCEPT` 양방향** 대조한다. 차집합이 한 건이라도 있으면 `FAIL`.
+`05` §7~§12의 Parameter 113개를 `(SpName, ParamOrdinal, ParamName, TypeName, IsNullable)` 기대 `VALUES` 인라인 테이블로 두고 `sys.parameters` + `sys.types` 실측과 **`EXCEPT` 양방향** 대조한다. 차집합이 한 건이라도 있으면 `FAIL`.
 
 `[X]` 초안은 메타데이터를 `SELECT`만 하고 사람이 눈으로 보라고 했다. 자동 판정이 없으면 회귀에서 잡히지 않는다.
 
@@ -2238,7 +2372,7 @@ END CATCH
 |---|---|---|
 | `SEC-001` | `EXECUTE AS USER` 컨텍스트에서 `USER_NAME()` | `HC_APP_TEST` (실측 확인) |
 | `SEC-002` | 동일 컨텍스트의 `IS_SRVROLEMEMBER('sysadmin')` | **`0`** (실측 확인) — dbo/sysadmin 오인 방지 증거. **FAIL이면 이후 전 항목 무의미하므로 즉시 중단** |
-| `SEC-003` | 16개 SP 실행 | 전부 성공 (`Msg 229` 만 실패로 계산) |
+| `SEC-003` | 20개 SP 실행 | 전부 성공 (`Msg 229` 만 실패로 계산) |
 | `SEC-004` | 6개 테이블 직접 `SELECT` | 전부 `Msg 229` |
 | `SEC-005` | 6개 테이블 `INSERT`/`UPDATE`/`DELETE` (Transaction + `ROLLBACK`) | 전부 `Msg 229`, 데이터 변경 0 |
 | `SEC-006` | 4개 TVF 직접 `SELECT` | 전부 `Msg 229` |
@@ -2263,9 +2397,9 @@ END CATCH
 | `RBD-001` | 잘못된 서버명에서 `Rebuild.sql` | **`NOT RUN`** — 인스턴스가 1개뿐이라 음성 시험 불가 |
 | `RBD-002` | 대상 DB 컨텍스트에서 `Rebuild.sql` 실행 (master 아님) | `THROW 50021` 로 중단, DB 변경 0 |
 | `RBD-003` | 빈 DB에서 `Deploy.sql` 전체 실행 | exit code 0 |
-| `RBD-004` | 배포 직후 객체 인벤토리 | Table 6 / TVF 4 / SP 16 / Sequence 1 / PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5 / Trigger 0 |
+| `RBD-004` | 배포 직후 객체 인벤토리 | Table 6 / TVF 4 / SP 20 / Sequence 1 / PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5 / Trigger 0 |
 | `RBD-005` | **연속 2회 Rebuild** 후 **정렬된 객체·Seed 덤프를 `diff`** | 차이 0줄 |
-| `RBD-006` | 2회 Rebuild 후 Seed 행수 + **19행 전건 값** | Exam 19 / Holiday 2, 값까지 동일 |
+| `RBD-006` | 2회 Rebuild 후 Seed 행수 + **19행 전건 값** | Exam 19 / Holiday 40, 값까지 동일 |
 | `RBD-007` | `Deploy.sql` 단독 재실행 (DB 유지) | exit 0, 덤프 동일 |
 | `RBD-008` | `03`~`07` Procedure 파일만 단독 재실행 | exit 0, `GRANT` **15건 유지** 확인 |
 | `RBD-009` | `Net461MvpSample` | 존재 + 관찰한 메타데이터(`state_desc`, `user_access_desc`, `collation_name`, `is_read_only`) 전후 동일 |
@@ -2360,6 +2494,7 @@ artifacts/
 | `A` 창 안 | 2026-09-07 12:19 | 안 (월, 비휴무일 · PM 창 11:10~15:50) | `artifacts/logs/full_test_run.log` — exit 0 · PASS 357 · FAIL 0 · SKIP 2 · NOT RUN 1 |
 | `B` 창 밖 | 2026-09-08 03:05 | 밖 | `artifacts/logs/full_test_run_off.log` — exit 0 · PASS 185 · FAIL 0 · SKIP 78 · NOT RUN 9 |
 | `C` 창 안 | 2026-09-08 | 안 (화, 비휴무일 · PM 창) | `artifacts/logs/full_test_run_final.log` — exit 0 · PASS 363 · FAIL 0 · SKIP 2 · NOT RUN 1 |
+| `R7` 창 안 | 2026-09-08 13:00 | 안 (화, 비휴무일 · PM 창 11:10~15:50) | `artifacts/logs/full_test_run_r7.log` — exit 0 · PASS 389 · FAIL 0 · SKIP 2 · NOT RUN 1 |
 
 `[I]` 회차 `A` 는 사용자가 머신 시각을 6시간 뒤로 옮겨 만든 창이다. **코드는 한 글자도 바꾸지 않았다** —
 `SYSDATETIME()` 이 시각의 유일한 입구이므로 SP·TVF·게이트가 전부 출하될 그대로 돌았다. 끝난 뒤 같은 크기로 되돌렸다.
@@ -2385,12 +2520,12 @@ artifacts/
 | G01 | WinForms 보호 | 변경 0건 (git diff + hash manifest 이중 증거) | **PASS** | `PASS WinForms 변경 0건` · `git diff --stat <R3 태그> -- winforms` **0줄** |
 | G02 | Preflight | 가드 6종 통과 · KST 540 · Version >= 11 | **PASS** | `PRE-001`~`PRE-006` (인스턴스·DB·호스트 `DESKTOP-DP7KRE4`·KST +09:00·`17.0.1125.2`·RCSI OFF) |
 | G03 | Clean Deploy | 빈 DB 전체 배포 성공 (exit 0) | **PASS** | `PASS RBD-003 빈 DB 에서 Deploy 전체 실행 exit 0` |
-| G04 | Object Inventory | Table 6 / TVF 4 / SP 16 / Sequence 1 | **PASS** | `VER-001`~`VER-004` · `RBD-004` 지문 `INVENTORY|6|4|16|1|6|2|2|1|5|24|8|0|0|19|2` |
-| G05 | Schema | PK 6 / FK 2 / UQ 2 / UX 1 / **NCI 5** + 48컬럼·제약 24·Default 8·NCI Key `EXCEPT` 양방향 0 | **PASS** | `SCH-001`~`SCH-019` (19건) · `DOC-001`~`DOC-005` 양방향 대조 |
-| G06 | 금지 객체 | Trigger 0 / TVP 0 / DELETE SP 0 / 추가 Table 0 | **PASS** | `VER-006` · `SCH-010`·`SCH-011`·`SCH-012` |
-| G07 | Seed | Exam 19행 전건 값 일치 / NEX 13 / AEX 7 / Holiday 2 | **PASS** | `VER-007` · `RBD-006 Seed 역할 분포 NEX 13 / AEX 7 / 겸용 1 / AEX Active 7` |
+| G04 | Object Inventory | `05` §1.3·§1.4 가 선언한 객체가 전건 실재 | **PASS** (회차 `R7`) | `VER-001`~`VER-004` · `RBD-004` 지문. **수치를 여기 적지 않는다** — `SP 16` 이라 적어 두었다가 R7 에서 거짓이 되었다 (ROOT `AGENTS.md` §6) |
+| G05 | Schema | `04` §8·§10.1 이 선언한 컬럼·Key·제약이 실제 DB 와 **양방향 차집합 0** | **PASS** (회차 `R7`) | `SCH-001`~`SCH-019` · `DOC-001`~`DOC-009`. **수치를 여기 적지 않는다** — `48컬럼·제약 24·Default 8` 이라 적어 두었다가 R7 에서 세 값이 **전부** 거짓이 되었다. 실측은 게이트가 낸다 (ROOT `AGENTS.md` §6) |
+| G06 | 금지 객체 | Trigger 0 / TVP 0 / **업무 테이블을 지우는 SP 0** / 추가 Table 0 | **PASS** (회차 `R7`) | `VER-006` · `SCH-010`·`SCH-011`·`SCH-012`. R7 에서 `DELETE_자체휴무일` 이 생겨 조건을 좁혔다 — 금지의 뜻은 *업무 데이터를 지우지 않는다* 였다(§18) |
+| G07 | Seed | `06` §13·§14 가 선언한 Seed 가 전건 값까지 일치 · 공휴일 등재 만료 전 | **PASS** (회차 `R7`) | `VER-007` · `RBD-006` · R7 부터 `verify-holiday-seed.sh` 가 §14 표와 `00` §7.4 임계를 함께 판정한다 |
 | G08 | Rule | TGT/NEX/AEX/HOL 경계 전건 + `CORRUPT-3` 재검증금지 | **PASS** | `tests/03_Rule_Tests.sql` 51건 |
-| G09 | SP Contract | Parameter 99 `EXCEPT` 양방향 · 16/16 SP 후속 RS · RS0 결과코드 가 `05` §13 허용집합 내 | **PASS** | 계약 **108건** 전건 일치 · `SCH-019` Parameter 99 `EXCEPT` 양방향 · `V17`(RS0 42블록 5컬럼 CAST) · `V18`(실패 67건 RS0 1개) |
+| G09 | SP Contract | `05` §7~§12 Parameter 와 `sys.parameters` 가 `EXCEPT` 양방향 0 · SP 전건 후속 RS · RS0 결과코드 가 `05` §13 허용집합 내 | **PASS** (회차 `R7`) | `SCH-019` · `V17` · `V18`. **건수를 여기 적지 않는다** — `Parameter 99`·`16/16` 이 R7 에서 거짓이 되었다 (ROOT `AGENTS.md` §6) |
 | G10 | Rollback | 부분저장 0건 | **PASS** | `RBK-001`~`RBK-007` · `RBK-008` 은 T-SQL 로 RS 개수를 셀 수 없어 `V18` 이 정적으로 판정 |
 | G11 | Concurrency | `CON-001`~`008` + `rc=1` 1건 이상 + `Msg 1205`·`50002` 각 0건 | **PASS** | **8/8** · `applock rc=1` 시나리오마다 1~2건 · `1205`·`50002`·`50001`·`2627`·`결과코드 100` 각 **0건** (회차 `A`) |
 | G12 | Security | `SEC-010` | **PASS** | 계정·권한은 **폐기**했다 (2026-09-07 사용자 결정, §32). 남은 `SEC-010`(배포 원본·로그·보고서 secret 0건)은 매 회귀에서 PASS |
@@ -2628,7 +2763,7 @@ PWR-013  14자리 표시값은 VARCHAR(13) 경계에서 절단된다
 | Implementation Blocker | **0건** |
 | 6 Table 추적 | **6/6** (§11) |
 | 4 TVF 추적 | **4/4** (§17) |
-| 16 SP 추적 | **16/16** (§18) |
+| SP 추적 | **20/20** (§18) |
 | 8 Write SP Transaction 추적 | **8/8** (§21.2) |
 | 8 Write SP Lock 추적 | **8/8** (§22 · §24) |
 | `05` 적대적 테스트 계약 추적 | **§33.4에 12건 보완 후 전건 매핑** |
@@ -2639,8 +2774,8 @@ PWR-013  14자리 표시값은 VARCHAR(13) 경계에서 절단된다
 | **실행검증** | **완료 (2026-09-07)** — §42 Gate 16종 전부 실측. `G12` 만 사용자 결정으로 범위 밖 |
 | 배포 | `Deploy.sql` 전체 exit 0 · 빈 DB 에서도 exit 0 (`RBD-003`) |
 | 재현성 | 연속 2회 Rebuild 정렬 덤프 **diff 0줄** (`RBD-005`) · Deploy 단독·Procedure 단독 재실행도 동일 |
-| 객체 | Table 6 / TVF 4 / SP 16 / Sequence 1 / PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5 / CHECK 24 / Default 8 |
-| 계약 | Parameter **99** `EXCEPT` 양방향 (`SCH-019`) · Result Set 계약 **108건** 전건 일치 |
+| 객체 | Table 6 / TVF 4 / SP 20 / Sequence 1 / PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5 / CHECK 26 / Default 10 |
+| 계약 | Parameter **113** `EXCEPT` 양방향 (`SCH-019`) · Result Set 계약 전건 일치 |
 | 동시성 | `CON-001`~`008` **8/8** · `applock rc=1` 실측 · `Msg 1205`·`50002`·`50001`·`2627` 각 0건 |
 | 기준선·WinForms | 실행검증 기간 중 변경 **0건** (`verify-baseline.sh` 6/6 · WinForms 태그 diff 0줄) |
 
@@ -2749,7 +2884,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | Prefix | 범위 | 건수 | 산출 파일 | 검증 대상 | Gate |
 |---|---|---:|---|---|---|
 | `PRE` | `001`~`006` | 6 | `deploy/00_Preflight.sql` | 배포 안전가드 `50010`~`50015` (§8.3) | G03 |
-| `SCH` | `001`~`019` | 19 | `tests/01_Schema_Tests.sql` | 6 Table · PK/FK/UQ/UX/NCI · 48컬럼 · 제약 24 · Default 8 · NCI Key · **SP 별 Parameter(합계 99)** (§34) | G05 |
+| `SCH` | `001`~`019` | 19 | `tests/01_Schema_Tests.sql` | 6 Table · PK/FK/UQ/UX/NCI · 53컬럼 · 제약 26 · Default 10 · NCI Key · **SP 별 Parameter(합계 113)** (§34) | G05 |
 | `SED` | `001`~`011` | 11 | `tests/02_Seed_Tests.sql` | `검사코드` 19행 · `휴무일` 2행 · AEX 7건 Active (§13·§14) | G07 |
 | `SSN` | `001`~`006` | 6 | `tests/02_Seed_Tests.sql` | 실제 주민등록번호 미사용 — 체크디지트 전건 무효 (§16.2) | G12 |
 | `RUL` | `T01`~`T12` `N01`~`N12` `A01`~`A10` `G01`~`G08` `D01`~`D09` | 51 | `tests/03_Rule_Tests.sql` | 4개 TVF 결정적 경계 — 마감시각 · NEX 술어 · AEX 판정순서 · 휴무일 · `DATEFIRST` 불변 (§35) | G08 |

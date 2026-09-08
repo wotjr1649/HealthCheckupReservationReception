@@ -199,7 +199,7 @@ BEGIN
         --     DLG-PAT-01 수정 화면이 현재값을 못 받으면 @B형간염제외여부(NULL 불가)에
         --     체크박스 초기값 0 이 실려 제외 플래그가 조용히 1->0 이 된다 (05 §9.2 명문).
         , [B형간염제외여부] = CAST(p.[B형간염제외여부] AS BIT)
-        , [최종수정일시]  = CAST(p.[최종수정일시]  AS DATETIME)
+        , [행버전]        = CAST(p.[행버전]        AS BINARY(8))
     FROM [dbo].[수검자] p
     WHERE p.[수검자ID] = @수검자ID;
 END

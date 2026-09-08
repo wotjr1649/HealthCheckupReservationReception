@@ -18,9 +18,9 @@ IF NOT EXISTS (SELECT [객체명] FROM @Expected EXCEPT SELECT name FROM sys.tab
     PRINT 'PASS SCH-002 테이블 이름 집합 일치';
 ELSE BEGIN PRINT 'FAIL SCH-002 테이블 이름 집합 불일치'; SET @Fail += 1; END
 
--- SCH-003 수검자 컬럼 16개 (CelNumberS 제거)
-IF ((SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[수검자]')) = 16)
-    PRINT 'PASS SCH-003 수검자 16컬럼';
+-- SCH-003 수검자 컬럼 17개 (R7 에서 [행버전] 신설, 04 §8.1.2)
+IF ((SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[수검자]')) = 17)
+    PRINT 'PASS SCH-003 수검자 17컬럼';
 ELSE BEGIN PRINT 'FAIL SCH-003 수검자 컬럼 수 불일치'; SET @Fail += 1; END
 
 -- SCH-004 PK 6
@@ -79,73 +79,75 @@ IF ((SELECT COUNT(*) FROM sys.objects WHERE type = 'IF' AND name LIKE 'UFN[_]HC[
     PRINT 'PASS SCH-013 Inline TVF 4개';
 ELSE BEGIN PRINT 'FAIL SCH-013 Inline TVF 수 불일치 (T14 이전이면 정상)'; SET @Fail += 1; END
 
--- SCH-014 SP 16  (T30 이후 통과)
-IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 16)
-    PRINT 'PASS SCH-014 Stored Procedure 16개';
+-- SCH-014 SP 20  (R7 에서 휴무일 SP 4개 신설, 05 §1.3)
+IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 20)
+    PRINT 'PASS SCH-014 Stored Procedure 20개';
 ELSE BEGIN PRINT 'FAIL SCH-014 SP 수 불일치 (T30 이전이면 정상)'; SET @Fail += 1; END
 
--- SCH-015 컬럼 48개 전건 EXCEPT 양방향  (04 §8)
+-- SCH-015 컬럼 53개 전건 EXCEPT 양방향  (04 §8)
 DECLARE @ExpCol TABLE (T SYSNAME, Col SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, Col));
 INSERT INTO @ExpCol (T, Col, Ty, Len, Nul) VALUES
- -- 48행 전건. 기준선 04 §8 의 컬럼 표에서 기계 생성했다(개수·타입·길이·NULL 모두 그 표가 출처다).
+ -- 53행 전건. 기준선 04 §8 의 컬럼 표에서 기계 생성했다(개수·타입·길이·NULL 모두 그 표가 출처다).
  -- Len 은 문자·이진형만 채운다. nvarchar/nchar 는 문자 수, MAX 는 -1, 그 밖은 NULL.
- -- 수검자 16행
- (N'수검자', N'수검자ID',              N'bigint',    NULL,  0),
- (N'수검자', N'차트번호',              N'nvarchar',  100,   0),
- (N'수검자', N'성명',                  N'nvarchar',  100,   0),
- (N'수검자', N'주민번호',              N'varchar',   13,    0),
- (N'수검자', N'생년월일',              N'varchar',   8,     0),
- (N'수검자', N'성별',                  N'char',      1,     0),
- (N'수검자', N'이메일',                N'varchar',   200,   1),
- (N'수검자', N'휴대전화',              N'varchar',   13,    1),
- (N'수검자', N'전화번호',              N'varchar',   13,    1),
- (N'수검자', N'우편번호',              N'varchar',   10,    1),
- (N'수검자', N'주소',                  N'nvarchar',  200,   1),
- (N'수검자', N'상세주소',              N'nvarchar',  200,   1),
- (N'수검자', N'비고',                  N'nvarchar',  -1,    1),
- (N'수검자', N'B형간염제외여부',        N'bit',       NULL,  0),
- (N'수검자', N'생성일시',              N'datetime',  NULL,  0),
- (N'수검자', N'최종수정일시',          N'datetime',  NULL,  0),
- -- 예약접수 8행
- (N'예약접수', N'업무ID',                N'bigint',    NULL,  0),
- (N'예약접수', N'수검자ID',              N'bigint',    NULL,  0),
- (N'예약접수', N'예약일',                N'date',      NULL,  0),
- (N'예약접수', N'시간대코드',            N'char',      2,     0),
- (N'예약접수', N'상태코드',              N'char',      3,     0),
- (N'예약접수', N'생성일시',              N'datetime2', NULL,  0),
- (N'예약접수', N'최종수정일시',          N'datetime2', NULL,  0),
- (N'예약접수', N'행버전',                N'timestamp', NULL,  0),
- (N'예약접수', N'국가검사항목',          N'nvarchar',  100,   0),
- (N'예약접수', N'추가검사항목',          N'nvarchar',  50,    1),
- -- 검사항목 3행
-
+ -- 수검자 17행
+ (N'수검자', N'수검자ID',                 N'bigint',      NULL,  0)
+,(N'수검자', N'생성일시',                  N'datetime',    NULL,  0)
+,(N'수검자', N'최종수정일시',                N'datetime',    NULL,  0)
+,(N'수검자', N'행버전',                   N'timestamp',   NULL,  0)
+,(N'수검자', N'차트번호',                  N'nvarchar',    100,   0)
+,(N'수검자', N'성명',                    N'nvarchar',    100,   0)
+,(N'수검자', N'주민번호',                  N'varchar',     13,    0)
+,(N'수검자', N'생년월일',                  N'varchar',     8,     0)
+,(N'수검자', N'성별',                    N'char',        1,     0)
+,(N'수검자', N'이메일',                   N'varchar',     200,   1)
+,(N'수검자', N'휴대전화',                  N'varchar',     13,    1)
+,(N'수검자', N'전화번호',                  N'varchar',     13,    1)
+,(N'수검자', N'우편번호',                  N'varchar',     10,    1)
+,(N'수검자', N'주소',                    N'nvarchar',    200,   1)
+,(N'수검자', N'상세주소',                  N'nvarchar',    200,   1)
+,(N'수검자', N'B형간염제외여부',              N'bit',         NULL,  0)
+,(N'수검자', N'비고',                    N'nvarchar',    -1,    1)
+ -- 예약접수 10행
+,(N'예약접수', N'업무ID',                  N'bigint',      NULL,  0)
+,(N'예약접수', N'생성일시',                  N'datetime2',   NULL,  0)
+,(N'예약접수', N'최종수정일시',                N'datetime2',   NULL,  0)
+,(N'예약접수', N'행버전',                   N'timestamp',   NULL,  0)
+,(N'예약접수', N'수검자ID',                 N'bigint',      NULL,  0)
+,(N'예약접수', N'예약일',                   N'date',        NULL,  0)
+,(N'예약접수', N'시간대코드',                 N'char',        2,     0)
+,(N'예약접수', N'상태코드',                  N'char',        3,     0)
+,(N'예약접수', N'국가검사항목',                N'nvarchar',    100,   0)
+,(N'예약접수', N'추가검사항목',                N'nvarchar',    50,    1)
  -- 검사코드 6행
- (N'검사코드', N'검사항목코드',           N'varchar',   10,    0),
- (N'검사코드', N'검사항목명',             N'nvarchar',  100,   0),
- (N'검사코드', N'국가검사규칙코드',       N'varchar',   10,    1),
- (N'검사코드', N'추가검사코드',           N'varchar',   10,    1),
- (N'검사코드', N'추가검사성별코드',       N'char',      1,     1),
- (N'검사코드', N'추가검사사용여부',       N'bit',       NULL,  0),
- -- 휴무일 4행
- (N'휴무일', N'휴무일자',              N'date',      NULL,  0),
- (N'휴무일', N'휴무일명',              N'nvarchar',  100,   0),
- (N'휴무일', N'사용여부',              N'bit',       NULL,  0),
- (N'휴무일', N'비고',                  N'nvarchar',  500,   1),
- -- 완료이력 2행
- (N'완료이력', N'수검자ID',             N'bigint',    NULL,  0),
- (N'완료이력', N'완료일자',             N'date',      NULL,  0),
- (N'완료이력', N'국가검사항목',         N'nvarchar',  100,   1),
- (N'완료이력', N'추가검사항목',         N'nvarchar',  50,    1),
- -- 변경이력 8행 (EAV)
- (N'변경이력', N'이력ID',               N'bigint',    NULL,  0),
- (N'변경이력', N'기록일시',             N'datetime2', NULL,  0),
- (N'변경이력', N'조작자명',             N'nvarchar',  50,    1),
- (N'변경이력', N'대상테이블',           N'nvarchar',  10,    0),
- (N'변경이력', N'대상키',               N'bigint',    NULL,  0),
- (N'변경이력', N'컬럼명',               N'nvarchar',  30,    0),
- (N'변경이력', N'변경전',               N'nvarchar',  4000,  1),
- (N'변경이력', N'변경후',               N'nvarchar',  4000,  1);
-
+,(N'검사코드', N'검사항목코드',                N'varchar',     10,    0)
+,(N'검사코드', N'검사항목명',                 N'nvarchar',    100,   0)
+,(N'검사코드', N'국가검사규칙코드',              N'varchar',     10,    1)
+,(N'검사코드', N'추가검사코드',                N'varchar',     10,    1)
+,(N'검사코드', N'추가검사성별코드',              N'char',        1,     1)
+,(N'검사코드', N'추가검사사용여부',              N'bit',         NULL,  0)
+ -- 휴무일 8행
+,(N'휴무일', N'휴무일자',                  N'date',        NULL,  0)
+,(N'휴무일', N'생성일시',                  N'datetime2',   NULL,  0)
+,(N'휴무일', N'최종수정일시',                N'datetime2',   NULL,  0)
+,(N'휴무일', N'행버전',                   N'timestamp',   NULL,  0)
+,(N'휴무일', N'휴무일명',                  N'nvarchar',    100,   0)
+,(N'휴무일', N'휴무구분',                  N'nvarchar',    10,    0)
+,(N'휴무일', N'사용여부',                  N'bit',         NULL,  0)
+,(N'휴무일', N'비고',                    N'nvarchar',    500,   1)
+ -- 완료이력 4행
+,(N'완료이력', N'수검자ID',                 N'bigint',      NULL,  0)
+,(N'완료이력', N'완료일자',                  N'date',        NULL,  0)
+,(N'완료이력', N'국가검사항목',                N'nvarchar',    100,   1)
+,(N'완료이력', N'추가검사항목',                N'nvarchar',    50,    1)
+ -- 변경이력 8행
+,(N'변경이력', N'이력ID',                  N'bigint',      NULL,  0)
+,(N'변경이력', N'기록일시',                  N'datetime2',   NULL,  0)
+,(N'변경이력', N'조작자명',                  N'nvarchar',    50,    1)
+,(N'변경이력', N'대상테이블',                 N'nvarchar',    10,    0)
+,(N'변경이력', N'대상키',                   N'bigint',      NULL,  0)
+,(N'변경이력', N'컬럼명',                   N'nvarchar',    30,    0)
+,(N'변경이력', N'변경전',                   N'nvarchar',    4000,  1)
+,(N'변경이력', N'변경후',                   N'nvarchar',    4000,  1);
 DECLARE @ActCol TABLE (T SYSNAME, Col SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, Col));
 INSERT INTO @ActCol (T, Col, Ty, Len, Nul)
 SELECT t.name, c.name, y.name
@@ -160,7 +162,7 @@ WHERE t.is_ms_shipped = 0;
 
 IF NOT EXISTS (SELECT T,Col,Ty,Len,Nul FROM @ExpCol EXCEPT SELECT T,Col,Ty,Len,Nul FROM @ActCol)
    AND NOT EXISTS (SELECT T,Col,Ty,Len,Nul FROM @ActCol EXCEPT SELECT T,Col,Ty,Len,Nul FROM @ExpCol)
-    PRINT 'PASS SCH-015 컬럼 48개 전건 일치';
+    PRINT 'PASS SCH-015 컬럼 53개 전건 일치';
 ELSE
 BEGIN
     PRINT 'FAIL SCH-015 컬럼 불일치';
@@ -169,7 +171,7 @@ BEGIN
     SET @Fail += 1;
 END
 
--- SCH-016 CHECK 제약 이름 24개 EXCEPT 양방향  (04 §8.1.3 7 + §8.2.3 5 + §8.3.3 8 + §8.4.2 1 + §8.5.3 1 + §8.6.3 2)
+-- SCH-016 CHECK 제약 이름 26개 EXCEPT 양방향  (04 §8.1.3 7 + §8.2.3 5 + §8.3.3 8 + §8.4.3 3 + §8.5.3 1 + §8.6.3 2)
 DECLARE @ExpCk TABLE (N SYSNAME PRIMARY KEY);
 INSERT INTO @ExpCk (N) VALUES
  (N'CK_수검자_CHART_NO_NOT_BLANK'), (N'CK_수검자_NAME_NOT_BLANK'),
@@ -185,6 +187,7 @@ INSERT INTO @ExpCk (N) VALUES
  (N'CK_검사코드_ROLE_REQUIRED'),    (N'CK_검사코드_NEX_RULE'),
  (N'CK_검사코드_AEX_CODE'),         (N'CK_검사코드_AEX_GENDER'),
  (N'CK_검사코드_AEX_GROUP'),        (N'CK_휴무일_NAME_NOT_BLANK'),
+ (N'CK_휴무일_TYPE'),               (N'CK_휴무일_EDIT_DATE'),
  (N'CK_변경이력_TARGET_TABLE'),     (N'CK_변경이력_COLUMN_NOT_BLANK');
 
 IF NOT EXISTS (SELECT N FROM @ExpCk EXCEPT SELECT name FROM sys.check_constraints)
@@ -192,7 +195,7 @@ IF NOT EXISTS (SELECT N FROM @ExpCk EXCEPT SELECT name FROM sys.check_constraint
     PRINT 'PASS SCH-016 CHECK 제약 이름 전건 일치';
 ELSE BEGIN PRINT 'FAIL SCH-016 CHECK 제약 집합 불일치'; SET @Fail += 1; END
 
--- SCH-017 Default 제약 이름 8개 EXCEPT 양방향  (04 §8.1.4 3 + §8.2.3 2 + §8.3.3 1 + §8.4.2 1 + §8.6.3 1)
+-- SCH-017 Default 제약 이름 10개 EXCEPT 양방향  (04 §8.1.4 3 + §8.2.3 2 + §8.3.3 1 + §8.4.3 3 + §8.6.3 1)
 -- [X] 초안의 14개 이름은 기준선 04 §8 의 것이 아니었다(`DF_수검자_JOB` 은 존재하지 않는 Job 컬럼을
 --     가리켰고 `..._GENDER`·`..._MEMO`·`..._ADDRESS` 등은 04 §8.1.4 에 없다). T06 의 DDL 이 기준선과 일치하므로
 --     틀린 쪽은 이 기대값이다. 04 §8.1.4 / §8.2.3 / §8.4.3 / §8.5.2 의 이름을 그대로 옮겨 적는다.
@@ -201,7 +204,8 @@ INSERT @ExpDf (N) VALUES
  (N'DF_수검자_HEPATITIS_B_EXCLUDED'), (N'DF_수검자_CREATION_DATE'),
  (N'DF_수검자_LAST_EDIT_DATE'),       (N'DF_예약접수_CREATION_DATE'),
  (N'DF_예약접수_LAST_EDIT_DATE'),     (N'DF_검사코드_AEX_ACTIVE'),
- (N'DF_휴무일_ACTIVE'),               (N'DF_변경이력_CREATION_DATE');
+ (N'DF_휴무일_ACTIVE'),               (N'DF_휴무일_CREATION_DATE'),
+ (N'DF_휴무일_LAST_EDIT_DATE'),       (N'DF_변경이력_CREATION_DATE');
 
 IF NOT EXISTS (SELECT N FROM @ExpDf EXCEPT SELECT name FROM sys.default_constraints)
    AND NOT EXISTS (SELECT name FROM sys.default_constraints EXCEPT SELECT N FROM @ExpDf)
@@ -252,7 +256,7 @@ BEGIN
     SET @Fail += 1;
 END
 
--- SCH-019 SP 별 Parameter 를 (SP, 순번, 이름, 타입) 4-튜플로 EXCEPT 양방향 대조 (합계 99)
+-- SCH-019 SP 별 Parameter 를 (SP, 순번, 이름, 타입) 4-튜플로 EXCEPT 양방향 대조 (합계 113)
 -- [X] G09 는 "Parameter 99 EXCEPT 양방향" 을 요구하는데 그것을 판정하는 검사가 없었다.
 --     처음엔 SP 별 **개수**만 맞췄는데 그것으로는 이름이 바뀌거나 순서가 뒤바뀐 드리프트를 놓친다.
 --     기대값 출처는 05 §10~§12 입력표 · 06 §18 SP Matrix 다.
@@ -314,7 +318,7 @@ INSERT INTO @ExpP (SpName, Ord, ParamName, TypeName) VALUES
  , (N'USP_HC_예약접수목록_조회', 5, N'@성명', 'nvarchar')
  , (N'USP_HC_예약접수상세_조회', 1, N'@업무ID', 'bigint')
  , (N'USP_HC_수검자정보_수정', 1, N'@수검자ID', 'bigint')
- , (N'USP_HC_수검자정보_수정', 2, N'@최종수정일시', 'datetime')
+ , (N'USP_HC_수검자정보_수정', 2, N'@행버전', 'binary')
  , (N'USP_HC_수검자정보_수정', 3, N'@차트번호', 'nvarchar')
  , (N'USP_HC_수검자정보_수정', 4, N'@성명', 'nvarchar')
  , (N'USP_HC_수검자정보_수정', 5, N'@주민번호', 'varchar')
@@ -358,7 +362,21 @@ INSERT INTO @ExpP (SpName, Ord, ParamName, TypeName) VALUES
  , (N'USP_HC_접수_취소', 1, N'@업무ID', 'bigint')
  , (N'USP_HC_접수_취소', 2, N'@행버전', 'binary')
  , (N'USP_HC_접수_취소', 3, N'@조작자명', 'nvarchar')
-    ;
+    
+ , (N'USP_HC_휴무일목록_조회', 1, N'@시작일자', 'date')
+ , (N'USP_HC_휴무일목록_조회', 2, N'@종료일자', 'date')
+ , (N'USP_HC_휴무일목록_조회', 3, N'@휴무구분', 'nvarchar')
+ , (N'USP_HC_자체휴무일_등록', 1, N'@휴무일자', 'date')
+ , (N'USP_HC_자체휴무일_등록', 2, N'@휴무일명', 'nvarchar')
+ , (N'USP_HC_자체휴무일_등록', 3, N'@사용여부', 'bit')
+ , (N'USP_HC_자체휴무일_등록', 4, N'@비고', 'nvarchar')
+ , (N'USP_HC_자체휴무일_수정', 1, N'@휴무일자', 'date')
+ , (N'USP_HC_자체휴무일_수정', 2, N'@행버전', 'binary')
+ , (N'USP_HC_자체휴무일_수정', 3, N'@휴무일명', 'nvarchar')
+ , (N'USP_HC_자체휴무일_수정', 4, N'@사용여부', 'bit')
+ , (N'USP_HC_자체휴무일_수정', 5, N'@비고', 'nvarchar')
+ , (N'USP_HC_자체휴무일_삭제', 1, N'@휴무일자', 'date')
+ , (N'USP_HC_자체휴무일_삭제', 2, N'@행버전', 'binary');
 
 DECLARE @ActP TABLE (SpName SYSNAME, Ord INT, ParamName SYSNAME, TypeName SYSNAME,
                      PRIMARY KEY (SpName, Ord));
@@ -373,8 +391,8 @@ IF NOT EXISTS (SELECT SpName, Ord, ParamName, TypeName FROM @ExpP
                EXCEPT SELECT SpName, Ord, ParamName, TypeName FROM @ActP)
    AND NOT EXISTS (SELECT SpName, Ord, ParamName, TypeName FROM @ActP
                    EXCEPT SELECT SpName, Ord, ParamName, TypeName FROM @ExpP)
-   AND @SumP = 99
-    PRINT 'PASS SCH-019 SP 별 Parameter 이름·순번·타입 전건 일치 (합계 99)';
+   AND @SumP = 113
+    PRINT 'PASS SCH-019 SP 별 Parameter 이름·순번·타입 전건 일치 (합계 113)';
 ELSE
 BEGIN
     PRINT 'FAIL SCH-019 Parameter 불일치 (합계 ' + CONVERT(VARCHAR(5), ISNULL(@SumP, -1)) + ')';

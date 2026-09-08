@@ -18,9 +18,9 @@ IF ((SELECT COUNT(*) FROM sys.objects WHERE type = 'IF' AND name LIKE 'UFN[_]HC[
     PRINT 'PASS VER-002 Inline TVF 4';
 ELSE BEGIN PRINT 'FAIL VER-002 TVF 수 불일치'; SET @Fail += 1; END
 
--- 05 §1.3 의 외부 호출 SP 16개. SELECT 8 / INSERT 2 / UPDATE 6 (06 §18).
-IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 16)
-    PRINT 'PASS VER-003 Stored Procedure 16';
+-- 05 §1.3 의 외부 호출 SP 20개. SELECT 9 / INSERT 3 / UPDATE 7 / DELETE 1 (06 §18).
+IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 20)
+    PRINT 'PASS VER-003 Stored Procedure 20';
 ELSE BEGIN PRINT 'FAIL VER-003 SP 수 불일치'; SET @Fail += 1; END
 
 IF ((SELECT COUNT(*) FROM sys.sequences) = 1)
@@ -45,12 +45,12 @@ IF ((SELECT COUNT(*) FROM sys.triggers WHERE is_ms_shipped = 0) = 0
     PRINT 'PASS VER-006 Trigger 0 / TVP 0';
 ELSE BEGIN PRINT 'FAIL VER-006 금지 객체 존재'; SET @Fail += 1; END
 
--- CHECK 24 는 CK_예약접수_EXAM_PAIR 신설 이후 값이다 (04 §0.2 · §8.2.3).
-IF ((SELECT COUNT(*) FROM sys.check_constraints) = 24
-    AND (SELECT COUNT(*) FROM sys.default_constraints) = 8
+-- R7 값이다. 휴무일이 CK 2개(TYPE·EDIT_DATE)와 DF 2개(생성일시·최종수정일시)를 얻었다 (04 §10.1).
+IF ((SELECT COUNT(*) FROM sys.check_constraints) = 26
+    AND (SELECT COUNT(*) FROM sys.default_constraints) = 10
     AND (SELECT COUNT(*) FROM [dbo].[검사코드]) = 19
-    AND (SELECT COUNT(*) FROM [dbo].[휴무일]) = 2)
-    PRINT 'PASS VER-007 CHECK 24 / DEFAULT 8 / Seed Exam 19 / Holiday 2';
+    AND (SELECT COUNT(*) FROM [dbo].[휴무일]) = 40)
+    PRINT 'PASS VER-007 CHECK 26 / DEFAULT 10 / Seed Exam 19 / Holiday 40';
 ELSE BEGIN PRINT 'FAIL VER-007 제약 또는 Seed 수 불일치'; SET @Fail += 1; END
 
 DECLARE @Compat VARCHAR(10);

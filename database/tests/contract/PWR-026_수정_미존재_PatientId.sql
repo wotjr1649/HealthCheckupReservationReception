@@ -1,4 +1,4 @@
 ﻿SET NOCOUNT ON;
-EXEC [dbo].[USP_HC_수검자정보_수정] -1, '2000-01-01', N'X001', N'없는사람', '9001011000018',
+EXEC [dbo].[USP_HC_수검자정보_수정] -1, 0x0000000000000001, N'X001', N'없는사람', '9001011000018',
      NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, N'TEST';
 GO

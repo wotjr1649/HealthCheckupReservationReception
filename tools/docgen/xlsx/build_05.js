@@ -145,15 +145,18 @@ const spParams = S2.filter(r => /^USP_/.test(r[0])).length;
 const tvfParams = S2.filter(r => /^UFN_/.test(r[0])).length;
 
 /* 기대값은 기준선 05 를 손으로 더한 값이다. 생성기가 표를 하나라도 놓치면 여기서 걸린다.
-     RS0        16 SP x 5 컬럼                                                   =  80
+     RS0        20 SP x 5 컬럼                                                   = 100
      RS1~RS5    10+11+15+7+11+(15+4+3+4)+6+(14+12+5+4+8)+8+3+(3 x 6)             = 158
-     ResultCode 3 + 5 + 7 + 10 + 5 + 4 + 2 + 2 (05 §4.2 · §16.1 Enum 멤버 수와 같다) = 38
+                + R7 휴무일 (6+3) + (2) + (2)                                     =  13   -> 171
+     Parameter  99 + R7 휴무일 (3+4+5+2) 14                                       = 113
+     ResultCode 3 + 5 + 7 + 10 + 5 + 4 + 1 + 2 + 3 (05 §4.2 · §16.1 Enum 과 같다)   =  40
+                600 폐지로 -1, 800~802 신설로 +3
      TVF 시트   책임 4 + 입력 19 + 반환 (11+5+4+8) 28                              =  51            */
 M.emit(wb, '05_검진_예약접수_SP계약서.xlsx', [
-  ['SP 16개', S1.length, 16],
-  ['SP Parameter 전건', spParams, 99],
+  ['SP 20개', S1.length, 20],
+  ['SP Parameter 전건', spParams, 113],
   ['TVF Parameter 전건', tvfParams, 19],
-  ['Result Set 행 (RS0 80 + RS1~RS5 158)', S3.length, 238],
-  ['ResultCode 종수', S4.length, 38],
+  ['Result Set 행 (RS0 100 + RS1~RS5 171)', S3.length, 271],
+  ['ResultCode 종수', S4.length, 40],
   ['TVF 시트 행 (책임 4 + 입력 19 + 반환 28)', S5.length, 51],
 ]).catch(e => { console.error(e); process.exit(1); });

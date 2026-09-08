@@ -30,7 +30,7 @@ BEGIN
                      DATEDIFF(SECOND, '2020-01-01', [최종수정일시]))), 0) FROM [dbo].[수검자]));
 
     DECLARE @Op BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T015');
-    DECLARE @Ol DATETIME = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Op);
+    DECLARE @Ol BINARY(8) = (SELECT [행버전] FROM [dbo].[수검자] WHERE [수검자ID] = @Op);
     DECLARE @Os VARCHAR(13) = (SELECT [주민번호] FROM [dbo].[수검자] WHERE [수검자ID] = @Op);
 
     -- 두 Write SP 모두 공통 업무가능을 업무 Rule 보다 먼저 판정한다.
@@ -69,7 +69,8 @@ DECLARE @NmA  NVARCHAR(100) = N'산출확인';
 DELETE FROM [dbo].[수검자] WHERE [주민번호] IN (@SsnA, @SsnB);
 
 DECLARE @H0 INT, @H1 INT, @Pid BIGINT, @Bid BIGINT;
-DECLARE @Led DATETIME, @Before DATETIME;
+-- R7: 동시성 토큰이 [행버전] 이다. [최종수정일시] 는 감사 정보라 토큰으로 쓰지 않는다 (04 §1.2).
+DECLARE @Led BINARY(8), @Before BINARY(8);
 DECLARE @Cn NVARCHAR(100), @Nm NVARCHAR(100), @Ssn VARCHAR(13);
 
 ----------------------------------------------------------------------------
@@ -182,15 +183,15 @@ ELSE BEGIN PRINT 'FAIL PWR-010 확인 후에도 등록되지 않았다'; SET @Fa
 ----------------------------------------------------------------------------
 -- UPDATE_수검자정보
 ----------------------------------------------------------------------------
-SELECT @Led = [최종수정일시], @Cn = [차트번호], @Ssn = [주민번호]
+SELECT @Led = [행버전], @Cn = [차트번호], @Ssn = [주민번호]
   FROM [dbo].[수검자] WHERE [수검자ID] = @Bid;
 
 -- PWR-020  No-op 은 행을 갱신하지 않는다 (05 §10.2)
 SET @Before = @Led;
 EXEC [dbo].[USP_HC_수검자정보_수정] @Bid, @Led, @Cn, @NmA, @Ssn,
      NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, N'TEST';
-IF ((SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid) = @Before)
-    PRINT 'PASS PWR-020 No-op 은 LastEditDate 를 바꾸지 않는다';
+IF ((SELECT [행버전] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid) = @Before)
+    PRINT 'PASS PWR-020 No-op 은 RowVersion 을 바꾸지 않는다';
 ELSE BEGIN PRINT 'FAIL PWR-020 No-op 이 행을 갱신했다'; SET @Fail += 1; END
 
 -- PWR-031  No-op 은 감사 기록도 남기지 않는다
@@ -199,12 +200,15 @@ IF (@H0 = 4)
     PRINT 'PASS PWR-031 No-op 이 변경이력을 남기지 않았다';
 ELSE BEGIN PRINT 'FAIL PWR-031 No-op 이 감사행을 남겼다'; SET @Fail += 1; END
 
--- PWR-022  실제 변경은 최종수정일시 를 반드시 증가시킨다 (스펙 §26, DATETIME 3.33ms 틱)
+-- PWR-022  실제 변경은 행버전 을 반드시 바꾼다 (스펙 §26)
+-- [!] R7 이전에는 최종수정일시 의 **증가**를 봤다. 그 단조성은 +4ms 보정이 만든 것이었고
+--     보정을 걷은 지금 DATETIME 3.33ms 틱 안의 연속 갱신은 같은 값이 될 수 있다.
+--     ROWVERSION 은 DB 가 UPDATE 마다 반드시 바꾸므로 <> 로 본다.
 EXEC [dbo].[USP_HC_수검자정보_수정] @Bid, @Led, @Cn, N'이름변경됨', @Ssn,
      NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, N'TEST';
-IF ((SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid) > @Before
+IF ((SELECT [행버전] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid) <> @Before
     AND (SELECT [성명] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid) = N'이름변경됨')
-    PRINT 'PASS PWR-022 실제 변경 시 LastEditDate 단조증가 + 값 반영';
+    PRINT 'PASS PWR-022 실제 변경 시 RowVersion 변경 + 값 반영';
 ELSE BEGIN PRINT 'FAIL PWR-022 변경이 반영되지 않았다'; SET @Fail += 1; END
 
 -- PWR-031 (2) 바뀐 컬럼만 1행이 늘어난다. 값이 같은 컬럼은 기록되지 않는다.
@@ -218,14 +222,14 @@ IF ((SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @Bid) = 5
     PRINT 'PASS PWR-031 UPDATE 감사 1행 · 변경전/후 정확 · 무변경 컬럼 0행';
 ELSE BEGIN PRINT 'FAIL PWR-031 UPDATE 감사 기록 불일치'; SET @Fail += 1; END
 
--- PWR-021  stale 최종수정일시 는 600 이고 아무것도 바꾸지 않는다
-SELECT @Led = [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid;
+-- PWR-021  stale 행버전 은 601 이고 아무것도 바꾸지 않는다 (600 은 R7 에서 폐지, 05 §4.4)
+SELECT @Led = [행버전] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid;
 SET @Before = @Led;
-EXEC [dbo].[USP_HC_수검자정보_수정] @Bid, '2000-01-01', @Cn, N'stale시도', @Ssn,
+EXEC [dbo].[USP_HC_수검자정보_수정] @Bid, 0x0000000000000001, @Cn, N'stale시도', @Ssn,
      NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, N'TEST';
-IF ((SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid) = @Before
+IF ((SELECT [행버전] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid) = @Before
     AND (SELECT [성명] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid) = N'이름변경됨')
-    PRINT 'PASS PWR-021 stale LastEditDate 가 데이터를 바꾸지 않았다';
+    PRINT 'PASS PWR-021 stale RowVersion 이 데이터를 바꾸지 않았다';
 ELSE BEGIN PRINT 'FAIL PWR-021 stale 요청이 반영됐다'; SET @Fail += 1; END
 
 -- PWR-025  다른 수검자가 쓰는 주민번호는 204 이고 저장되지 않는다
@@ -238,15 +242,15 @@ ELSE BEGIN PRINT 'FAIL PWR-025 중복 주민번호가 저장됐다'; SET @Fail +
 
 -- PWR-026  미존재 수검자ID 는 200 이고 행 수를 바꾸지 않는다
 DECLARE @건수 INT = (SELECT COUNT(*) FROM [dbo].[수검자]);
-EXEC [dbo].[USP_HC_수검자정보_수정] -1, '2000-01-01', N'X001', N'없는사람', '9701011000013',
+EXEC [dbo].[USP_HC_수검자정보_수정] -1, 0x0000000000000001, N'X001', N'없는사람', '9701011000013',
      NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, N'TEST';
 IF ((SELECT COUNT(*) FROM [dbo].[수검자]) = @건수)
     PRINT 'PASS PWR-026 미존재 PatientId 가 행을 만들지 않았다';
 ELSE BEGIN PRINT 'FAIL PWR-026 행 수가 바뀌었다'; SET @Fail += 1; END
 
 -- PWR-023 / PWR-024  RSV 를 가진 F001 (00 EP-08)
-DECLARE @Fid BIGINT, @Fled DATETIME, @Fnm NVARCHAR(100), @Fssn VARCHAR(13);
-SELECT @Fid = [수검자ID], @Fled = [최종수정일시], @Fnm = [성명], @Fssn = [주민번호]
+DECLARE @Fid BIGINT, @Fled BINARY(8), @Fnm NVARCHAR(100), @Fssn VARCHAR(13);
+SELECT @Fid = [수검자ID], @Fled = [행버전], @Fnm = [성명], @Fssn = [주민번호]
   FROM [dbo].[수검자] WHERE [차트번호] = N'F001';
 
 EXEC [dbo].[USP_HC_수검자정보_수정] @Fid, @Fled, N'F001', @Fnm, '8001011999998',
@@ -262,8 +266,8 @@ IF ((SELECT [차트번호] FROM [dbo].[수검자] WHERE [수검자ID] = @Fid) = 
 ELSE BEGIN PRINT 'FAIL PWR-024 차트번호 변경이 차단됐다'; SET @Fail += 1; END
 
 -- PWR-027 / PWR-028  RCP 를 가진 T014 (05 §17.6 · 스펙 §33.4)
-DECLARE @Tid BIGINT, @Tled DATETIME, @Tnm NVARCHAR(100), @Tssn VARCHAR(13);
-SELECT @Tid = [수검자ID], @Tled = [최종수정일시], @Tnm = [성명], @Tssn = [주민번호]
+DECLARE @Tid BIGINT, @Tled BINARY(8), @Tnm NVARCHAR(100), @Tssn VARCHAR(13);
+SELECT @Tid = [수검자ID], @Tled = [행버전], @Tnm = [성명], @Tssn = [주민번호]
   FROM [dbo].[수검자] WHERE [차트번호] = N'T014';
 
 EXEC [dbo].[USP_HC_수검자정보_수정] @Tid, @Tled, N'T014', @Tnm, '7010011999997',
@@ -278,32 +282,37 @@ IF ((SELECT [차트번호] FROM [dbo].[수검자] WHERE [수검자ID] = @Tid) = 
     PRINT 'PASS PWR-028 RCP 가 있어도 차트번호 변경은 차단하지 않는다';
 ELSE BEGIN PRINT 'FAIL PWR-028 차트번호 변경이 차단됐다'; SET @Fail += 1; END
 
--- PWR-029  최종수정일시 단조증가 가드를 실제로 발동시킨다 (05:545 · 스펙 §26)
--- [X] PWR-022 는 갱신을 **한 번**만 하고 > 비교만 한다. DATETIME 은 약 3.33ms 틱이라
---     연속 갱신이 같은 틱에 떨어질 때만 IF @새최종수정일시 <= @기존최종수정일시 가드가 발동한다.
---     즉 그 가드를 통째로 지워도 PWR-022 는 PASS 한다 — 이름이 가리키는 기계장치를 시험하지 않았다.
---     지연 없이 5회 연속 수정해 같은 틱 충돌을 강제하고, 매 회차가 직전보다 큰지 본다.
-DECLARE @M0 DATETIME = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
-DECLARE @Mprev DATETIME = @M0, @Mnow DATETIME, @Mled DATETIME;
+-- PWR-029  연속 갱신에서 행버전 이 매번 바뀌는가 (스펙 §26)
+-- [X] R7 이전 이 자리는 최종수정일시 의 +4ms 단조증가 가드를 발동시키는 시험이었다.
+--     그 가드가 사라졌으므로 시험도 기계장치를 바꾼다. **의도는 그대로다** —
+--     지연 없이 5회 연속 수정해 같은 DATETIME 틱 충돌을 강제하고, 그래도 토큰이
+--     매번 달라지는지 본다. 다른 점은 그것을 보장하는 주체다:
+--       R7 이전  저장 SP 가 +4ms 를 더해 만들었다 (저장 시각이 사실과 달라지는 대가)
+--       R7 이후  ROWVERSION 을 DB 가 UPDATE 마다 반드시 바꾼다 (대가 없음)
+--     같은 틱에 떨어진 횟수(@MTight)를 함께 내보내 시험이 실제로 충돌을 만들었는지 보인다.
+DECLARE @M0 BINARY(8) = (SELECT [행버전] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
+DECLARE @Mprev BINARY(8) = @M0, @Mnow BINARY(8), @Mled BINARY(8);
+DECLARE @MT0 DATETIME, @MT1 DATETIME;
 DECLARE @Mi INT = 0, @MFail INT = 0, @MTight INT = 0;
 DECLARE @MName NVARCHAR(100);
 WHILE @Mi < 5
 BEGIN
     SET @Mi += 1;
-    SET @Mled = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
+    SELECT @Mled = [행버전], @MT0 = [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid;
     -- [X] EXEC 인자는 상수나 변수만 받는다. 식을 쓰면 Msg 102 로 배치가 컴파일 실패한다 (실측).
     SET @MName = N'단조증가' + CONVERT(NVARCHAR(2), @Mi);
     EXEC [dbo].[USP_HC_수검자정보_수정] @Bid, @Mled, @Cn, @MName, @Ssn,
          NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, N'TEST';
-    SET @Mnow = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
-    IF @Mnow <= @Mprev SET @MFail += 1;
-    IF DATEDIFF(MILLISECOND, @Mprev, @Mnow) <= 4 SET @MTight += 1;
+    SELECT @Mnow = [행버전], @MT1 = [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid;
+    IF @Mnow = @Mprev SET @MFail += 1;
+    -- 최종수정일시 가 같은 눈금에 떨어진 회차. R7 이전이면 여기서 +4ms 가드가 발동했다.
+    IF @MT1 = @MT0 SET @MTight += 1;
     SET @Mprev = @Mnow;
 END
-IF @MFail = 0 AND @Mnow > @M0
-    PRINT 'PASS PWR-029 연속 5회 수정에서 LastEditDate 가 매번 단조증가 (4ms 이내 근접 '
+IF @MFail = 0 AND @Mnow <> @M0
+    PRINT 'PASS PWR-029 연속 5회 수정에서 RowVersion 이 매번 변경 (최종수정일시 동일 틱 '
         + CONVERT(VARCHAR(3), @MTight) + '회)';
-ELSE BEGIN PRINT 'FAIL PWR-029 LastEditDate 가 역행하거나 정체했다 (역행 '
+ELSE BEGIN PRINT 'FAIL PWR-029 RowVersion 이 정체했다 (정체 '
         + CONVERT(VARCHAR(3), @MFail) + '회)'; SET @Fail += 1; END
 
 -- PWR-032  대소문자만 바꾼 수정이 저장되고 감사에도 남는가 (스펙 §28.2 · §43-17)
@@ -312,16 +321,16 @@ ELSE BEGIN PRINT 'FAIL PWR-029 LastEditDate 가 역행하거나 정체했다 (�
 --     감사 필터도 같은 CI 비교였으므로 **둘을 함께** 바이트 비교로 바꿨다 —
 --     하나만 고치면 저장은 되는데 변경이력에 한 줄도 안 남는다. 그래서 이 시험이 둘 다 본다.
 DECLARE @CiName NVARCHAR(100) = (SELECT [성명] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
-DECLARE @CiL DATETIME, @CiH0 INT, @CiH1 INT, @CiMail VARCHAR(200), @CiEdit DATETIME;
+DECLARE @CiL BINARY(8), @CiH0 INT, @CiH1 INT, @CiMail VARCHAR(200), @CiEdit BINARY(8);
 
 -- 준비: 대문자가 섞인 이메일을 넣는다
-SET @CiL = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
+SET @CiL = (SELECT [행버전] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
 EXEC [dbo].[USP_HC_수검자정보_수정] @Bid, @CiL, @Cn, @CiName, @Ssn,
      NULL, NULL, 'case@TEST.com', NULL, NULL, NULL, NULL, 0, N'TEST';
 
 -- 대소문자만 바꾼다
 SET @CiH0 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @Bid AND [컬럼명] = N'이메일');
-SET @CiL = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
+SET @CiL = (SELECT [행버전] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
 EXEC [dbo].[USP_HC_수검자정보_수정] @Bid, @CiL, @Cn, @CiName, @Ssn,
      NULL, NULL, 'case@test.com', NULL, NULL, NULL, NULL, 0, N'TEST';
 SET @CiH1 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @Bid AND [컬럼명] = N'이메일');
@@ -339,11 +348,11 @@ BEGIN
 END
 
 -- 진짜 무변경은 여전히 No-op 이어야 한다. 바이트 비교로 바꾸면서 이것이 깨지면 안 된다.
-SET @CiEdit = (SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
+SET @CiEdit = (SELECT [행버전] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid);
 SET @CiH0 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @Bid);
 EXEC [dbo].[USP_HC_수검자정보_수정] @Bid, @CiEdit, @Cn, @CiName, @Ssn,
      NULL, NULL, 'case@test.com', NULL, NULL, NULL, NULL, 0, N'TEST';
-IF ((SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid) = @CiEdit
+IF ((SELECT [행버전] FROM [dbo].[수검자] WHERE [수검자ID] = @Bid) = @CiEdit
     AND (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @Bid) = @CiH0)
     PRINT 'PASS PWR-032b 같은 값 재전송은 여전히 No-op (행·감사 불변)';
 ELSE BEGIN PRINT 'FAIL PWR-032b 무변경 재전송이 행을 갱신했다'; SET @Fail += 1; END

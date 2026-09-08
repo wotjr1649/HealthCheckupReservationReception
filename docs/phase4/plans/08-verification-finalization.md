@@ -437,7 +437,7 @@ git commit -m "test(phase4): 동시성 시나리오 8종 및 barrier 실행 스�
 
 - [x] **Step 1: `deploy/08_Verify.sql` — 배포 말미 자동 검증**
 
-`[X 실측]` **R3 반영으로 두 단언이 넓어졌다.** `VER-005` 는 `PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5`, `VER-007` 은 `CHECK 24 / DEFAULT 8 / Seed Exam 19 / Holiday 2` 를 함께 센다. 계획 초안의 `NCI 4` 는 `IX_변경이력_TARGET` 신설로 5 가 됐다.
+`[X 실측]` **R3 반영으로 두 단언이 넓어졌다.** `VER-005` 는 `PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5`, `VER-007` 은 `CHECK 26 / DEFAULT 10 / Seed Exam 19 / Holiday 40` 을 함께 센다 (R7 반영. 그 전에는 `CHECK 24 / DEFAULT 8 / Holiday 2` 였다). 계획 초안의 `NCI 4` 는 `IX_변경이력_TARGET` 신설로 5 가 됐다.
 
 ```sql
 SET NOCOUNT ON;
@@ -1162,7 +1162,7 @@ Expected: `PASS G13-b` 2줄. `(c)` 는 보고서에 **`REVIEWED`** 로만 적는
 
 ```text
 - 상태          CANDIDATE → FINAL / GO (실행 검증 완료)
-- 문서 버전      v0.4 → v1.0 (SQL 실행검증 완료 시점에 CANDIDATE 해제) → v1.1 (R4 한글화 반영, §46) → v1.2 (R5 — §42 의 G00·G13·G16 정정 + 회차 C) → v1.3 (R6 — §42 의 미래 단정 제거)
+- 문서 버전      v0.4 → v1.0 (SQL 실행검증 완료 시점에 CANDIDATE 해제) → v1.1 (R4 한글화 반영, §46) → v1.2 (R5 — §42 의 G00·G13·G16 정정 + 회차 C) → v1.3 (R6 — §42 의 미래 단정 제거) → v1.4 (R7 — 계약 재설계: 휴무일 CRUD SP 4개 · 행버전 통일 · 공휴일 Seed 2년치)
 - §42 Gate 표    PLANNED → 실제 관측 결과(PASS / FAIL / SKIP)로 전부 교체
 - §43 알려진 한계 실행 중 확인된 항목 추가 (예: 업무시간 밖 SKIP 건수)
 - §44 Deviation  실행 중 새로 발견된 이탈 추가

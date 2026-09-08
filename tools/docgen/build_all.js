@@ -18,7 +18,7 @@ const MODULES = 'D:/tmp/hcwork/gen/node_modules';
 const WF_SCREENS = [
   'a0_list', 'a1_flow', 'wf_00', 'wf_pat_01', 'dlg_pat_02', 'dlg_pat_01', 'dlg_pat_03',
   'wf_rsv_01', 'wf_wrk_01', 'dlg_rsv_01', 'cnf_rsv_01', 'dlg_rcp_01', 'dlg_rcp_02',
-  'cnf_rcp_01', 'dlg_log_01', 'z_a_rules', 'z_b_search', 'z_c_validation', 'z_d_ribbon',
+  'cnf_rcp_01', 'dlg_log_01', 'dlg_hol_01', 'z_a_rules', 'z_b_search', 'z_c_validation', 'z_d_ribbon',
   'z_e_fields', 'z_f_impl',
 ].join(',');
 

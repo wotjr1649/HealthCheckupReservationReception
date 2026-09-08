@@ -61,8 +61,9 @@ IF ((SELECT COUNT(*) FROM [dbo].[검사코드] WHERE [국가검사규칙코드] 
     PRINT 'PASS SED-007 조건부 NEX 5행';
 ELSE BEGIN PRINT 'FAIL SED-007 조건부 NEX 행수 불일치'; SET @Fail += 1; END
 
-IF ((SELECT COUNT(*) FROM [dbo].[휴무일] WHERE [사용여부] = 1) = 2)
-    PRINT 'PASS SED-008 활성 휴무일 2행';
+-- 06 §14 가 공휴일 2년치를 편다. 법정 28 + 대체 11 + 자체 1 = 40행이고 전부 활성이다.
+IF ((SELECT COUNT(*) FROM [dbo].[휴무일] WHERE [사용여부] = 1) = 40)
+    PRINT 'PASS SED-008 활성 휴무일 40행';
 ELSE BEGIN PRINT 'FAIL SED-008 휴무일 행수 불일치'; SET @Fail += 1; END
 
 IF EXISTS (SELECT 1 FROM [dbo].[휴무일] WHERE [휴무일자] = '2026-12-25' AND DATEDIFF(DAY,0,[휴무일자])%7 = 4)
@@ -72,6 +73,24 @@ ELSE BEGIN PRINT 'FAIL SED-009 평일 휴무일 없음 또는 요일 불일치';
 IF EXISTS (SELECT 1 FROM [dbo].[휴무일] WHERE [휴무일자] = '2026-12-26' AND DATEDIFF(DAY,0,[휴무일자])%7 = 5)
     PRINT 'PASS SED-010 토요일 휴무일 존재';
 ELSE BEGIN PRINT 'FAIL SED-010 토요일 휴무일 없음 또는 요일 불일치'; SET @Fail += 1; END
+
+-- SED-013 휴무구분 분포 (06 §14). 개수만 맞고 구분이 어긋나면 화면 편집 가능 여부가 달라진다.
+DECLARE @Law INT = (SELECT COUNT(*) FROM [dbo].[휴무일] WHERE [휴무구분] = N'법정공휴일');
+DECLARE @Sub INT = (SELECT COUNT(*) FROM [dbo].[휴무일] WHERE [휴무구분] = N'대체공휴일');
+DECLARE @Own INT = (SELECT COUNT(*) FROM [dbo].[휴무일] WHERE [휴무구분] = N'자체휴무일');
+IF (@Law = 28 AND @Sub = 11 AND @Own = 1)
+    PRINT 'PASS SED-013 휴무구분 분포 법정 28 / 대체 11 / 자체 1';
+ELSE BEGIN
+    PRINT 'FAIL SED-013 휴무구분 분포 불일치 법정 ' + CONVERT(VARCHAR(5), @Law)
+        + ' / 대체 ' + CONVERT(VARCHAR(5), @Sub) + ' / 자체 ' + CONVERT(VARCHAR(5), @Own);
+    SET @Fail += 1;
+END
+
+-- SED-014 일요일은 Seed 하지 않는다 (06 §14.2). HOL-01 의 요일 Rule 이 이미 차단한다.
+DECLARE @Sun INT = (SELECT COUNT(*) FROM [dbo].[휴무일] WHERE DATEDIFF(DAY, 0, [휴무일자]) % 7 = 6);
+IF (@Sun = 0)
+    PRINT 'PASS SED-014 일요일 Seed 0행';
+ELSE BEGIN PRINT 'FAIL SED-014 일요일 Seed ' + CONVERT(VARCHAR(5), @Sun) + '행'; SET @Fail += 1; END
 
 -- SED-011 AEX 7종이 전부 추가검사사용여부=1 인가
 --   CORRUPT-3 이 tests/03 에서 일시적으로 0 으로 바꾸고 되돌리므로,

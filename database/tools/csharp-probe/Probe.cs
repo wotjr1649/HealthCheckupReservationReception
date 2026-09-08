@@ -95,7 +95,9 @@ static class Probe
                 }
             }
 
-            // CS-007  동시성값 타입. 05 §16.3 — 최종수정일시 -> DateTime, 행버전 -> byte[8].
+            // CS-007  동시성값 타입. 05 §16.3 — R7 부터 세 Entity 가 전부 행버전 -> byte[8] 이다.
+            //         R7 이전에는 수검자만 최종수정일시(DateTime)였고, 그래서 C# 쪽 동시성 처리가
+            //         Entity 마다 두 벌이었다. 여기서 그 통일을 확인한다.
             if (pid > 0)
             using (var cmd = new SqlCommand("dbo.USP_HC_수검자상세_조회", cn))
             {
@@ -104,8 +106,8 @@ static class Probe
                 using (var r = cmd.ExecuteReader())
                 {
                     r.Read(); r.NextResult(); r.Read();
-                    object edit = r["최종수정일시"];
-                    Eq("CS-007", "최종수정일시 CLR 타입", edit.GetType().Name, "DateTime");
+                    var edit = (byte[])r["행버전"];
+                    Eq("CS-007", "수검자 행버전 길이", edit.Length, 8);
                     Eq("CS-008", "B형간염제외여부 CLR 타입", r["B형간염제외여부"].GetType().Name, "Boolean");
                 }
             }
@@ -164,7 +166,7 @@ static class Probe
             const string SPFILTER = "FROM sys.parameters pa JOIN sys.procedures p ON p.object_id = pa.object_id " +
                                     "WHERE p.name LIKE 'USP[_]HC[_]%'";
             using (var cmd = new SqlCommand("SELECT COUNT(*) " + SPFILTER, cn))
-                Eq("CS-014", "계약 SP Parameter 전건", (int)cmd.ExecuteScalar(), 99);
+                Eq("CS-014", "계약 SP Parameter 전건", (int)cmd.ExecuteScalar(), 113);
             using (var cmd = new SqlCommand(
                 "SELECT COUNT(*) " + SPFILTER + " AND pa.name NOT LIKE '%[가-힣]%'", cn))
                 Eq("CS-015", "한글을 담지 않는 Parameter", (int)cmd.ExecuteScalar(), 0);

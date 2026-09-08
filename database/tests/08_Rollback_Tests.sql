@@ -187,8 +187,9 @@ END
 ----------------------------------------------------------------------------
 -- RBK-005  UPDATE_수검자정보 가 205(활성 업무 보유)로 실패 -> 수검자 행 전체 불변
 ----------------------------------------------------------------------------
-DECLARE @Pid BIGINT, @Led DATETIME, @Snap NVARCHAR(500);
-SELECT @Pid = [수검자ID], @Led = [최종수정일시]
+-- R7: 동시성 토큰은 [행버전] 이다 (04 §1.2).
+DECLARE @Pid BIGINT, @Led BINARY(8), @Snap NVARCHAR(500);
+SELECT @Pid = [수검자ID], @Led = [행버전]
      , @Snap = [차트번호] + N'|' + [성명] + N'|' + [주민번호] + N'|' + [생년월일] + N'|' + [성별]
               + N'|' + ISNULL([휴대전화], N'-') + N'|' + CONVERT(NVARCHAR(1), [B형간염제외여부])
   FROM [dbo].[수검자] WHERE [차트번호] = N'F001';
@@ -197,11 +198,11 @@ SELECT @Pid = [수검자ID], @Led = [최종수정일시]
 EXEC [dbo].[USP_HC_수검자정보_수정] @Pid, @Led, N'F001', N'바뀐이름', '8001011999998',
      NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'TEST';
 
-IF ((SELECT [최종수정일시] FROM [dbo].[수검자] WHERE [수검자ID] = @Pid) = @Led
+IF ((SELECT [행버전] FROM [dbo].[수검자] WHERE [수검자ID] = @Pid) = @Led
     AND (SELECT [차트번호] + N'|' + [성명] + N'|' + [주민번호] + N'|' + [생년월일] + N'|' + [성별]
               + N'|' + ISNULL([휴대전화], N'-') + N'|' + CONVERT(NVARCHAR(1), [B형간염제외여부])
            FROM [dbo].[수검자] WHERE [수검자ID] = @Pid) = @Snap)
-    PRINT 'PASS RBK-005 205 실패가 수검자 행과 LastEditDate 를 전부 보존했다';
+    PRINT 'PASS RBK-005 205 실패가 수검자 행과 RowVersion 을 전부 보존했다';
 ELSE BEGIN PRINT 'FAIL RBK-005 205 인데 수검자 행이 바뀌었다'; SET @Fail += 1; END
 
 ----------------------------------------------------------------------------

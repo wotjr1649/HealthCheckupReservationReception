@@ -7,10 +7,15 @@ const ROW = 0.195;            // 그리드 행 높이 (9pt 줄상자 0.166in + �
 const FIELD_H = 0.24;         // 입력/표시 필드 높이
 const BTN = { w: 1.05, h: 0.28 };
 
+// 상단 Navigation 진입점 — 원문 03 §1.1. 네 화면 파일에 같은 배열이 흩어져 있었고
+// [휴무일 관리] 를 더할 때 한 곳만 고쳐도 나머지 셋이 조용히 옛 목록을 그렸다.
+// 여기 하나만 둔다.
+const NAV = ['수검자 관리', '신규 예약', '예약 관리', '접수 관리', '휴무일 관리'];
+
 // ── 창 셸 ────────────────────────────────────────────────────────────
 // 상단 Navigation + Context Ribbon + 업무 Tab 스트립 + 하단 업무 상태바.
 // 반환값은 업무 View 사각형.
-function shell(c, { nav, navActive, ribbon, tabs, tabActive, status = '업무 상태 :  업무 가능', marks = {} }) {
+function shell(c, { nav = NAV, navActive, ribbon, tabs, tabActive, status = '업무 상태 :  업무 가능', marks = {} }) {
   const F0 = S.PAGE.frame;
   const x0 = F0.x, y0 = F0.y, W = F0.w, H = F0.h;
   c.rect(x0, y0, W, H, { stroke: S.C.ink, sw: S.W.win });
@@ -208,4 +213,4 @@ function searchBand(c, x, y, w, rows, o = {}) {
   return { bottom: y + h };
 }
 
-module.exports = { ROW, FIELD_H, BTN, shell, panel, field, grid, cols, modal, confirm, searchBand };
+module.exports = { ROW, FIELD_H, BTN, NAV, shell, panel, field, grid, cols, modal, confirm, searchBand };

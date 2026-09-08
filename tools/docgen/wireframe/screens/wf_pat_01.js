@@ -6,7 +6,7 @@ const K = require('../kit');
 
 function draw(c) {
   const v = K.shell(c, {
-    nav: ['수검자 관리', '신규 예약', '예약 관리', '접수 관리'], navActive: 0,
+    navActive: 0,
     ribbon: [
       { name: '검색', buttons: [{ t: '조회' }] },
       { name: '수검자', buttons: [{ t: '신규등록' }, { t: '정보수정' }, { t: '신규예약' }] },

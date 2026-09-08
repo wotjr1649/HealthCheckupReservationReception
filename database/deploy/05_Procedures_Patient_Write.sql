@@ -346,7 +346,7 @@ BEGIN
             , [생년월일]     = CAST(p.[생년월일]     AS VARCHAR(8))
             , [성별]       = CAST(p.[성별]         AS CHAR(1))
             , [휴대전화]  = CAST(p.[휴대전화]     AS VARCHAR(13))
-            , [최종수정일시] = CAST(p.[최종수정일시] AS DATETIME)
+            , [행버전]       = CAST(p.[행버전]       AS BINARY(8))
           FROM [dbo].[수검자] p
          WHERE (@결과행ID IS NOT NULL AND p.[수검자ID] = @결과행ID)
             OR (@결과코드 = 203 AND p.[성명] = @성명 AND p.[생년월일] = @생년월일)
@@ -354,7 +354,7 @@ BEGIN
 
 END
 GO
--- 05 §10.2. 검증순서는 존재 → 최종수정일시 → 실제 변경 여부 → 공통 업무가능 →
+-- 05 §10.2. 검증순서는 존재 → 행버전 → 실제 변경 여부 → 공통 업무가능 →
 -- 차트번호 고유성 → 주민번호 고유성 → 주민번호 변경 시 RSV/RCP 부재 순이다.
 -- No-op(결과코드=1) 판정이 308/309 보다 앞이라는 것이 계약이므로 그대로 따른다.
 --
@@ -363,7 +363,7 @@ GO
 --     먼저 잡게 되어 §23 전역 순서가 뒤집힌다. 자원명은 요청값으로 바로 만든다.
 CREATE OR ALTER PROCEDURE [dbo].[USP_HC_수검자정보_수정]
     @수검자ID          BIGINT,
-    @최종수정일시       DATETIME,
+    @행버전             BINARY(8),
     @차트번호            NVARCHAR(100),
     @성명               NVARCHAR(100),
     @주민번호       VARCHAR(13),
@@ -392,7 +392,7 @@ BEGIN
     SET XACT_ABORT ON;
 
     DECLARE @서버시각 DATETIME2(7) = SYSDATETIME();
-    DECLARE @결과차트번호 NVARCHAR(100), @결과최종수정일시 DATETIME;
+    DECLARE @결과차트번호 NVARCHAR(100), @결과행버전 BINARY(8);
     DECLARE @오늘날짜      DATE         = CONVERT(DATE, @서버시각);
     DECLARE @저장시각  DATETIME2(0) = CONVERT(DATETIME2(0), @서버시각);
 
@@ -402,11 +402,10 @@ BEGIN
     DECLARE @잠금결과 INT, @자원주민번호 NVARCHAR(255), @자원차트번호 NVARCHAR(255), @자원수검자 NVARCHAR(255);
     DECLARE @주민7번째자리 CHAR(1) = NULL, @출생세기 VARCHAR(2) = NULL;
     DECLARE @성별 CHAR(1) = NULL, @생년월일 VARCHAR(8) = NULL;
-    DECLARE @새최종수정일시 DATETIME = NULL;
 
     -- 변경전 값. Transaction 안의 재검증 단계에서 한 번 읽어 No-op 판정과 감사 기록에 재사용한다
     -- (04 §8.6.5 "추가 조회를 하지 않는다").
-    DECLARE @기존최종수정일시       DATETIME      = NULL;
+    DECLARE @기존행버전             BINARY(8)     = NULL;
     DECLARE @기존차트번호    NVARCHAR(100) = NULL, @기존성명수정전  NVARCHAR(100) = NULL;
     DECLARE @기존주민번호        VARCHAR(13)   = NULL, @기존휴대전화 VARCHAR(13)  = NULL;
     DECLARE @기존전화번호      VARCHAR(13)   = NULL, @기존이메일 VARCHAR(200)  = NULL;
@@ -431,8 +430,8 @@ BEGIN
 
     IF @수검자ID IS NULL
     BEGIN SET @결과코드 = 100; SET @오류항목 = N'수검자ID'; END
-    ELSE IF @최종수정일시 IS NULL
-    BEGIN SET @결과코드 = 100; SET @오류항목 = N'최종수정일시'; END
+    ELSE IF @행버전 IS NULL
+    BEGIN SET @결과코드 = 100; SET @오류항목 = N'행버전'; END
     ELSE IF @차트번호 IS NULL
     BEGIN SET @결과코드 = 100; SET @오류항목 = N'차트번호'; END
     ELSE IF @성명 IS NULL
@@ -511,8 +510,8 @@ BEGIN
                 THROW 50001, N'잠금 획득에 실패했습니다. 잠시 후 다시 시도하십시오.', 1;
             END
 
-            -- [4] 재검증. 최종수정일시는 NOT NULL 이므로 NULL 은 곧 미존재다.
-            SELECT @기존최종수정일시       = p.[최종수정일시]
+            -- [4] 재검증. 행버전은 NOT NULL 이므로 NULL 은 곧 미존재다.
+            SELECT @기존행버전             = p.[행버전]
                  , @기존차트번호    = p.[차트번호]
                  , @기존성명수정전       = p.[성명]
                  , @기존주민번호        = p.[주민번호]
@@ -527,14 +526,14 @@ BEGIN
               FROM [dbo].[수검자] p
              WHERE p.[수검자ID] = @수검자ID;
 
-            IF @기존최종수정일시 IS NULL
+            IF @기존행버전 IS NULL
             BEGIN
                 SET @성공여부 = 0; SET @결과코드 = 200; SET @오류항목 = N'수검자ID';
                 SET @결과메시지 = N'수검자를 찾을 수 없습니다.';
             END
-            ELSE IF @기존최종수정일시 <> @최종수정일시
+            ELSE IF @기존행버전 <> @행버전
             BEGIN
-                SET @성공여부 = 0; SET @결과코드 = 600; SET @오류항목 = N'최종수정일시';
+                SET @성공여부 = 0; SET @결과코드 = 601; SET @오류항목 = N'행버전';
                 SET @결과메시지 = N'다른 사용자가 수검자 정보를 변경했습니다. 최신 정보를 다시 조회하십시오.';
             END
             -- 실제 변경 여부는 NULL-safe 여야 한다 (스펙 §28.2). <> 로 비교하면 NULL <> 'x' 가
@@ -601,11 +600,11 @@ BEGIN
 
                 IF @결과코드 = 0
                 BEGIN
-                    -- 최종수정일시 단조증가 (스펙 §26). DATETIME 은 약 3.33ms 틱이라 +1ms 는
-                    -- 값이 변하지 않는다. +4ms 가 최소 안전값이다.
-                    SET @새최종수정일시 = CONVERT(DATETIME, @서버시각);
-                    IF @새최종수정일시 <= @기존최종수정일시 SET @새최종수정일시 = DATEADD(MILLISECOND, 4, @기존최종수정일시);
-
+                    -- [R7] 여기 있던 최종수정일시 단조증가(+4ms) 보정이 사라졌다.
+                    --      동시성 토큰이 [행버전](ROWVERSION)으로 옮겨 갔으므로 DATETIME 의
+                    --      3.33ms 틱이 판정에 관여하지 않는다. 그 보정은 저장된 시각을
+                    --      사실과 다르게 만들기도 했다 — 3ms 뒤로 밀린 값은 실제 수정 시각이
+                    --      아니었고, 그 거짓의 유일한 이유가 동시성이었다 (06 §26).
                     -- 생년월일·성별은 계산열이라 SET 목록에 없다 (Msg 271).
                     -- 주민번호를 바꾸면 계산열이 자동으로 다시 유도한다.
                     UPDATE [dbo].[수검자]
@@ -620,13 +619,13 @@ BEGIN
                          , [상세주소]        = @상세주소
                          , [비고]            = @비고
                          , [B형간염제외여부] = @B형간염제외여부
-                         , [최종수정일시]    = @새최종수정일시
-                     WHERE [수검자ID]     = @수검자ID
-                       AND [최종수정일시] = @기존최종수정일시;   -- 낙관적 동시성
+                         , [최종수정일시]    = CONVERT(DATETIME, @서버시각)
+                     WHERE [수검자ID] = @수검자ID
+                       AND [행버전]   = @기존행버전;   -- 낙관적 동시성
 
                     IF @@ROWCOUNT = 0
                     BEGIN
-                        SET @성공여부 = 0; SET @결과코드 = 600; SET @오류항목 = N'최종수정일시';
+                        SET @성공여부 = 0; SET @결과코드 = 601; SET @오류항목 = N'행버전';
                         SET @결과메시지 = N'다른 사용자가 수검자 정보를 변경했습니다. 최신 정보를 다시 조회하십시오.';
                     END
                     ELSE
@@ -634,11 +633,11 @@ BEGIN
                 END
             END
 
-            -- [X] RS1 을 COMMIT **뒤에** 다시 읽으면 그 사이 다른 세션이 바꾼 최종수정일시 가 나간다.
+            -- [X] RS1 을 COMMIT **뒤에** 다시 읽으면 그 사이 다른 세션이 바꾼 행버전 이 나간다.
             --     호출자는 자기 것이 아닌 동시성 토큰을 받고, 그 값으로 보낸 다음 요청이
-            --     600 으로 막혔어야 하는데 통과한다. 잠금 안에서 포획한다 (06 §43-18).
+            --     601 로 막혔어야 하는데 통과한다. 잠금 안에서 포획한다 (06 §43-18).
             IF @결과코드 IN (0, 1)
-                SELECT @결과차트번호 = p.[차트번호], @결과최종수정일시 = p.[최종수정일시]
+                SELECT @결과차트번호 = p.[차트번호], @결과행버전 = p.[행버전]
                   FROM [dbo].[수검자] p WHERE p.[수검자ID] = @수검자ID;
 
             IF @결과코드 IN (0, 1) COMMIT TRANSACTION;
@@ -668,7 +667,7 @@ BEGIN
     --     감사는 여전히 @@TRANCOUNT = 0 지점 · 자체 TRY / 빈 CATCH 다 (06 §21.1 · §43-19).
     ----------------------------------------------------------------------------
     -- [7] 감사 기록. 실제로 값이 바뀐 컬럼만 남는다 (00 CP-06 · 04 §8.6.2).
-    --   최종수정일시는 동시성 stamp 이지 사용자 데이터가 아니라 기록하지 않는다.
+    --   행버전·최종수정일시는 동시성·감사 값이지 사용자 데이터가 아니라 기록하지 않는다.
     ----------------------------------------------------------------------------
     IF @결과코드 = 0 AND @대상키 IS NOT NULL
     BEGIN
@@ -702,13 +701,13 @@ BEGIN
     END
 
     -- [6b] RS1 — 감사 **뒤**에 낸다. 순서가 뒤집히면 RS0 만 읽은 호출에서 감사가 사라진다 (§43-19).
-    -- RS1 수검자변경결과. No-op 은 갱신하지 않은 기존 최종수정일시 가 그대로 나온다 (05 §10.2).
+    -- RS1 수검자변경결과. No-op 은 갱신하지 않은 기존 행버전 이 그대로 나온다 (05 §10.2).
     -- 값은 잠금 안에서 포획한 것이다 (아래 [X] 참조). 커밋 뒤 재조회하지 않는다.
     IF @결과코드 IN (0, 1)
         SELECT
               [수검자ID]    = CAST(@수검자ID AS BIGINT)
             , [차트번호]      = CAST(@결과차트번호   AS NVARCHAR(100))
-            , [최종수정일시] = CAST(@결과최종수정일시    AS DATETIME);
+            , [행버전]       = CAST(@결과행버전          AS BINARY(8));
 
 END
 GO

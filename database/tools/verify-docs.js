@@ -205,9 +205,17 @@ function splitFences(src) {
   // 백틱이 경계라 한국어 조사 흡수가 원리적으로 불가능하고,
   // 명명규칙 예시·삭제 설명이 절 밖이라 자동으로 제외된다.
   const ck = uniq(/\`CK_[^\`\n]+\`/g), df = uniq(/\`DF_[^\`\n]+\`/g);
+  // 전이 자체를 기록한 줄 — 그때의 기대값을 지금 값으로 고치면 기록이 거짓이 된다.
+  // V15 의 ALLOW 와 같은 원칙이다: 휴리스틱이 아니라 **정확한 문자열**로만 연다.
+  // 살아 있는 선언에는 예외가 없다. 이 목록에 넣기 전에 "이 줄이 지금을 말하는가,
+  // 그때를 말하는가" 를 먼저 답해야 한다.
+  const HISTORY = [
+    '기대값도 테이블 6 · NCI 5 · SP 16 · CHECK 24 로 바뀌었다.',
+  ];
   const claims = [];
   const scan = (name, src) => src.split('\n').forEach((l, i) => {
     let m;
+    if (HISTORY.some(h => l.includes(h))) return;
     if ((m = l.match(/CHECK[^0-9\n]{0,14}?(\d+)\s*개/))) claims.push([name, i + 1, 'CK', +m[1], ck, l.trim()]);
     else if ((m = l.match(/CHECK\s+(\d+)\b/)))          claims.push([name, i + 1, 'CK', +m[1], ck, l.trim()]);
     if ((m = l.match(/Default[^0-9\n]{0,16}?(\d+)\s*개/))) claims.push([name, i + 1, 'DF', +m[1], df, l.trim()]);
@@ -394,7 +402,10 @@ function splitFences(src) {
     // 정상 수치를 잔재로 오탐한다 — 실제로 두 번 다 그렇게 됐다.
     // 개수의 항구적 보호는 V08 이다. V08 은 04 §8 의 이름을 세어 실측과 직접 대조하므로
     // 값이 어디로 움직이든 따라간다. 아래 목록은 "이름·상태값" 같은 되돌아오지 않는 것에 쓴다.
-    ['수검자 17',      /수검자[^0-9\n]{0,6}17\s*(?:컬럼|행)|17개\s*컬럼|스키마\s*17컬럼/],
+    // [!] ['수검자 17'] 을 뺐다. **세 번째 되돌아온 수치다.**
+    //     R2 17 -> R3 16 -> R7 17 (행버전 신설). 바로 위 두 주석이 예고한 그대로
+    //     정상값을 R2 잔재로 오탐했다. 컬럼 수의 항구적 보호는 DOC-001 이다 —
+    //     04 §8 의 컬럼 집합과 실제 DB 를 양방향 대조하므로 값이 어디로 움직여도 따라간다.
   ];
   // 정당한 예외 — R2 시점을 서술하는 역사 기록과, R2/R3 와 무관하게 "만들지 않는" 테이블 이름.
   const ALLOW = [
@@ -406,7 +417,6 @@ function splitFences(src) {
     '물리 테이블 7개의 컬럼명 47개',
     '## 3. 명명표 ― 컬럼 47개',
     'Key 컬럼이 없어졌다. NCI 5 -> 4',
-    '### `T46` `수검자` 17컬럼 + `CelNumberS` 계산열 전환',
     '검사항목 테이블 삭제 (테이블 7 -> 6)',
     '테이블 7 -> 9, TVF 2개의 조인 1 -> 2',
     'SCH-001  사용자 테이블  7 -> 6',
@@ -849,8 +859,11 @@ function splitFences(src) {
   let n = 0;
   try {
     // 작업트리에서 고쳐진 것도 본다 — 재봉인 커밋을 만들기 **전에** 알려주는 쪽이 낫다.
-    const dirty = new Set(git('status --porcelain').split('\n')
-      .map(l => l.slice(3).trim()).filter(Boolean));
+    // `git()` 을 쓰지 않는다 — 그 헬퍼는 출력 전체를 trim 하고, porcelain 첫 줄이
+    // 수정된 추적 파일(` M path`)이면 선행 공백이 잘려 slice(3) 이 경로를 한 글자 먹는다.
+    // 첫 줄이 `?? path`(공백 없음)일 때만 우연히 맞았다 (실측).
+    const dirty = new Set(cp.execSync('git status --porcelain', { cwd: REPO, maxBuffer: 1e8 })
+      .toString().split('\n').map(l => l.slice(3).trim()).filter(Boolean));
     const touched = p => [...dirty].some(d => d === p || d.startsWith(p + '/'));
 
     for (const [base, gen] of Object.entries(MIRROR)) {

@@ -39,6 +39,14 @@ GO
 CREATE TABLE [dbo].[수검자]
 (
     [수검자ID]        BIGINT          IDENTITY(1,1) NOT NULL,
+    -- 감사 블록을 PK 바로 뒤에 둔다 (04 §8.1.2 "PK -> 감사 -> FK -> 일반").
+    -- R7 이전에는 15·16번이라 컬럼을 하나 더할 때마다 감사 블록이 중간에 파묻혔다.
+    [생성일시]        DATETIME        NOT NULL CONSTRAINT [DF_수검자_CREATION_DATE]  DEFAULT (GETDATE()),
+    [최종수정일시]    DATETIME        NOT NULL CONSTRAINT [DF_수검자_LAST_EDIT_DATE] DEFAULT (GETDATE()),
+    -- 낙관적 동시성 토큰. R7 이전에는 [최종수정일시] 가 이 역할을 겸했는데 DATETIME 이 약 3.33ms 틱이라
+    -- 같은 눈금에서 두 번 수정하면 토큰이 변하지 않았고, 저장 SP 가 +4ms 로 값을 밀어 회피했다(06 §26).
+    -- 그 보정은 저장된 시각을 사실과 다르게 만들었다. ROWVERSION 은 UPDATE 마다 DB 가 반드시 바꾼다.
+    [행버전]          ROWVERSION      NOT NULL,
     [차트번호]        NVARCHAR(100)   NOT NULL,
     [성명]            NVARCHAR(100)   NOT NULL,
     [주민번호]        VARCHAR(13)     NOT NULL,
@@ -62,8 +70,6 @@ CREATE TABLE [dbo].[수검자]
     [상세주소]        NVARCHAR(200)   NULL,
     [B형간염제외여부] BIT             NOT NULL CONSTRAINT [DF_수검자_HEPATITIS_B_EXCLUDED] DEFAULT (0),
     [비고]            NVARCHAR(MAX)   NULL,
-    [생성일시]        DATETIME        NOT NULL CONSTRAINT [DF_수검자_CREATION_DATE]        DEFAULT (GETDATE()),
-    [최종수정일시]    DATETIME        NOT NULL CONSTRAINT [DF_수검자_LAST_EDIT_DATE]       DEFAULT (GETDATE()),
 
     CONSTRAINT [PK_수검자] PRIMARY KEY CLUSTERED ([수검자ID]),
     CONSTRAINT [UQ_수검자_CHART_NO]       UNIQUE ([차트번호]),
@@ -150,18 +156,34 @@ CREATE UNIQUE NONCLUSTERED INDEX [UX_검사코드_AEX_CODE]
 GO
 CREATE TABLE [dbo].[휴무일]
 (
-    [휴무일자] DATE          NOT NULL,
-    [휴무일명] NVARCHAR(100) NOT NULL,
-    [사용여부] BIT           NOT NULL CONSTRAINT [DF_휴무일_ACTIVE] DEFAULT (1),
-    [비고]     NVARCHAR(500) NULL,
+    [휴무일자]     DATE          NOT NULL,
+    -- R7 이전에는 감사 컬럼이 없었고 그 근거가 "정확 날짜 PK 조회만 수행한다" 였다.
+    -- 자체휴무일이 화면 CRUD 대상이 되면서 그 전제가 사라졌다 (04 §8.4.2).
+    [생성일시]     DATETIME2(0)  NOT NULL CONSTRAINT [DF_휴무일_CREATION_DATE]  DEFAULT (SYSDATETIME()),
+    [최종수정일시] DATETIME2(0)  NOT NULL CONSTRAINT [DF_휴무일_LAST_EDIT_DATE] DEFAULT (SYSDATETIME()),
+    [행버전]       ROWVERSION    NOT NULL,
+    [휴무일명]     NVARCHAR(100) NOT NULL,
+    -- 값을 코드가 아니라 한국어 그대로 저장한다. 00 HOL-04 의 세 값이 그대로 저장값이 되어
+    -- 화면·Seed·판정에 같은 문자열이 쓰이고 코드<->표시명 대응표가 생기지 않는다.
+    -- [변경이력].[대상테이블] 이 이미 같은 방식이다 (04 §8.6.2).
+    -- Default 를 두지 않는다 — 기본값이 있으면 구분을 빠뜨린 INSERT 가 조용히 통과한다.
+    [휴무구분]     NVARCHAR(10)  NOT NULL,
+    [사용여부]     BIT           NOT NULL CONSTRAINT [DF_휴무일_ACTIVE] DEFAULT (1),
+    [비고]         NVARCHAR(500) NULL,
 
     CONSTRAINT [PK_휴무일] PRIMARY KEY CLUSTERED ([휴무일자]),
-    CONSTRAINT [CK_휴무일_NAME_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([휴무일명]))) > 0)
+    CONSTRAINT [CK_휴무일_NAME_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([휴무일명]))) > 0),
+    CONSTRAINT [CK_휴무일_TYPE]           CHECK ([휴무구분] IN (N'법정공휴일', N'대체공휴일', N'자체휴무일')),
+    CONSTRAINT [CK_휴무일_EDIT_DATE]      CHECK ([최종수정일시] >= [생성일시])
 );
 GO
 CREATE TABLE [dbo].[예약접수]
 (
     [업무ID]       BIGINT       IDENTITY(1,1) NOT NULL,
+    -- 감사·동시성 블록 (04 §8.2.2 "PK -> 감사 -> FK -> 일반")
+    [생성일시]     DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_CREATION_DATE]  DEFAULT (SYSDATETIME()),
+    [최종수정일시] DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_LAST_EDIT_DATE] DEFAULT (SYSDATETIME()),
+    [행버전]       ROWVERSION   NOT NULL,
     [수검자ID]     BIGINT       NOT NULL,
     [예약일]       DATE         NOT NULL,
     [시간대코드]   CHAR(2)      NOT NULL,
@@ -173,9 +195,7 @@ CREATE TABLE [dbo].[예약접수]
     --     뜻하는 상태를 만들지 않으려고 NOT NULL 을 건다.
     [국가검사항목] NVARCHAR(100) NOT NULL,
     [추가검사항목] NVARCHAR(50)  NULL,
-    [생성일시]     DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_CREATION_DATE]  DEFAULT (SYSDATETIME()),
-    [최종수정일시] DATETIME2(0) NOT NULL CONSTRAINT [DF_예약접수_LAST_EDIT_DATE] DEFAULT (SYSDATETIME()),
-    [행버전]       ROWVERSION   NOT NULL,
+
     CONSTRAINT [PK_예약접수] PRIMARY KEY CLUSTERED ([업무ID]),
     CONSTRAINT [FK_예약접수_수검자] FOREIGN KEY ([수검자ID])
         REFERENCES [dbo].[수검자] ([수검자ID]) ON DELETE NO ACTION ON UPDATE NO ACTION,

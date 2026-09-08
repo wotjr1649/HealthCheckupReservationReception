@@ -5,7 +5,7 @@ const K = require('../kit');
 
 function draw(c) {
   const v = K.shell(c, {
-    nav: ['수검자 관리', '신규 예약', '예약 관리', '접수 관리'], navActive: 2,
+    navActive: 2,
     ribbon: [
       { name: '검색', buttons: [{ t: '조회' }] },
       { name: '현재 업무 Action', buttons: [{ t: '예약변경' }, { t: '예약취소' }, { t: '접수' }] },
@@ -31,7 +31,7 @@ function draw(c) {
 
 const desc = [
   { n: '', text: 'WF-00  MainForm Shell · MainForm · P00 · 공통' },
-  { n: '1', text: '업무 진입점 4개. 예약 관리·접수 관리는 같은 Tab을 공유' },
+  { n: '1', text: '진입점 5개. 예약 관리·접수 관리는 같은 Tab을 공유하고 휴무일 관리는 Tab 없이 Modal을 연다' },
   { n: '2', text: 'Ribbon Group 순서는 검색 → 현재 업무 Action → 보기' },
   { n: '3', text: '동일 업무 Tab은 중복 생성하지 않는다 (Single Instance)' },
   { n: '4', text: '주요 Action은 하단이 아니라 Context Ribbon에 둔다' },
