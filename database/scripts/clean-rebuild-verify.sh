@@ -27,6 +27,21 @@ dump() {                      # dump <출력파일>
 
 say() { echo "$1" | tee -a "$OUT"; }
 
+# 타 DB 메타데이터 스냅샷. RBD-009 가 rebuild **전후**로 한 번씩 찍어 비교한다.
+#   [X] name 을 문자열 연결하면 sysname 의 catalog collation 과 리터럴이 충돌해 Msg 451 이다(실측).
+#       컬럼을 그대로 나열하고 -s"|" 가 구분자를 붙이게 한다.
+otherdb() {                   # otherdb <출력파일>
+  sqlcmd -S "$SRV" -E -d master -b -I -h-1 -W -s"|" \
+    -Q "SET NOCOUNT ON; SELECT name, state_desc, user_access_desc, CONVERT(VARCHAR(1), CONVERT(INT, is_read_only)), CONVERT(VARCHAR(30), create_date, 126) FROM sys.databases WHERE name NOT IN (N'$DB', N'tempdb') ORDER BY database_id;" \
+    -o "$1"
+}
+
+# [X] 이 스냅샷을 **회차 시작 시점에** 찍는다. 예전에는 2026-09-04 에 T04 가 남긴 파일 하나를
+#     4일째 기준으로 삼았고, 그 사이 인스턴스에 다른 DB 가 생기자 우리 rebuild 와 무관하게
+#     영구히 FAIL 했다(실측 2026-09-08 — 다른 계열이 만든 DB 2개). RBD-009 가 묻는 것은
+#     "이 rebuild 가 타 DB 를 건드렸는가" 이므로 비교 구간도 이 회차여야 한다.
+otherdb artifacts/reports/otherdb_before.txt
+
 # ── RBD-002  Rebuild.sql 은 master 컨텍스트를 강제한다. 대상 DB 에서 돌리면 50021 이다.
 sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -i Rebuild.sql -o artifacts/logs/rbd002.log
 RC=$?
@@ -82,13 +97,9 @@ else
   say "FAIL RBD-008 exit=$RC 또는 덤프 불일치"; FAILED=1
 fi
 
-# ── RBD-009  타 DB 무사. T04 가 남긴 otherdb_before.txt 와 같은 명령·같은 컬럼으로 다시 찍어 diff 한다.
+# ── RBD-009  타 DB 무사. 이 회차 시작 시점에 찍은 스냅샷과 같은 명령·같은 컬럼으로 다시 찍어 diff 한다.
 #    이름 존재 확인만으로는 증거가 되지 않는다. state_desc·user_access_desc·is_read_only·create_date 를 본다.
-#    [X] name 을 문자열 연결하면 sysname 의 catalog collation 과 리터럴이 충돌해 Msg 451 이다(실측).
-#        컬럼을 그대로 나열하고 -s"|" 가 구분자를 붙이게 한다.
-sqlcmd -S "$SRV" -E -d master -b -I -h-1 -W -s"|" \
-  -Q "SET NOCOUNT ON; SELECT name, state_desc, user_access_desc, CONVERT(VARCHAR(1), CONVERT(INT, is_read_only)), CONVERT(VARCHAR(30), create_date, 126) FROM sys.databases WHERE name NOT IN (N'HealthCheckupReservationReceptionDb', N'tempdb') ORDER BY database_id;" \
-  -o artifacts/reports/otherdb_after.txt
+otherdb artifacts/reports/otherdb_after.txt
 if diff -q artifacts/reports/otherdb_before.txt artifacts/reports/otherdb_after.txt > /dev/null; then
   say 'PASS RBD-009 타 DB 메타데이터가 rebuild 전후로 동일'
 else
