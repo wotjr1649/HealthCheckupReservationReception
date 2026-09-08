@@ -66,7 +66,7 @@ xlsx/inspect_erd.js  만들어진 ERD 시트를 텍스트로 되그린다 — �
 지정한 너비가 파일에 살아남았는지 왕복으로 대조하고 어긋나면 `exit 1` 이다.
 
 `04`·`05` 생성기만 **원본을 파싱한다.** `build_00.js` 와 `proc/slides/*.js`·`wireframe/screens/*.js` 는
-내용이 하드코딩돼 있어 기준선을 고쳐도 산출물이 따라오지 않는다(`database/CLAUDE.md` §3).
+내용이 하드코딩돼 있어 기준선을 고쳐도 산출물이 따라오지 않는다(`database/AGENTS.md` §3).
 `xlsx/md.js` 가 마크다운 표·코드펜스를 뽑고 두 생성기가 그것만 쓴다 — 기준선을 다시 봉인하면
 `node tools/docgen/xlsx/build_04.js && node tools/docgen/xlsx/build_05.js` 만 돌리면 된다.
 두 생성기는 마지막에 **행 수를 기준선 선언값과 대조**하고 어긋나면 `exit 1` 이다.

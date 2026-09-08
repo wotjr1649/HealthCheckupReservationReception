@@ -4,15 +4,15 @@ cd "$(dirname "$0")/.."
 node -e '
 const fs=require("fs"),path=require("path"),c=require("crypto");
 const DIR="../docs/baseline";
-// 봉인 목록. 문서가 FINAL 이 되어 입주할 때 한 줄이 늘어난다 (ROOT CLAUDE.md §2.1).
+// 봉인 목록. 문서가 FINAL 이 되어 입주할 때 한 줄이 늘어난다 (ROOT AGENTS.md §2.1).
 const exp={
  "00_Project_Policy.md":"b748098b7d1090028e8c9532b37629a24893025ab842bbd88eea408278bbb3a6",
  "01_Process_Definition.md":"079891e98f69d40082d822b53ad50ba81f16d21ee74ce3e45fd5b499e80811a0",
  "02_Function_Definition.xlsx":"6ef02f8edcf232fd8fa01865b2a5ba84ab9b78d0200c47174dd85fdfc30b8401",
  "03_Wireframe_Definition.md":"66b81a5f04eee7a4858c6361b9875e5d46aa548d11f0f98c3843b9521a1f2d9c",
- "04_DB_Design.md":"f7c0dc54d2a2168ad14fa7f8d4c0216b4bfd1dfa5dc8742d555e513afea917c3",
+ "04_DB_Design.md":"dd9178fa390dab2638693617c00cc3a3dce2eca53f55ea85567e4563240f5a6c",
  "05_DB_Rule_SP_Contract.md":"c1da5eb502a7a2ee9c288d26ef4ac9642c28728a8319a5bb2ef34bd85692bbc8",
- "06_DB_Transaction_Security_Seed.md":"7acd36e50abc6b575f399aa7e0a66f6b8c9d59373d3ba645faec0d56b3fd329b"};
+ "06_DB_Transaction_Security_Seed.md":"f8db49fe6ec88112fe7ac604597e5372ec1b8a5e95c9aa0071b93b385cb34e7c"};
 const N=Object.keys(exp).length;
 let ok=0;
 for(const [n,e] of Object.entries(exp)){

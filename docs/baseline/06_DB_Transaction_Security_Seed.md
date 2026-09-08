@@ -2,14 +2,14 @@
 
 - **문서명:** `06_DB_Transaction_Security_Seed.md`
 - **상태:** `FINAL / GO / READ-ONLY` — SQL 실행검증 완료. §42 Gate 판정은 전부 실측이다
-- **위치:** `docs/baseline/` — 2026-09-08 입주. 이제 이 문서를 고치는 것도 재봉인이다 (ROOT `CLAUDE.md` §2)
+- **위치:** `docs/baseline/` — 2026-09-08 입주. 이제 이 문서를 고치는 것도 재봉인이다 (ROOT `AGENTS.md` §2)
 - **문서 버전:** v1.1  (v1.0 → R4 한글화 반영. SP 16개 이름·Parameter·Result Set 컬럼을 새 계약으로 교체했다)
 - **기준일:** 2026-09-08  ·  **실행검증일:** 2026-09-07(R3 회귀) · 2026-09-08(R4 회귀)
 - **기준선 ID:** `HC-RSV-RCP-20260908-R4`  (직전 `HC-RSV-RCP-20260904-R3`)
 - **R4 반영 범위:** 이 문서의 SP 이름·Parameter·Result Set 컬럼 표기를 `05` v3.0 에 맞췄다. Transaction·잠금·Seed·시험 계약의 **내용**은 바뀌지 않는다 — 이름만 바뀌었다. 절차·건수·판정은 그대로다
 - **대상 SQL Server:** `.\SQLEXPRESS` — Microsoft SQL Server 2025 Express `17.0.1125.2` (RTM), 로컬 전용
 - **Database:** `HealthCheckupReservationReceptionDb`
-- **Source of Truth:** `00_Project_Policy.md` → `01_Process_Definition.md` → `02_Function_Definition.xlsx` → `03_Wireframe_Definition.md` → `04_DB_Design.md` → `05_DB_Rule_SP_Contract.md`. 버전·상태·기준선 ID 는 **§4.1 한 곳에만** 적는다 — 예전에 여기에도 적어 두었다가 `00`·`01`·`02`·`03` 이 `v1.2` 로 굳은 채 남았다 (ROOT `CLAUDE.md` §6)
+- **Source of Truth:** `00_Project_Policy.md` → `01_Process_Definition.md` → `02_Function_Definition.xlsx` → `03_Wireframe_Definition.md` → `04_DB_Design.md` → `05_DB_Rule_SP_Contract.md`. 버전·상태·기준선 ID 는 **§4.1 한 곳에만** 적는다 — 예전에 여기에도 적어 두었다가 `00`·`01`·`02`·`03` 이 `v1.2` 로 굳은 채 남았다 (ROOT `AGENTS.md` §6)
 - **변경 통제:** 본 문서는 00~05의 객체명·Parameter·Result Set·ResultCode·업무의미를 변경하지 않는다. 본 문서가 확정하는 것은 Transaction·잠금·권한·Seed·테스트·배포의 **구현 상세**뿐이다.
 
 ## 라벨 규약
@@ -33,7 +33,7 @@
 | 버전 | v1.1 |
 | 기준일 | 2026-09-08 (실행검증 2026-09-07 R3 · 2026-09-08 R4) |
 | 기준선 ID | `HC-RSV-RCP-20260908-R4` |
-| 위치 | `docs/baseline/` — 2026-09-08 입주 (ROOT `CLAUDE.md` §2.1) |
+| 위치 | `docs/baseline/` — 2026-09-08 입주 (ROOT `AGENTS.md` §2.1) |
 | 대상 SQL Server | SQL Server 2025 Express 17.0.1125.2 / 인스턴스 `.\SQLEXPRESS` |
 | 선행 문서 | `04_DB_Design.md`(Phase 2), `05_DB_Rule_SP_Contract.md`(Phase 3) |
 | 후속 문서 | `07_UI_DB_Matrix_Final_Validation.md` (Phase 5) |
@@ -101,7 +101,7 @@ Extended Events / trace flag 세션 (서버 수준 객체)
 | `06_DB_Transaction_Security_Seed.md` | v1.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R4` |
 
 `[!]` **기준선 ID 는 문서마다 "마지막 봉인 회차" 다** — 세트 하나에 ID 하나가 아니다.
-`00`~`03` 은 R4 에서 한 바이트도 열지 않아 R3 표기를 유지한다 (ROOT `CLAUDE.md` §2.2).
+`00`~`03` 은 R4 에서 한 바이트도 열지 않아 R3 표기를 유지한다 (ROOT `AGENTS.md` §2.2).
 
 동일 디렉터리 및 `docs` 전체에서 `(1)`·`Candidate`·`후보`·`개선본`·`백업`·`old`·`copy` 사본 **0건**을 확인했다.
 
@@ -115,7 +115,7 @@ Extended Events / trace flag 세션 (서버 수준 객체)
 
 `[X]` **예전에는 이 자리에 6개 파일의 SHA-256 을 옮겨 적고 "게이트의 하드코딩 값과 일치한다" 고
 선언했다.** R4 재봉인으로 `04`·`05` 의 해시가 바뀌자 그 문장이 **거짓이 되었고 아무도 몰랐다.**
-같은 값을 두 곳에 두면 한쪽은 반드시 뒤처진다 — ROOT `CLAUDE.md` §6 이 이 사건에서 나왔다.
+같은 값을 두 곳에 두면 한쪽은 반드시 뒤처진다 — ROOT `AGENTS.md` §6 이 이 사건에서 나왔다.
 
 기준선 `.md` 는 전부 **CR=0 (LF 전용)** 이라 CRLF 정규화가 no-op 이며 raw hash 와 정규화 hash 가
 같다. R2 시점 `03` 불일치 판정은 §44 `D4-001` 에 보존한다.
@@ -251,7 +251,8 @@ WinForms 현재 상태에 맞추어 DB 계약을 변경하지 않는다. Phase 4
 
 ```text
 database/
-├─ CLAUDE.md                          작업 경계·금지사항 요약
+├─ AGENTS.md                          작업 경계·금지사항 요약 (Codex 가 읽는 본문)
+├─ CLAUDE.md                          `@AGENTS.md` 한 줄 (Claude 가 읽는 입구)
 ├─ README.md                          실행 방법
 ├─ Deploy.sql                         진입점 1 — 대상 DB 내부 전체 재배포
 ├─ Rebuild.sql                        진입점 2 — DB 자체 Drop/Create 후 Deploy
@@ -1713,7 +1714,7 @@ Write SP는 검증순서에서 `308`/`309`(공통 업무 가능)를 **업무 Rul
 
 `[X 2차]` **초안은 창 밖에서 파일을 통째로 `RETURN` 했다.** 그러면 밤·주말 회귀가 Write SP 에
 대해 아무것도 증명하지 못하고, `308`·`309` 는 **영영 관측되지 않는 ResultCode** 로 남는다
-(실측: Catalog 38개 중 미관측 7개에 둘 다 들어 있었다). `SKIP` 은 `PASS` 가 아니다(`CLAUDE.md` §10)
+(실측: Catalog 38개 중 미관측 7개에 둘 다 들어 있었다). `SKIP` 은 `PASS` 가 아니다(`database/AGENTS.md` §10)
 — 그렇다고 판정할 수 있는 것을 안 하고 넘기라는 뜻도 아니다.
 
 **창 밖에서도 판정할 것이 있다.** Write SP 가 `308`/`309` 를 내고 **아무것도 바꾸지 않는다** 는 것은
@@ -1737,7 +1738,7 @@ OFF-308-*             **언제나 실행**          아래 참조
 ```
 
 `[X 실측]` **`OFF-308` 은 한 번도 판정된 적이 없었다.** 일요일이나 활성 휴무일을 기다리는
-구성이라 평일 회차마다 `SKIP` 이었고, `SKIP` 은 `PASS` 가 아니다(CLAUDE.md §10). 실제로 이
+구성이라 평일 회차마다 `SKIP` 이었고, `SKIP` 은 `PASS` 가 아니다(database/AGENTS.md §10). 실제로 이
 시험은 작성 이후 단 한 번도 실행되지 않았다.
 
 **휴무일은 데이터다.** 시험이 오늘을 활성 휴무일로 직접 심고 지우면 SP·TVF 를 한 글자도

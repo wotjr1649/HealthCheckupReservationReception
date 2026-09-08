@@ -86,7 +86,7 @@ iconv -f UTF-16 -t UTF-8 artifacts/logs/*.log | grep -E '^(PASS|FAIL|SKIP|INFO|M
 ## Gate
 
 G00~G16 의 정의와 증거 파일 대응은 스펙 §42 에 있다.
-`PASS` 는 실제 실행 증거가 있을 때만 기록한다. 자세한 금지사항은 `CLAUDE.md` 를 본다.
+`PASS` 는 실제 실행 증거가 있을 때만 기록한다. 자세한 금지사항은 `AGENTS.md` 를 본다.
 
 ---
 
