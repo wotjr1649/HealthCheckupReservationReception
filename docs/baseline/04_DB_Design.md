@@ -136,7 +136,8 @@ RS0.오류항목 을 VARCHAR(50) -> NVARCHAR(50) 으로                      05 
 → DB Script / C# Source
 ```
 
-- 00~05는 `HC-RSV-RCP-20260908-R4` 기준선의 유일한 구현 기준이며 모두 READ-ONLY다. `00`~`03` 의 머리말은 R3 표기를 유지한다 — 내용이 바뀌지 않았고 해시가 고정돼 있다.
+- 00~05는 설계 기준선이며 모두 READ-ONLY다. `06_DB_Transaction_Security_Seed.md`(구현 계약)도 2026-09-08에 같은 봉인으로 들어와 현재 `docs/baseline/`은 00~06 일곱이다. `07_UI_DB_Matrix_Final_Validation.md`는 Phase 5가 끝나면 같은 규칙으로 입주한다.
+- 기준선 ID는 세트가 아니라 **문서마다 마지막으로 봉인된 회차**다. `00`~`03`은 R4에서 한 바이트도 열지 않아 `HC-RSV-RCP-20260904-R3` 표기를 유지하고 `04`~`06`이 `HC-RSV-RCP-20260908-R4`다. 입주·재봉인 규칙 전문은 ROOT `CLAUDE.md` §2에 있다.
 - 와이어프레임 기준본은 정식 파일명 `03_Wireframe_Definition.md` 하나만 사용한다.
 - 본 문서는 테이블명·컬럼명·타입·NULL·키·제약·최소 Index·Sequence·AEX 입력경계를 확정한다.
 - 정확한 UDF/SP 이름·시그니처·Result Set·ResultCode·검증 우선순위는 `05_DB_Rule_SP_Contract.md`를 따른다.

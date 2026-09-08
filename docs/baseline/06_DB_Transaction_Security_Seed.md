@@ -1,20 +1,15 @@
 # 검진 예약·접수 관리 프로그램 — DB Transaction·잠금·보안·Seed 구현 계약서
 
 - **문서명:** `06_DB_Transaction_Security_Seed.md`
-- **상태:** `FINAL / GO` — SQL 실행검증 완료 (2026-09-07). §42 Gate 판정은 전부 실측이다
+- **상태:** `FINAL / GO / READ-ONLY` — SQL 실행검증 완료. §42 Gate 판정은 전부 실측이다
+- **위치:** `docs/baseline/` — 2026-09-08 입주. 이제 이 문서를 고치는 것도 재봉인이다 (ROOT `CLAUDE.md` §2)
 - **문서 버전:** v1.1  (v1.0 → R4 한글화 반영. SP 16개 이름·Parameter·Result Set 컬럼을 새 계약으로 교체했다)
 - **기준일:** 2026-09-08  ·  **실행검증일:** 2026-09-07(R3 회귀) · 2026-09-08(R4 회귀)
 - **기준선 ID:** `HC-RSV-RCP-20260908-R4`  (직전 `HC-RSV-RCP-20260904-R3`)
 - **R4 반영 범위:** 이 문서의 SP 이름·Parameter·Result Set 컬럼 표기를 `05` v3.0 에 맞췄다. Transaction·잠금·Seed·시험 계약의 **내용**은 바뀌지 않는다 — 이름만 바뀌었다. 절차·건수·판정은 그대로다
 - **대상 SQL Server:** `.\SQLEXPRESS` — Microsoft SQL Server 2025 Express `17.0.1125.2` (RTM), 로컬 전용
 - **Database:** `HealthCheckupReservationReceptionDb`
-- **Source of Truth:**
-  - `../baseline/00_Project_Policy.md` — v1.2 FINAL / GO / READ-ONLY
-  - `../baseline/01_Process_Definition.md` — v1.2 FINAL / GO / READ-ONLY
-  - `../baseline/02_Function_Definition.xlsx` — v1.2 FINAL / GO / READ-ONLY
-  - `../baseline/03_Wireframe_Definition.md` — v1.2 FINAL / GO / READ-ONLY
-  - `../baseline/04_DB_Design.md` — v3.0 FINAL / GO / READ-ONLY (R4)
-  - `../baseline/05_DB_Rule_SP_Contract.md` — v3.0 FINAL / GO / READ-ONLY (R4)
+- **Source of Truth:** `00_Project_Policy.md` → `01_Process_Definition.md` → `02_Function_Definition.xlsx` → `03_Wireframe_Definition.md` → `04_DB_Design.md` → `05_DB_Rule_SP_Contract.md`. 버전·상태·기준선 ID 는 **§4.1 한 곳에만** 적는다 — 예전에 여기에도 적어 두었다가 `00`·`01`·`02`·`03` 이 `v1.2` 로 굳은 채 남았다 (ROOT `CLAUDE.md` §6)
 - **변경 통제:** 본 문서는 00~05의 객체명·Parameter·Result Set·ResultCode·업무의미를 변경하지 않는다. 본 문서가 확정하는 것은 Transaction·잠금·권한·Seed·테스트·배포의 **구현 상세**뿐이다.
 
 ## 라벨 규약
@@ -34,10 +29,11 @@
 | 항목 | 값 |
 |---|---|
 | 문서명 | `06_DB_Transaction_Security_Seed.md` |
-| 상태 | `FINAL / GO` |
-| 버전 | v1.0 |
-| 기준일 | 2026-09-04 (실행검증 2026-09-07) |
-| 기준선 ID | `HC-RSV-RCP-20260904-R3` |
+| 상태 | `FINAL / GO / READ-ONLY` |
+| 버전 | v1.1 |
+| 기준일 | 2026-09-08 (실행검증 2026-09-07 R3 · 2026-09-08 R4) |
+| 기준선 ID | `HC-RSV-RCP-20260908-R4` |
+| 위치 | `docs/baseline/` — 2026-09-08 입주 (ROOT `CLAUDE.md` §2.1) |
 | 대상 SQL Server | SQL Server 2025 Express 17.0.1125.2 / 인스턴스 `.\SQLEXPRESS` |
 | 선행 문서 | `04_DB_Design.md`(Phase 2), `05_DB_Rule_SP_Contract.md`(Phase 3) |
 | 후속 문서 | `07_UI_DB_Matrix_Final_Validation.md` (Phase 5) |
@@ -94,31 +90,35 @@ Extended Events / trace flag 세션 (서버 수준 객체)
 
 ## 4.1 파일·버전·상태
 
-| 파일 | 기대 버전 | 실측 버전 | 상태 | 기준선 ID |
-|---|---|---|---|---|
-| `00_Project_Policy.md` | v2.0 | **v2.0** | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
-| `01_Process_Definition.md` | v2.0 | **v2.0** | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
-| `02_Function_Definition.xlsx` | v2.0 | **v2.0** | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
-| `03_Wireframe_Definition.md` | v1.3 | **v1.3** | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
-| `04_DB_Design.md` | v2.0 | **v2.0** | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
-| `05_DB_Rule_SP_Contract.md` | v2.0 | **v2.0** | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
+| 파일 | 버전 | 상태 | 기준선 ID |
+|---|---|---|---|
+| `00_Project_Policy.md` | v2.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
+| `01_Process_Definition.md` | v2.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
+| `02_Function_Definition.xlsx` | v2.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
+| `03_Wireframe_Definition.md` | v1.3 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
+| `04_DB_Design.md` | v3.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R4` |
+| `05_DB_Rule_SP_Contract.md` | v3.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R4` |
+| `06_DB_Transaction_Security_Seed.md` | v1.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R4` |
+
+`[!]` **기준선 ID 는 문서마다 "마지막 봉인 회차" 다** — 세트 하나에 ID 하나가 아니다.
+`00`~`03` 은 R4 에서 한 바이트도 열지 않아 R3 표기를 유지한다 (ROOT `CLAUDE.md` §2.2).
 
 동일 디렉터리 및 `docs` 전체에서 `(1)`·`Candidate`·`후보`·`개선본`·`백업`·`old`·`copy` 사본 **0건**을 확인했다.
 
-## 4.2 SHA-256 실측
+## 4.2 SHA-256 — 값은 여기 적지 않는다
 
-5개 `.md`는 전부 **CR=0 (LF 전용)** 이므로 CRLF 정규화가 no-op이며 raw hash와 정규화 hash가 동일하다.
+**단일 출처는 `database/scripts/verify-baseline.sh` 다.** 이 문서는 값을 복사하지 않는다.
 
-| 파일 | Bytes | LF | 실측 SHA-256 | 인계문서 기대값 | 판정 |
-|---|---:|---:|---|---|:---:|
-| `00_Project_Policy.md` | 22,530 | 349 | `0d10397d607823bb85f357c91ebd00d686b65b15e3d5ff13938d13c823c22a92` | R3 재봉인 실측 | **OK** |
-| `01_Process_Definition.md` | 30,403 | 1,063 | `633bf096ae729674e70bf0a78209b68c9d068632fe68ba7f69e814d1f639325b` | R3 재봉인 실측 | **OK** |
-| `02_Function_Definition.xlsx` | 31,205 | — | `7763aaae5e7a48c16b3751777be0787fdbf62a0f22d1d91fd5995eda7a3897eb` | R3 재봉인 실측 | **OK** |
-| `03_Wireframe_Definition.md` | 54,121 | 1,329 | `f2660e62d436a4970a685779da1a4b6ef5338faaaf92f57798e4b7da1f0d145e` | R3 재봉인 실측 | **OK** |
-| `04_DB_Design.md` | 86,167 | 1,744 | `89041998a9c1645d35170fb23416d7c8f72997c1199553a2b02a59d768ca7a0c` | R3 재봉인 실측 | **OK** |
-| `05_DB_Rule_SP_Contract.md` | 67,570 | 2,307 | `70dd32295ec667734c99d76bce3ae8a91eaac8b7f184ead5d483c54a34300a78` | R3 재봉인 실측 | **OK** |
+```
+./scripts/verify-baseline.sh        # 파일별 실측 해시와 판정을 출력한다
+```
 
-R3 재봉인 시점의 6개 파일 SHA-256을 다시 실측해 위 표를 갱신했고 `scripts/verify-baseline.sh` 의 하드코딩 값과 일치한다. R2 시점 `03` 불일치 판정은 §44 `D4-001`에 보존한다.
+`[X]` **예전에는 이 자리에 6개 파일의 SHA-256 을 옮겨 적고 "게이트의 하드코딩 값과 일치한다" 고
+선언했다.** R4 재봉인으로 `04`·`05` 의 해시가 바뀌자 그 문장이 **거짓이 되었고 아무도 몰랐다.**
+같은 값을 두 곳에 두면 한쪽은 반드시 뒤처진다 — ROOT `CLAUDE.md` §6 이 이 사건에서 나왔다.
+
+기준선 `.md` 는 전부 **CR=0 (LF 전용)** 이라 CRLF 정규화가 no-op 이며 raw hash 와 정규화 hash 가
+같다. R2 시점 `03` 불일치 판정은 §44 `D4-001` 에 보존한다.
 
 ## 4.3 XLSX 전수검증
 

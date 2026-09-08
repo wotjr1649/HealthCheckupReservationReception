@@ -9,54 +9,40 @@ C# 코드, 화면, 문서 본문은 이 디렉터리의 책임이 아니다.
 
 `../winforms/` 는 **예외 없이 읽기만** 한다. `./scripts/verify-winforms-unchanged.sh` 가 exit 1 을 낸다.
 
-`../docs/baseline/` 도 기본은 읽기 전용이다. 한 바이트라도 바뀌면 `./scripts/verify-baseline.sh` 가 exit 1 을 낸다.
-
-**단 하나의 예외 — R3 재봉인.** `docs/phase4/04_DB_Design_R3_DRAFT.md` §3 의 진행안 4·5·6단계는 기준선을 R2 에서 R3 로 교체하는 단계이며, 그 단계에 한해 **해당 단계가 지정한 기준선 파일과 `scripts/verify-baseline.sh` 의 SHA-256 을 같은 커밋에 묶어** 바꾼다.
-
-```text
-4단계  00_Project_Policy.md · 01_Process_Definition.md · 02_Function_Definition.xlsx  + 해시 3개
-5단계  03_Wireframe_Definition.md                                                      + 해시 1개
-6단계  04_DB_Design.md · 05_DB_Rule_SP_Contract.md                                     + 해시 2개
-```
-
-**두 번째 예외 — R4 재봉인(SP 전면 한글화).** `docs/phase4/plans/11-korean-sp-rename.md` 의
-승인된 매핑표가 SP 16개 이름·Parameter 99건·Result Set 컬럼 전건·TVF 4개를 한글로 바꾸며,
-그 계약을 적은 **두 파일만** 연다.
+`../docs/baseline/` 의 봉인·입주·재봉인 규칙은 **ROOT `CLAUDE.md` §2** 에 있다. 여기서는 이 계열이
+실제로 밟은 재봉인만 기록으로 남긴다.
 
 ```text
-04_DB_Design.md §3.3 명명규칙 · §0.2 개정기록 · 머리말             + 해시 1개
-05_DB_Rule_SP_Contract.md §1.2 §1.6 §3.1 §6~§13 §16 · 머리말        + 해시 1개
+R3  04_DB_Design_R3_DRAFT.md §3 진행안 4·5·6단계로 00~05 전체를 R2 -> R3
+R4  plans/11-korean-sp-rename.md 의 승인된 매핑표로 04·05 만
+      04 §3.3 명명규칙 · §0.2 개정기록 · 머리말                + 해시 1개
+      05 §1.2 §1.6 §3.1 §6~§13 §16 · 머리말                     + 해시 1개
+      00·01·02·03 은 열지 않았다 — SP 이름·Parameter·Result Set 컬럼이 그 넷에 0건이다(실측)
+      치환은 손으로 하지 않았다. 단일 출처는 tools/r4-rename-map.json 이고
+      node tools/r4-rename.js check 가 매핑의 빠짐·충돌을 먼저 판정한다
+06 입주  2026-09-08. FINAL/GO 이므로 ROOT §2.1 대로 docs/baseline/ 으로 들였다 + 해시 1개
 ```
 
-`00`·`01`·`02`·`03` 은 열지 않는다 — SP 이름·Parameter·Result Set 컬럼이 그 넷에 0건임을 실측했다.
-그래서 R4 는 `04`·`05` 만 `HC-RSV-RCP-20260908-R4` 로 올라가고 `00`~`03` 머리말은 R3 표기를 유지한다.
-치환은 손으로 하지 않는다 — 단일 출처는 `tools/r4-rename-map.json` 이고
-`node tools/r4-rename.js check` 가 매핑의 빠짐·충돌을 먼저 판정한다.
-
-그 단계가 아니거나 목록 밖 파일이면 **여전히 쓰지 않는다.** 파일과 해시를 한 커밋 안에서 함께 끝내지 못하면 되돌린다 — 게이트가 red 인 커밋을 남기지 않는다.
+`06` 이 봉인 안으로 들어왔으므로 **이제 `06` 을 고치는 것도 재봉인이다.** 앞으로 DB 계약이 바뀌면
+`04`·`05`·`06` 세 파일과 해시를 같은 커밋에 묶는다.
 
 ## 3. 쓰기 허용 경계
 
-`database/**` 와 `../docs/phase4/` 를 쓴다. `../docs/baseline/` 은 §2 의 예외 조건에서만 쓴다.
+`database/**` 와 `../docs/phase4/` 를 쓴다. `../docs/baseline/` 은 ROOT §2 의 재봉인 조건에서만 쓴다.
 그 밖의 경로에 쓰지 않는다. `../winforms/` 는 §2 대로 예외 없이 읽기만 한다.
 
 **ROOT `tools/` 와 `../docs/baseline/output/` 은 2026-09-07 사용자 승인으로 이 계열이 인수했다.**
 원래는 세션 `a97cfb9f` 몫이었고 `04_DB_Design_R3_DRAFT.md:1903` 이 그 순서를 정해 뒀는데,
 그 세션이 존재하지 않아 R3 재봉인 뒤 산출물이 R2 에 머물러 있었다. 이제 여기서 고치고 돌린다.
+산출물 규칙 자체는 ROOT `CLAUDE.md` §3 이다.
 
-```text
-tools/docgen/**              쓴다 · 커밋한다
-docs/baseline/output/**      쓴다 · 커밋하지 않는다 (ROOT .gitignore 대상)
-```
-
-`output/` 은 `.gitignore` 에 있어 어떤 커밋에도 남지 않는다. **재현 수단은 `tools/docgen` 뿐이므로
-산출물을 고치려면 반드시 생성기를 고쳐서 다시 돌린다** — 바이너리를 손으로 만지지 않는다.
-`build_02.js` 만 원본(`02_Function_Definition.xlsx`)을 실제로 읽고, 나머지 셋은 내용이
-`build_00.js` 배열과 `proc/slides/*.js`·`wireframe/screens/*.js` 에 하드코딩돼 있다.
-그래서 기준선을 고쳤다고 산출물이 따라오지 않는다. 기준선을 열었으면 생성기도 함께 연다.
+`build_00.js` 와 `proc/slides/*.js`·`wireframe/screens/*.js` 는 내용이 **하드코딩**돼 있어
+기준선을 고쳐도 산출물이 따라오지 않는다. 기준선을 열었으면 그 생성기도 함께 연다.
+`build_02.js`·`build_04.js`·`build_05.js` 는 원본을 파싱하므로 다시 돌리기만 하면 된다.
 
 `wireframe/build.js` 만 `pptxgenjs` 를 절대경로 상수 없이 bare `require` 한다 —
 `NODE_PATH='D:/tmp/hcwork/gen/node_modules'` 없이 실행하면 `MODULE_NOT_FOUND` 로 죽는다(실측 확인).
+`build_all.js` 가 그 값을 직접 넣어 주므로 그쪽으로 돌리면 겪지 않는다.
 
 ## 4. Source of Truth 우선순위
 

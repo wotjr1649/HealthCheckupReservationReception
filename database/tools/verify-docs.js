@@ -7,7 +7,9 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..', 'docs');
-const SPEC = path.join(ROOT, 'phase4', '06_DB_Transaction_Security_Seed.md');
+// 06 은 2026-09-08 에 docs/baseline/ 으로 입주했다 (ROOT CLAUDE.md §2.1). 봉인 대상이지만
+// 여기서는 계약의 출처로 **읽기만** 한다 — plans 가 이 문서에 근거를 두는지 판정하기 위해서다.
+const SPEC = path.join(ROOT, 'baseline', '06_DB_Transaction_Security_Seed.md');
 const PLANDIR = path.join(ROOT, 'phase4', 'plans');
 const BASE04 = path.join(ROOT, 'baseline', '04_DB_Design.md');
 const BASE05 = path.join(ROOT, 'baseline', '05_DB_Rule_SP_Contract.md');
