@@ -15,22 +15,26 @@
 봉인          docs/baseline/ 에 00~06 일곱.  07 은 없다 — 이번에 만든다
 ```
 
-Phase 4 DB 는 **끝났고 봉인됐다.** 세 회차 모두 최종 코드다.
+Phase 4 DB 는 **끝났고 봉인됐다** (`HC-RSV-RCP-20260908-R5`).
 
-```text
-창 안  2026-09-08 12:59  exit 0 · PASS 357 · FAIL 0 · SKIP 2  · NOT RUN 1
-창 밖  2026-09-08 05:12  exit 0 · PASS 187 · FAIL 0 · SKIP 78 · NOT RUN 9
-AM 창  2026-09-08 10:07  exit 0 · PASS 354 · FAIL 0 · SKIP 4  · NOT RUN 3
+**회차별 실측과 Gate 판정은 `06` §42 가 단일 출처다 — 여기에 베끼지 않는다.**
+예전에 베껴 두었는데 R5 재봉인에 전부 낡았다: 창 안 회차는 `357`→`363`, `verify-docs` 는
+`22/0`→`24/0` 이 되었고 그 사이 판정 코드가 두 번 바뀌어 `357` 은 **고치기 전 코드의 증거**였다
+(ROOT `AGENTS.md` §6).
+
+지금 상태는 읽지 말고 **돌려서 본다.**
+
+```bash
+cd database
+./scripts/test.sh              # exit 0 · FAIL 0. 창 안이면 SKIP 은 OFF-309 둘뿐이다
+node tools/verify-docs.js      # FAIL 0
+./scripts/verify-baseline.sh   # 봉인 전건 일치
 ```
 
-| 게이트 | 결과 |
-|---|---|
-| `verify-baseline` | 7/7 |
-| `verify-docs` | 22/0 |
-| `verify-rs-contract` | 기대값 Result Set 170개 = 기준선 `05` |
-| `verify-schema-doc` · `verify-winforms-unchanged` · `r4-rename check` | 5/0 · 0 · 0 |
-| `csharp-probe` | `CS-001`~`016` |
-| `verify_output` | 6/6 (텍스트 7,877조각) |
+돌아가는 게이트: `verify-baseline` · `verify-docs`(V01~V22) · `verify-rs-contract` ·
+`verify-schema-doc` · `verify-winforms-unchanged` · `verify-tsql-allowlist` ·
+`allowlist-review`(G13-c) · `verify-no-secret` · `verify-red` · `csharp-probe` · `r4-rename check`.
+`verify_output` 은 산출물 쪽이라 `test.sh` 밖이며 `tools/docgen/build_all.js` 가 부른다.
 
 DB 가 확정한 것 — **이것이 `07` 의 오른쪽 절반이다.**
 
@@ -53,10 +57,15 @@ Parameter 99 · Result Set 컬럼 고유 73종 · ResultCode 38종
 
 ```text
 06  v0.4 CANDIDATE (구현 전에 쓴 스펙)
-      -> 구현 -> 회귀 357/185 -> §42 에 실측 채움
+      -> 구현 -> 회귀 -> §42 에 실측 채움
     v1.0 FINAL / GO
     v1.1 R4 반영 -> 2026-09-08 docs/baseline/ 입주
+    v1.2 R5 — 입주 뒤 §42 의 G00·G13·G16 이 실측과 어긋나 있던 것을 고쳤다
 ```
+
+`[!]` **v1.1 -> v1.2 가 이 경로의 진짜 교훈이다.** `FINAL / GO` 로 봉인한 뒤에도 §42 는 세 칸이
+거짓이었다 — 봉인 안이라 아무도 다시 안 봤기 때문이다. `07` 도 같은 위험을 진다.
+숫자를 적을 때마다 **그 값이 게이트와 일치하는지 보는 검사를 함께 만든다.** 못 만들면 적지 않는다.
 
 `07` 도 같다. **쓰는 동안 `docs/phase5/` 에 있고, FINAL 이 되면 봉인 입주한다**(루트 `AGENTS.md` §2.1).
 
@@ -240,7 +249,7 @@ git tag phase5-spec-start        # 착수 전에 박는다
 git reset --hard phase5-spec-start
 ```
 
-기준선이 걱정되면 `baseline-HC-RSV-RCP-20260908-R4` 태그가 지금 지점이다.
+기준선이 걱정되면 `baseline-HC-RSV-RCP-20260908-R5` 태그가 지금 지점이다.
 
 ## 10. 완료 조건
 

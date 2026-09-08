@@ -1,10 +1,14 @@
 ﻿# Phase 4 DB 구현 — 실행 보고서
 
-- **작성:** 2026-09-07  ·  **R4 갱신:** 2026-09-08
+- **작성:** 2026-09-07  ·  **R4 갱신:** 2026-09-08  ·  **R5 갱신:** 2026-09-08 (Phase 4 종료)
 - **대상:** `HealthCheckupReservationReceptionDb` · `.\SQLEXPRESS` · SQL Server 2025 Express `17.0.1125.2`
-- **기준선:** `HC-RSV-RCP-20260908-R4` (직전 `HC-RSV-RCP-20260904-R3`)
-- **계약서:** `docs/phase4/06_DB_Transaction_Security_Seed.md` v1.1 `FINAL / GO`
+- **기준선:** `HC-RSV-RCP-20260908-R5` (직전 `HC-RSV-RCP-20260908-R4`)
+- **계약서:** `docs/baseline/06_DB_Transaction_Security_Seed.md` — 2026-09-08 봉인 입주
 - **브랜치:** `phase4-database`
+
+`[!]` **Gate 판정과 회차 실측의 단일 출처는 `06` §42 다.** 이 보고서는 그 요약이며 값을 소유하지
+않는다 — 아래 표가 `06` 과 어긋나면 `06` 이 맞다. 실제로 R5 에서 이 보고서의 `G00 6/6` 과
+`G16 v1.1` 이 낡아 있었다 (ROOT `AGENTS.md` §6).
 
 이 보고서는 **실행한 것만** 적는다. 실행하지 않은 것은 `NOT RUN` 으로 남기고 `SKIP` 을 `PASS` 로 세지 않는다.
 
@@ -32,13 +36,14 @@
 | `C` 창 밖 (R4) | 2026-09-08 04:37 | 밖 | 0 | **185** | 0 | 78 | 9 | — |
 | `D` 창 안 (R4) | 2026-09-08 12:59 | 안 | 0 | **357** | 0 | 2 | **1** | `artifacts/logs/full_test_run.log` |
 | `E` 창 밖 (R4+게이트) | 2026-09-08 05:12 | 밖 | 0 | **187** | 0 | 78 | 9 | `artifacts/logs/full_test_run_off.log` |
+| `F` 창 안 (R5) | 2026-09-08 | 안 | 0 | **363** | 0 | 2 | **1** | `artifacts/logs/full_test_run_final.log` |
 
 - 회차 `A` 의 `SKIP` 2건은 `OFF-309-01`·`02` 뿐이다 — 업무시간 안에서 `309` 는 **정의상** 나올 수 없고, 회차 `B` 에서 `PASS` 로 판정된다.
 - 회차 `B` 의 `SKIP` 78건은 업무시간 밖이라 성립하지 않는 Write SP 성공 경로다. 회차 `A` 가 판정한다.
 
 회차 `E` 의 `187` 은 `C` 의 `185` 에 **R4-2·R4-3 게이트 두 줄이 더해진 것**이다. 처음에는 둘을
 손으로 돌렸는데, 회귀 밖의 증거는 다음 회차에 썩는다 — `test.sh` 안으로 넣었다. 그래서
-다음 창 안 회귀는 `357` 이 아니라 `359` 여야 맞다.
+다음 창 안 회귀는 `357` 이 아니라 `359` 여야 맞다. **실측은 `363` 이었다**(회차 `F`) — `V20`·`V21`·`V22` 와 `G13-c` 가 더 붙었다.
 
 **R4 한글화는 판정 대상을 한 건도 줄이지 않았다.** 회차 `C`·`D` 가 `A`·`B` 와 `PASS`/`FAIL`/`SKIP`/`NOT RUN` 네 수치는 물론 **`SKIP`·`NOT RUN` 항목까지 같다** (`06` §46.4). R4 에서 새로 돈 것은 `verify-rs-contract` 170건과 `csharp-probe` 16건이다.
 
@@ -51,7 +56,7 @@
 
 | Gate | 결과 | 근거 |
 |---|---|---|
-| G00 Baseline Hash | **PASS** | `verify-baseline.sh` 6/6 |
+| G00 Baseline Hash | **PASS** | `verify-baseline.sh` 봉인 전건 일치 · 미등록 0건 (건수는 적지 않는다 — 06 입주로 6→7 이 되며 낡았다) |
 | G01 WinForms 보호 | **PASS** | 변경 0건 · R3 태그 diff 0줄 |
 | G02 Preflight | **PASS** | `PRE-001`~`006` |
 | G03 Clean Deploy | **PASS** | `RBD-003` exit 0 |
@@ -64,10 +69,10 @@
 | G10 Rollback | **PASS** | `RBK-001`~`007` · `RBK-008` 은 `V18` 정적 판정 |
 | G11 Concurrency | **PASS** | `CON-001`~`008` 8/8 |
 | G12 Security | **PASS** | 계정·권한은 **폐기** (2026-09-07 사용자 결정). 남은 `SEC-010` 은 매 회귀 PASS |
-| G13 호환성 | **(a) PASS · (b) PASS · (c) REVIEWED** | 배포·시험 exit 0 · `.sql` 137개 0건 · (c) 자동 판정 불가 |
+| G13 호환성 | **(a) PASS · (b) PASS · (c) REVIEWED** | 배포·시험 exit 0 · 블랙리스트 0건 · (c) `allowlist-review.md` — `tools/allowlist-review.js` 가 매 회귀 재생성하고 목록 밖이면 FAIL |
 | G14 Repeatability | **PASS** | `RBD-005` diff 0줄 |
 | G15 Evidence | **PASS** | run ID·시각·업무시간 기록 |
-| G16 06 문서 | **PASS** | v1.1 `FINAL / GO` (R4 §46 추가) |
+| G16 06 문서 | **PASS** | `06` §4.1 이 `FINAL / GO / READ-ONLY` (버전은 적지 않는다 — `v1.1` 로 적어 둔 채 v1.2 가 되었다) |
 | R4-1 계약 한글화 | **PASS** | SP 16 · Parameter 99 · Result Set 전건 · TVF 4. `r4-rename check` FAIL 0 |
 | R4-2 기대값 ↔ 기준선 | **PASS** | `verify-rs-contract` — 기대값 Result Set 170개가 기준선 `05` 의 표와 일치 |
 | R4-3 C# 호출 | **PASS** | `csharp-probe` `CS-001`~`016`. `csc.exe` 로 컴파일해 실제 ADO.NET 호출 |
@@ -89,7 +94,8 @@
   scripts/verify-baseline.sh             0    G00
   scripts/verify-winforms-unchanged.sh   0    G01
   scripts/verify-schema-doc.sh           0    G05
-  node tools/verify-docs.js              0    V01~V19 (21 판정)
+  node tools/verify-docs.js              0    V01~V22
+  node tools/allowlist-review.js         0    G13-c §9.2 허용목록 검토 재생성
   node tools/verify-rs-contract.js       0    R4-2 기대값 Result Set 170개 ↔ 기준선 05
   ./scripts/verify-csharp-call.sh        0    R4-3 C# 호출. csc.exe 가 없으면 exit 3 = NOT RUN
 node tools/r4-rename.js check            0    R4 개명 매핑의 빠짐·충돌·예산 (회귀 밖 · 개명 때만)
@@ -124,20 +130,21 @@ node tools/r4-rename.js check            0    R4 개명 매핑의 빠짐·충돌
 
 - 시각 의존 경로(`CON-005`·`008`·`CWR-006`·`009`)는 특정 창에서만 성립한다. **머신 시각을 옮겨** 검증하며, TVF 상수를 고치는 우회는 금지다 — `rebuild` 가 되돌리고, 배포 원본을 고치면 다른 제품을 시험한 `PASS` 가 된다.
 - `RBD-001`(잘못된 서버명 `50020`)은 인스턴스가 1개뿐이라 음성 시험이 구조적으로 불가하다.
-- `G13(c)` 허용목록 준수는 자동 판정이 불가하다. 블랙리스트 0건을 준수 `PASS` 로 승격하지 않는다.
+- `G13(c)` 허용목록 준수는 여전히 `REVIEWED` 다 — 블랙리스트 0건을 준수 `PASS` 로 승격하지 않는다. 다만 R5 부터 `allowlist-review.md` 라는 실측 근거가 있고, 그 검토가 매 회귀에서 다시 만들어진다.
 - 취소 계열 SP 는 `SLOT` 잠금을 잡지 않는다. 오차 방향이 보수적(과대)이라 무결성 위반이 아니다. **접수완료만** 과소집계가 가능해 잠금을 확장했고, `CON-008` 이 그 필요성을 실증했다.
 
 ---
 
 ## 6. 잔여 결함
 
-**0건.** 회차 `A`·`B` 모두 `FAIL 0`. 계획서 체크박스 미체크도 **0**이다.
+**0건.** 모든 회차가 `FAIL 0` 이며 최종은 회차 `F` 다. 계획서 체크박스 미체크도 **0**이다.
 
 `NOT RUN` 은 셋이며 전부 이유가 기록돼 있다.
 
 ```text
 RBD-001   잘못된 서버명(50020) 음성시험 — 인스턴스가 1개다. 두 번째 인스턴스 설치가 필요하다
 G13 (c)   §9.2 허용목록 준수 — 자동 판정 불가. REVIEWED 로만 기록한다
+          R5 부터 tools/allowlist-review.js 가 매 회귀에서 근거를 다시 만든다
           (블랙리스트 0건은 verify-tsql-allowlist.sh 가 별개로 매 회귀에서 PASS)
 ```
 
