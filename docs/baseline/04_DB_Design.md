@@ -2,10 +2,11 @@
 
 - **문서명:** `04_DB_Design.md`
 - **상태:** FINAL / GO / READ-ONLY — Phase 2 물리 스키마 기준선 확정
-- **문서 버전:** v3.0
+- **문서 버전:** v3.1
 - **기준일:** 2026-09-08
-- **기준선 ID:** `HC-RSV-RCP-20260908-R4`
-- **직전 기준선:** `HC-RSV-RCP-20260904-R3` (2026-09-04, v2.0)
+- **기준선 ID:** `HC-RSV-RCP-20260908-R5`
+- **직전 기준선:** `HC-RSV-RCP-20260908-R4` (2026-09-08, v3.0)
+- **R5 개정 범위:** 설계는 한 줄도 바뀌지 않았다. 아래 §0.1 이 각 문서의 기준선 ID 를 **베껴 적어** 두어 `06` 이 R5 로 재봉인되자 거짓이 되었다 — 값을 고치는 대신 단일 출처(`06` §4.1)를 가리키게 바꿨다 (ROOT `AGENTS.md` §6)
 - **R4 개정 범위:** `04_DB_Design.md` · `05_DB_Rule_SP_Contract.md` 두 파일. `00`·`01`·`02`·`03` 은 R3 원본을 **한 바이트도 바꾸지 않고** 그대로 계승한다 — SP 이름·Parameter·Result Set 컬럼이 그 네 문서에 0건이기 때문이다(실측).
 - **대상 환경:** C# WinForms / .NET Framework 4.6.1 / DevExpress Components 20.2 / Microsoft SQL Server / Stored Procedure
 - **최종 확정 범위:** 6개 테이블 논리·물리구조, 전체 컬럼·타입·NULL, PK/FK/UQ/CK/DF, 최소 Index, Sequence, 비-TVP AEX 7개 BIT 입력경계, 계산값·영속값·Aggregate·동시성 기준
@@ -137,7 +138,7 @@ RS0.오류항목 을 VARCHAR(50) -> NVARCHAR(50) 으로                      05 
 ```
 
 - 00~05는 설계 기준선이며 모두 READ-ONLY다. `06_DB_Transaction_Security_Seed.md`(구현 계약)도 2026-09-08에 같은 봉인으로 들어와 현재 `docs/baseline/`은 00~06 일곱이다. `07_UI_DB_Matrix_Final_Validation.md`는 Phase 5가 끝나면 같은 규칙으로 입주한다.
-- 기준선 ID는 세트가 아니라 **문서마다 마지막으로 봉인된 회차**다. `00`~`03`은 R4에서 한 바이트도 열지 않아 `HC-RSV-RCP-20260904-R3` 표기를 유지하고 `04`~`06`이 `HC-RSV-RCP-20260908-R4`다. 입주·재봉인 규칙 전문은 ROOT `AGENTS.md` §2에 있다.
+- 기준선 ID는 세트가 아니라 **문서마다 마지막으로 봉인된 회차**다. 어느 문서가 어느 회차인지는 `06` §4.1 표가 **단일 출처**이며 여기에 베끼지 않는다 — 예전에 여기 적어 두었다가 `06`이 R5로 재봉인되자 이 줄이 거짓이 되었다 (ROOT `AGENTS.md` §6). 입주·재봉인 규칙 전문은 ROOT `AGENTS.md` §2에 있다.
 - 와이어프레임 기준본은 정식 파일명 `03_Wireframe_Definition.md` 하나만 사용한다.
 - 본 문서는 테이블명·컬럼명·타입·NULL·키·제약·최소 Index·Sequence·AEX 입력경계를 확정한다.
 - 정확한 UDF/SP 이름·시그니처·Result Set·ResultCode·검증 우선순위는 `05_DB_Rule_SP_Contract.md`를 따른다.

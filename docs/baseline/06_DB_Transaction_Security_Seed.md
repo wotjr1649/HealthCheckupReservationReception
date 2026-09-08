@@ -3,9 +3,10 @@
 - **문서명:** `06_DB_Transaction_Security_Seed.md`
 - **상태:** `FINAL / GO / READ-ONLY` — SQL 실행검증 완료. §42 Gate 판정은 전부 실측이다
 - **위치:** `docs/baseline/` — 2026-09-08 입주. 이제 이 문서를 고치는 것도 재봉인이다 (ROOT `AGENTS.md` §2)
-- **문서 버전:** v1.1  (v1.0 → R4 한글화 반영. SP 16개 이름·Parameter·Result Set 컬럼을 새 계약으로 교체했다)
-- **기준일:** 2026-09-08  ·  **실행검증일:** 2026-09-07(R3 회귀) · 2026-09-08(R4 회귀)
-- **기준선 ID:** `HC-RSV-RCP-20260908-R4`  (직전 `HC-RSV-RCP-20260904-R3`)
+- **문서 버전:** v1.2  (v1.0 → R4 한글화 반영. v1.1 → R5 에서 §42 Gate 세 칸을 실측에 맞췄다)
+- **기준일:** 2026-09-08  ·  **실행검증일:** 2026-09-07(R3 회귀) · 2026-09-08(R4 회귀 · R5 회귀 회차 `C`)
+- **기준선 ID:** `HC-RSV-RCP-20260908-R5`  (직전 `HC-RSV-RCP-20260908-R4`)
+- **R5 반영 범위:** 계약은 한 줄도 바뀌지 않았다. §42 의 `G00`·`G13`·`G16` 이 실제 게이트와 어긋나 있던 것을 고치고 회차 `C` 를 등재했다 — 이 문서가 봉인 안으로 들어와 `06` 이 7번째 봉인이 되었는데 `G00` 은 여전히 `6/6` 이었고, `G13 (c)` 는 이 문서가 요구한 증거 파일 없이 `REVIEWED` 였으며, `G16` 은 `v1.0` 을 근거로 들고 있었다
 - **R4 반영 범위:** 이 문서의 SP 이름·Parameter·Result Set 컬럼 표기를 `05` v3.0 에 맞췄다. Transaction·잠금·Seed·시험 계약의 **내용**은 바뀌지 않는다 — 이름만 바뀌었다. 절차·건수·판정은 그대로다
 - **대상 SQL Server:** `.\SQLEXPRESS` — Microsoft SQL Server 2025 Express `17.0.1125.2` (RTM), 로컬 전용
 - **Database:** `HealthCheckupReservationReceptionDb`
@@ -96,9 +97,9 @@ Extended Events / trace flag 세션 (서버 수준 객체)
 | `01_Process_Definition.md` | v2.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
 | `02_Function_Definition.xlsx` | v2.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
 | `03_Wireframe_Definition.md` | v1.3 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
-| `04_DB_Design.md` | v3.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R4` |
+| `04_DB_Design.md` | v3.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R5` |
 | `05_DB_Rule_SP_Contract.md` | v3.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R4` |
-| `06_DB_Transaction_Security_Seed.md` | v1.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R4` |
+| `06_DB_Transaction_Security_Seed.md` | v1.2 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R5` |
 
 `[!]` **기준선 ID 는 문서마다 "마지막 봉인 회차" 다** — 세트 하나에 ID 하나가 아니다.
 `00`~`03` 은 R4 에서 한 바이트도 열지 않아 R3 표기를 유지한다 (ROOT `AGENTS.md` §2.2).
@@ -2352,19 +2353,31 @@ artifacts/
 
 **`PASS`는 실제 실행 증거가 있을 때만 사용한다.** 실행 전에는 `PLANNED` / `NOT RUN` / `BLOCKED` 중 하나를 사용한다.
 
-아래는 **전부 실측**이다. 근거 회차는 둘이며, 시각 의존 경로가 서로 배타적이라 둘 다 필요하다.
+아래는 **전부 실측**이다. 근거 회차는 셋이며, 시각 의존 경로가 서로 배타적이라 창 안·창 밖 둘 다 필요하다.
 
 | 회차 | 시각 | 업무시간 | 결과 |
 |---|---|---|---|
 | `A` 창 안 | 2026-09-07 12:19 | 안 (월, 비휴무일 · PM 창 11:10~15:50) | `artifacts/logs/full_test_run.log` — exit 0 · PASS 357 · FAIL 0 · SKIP 2 · NOT RUN 1 |
 | `B` 창 밖 | 2026-09-08 03:05 | 밖 | `artifacts/logs/full_test_run_off.log` — exit 0 · PASS 185 · FAIL 0 · SKIP 78 · NOT RUN 9 |
+| `C` 창 안 | 2026-09-08 | 안 (화, 비휴무일 · PM 창) | `artifacts/logs/full_test_run_final.log` — exit 0 · PASS 363 · FAIL 0 · SKIP 2 · NOT RUN 1 |
 
 `[I]` 회차 `A` 는 사용자가 머신 시각을 6시간 뒤로 옮겨 만든 창이다. **코드는 한 글자도 바꾸지 않았다** —
 `SYSDATETIME()` 이 시각의 유일한 입구이므로 SP·TVF·게이트가 전부 출하될 그대로 돌았다. 끝난 뒤 같은 크기로 되돌렸다.
 
+`[!]` **회차 `A` 는 회차 `C` 로 대체됐다.** `A` 이후 판정 코드 자체가 두 번 바뀌었는데
+(`tests/07` 의 `CWR-006` 단언 · `scripts/clean-rebuild-verify.sh` 의 `RBD-009` 스냅샷) 그 뒤로 창 안 회귀를
+한 번도 돌리지 않아, `A` 는 **고치기 전 코드의 증거**였다. `C` 는 지금 출하되는 트리 그대로다.
+`A` 행을 지우지 않는 이유는 그때 그 실측이 사실이기 때문이고, `B`(창 밖)는 여전히 유효하다 —
+`OFF-309` 계열은 창 밖에서만 발화하므로 `C` 로 대체되지 않는다.
+
+`[I]` **회차 `C` 는 이 표가 가리키는 그 로그를 실제로 만든 실행이다.** 재봉인은 `verify-baseline.sh` 의
+해시 두 줄을 바꾸므로, 재봉인 **전에** 돈 회귀는 새 봉인 상태의 `G00` 을 판정하지 못한다. 그래서 순서를
+뒤집었다 — 문서·해시를 먼저 확정하고, 이 표가 이미 가리키고 있는 파일명으로 회귀를 마지막에 돌렸다.
+회차 `C` 이후 이 저장소는 한 바이트도 바뀌지 않았다.
+
 | Gate | 검증내용 | 필수 결과 | 결과 | 근거 |
 |---|---|---|---|---|
-| G00 | Baseline Hash | 6/6 일치 | **PASS** | `verify-baseline.sh` `=== 6/6 ===` · `test.sh` 안에서 매 회차 실행 |
+| G00 | Baseline Hash | 봉인 **전건** 일치 · 미등록 0건 | **PASS** | `verify-baseline.sh` `=== 7/7 ===` (회차 `C`) · `test.sh` 안에서 매 회차 실행. **건수를 여기 적지 않는다** — `06` 입주로 6→7 이 된 뒤에도 이 칸이 `6/6` 이었다 (ROOT `AGENTS.md` §6) |
 | G01 | WinForms 보호 | 변경 0건 (git diff + hash manifest 이중 증거) | **PASS** | `PASS WinForms 변경 0건` · `git diff --stat <R3 태그> -- winforms` **0줄** |
 | G02 | Preflight | 가드 6종 통과 · KST 540 · Version >= 11 | **PASS** | `PRE-001`~`PRE-006` (인스턴스·DB·호스트 `DESKTOP-DP7KRE4`·KST +09:00·`17.0.1125.2`·RCSI OFF) |
 | G03 | Clean Deploy | 빈 DB 전체 배포 성공 (exit 0) | **PASS** | `PASS RBD-003 빈 DB 에서 Deploy 전체 실행 exit 0` |
@@ -2377,10 +2390,10 @@ artifacts/
 | G10 | Rollback | 부분저장 0건 | **PASS** | `RBK-001`~`RBK-007` · `RBK-008` 은 T-SQL 로 RS 개수를 셀 수 없어 `V18` 이 정적으로 판정 |
 | G11 | Concurrency | `CON-001`~`008` + `rc=1` 1건 이상 + `Msg 1205`·`50002` 각 0건 | **PASS** | **8/8** · `applock rc=1` 시나리오마다 1~2건 · `1205`·`50002`·`50001`·`2627`·`결과코드 100` 각 **0건** (회차 `A`) |
 | G12 | Security | `SEC-010` | **PASS** | 계정·권한은 **폐기**했다 (2026-09-07 사용자 결정, §32). 남은 `SEC-010`(배포 원본·로그·보고서 secret 0건)은 매 회귀에서 PASS |
-| **G13** | **SQL Server 호환성** `[D4-004]` | (a) 배포·시험 성공 · (b) 블랙리스트 0건 · (c) §9.2 준수 | **(a) PASS · (b) PASS · (c) REVIEWED** | (a) 회차 `A`·`B` exit 0 · (b) `verify-tsql-allowlist.sh` `.sql` 137개 0건 + `CREATE OR ALTER` 는 배포 안에만 · (c) 자동 판정 불가 (§9.3) |
+| **G13** | **SQL Server 호환성** `[D4-004]` | (a) 배포·시험 성공 · (b) 블랙리스트 0건 · (c) §9.2 준수 | **(a) PASS · (b) PASS · (c) REVIEWED** | (a) 회차 `A`·`B`·`C` exit 0 · (b) `verify-tsql-allowlist.sh` 0건 + `CREATE OR ALTER` 는 배포 안에만 · (c) `artifacts/reports/allowlist-review.md` — §9.2 허용 표를 파싱해 행마다 사용/미사용을 실측한다(사용 22 · 미사용 1 · 수동 0). **`tools/allowlist-review.js` 가 회귀 안에서 매 회차 재생성하고 목록 밖이 나오면 `FAIL` 이다**(`PASS G13-c`) — 그 BAN 에 없던 TVP·Trigger·FK Cascade 를 이것이 본다 |
 | G14 | Repeatability | Rebuild 2회 후 정렬 덤프 `diff` 0줄 | **PASS** | `RBD-005` 덤프 완전 동일 · `RBD-007`(Deploy 단독) · `RBD-008`(Procedure 단독) 도 동일 |
 | G15 | Evidence | 실행명령·exit code·로그·보고서 + run ID·시각·업무시간 | **PASS** | `conc_<RUN>_<SCEN>_*.log` · `test-summary.txt`(회차 시각 포함) · `phase4-report.md` · **`RED-001`~`004` 음성시험**(§40a)이 "시험이 실제로 실패를 잡는가" 를 매 회귀에서 판정한다 |
-| G16 | 06 문서 | 실제 구현과 일치하는 FINAL | **PASS** | 본 문서 v1.0 `FINAL / GO` |
+| G16 | 06 문서 | 실제 구현과 일치하는 FINAL | **PASS** | 본 문서 §4.1 이 `FINAL / GO / READ-ONLY`. **버전을 여기 적지 않는다** — `v1.0` 이라 적어 둔 채 v1.1 이 되어 한 판 뒤처졌다 (ROOT `AGENTS.md` §6) |
 
 `[I]` **`SKIP` 은 `PASS` 가 아니다.** 회차 `A` 의 `SKIP` 은 `OFF-309-01`·`02` 둘뿐이고,
 이는 업무시간 안에서 `309` 가 나올 수 없다는 **정의상의 배타성**이다. 회차 `B` 에서 `PASS` 로 판정됐다.

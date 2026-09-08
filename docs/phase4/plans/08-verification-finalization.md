@@ -1159,7 +1159,7 @@ Expected: `PASS G13-b` 2줄. `(c)` 는 보고서에 **`REVIEWED`** 로만 적는
 
 ```text
 - 상태          CANDIDATE → FINAL / GO (실행 검증 완료)
-- 문서 버전      v0.4 → v1.0 (SQL 실행검증 완료 시점에 CANDIDATE 해제) → v1.1 (R4 한글화 반영, §46)
+- 문서 버전      v0.4 → v1.0 (SQL 실행검증 완료 시점에 CANDIDATE 해제) → v1.1 (R4 한글화 반영, §46) → v1.2 (R5 — §42 의 G00·G13·G16 정정 + 회차 C)
 - §42 Gate 표    PLANNED → 실제 관측 결과(PASS / FAIL / SKIP)로 전부 교체
 - §43 알려진 한계 실행 중 확인된 항목 추가 (예: 업무시간 밖 SKIP 건수)
 - §44 Deviation  실행 중 새로 발견된 이탈 추가
