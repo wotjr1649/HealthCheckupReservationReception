@@ -13,7 +13,9 @@ const ROWS = [
   { cells: ['2027-01-01', '신정', '법정공휴일', 'Y', ''], dim: true },
 ];
 
-// SP-HOL-01 RS1 그대로 — HolidayDate · HolidayName · HolidayType · IsActive · Memo.
+// SP-HOL-01 RS1 여섯 중 다섯을 그린다 — HolidayDate · HolidayName · HolidayType · IsActive · Memo.
+// 여섯 번째 RowVersion 은 화면이 들고 있되 표시하지 않는다(내부 동시성값). 버리면
+// [수정]·[삭제] 가 @행버전 을 못 채워 100 만 돌려받는다 (03 §24.3).
 const COLS = [
   { t: '휴무일자', w: 1.20 },
   { t: '휴무일명', w: 1.90, align: 'left' },
@@ -42,7 +44,7 @@ function draw(c) {
   const wY = sb.bottom + 0.10, wH = 0.30;
   c.rect(i.x, wY, i.w, wH, { fill: S.C.band, sw: S.W.panel });
   c.text(i.x + 0.14, wY, i.w - 0.28, wH,
-    '!   공휴일 등재가 2027-12-31 에 끝납니다.  남은 기간 480일 — 갱신이 필요합니다',
+    '!   공휴일 등재가 2027-12-27 에 끝납니다.  남은 기간 120일 — 갱신이 필요합니다',
     { size: S.TEXT.label, align: 'left', bold: true, color: S.C.data });
   c.markLeft(i.x, wY, wH, '2');
 
@@ -76,7 +78,7 @@ const desc = [
   { n: '', text: 'DLG-HOL-01  휴무일 관리 · Modal · F-COM-009' },
   { n: '1', text: '기본 기간은 업무정책이 정한 공휴일 등재 범위다' },
   { n: '2', text: '잔여가 임계 미만일 때만 나타난다. 편집을 막지 않는다' },
-  { n: '3', text: 'SP-HOL-01 RS1 그대로. 일요일은 목록에 없다' },
+  { n: '3', text: 'SP-HOL-01 RS1 의 다섯 컬럼. 일요일은 목록에 없다' },
   { n: '4', text: '법정공휴일 · 대체공휴일 · 자체휴무일 세 값이다' },
   { n: '5', text: '추가하면 휴무구분은 항상 자체휴무일이다' },
   { n: '', text: '법정 · 대체 공휴일 행은 회색이며 선택해도 입력행에 싣지 않는다.' },
@@ -84,6 +86,7 @@ const desc = [
   { n: '', text: '삭제는 물리 삭제다. 사용여부 0 은 일시 무효화이며 날짜를 계속 점유한다.' },
   { n: '', text: '날짜 중복과 공백 휴무일명의 최종 판단은 저장 프로시저가 한다.' },
   { n: '', text: '업무 Tab 을 열지 않으므로 열려 있는 업무 화면의 상태를 바꾸지 않는다.' },
+  { n: '', text: 'RowVersion 은 표시하지 않고 들고만 있는다. 수정 · 삭제가 그 값을 함께 보낸다.' },
 ];
 
 module.exports = { title: '휴무일 관리', draw, desc };

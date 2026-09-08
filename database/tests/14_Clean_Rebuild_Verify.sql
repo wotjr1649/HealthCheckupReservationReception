@@ -37,7 +37,7 @@ DECLARE @FP VARCHAR(200) = 'INVENTORY|'
      + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[휴무일]));
 
 -- Table 6 | TVF 4 | SP 16 | 순번값 1 | PK 6 | FK 2 | UQ 2 | UX 1 | NCI 5 | CK 24 | DF 8 | Trg 0 | TVP 0 | Exam 19 | Hol 2
-IF @FP = 'INVENTORY|6|4|20|1|6|2|2|1|5|26|10|0|0|19|40'
+IF @FP = 'INVENTORY|6|4|20|1|6|2|2|1|5|26|10|0|0|19|41'
     PRINT 'PASS RBD-004 인벤토리 지문 일치  ' + @FP;
 ELSE BEGIN PRINT 'FAIL RBD-004 인벤토리 지문 불일치  ' + @FP; SET @Fail += 1; END
 

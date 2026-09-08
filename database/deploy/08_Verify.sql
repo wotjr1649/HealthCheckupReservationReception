@@ -49,8 +49,8 @@ ELSE BEGIN PRINT 'FAIL VER-006 금지 객체 존재'; SET @Fail += 1; END
 IF ((SELECT COUNT(*) FROM sys.check_constraints) = 26
     AND (SELECT COUNT(*) FROM sys.default_constraints) = 10
     AND (SELECT COUNT(*) FROM [dbo].[검사코드]) = 19
-    AND (SELECT COUNT(*) FROM [dbo].[휴무일]) = 40)
-    PRINT 'PASS VER-007 CHECK 26 / DEFAULT 10 / Seed Exam 19 / Holiday 40';
+    AND (SELECT COUNT(*) FROM [dbo].[휴무일]) = 41)
+    PRINT 'PASS VER-007 CHECK 26 / DEFAULT 10 / Seed Exam 19 / Holiday 41';
 ELSE BEGIN PRINT 'FAIL VER-007 제약 또는 Seed 수 불일치'; SET @Fail += 1; END
 
 DECLARE @Compat VARCHAR(10);

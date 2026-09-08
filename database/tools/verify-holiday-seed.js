@@ -66,13 +66,19 @@ if (!rows.length) {
   const outside = rows.filter(r => r.date < rangeFrom || r.date > rangeTo);
   // 일요일은 Seed 하지 않는다 (06 §14.2). 요일 판정은 UTC 기준으로 고정한다.
   const sunday = rows.filter(r => new Date(r.date + 'T00:00:00Z').getUTCDay() === 0);
+  // [X] `active` 를 파싱해 놓고 아무 데서도 보지 않았다. 죽은 변수가 남았다는 것은
+  //     원래 보려던 것이 있었다는 뜻이다 — 비활성 행은 판정식(03_Functions.sql)이 걸러내므로
+  //     Seed 의 신정 한 줄을 0 으로 바꾸면 신정이 업무 가능일이 된다. 그것을 여기서 본다.
+  const inactive = rows.filter(r => r.active !== '1');
   const bad = [];
-  if (dup.length)     bad.push('중복 날짜 ' + [...new Set(dup)].join(', '));
-  if (badType.length) bad.push('휴무구분 도메인 밖 ' + badType.map(r => r.date + ' ' + r.type).join(', '));
-  if (outside.length) bad.push('00 §7.4 등재 범위 밖 ' + outside.map(r => r.date).join(', '));
-  if (sunday.length)  bad.push('일요일은 Seed 하지 않는다 (06 §14.2) ' + sunday.map(r => r.date).join(', '));
+  if (dup.length)      bad.push('중복 날짜 ' + [...new Set(dup)].join(', '));
+  if (badType.length)  bad.push('휴무구분 도메인 밖 ' + badType.map(r => r.date + ' ' + r.type).join(', '));
+  if (outside.length)  bad.push('00 §7.4 등재 범위 밖 ' + outside.map(r => r.date).join(', '));
+  if (sunday.length)   bad.push('일요일은 Seed 하지 않는다 (06 §14.2) ' + sunday.map(r => r.date).join(', '));
+  if (inactive.length) bad.push('사용여부 0 인 Seed 행 (판정식이 걸러내 업무 가능일이 된다) '
+                                + inactive.map(r => r.date).join(', '));
   bad.length ? F('HOL-G2', 'Seed 행 구성 오류 ' + bad.length + '건', bad.join('\n'))
-             : P('HOL-G2', 'Seed ' + rows.length + '행 - 날짜 중복 0 · 구분 도메인 일치 · 범위 안 · 일요일 0');
+             : P('HOL-G2', 'Seed ' + rows.length + '행 - 날짜 중복 0 · 구분 도메인 일치 · 범위 안 · 일요일 0 · 전부 활성');
 }
 
 /* ---------------------------------------------------------------- HOL-G3
@@ -117,22 +123,45 @@ if (!rows.length) {
   else P('HOL-G4', 'SP 의 @경고임계일수 사본 = 00 §7.4 (' + threshold + '일)');
 }
 
-/* ---------------------------------------------------------------- HOL-G5
+/* ---------------------------------------------------------------- HOL-G5 · G6
  * 만료. 이것이 이 게이트의 본체다.
+ *
+ * [X] 초안은 잔여를 `00` §7.4 의 **선언 문자열**에서 셌다. 그러면 이 게이트가 red 가 됐을 때
+ *     `00` 한 줄을 다음 해로 늘리는 것만으로 green 이 된다 — Seed 는 한 행도 안 늘었는데.
+ *     게이트를 침묵시키는 가장 쉬운 편집이 아무것도 고치지 않는 편집인 구조였다.
+ *     잔여는 **Seed 의 실제 최종일**에서 세고, 선언이 Seed 를 앞서면 따로 잡는다.
  */
 {
+  const holidays = rows.filter(r => r.type === '법정공휴일' || r.type === '대체공휴일');
+  const seedMax = holidays.length ? holidays.map(r => r.date).sort().pop() : null;
   const today = new Date();
   const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-  const endUTC = Date.parse(rangeTo + 'T00:00:00Z');
-  const left = Math.round((endUTC - todayUTC) / 86400000);
   const iso = new Date(todayUTC).toISOString().slice(0, 10);
-  if (left < threshold)
-    F('HOL-G5', '공휴일 등재가 만료에 가깝다 - Seed 를 연장하라',
-      '오늘 ' + iso + ' · 등재 최종일 ' + rangeTo + ' · 잔여 ' + left + '일 < 임계 ' + threshold + '일\n' +
-      '고칠 곳: 00 §7.4 등재 범위 · 06 §14 표 · deploy/02_Seed.sql\n' +
-      '대체공휴일 규칙은 자주 바뀐다. 현행 법령과 월력요항을 다시 조회하라 (06 §14.1).');
-  else
-    P('HOL-G5', '공휴일 등재 잔여 ' + left + '일 >= 임계 ' + threshold + '일 (오늘 ' + iso + ' · 최종일 ' + rangeTo + ')');
+  const days = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - a) / 86400000);
+
+  if (!seedMax) {
+    F('HOL-G5', 'Seed 에 법정·대체 공휴일이 한 행도 없다 - 만료를 판정할 근거가 없다');
+    F('HOL-G6', '선언과 Seed 를 대조할 수 없다');
+  } else {
+    const left = days(todayUTC, seedMax);
+    if (left < threshold)
+      F('HOL-G5', '공휴일 등재가 만료에 가깝다 - Seed 를 연장하라',
+        '오늘 ' + iso + ' · Seed 최종일 ' + seedMax + ' · 잔여 ' + left + '일 < 임계 ' + threshold + '일\n' +
+        '고칠 곳: deploy/02_Seed.sql · 06 §14 표 · 00 §7.4 등재 범위 — **셋 다**여야 이 게이트가 다시 green 이 된다\n' +
+        '대체공휴일 규칙은 자주 바뀐다. 현행 법령과 월력요항을 다시 조회하라 (06 §14.1).');
+    else
+      P('HOL-G5', '공휴일 등재 잔여 ' + left + '일 >= 임계 ' + threshold + '일 (오늘 ' + iso + ' · Seed 최종일 ' + seedMax + ')');
+
+    // 선언이 Seed 를 앞서면 그만큼이 빈 구간이다. 공휴일은 최소 월 단위로 있으므로
+    // 선언 끝과 Seed 최종일이 60일 넘게 벌어지면 그 해가 통째로 안 들어온 것이다.
+    const GAP = 60;
+    const gap = days(Date.parse(seedMax + 'T00:00:00Z'), rangeTo);
+    if (gap > GAP)
+      F('HOL-G6', '00 §7.4 선언이 Seed 보다 ' + gap + '일 앞선다 - 선언만 늘리고 Seed 를 안 넣었다',
+        '선언 끝 ' + rangeTo + ' · Seed 최종일 ' + seedMax + ' (허용 ' + GAP + '일)');
+    else
+      P('HOL-G6', '00 §7.4 선언 끝 ' + rangeTo + ' 과 Seed 최종일 ' + seedMax + ' 의 간격 ' + gap + '일 <= ' + GAP + '일');
+  }
 }
 
 console.log('\n=== verify-holiday-seed: PASS ' + pass + ' / FAIL ' + fail + ' ===');

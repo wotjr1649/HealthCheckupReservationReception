@@ -862,8 +862,17 @@ function splitFences(src) {
     // `git()` 을 쓰지 않는다 — 그 헬퍼는 출력 전체를 trim 하고, porcelain 첫 줄이
     // 수정된 추적 파일(` M path`)이면 선행 공백이 잘려 slice(3) 이 경로를 한 글자 먹는다.
     // 첫 줄이 `?? path`(공백 없음)일 때만 우연히 맞았다 (실측).
-    const dirty = new Set(cp.execSync('git status --porcelain', { cwd: REPO, maxBuffer: 1e8 })
-      .toString().split('\n').map(l => l.slice(3).trim()).filter(Boolean));
+    // [X] 두 번째 파싱 결함. 선행 공백은 고쳤지만 rename(`R  old -> new`)과 한글 경로가
+    //     여전히 안 읽혔다 — core.quotepath 기본값이 true 라 비ASCII 경로가 따옴표 + 8진
+    //     이스케이프로 나오고, 그 문자열은 MIRROR 경로와 영원히 같지 않다.
+    //     이 저장소는 한글 경로가 다수이므로 quotepath 를 끄고 rename 은 양변을 다 넣는다.
+    const dirty = new Set();
+    for (const l of cp.execSync('git -c core.quotepath=false status --porcelain',
+                                { cwd: REPO, maxBuffer: 1e8 }).toString().split('\n')) {
+      const p = l.slice(3).trim();
+      if (!p) continue;
+      for (const one of p.split(' -> ')) dirty.add(one.replace(/^"|"$/g, ''));
+    }
     const touched = p => [...dirty].some(d => d === p || d.startsWith(p + '/'));
 
     for (const [base, gen] of Object.entries(MIRROR)) {

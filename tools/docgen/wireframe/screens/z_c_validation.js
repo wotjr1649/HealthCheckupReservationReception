@@ -10,7 +10,7 @@ const ROWS = [
   ['동일 주민번호+이름 불일치', '기존 전체값 확인', '신규등록 없이 기존 PatientId'],
   ['이름+생년월일 후보', 'DLG-PAT-03', '수정/별도등록/중단'],
   ['주민번호 변경+RSV/RCP 존재', 'Blocking', '주민번호 변경 불가'],
-  ['LastEditDate 불일치', 'Blocking+최신 수검자 Refresh', '수정 Rollback'],
+  ['수검자 RowVersion 불일치', 'Blocking+최신 수검자 Refresh', '수정 Rollback'],
   ['기존 유효예약 존재', '안내+WorkId 연결', '신규예약 중단'],
   ['예약변경 다른 유효업무', '현재 WorkId 제외 후 DB 재검증', '자기 자신은 충돌로 판단하지 않음'],
   ['과거 예약일', '일정 Inline', '선택 불가'],
@@ -29,6 +29,9 @@ const ROWS = [
   ['Single Instance 재호출+Dirty', '폐기 Confirm', '확인 Reset / 취소 유지'],
   ['저장 직전 정원·중복·상태 변경', 'Blocking+Refresh', 'Transaction Rollback'],
   ['취소', 'Confirm 후 DB 재검증', 'CNR/CNC 상태전이'],
+  ['휴무일 날짜 중복', 'DLG-HOL-01 Blocking', '등록 불가'],
+  ['법정·대체 공휴일 행 선택', '입력행·[수정][삭제] Disabled', '변경 불가 (HOL-05)'],
+  ['휴무일명 공백', 'Inline', '저장 불가'],
 ];
 
 const pages = tablePages('부록 C.  Validation Matrix', [

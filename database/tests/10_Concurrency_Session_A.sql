@@ -38,8 +38,11 @@ DECLARE @W BIGINT, @Rv BINARY(8), @Res NVARCHAR(255), @잠금결과 INT;
 --     USP_HC_수검자정보_수정 는 **전체치환형**이라 차트번호·성명·B형간염제외여부 도 필수다.
 --     주민번호 하나만 넣고 나머지를 NULL 로 두면 100(차트번호)에서 끝난다 (실측).
 --     현재 값을 그대로 읽어 넘겨 **주민번호만** 바뀌게 한다.
-DECLARE @Led DATETIME, @Chart NVARCHAR(100), @Nm NVARCHAR(100), @Hb BIT;
-SELECT @Led = [최종수정일시], @Chart = [차트번호], @Nm = [성명], @Hb = [B형간염제외여부]
+-- [X] R7 이 동시성 토큰을 [행버전] 으로 옮겼는데 이 줄이 DATETIME 으로 남아 있었다.
+--     EXEC 이 Msg 257(datetime -> binary)로 죽어 세션 A 가 SP 에 닿지도 못했고,
+--     하니스가 그 종료를 업무실패로 읽어 CON-004 가 PASS 를 찍었다 — 두 번째 공허다.
+DECLARE @Led BINARY(8), @Chart NVARCHAR(100), @Nm NVARCHAR(100), @Hb BIT;
+SELECT @Led = [행버전], @Chart = [차트번호], @Nm = [성명], @Hb = [B형간염제외여부]
   FROM [dbo].[수검자] WHERE [수검자ID] = @P1;
 
 IF @Scen = 5

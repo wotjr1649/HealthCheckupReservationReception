@@ -3,9 +3,10 @@
 - **문서명:** `06_DB_Transaction_Security_Seed.md`
 - **상태:** `FINAL / GO / READ-ONLY` — SQL 실행검증 완료. §42 Gate 판정은 전부 실측이다
 - **위치:** `docs/baseline/` — 2026-09-08 입주. 이제 이 문서를 고치는 것도 재봉인이다 (ROOT `AGENTS.md` §2)
-- **문서 버전:** v1.4  (v1.0 → R4 한글화 반영. v1.1 → R5 에서 §42 Gate 세 칸을 실측에 맞췄다. v1.2 → R6 에서 §42 의 미래 단정 한 줄을 걷었다. v1.3 → R7 계약 재설계)
+- **문서 버전:** v1.5  (v1.0 → R4 한글화 반영. v1.1 → R5 에서 §42 Gate 세 칸을 실측에 맞췄다. v1.2 → R6 에서 §42 의 미래 단정 한 줄을 걷었다. v1.3 → R7 계약 재설계. v1.4 → R8 리뷰 정정)
 - **기준일:** 2026-09-08  ·  **실행검증일:** 2026-09-07(R3 회귀) · 2026-09-08(R4 회귀 · R5 회귀 회차 `C`)
-- **기준선 ID:** `HC-RSV-RCP-20260908-R7`  (직전 `HC-RSV-RCP-20260908-R6`)
+- **기준선 ID:** `HC-RSV-RCP-20260908-R8`  (직전 `HC-RSV-RCP-20260908-R7`)
+- **R8 개정 범위:** R7 직후의 약식 리뷰가 찾은 결함을 정정한다. `2026-06-03` 지방선거일 Seed 누락, `07a` No-op 의 정렬 함정, `03` Grid 의 `행버전` 누락, 게이트 세 곳의 fail-open, `G09` 과다 주장이 그것이다
 - **R7 반영 범위:** 계약 재설계다. 휴무일이 `휴무구분`·감사·`행버전`을 얻고 자체휴무일 CRUD SP 4개가 생겨 SP 16 → 20 이 되었다. 동시성 토큰이 `행버전` 하나로 통일되며 §26 의 `+4ms` 단조증가가 **사라진다**. 공휴일 Seed 가 2년치로 늘고 만료 경고 게이트가 붙는다. §42 `G05` 는 수치 사본을 걷고 포인터가 된다
 - **R5 반영 범위:** 계약은 한 줄도 바뀌지 않았다. §42 의 `G00`·`G13`·`G16` 이 실제 게이트와 어긋나 있던 것을 고치고 회차 `C` 를 등재했다 — 이 문서가 봉인 안으로 들어와 `06` 이 7번째 봉인이 되었는데 `G00` 은 여전히 `6/6` 이었고, `G13 (c)` 는 이 문서가 요구한 증거 파일 없이 `REVIEWED` 였으며, `G16` 은 `v1.0` 을 근거로 들고 있었다
 - **R4 반영 범위:** 이 문서의 SP 이름·Parameter·Result Set 컬럼 표기를 `05` v3.0 에 맞췄다. Transaction·잠금·Seed·시험 계약의 **내용**은 바뀌지 않는다 — 이름만 바뀌었다. 절차·건수·판정은 그대로다
@@ -52,7 +53,7 @@
 
 ```text
 물리 스키마 DDL   6 Table + PK 6 / FK 2 / UQ 2 / UX 1 / NCI 4 / Sequence 1
-Master Seed       검사코드 19행 + 휴무일 40행 (§14)
+Master Seed       검사코드 19행 + 휴무일 41행 (§14)
 Inline TVF 4개 구현
 Stored Procedure 20개 구현
 Write SP 11개의 Transaction 경계·오류 처리·부분저장 차단
@@ -97,13 +98,13 @@ Extended Events / trace flag 세션 (서버 수준 객체)
 | `00_Project_Policy.md` | v2.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
 | `01_Process_Definition.md` | v2.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
 | `02_Function_Definition.xlsx` | v2.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
-| `03_Wireframe_Definition.md` | v1.4 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
-| `04_DB_Design.md` | v3.2 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
-| `05_DB_Rule_SP_Contract.md` | v3.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
-| `06_DB_Transaction_Security_Seed.md` | v1.4 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
+| `03_Wireframe_Definition.md` | v1.5 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R8` |
+| `04_DB_Design.md` | v3.3 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R8` |
+| `05_DB_Rule_SP_Contract.md` | v3.2 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R8` |
+| `06_DB_Transaction_Security_Seed.md` | v1.5 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R8` |
 
 `[!]` **기준선 ID 는 문서마다 "마지막 봉인 회차" 다** — 세트 하나에 ID 하나가 아니다.
-R7 은 여섯을 함께 열었으므로 `01` 만 R3 표기를 유지한다 — `01_Process_Definition.md` 는 한 바이트도 열지 않았다 (ROOT `AGENTS.md` §2.2).
+R8 은 `03`·`04`·`05`·`06` 넷만 열었다. `00`·`02` 는 R7 표기를, `01` 은 R3 표기를 유지한다 — 열지 않은 문서는 회차가 올라가지 않는다 (ROOT `AGENTS.md` §2.2).
 
 동일 디렉터리 및 `docs` 전체에서 `(1)`·`Candidate`·`후보`·`개선본`·`백업`·`old`·`copy` 사본 **0건**을 확인했다.
 
@@ -264,7 +265,7 @@ database/
 ├─ deploy/
 │  ├─ 00_Preflight.sql                서버·DB·KST·버전·안전가드 검증
 │  ├─ 01_Schema.sql                   FK 역순 DROP IF EXISTS → 6 Table + 제약 + Index + Sequence
-│  ├─ 02_Seed.sql                     검사코드 19행 + 휴무일 40행
+│  ├─ 02_Seed.sql                     검사코드 19행 + 휴무일 41행
 │  ├─ 03_Functions.sql                Inline TVF 4개 (CREATE OR ALTER)
 │  ├─ 04_Procedures_Select.sql        SELECT SP 8개 (SP-LOG-01 포함)
 │  ├─ 05_Procedures_Patient_Write.sql Patient Write SP 2개
@@ -671,10 +672,10 @@ Deploy가 clean-create이므로 Seed는 **단순 `INSERT`**만 사용한다. `ME
 
 ---
 
-# 14. `휴무일` Seed 40행 `[I]`
+# 14. `휴무일` Seed 41행 `[I]`
 
-`00` HOL-06 이 정한 등재 범위 **2026-01-01 ~ 2027-12-31** 을 편다. 법정공휴일·대체공휴일 39행과
-자체휴무일 1행, 합계 **40행**이다.
+`00` HOL-06 이 정한 등재 범위 **2026-01-01 ~ 2027-12-31** 을 편다. 법정공휴일·대체공휴일 40행과
+자체휴무일 1행, 합계 **41행**이다.
 
 ## 14.1 근거 — 기억으로 적지 않는다
 
@@ -695,9 +696,13 @@ Deploy가 clean-create이므로 Seed는 **단순 `INSERT`**만 사용한다. `ME
 
 - **일요일은 Seed 하지 않는다.** HOL-01 의 요일 Rule(`%7 = 6`)이 이미 차단하므로 넣어도 판정이 달라지지 않는다.
   2026 은 `03-01`(삼일절)·`05-24`(부처님오신날) 둘, 2027 은 `02-07`(설날)·`06-06`(현충일)·`08-15`(광복절)·`10-03`(개천절) 넷이 여기서 빠진다.
-- 임시공휴일·선거일은 넣지 않는다. 지정 시점이 유동적이라 다음 Seed 갱신에서 반영한다(`03` §24.7).
+- **임시공휴일만** 넣지 않는다. 지정 시점이 유동적이라 다음 Seed 갱신에서 반영한다(`03` §24.7).
+- `[X]` **선거일은 넣는다.** 처음에 "임시공휴일·선거일" 을 함께 뺐는데 그 근거가 선거일에는 성립하지 않는다 —
+  임기만료에 의한 선거일은 「공직선거법」이 날짜를 정하고 규정 제2조가 공휴일로 삼는다. 유동적인 것은 임시공휴일뿐이다.
+  그 결과 `2026-06-03`(수) 제9회 전국동시지방선거일이 빠져 **전국이 쉬는 평일을 업무 가능일로 판정**하고 있었다.
+  2027 에는 해당 선거가 없다 — 대통령선거가 궐위로 2025-06-03 에 앞당겨졌고 국회의원선거는 2028 이다.
 
-## 14.3 2026 — 법정·대체 19행
+## 14.3 2026 — 법정·대체 20행
 
 | 휴무일자 | 요일 | 휴무일명 | 휴무구분 |
 |---|:---:|---|---|
@@ -709,6 +714,7 @@ Deploy가 clean-create이므로 Seed는 **단순 `INSERT`**만 사용한다. `ME
 | `2026-05-01` | 금 | 노동절 | 법정공휴일 |
 | `2026-05-05` | 화 | 어린이날 | 법정공휴일 |
 | `2026-05-25` | 월 | 부처님오신날 대체공휴일 | 대체공휴일 |
+| `2026-06-03` | 수 | 제9회 전국동시지방선거일 | 법정공휴일 |
 | `2026-06-06` | 토 | 현충일 | 법정공휴일 |
 | `2026-07-17` | 금 | 제헌절 | 법정공휴일 |
 | `2026-08-15` | 토 | 광복절 | 법정공휴일 |
@@ -763,7 +769,8 @@ Deploy가 clean-create이므로 Seed는 **단순 `INSERT`**만 사용한다. `ME
 
 ## 14.7 만료
 
-`00` §7.4 가 등재 범위와 경고 임계(잔여 180일)를 정한다. 이 Seed 의 공휴일 최종일은 `2027-12-27` 이다.
+`00` §7.4 가 등재 범위와 경고 임계(잔여 180일)를 정한다. 이 Seed 의 공휴일 최종일은 `2027-12-27` 이다. 게이트는 **선언이 아니라 Seed 의 그 값**으로 잔여를 센다 —
+`00` 한 줄만 늘려 게이트를 침묵시킬 수 없게 하기 위해서다.
 잔여가 임계 미만이 되면 `scripts/verify-holiday-seed.sh` 가 **FAIL** 한다.
 
 `[!]` **경고가 아니라 실패다.** `00` HOL-06 은 "경고한다" 고 적지만, 이 저장소에서 실패시키지 않는 검사는
@@ -1052,7 +1059,7 @@ Write SP 8개    verify-contract.js 가 계약 시나리오의 **실측 출력 �
 업무결과를 OUTPUT Parameter 또는 SQL RETURN 값으로 전달
 업무실패를 RAISERROR 로 전달
 결과메시지 문자열 비교로 C# 분기
-Catalog 38개에 없는 실패를 기존 업무코드에 억지 매핑
+Catalog 에 없는 실패를 기존 업무코드에 억지 매핑
 ```
 
 `[I]` 사용자 정의 오류번호:
@@ -1511,7 +1518,7 @@ END
 
 ## 25.2 ResultCode로 매핑하지 않는 이유
 
-ResultCode Catalog는 **정확히 38개로 고정**(`05` §4.2)이며 잠금실패 코드가 없다. 인계 프롬프트 §5.9는 *"Catalog에 없는 실패를 억지로 기존 업무코드에 매핑하지 않는다"*고 못박았고, `05` §3.6은 *"예상하지 못한 SQL/시스템 오류 → THROW"*이다. 따라서 **`THROW`가 `05` 계약을 변경하지 않는 유일한 정합적 처리**다.
+ResultCode Catalog는 `05` §4.2가 고정하며 잠금실패 코드가 없다. **개수를 여기 적지 않는다** — `정확히 38개`라 적어 두었다가 R7이 `800~899` 대역을 열며 거짓이 되었다(ROOT `AGENTS.md` §6). 인계 프롬프트 §5.9는 *"Catalog에 없는 실패를 억지로 기존 업무코드에 매핑하지 않는다"*고 못박았고, `05` §3.6은 *"예상하지 못한 SQL/시스템 오류 → THROW"*이다. 따라서 **`THROW`가 `05` 계약을 변경하지 않는 유일한 정합적 처리**다.
 
 C#은 이를 `SqlException`으로 받아 재시도 안내를 표시한다. **Number `50001`(timeout)과 `50002`(deadlock victim) 두 가지가 모두 온다** — 둘 다 "잠시 후 다시 시도" 안내로 처리하되 로그에는 번호를 구분해 남긴다. 이는 Phase 5 UI 처리 사항이며 `05`의 `DbCode` Enum을 확장하지 않는다.
 
@@ -1786,7 +1793,7 @@ ALTER ROLE [HC_APP_ROLE] ADD MEMBER [DOMAIN\AppServiceAccount];
 ```text
 tests/00_Test_Harness.sql     Fixture 직접 INSERT (§15.2) + 손상 데이터 구획
 tests/01_Schema_Tests.sql     객체 인벤토리·제약 수·금지 객체 0건
-tests/02_Seed_Tests.sql       Exam 19행 / Holiday 40행 / 주민번호 체크디지트 무효
+tests/02_Seed_Tests.sql       Exam 19행 / Holiday 41행 / 주민번호 체크디지트 무효
 tests/03_Rule_Tests.sql       TVF 4종 결정적 경계 (@서버시각 주입)
 tests/04_Select_SP_Tests.sql  SELECT SP 8개 계약
 tests/05~07_*_Write_Tests.sql Write SP 8개 계약
@@ -2168,7 +2175,7 @@ WHERE p.name LIKE 'USP[_]HC[_]%';
 (2) 관측 RS0.결과코드 가 05 §13 의 해당 SP 허용 집합 안에 있는가
 ```
 
-`05` §13 허용 집합은 `tools/allowed-codes.json` 에 SP별 배열로 둔다. `05` §18이 *"사용되지 않는 ResultCode 0개"*를 PASS로 확정했으므로, **Catalog 38개 중 한 번도 관측되지 않은 코드 목록**도 함께 보고한다.
+`05` §13 허용 집합은 `tools/allowed-codes.json` 에 SP별 배열로 둔다. `05` §18이 *"사용되지 않는 ResultCode 0개"*를 PASS로 확정했으므로, **Catalog 중 한 번도 관측되지 않은 코드 목록**도 함께 보고한다.
 
 `[X]` 초안은 이 검증을 스펙에만 적고 계획에 대응 Task를 만들지 않아 실행되지 않았다.
 
@@ -2399,7 +2406,7 @@ END CATCH
 | `RBD-003` | 빈 DB에서 `Deploy.sql` 전체 실행 | exit code 0 |
 | `RBD-004` | 배포 직후 객체 인벤토리 | Table 6 / TVF 4 / SP 20 / Sequence 1 / PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5 / Trigger 0 |
 | `RBD-005` | **연속 2회 Rebuild** 후 **정렬된 객체·Seed 덤프를 `diff`** | 차이 0줄 |
-| `RBD-006` | 2회 Rebuild 후 Seed 행수 + **19행 전건 값** | Exam 19 / Holiday 40, 값까지 동일 |
+| `RBD-006` | 2회 Rebuild 후 Seed 행수 + **19행 전건 값** | Exam 19 / Holiday 41, 값까지 동일 |
 | `RBD-007` | `Deploy.sql` 단독 재실행 (DB 유지) | exit 0, 덤프 동일 |
 | `RBD-008` | `03`~`07` Procedure 파일만 단독 재실행 | exit 0, `GRANT` **15건 유지** 확인 |
 | `RBD-009` | `Net461MvpSample` | 존재 + 관찰한 메타데이터(`state_desc`, `user_access_desc`, `collation_name`, `is_read_only`) 전후 동일 |
@@ -2495,6 +2502,13 @@ artifacts/
 | `B` 창 밖 | 2026-09-08 03:05 | 밖 | `artifacts/logs/full_test_run_off.log` — exit 0 · PASS 185 · FAIL 0 · SKIP 78 · NOT RUN 9 |
 | `C` 창 안 | 2026-09-08 | 안 (화, 비휴무일 · PM 창) | `artifacts/logs/full_test_run_final.log` — exit 0 · PASS 363 · FAIL 0 · SKIP 2 · NOT RUN 1 |
 | `R7` 창 안 | 2026-09-08 13:00 | 안 (화, 비휴무일 · PM 창 11:10~15:50) | `artifacts/logs/full_test_run_r7.log` — exit 0 · PASS 389 · FAIL 0 · SKIP 2 · NOT RUN 1 |
+| `R8` 창 안 | 2026-09-08 13:35 | 안 (화, 비휴무일 · PM 창 11:10~15:50) | `artifacts/logs/full_test_run_r8.log` — exit 0 · PASS 399 · FAIL 0 · SKIP 2 · NOT RUN 1 |
+
+`[X]` **회차 `R7` 은 `CON-004` 를 판정하지 못했다.** `tests/10` 이 R7 이 바꾼 동시성 토큰을 따라가지 못해
+세션 A 가 `Msg 257` 로 죽었는데, 하니스가 `exit != 0` 을 통째로 "업무실패" 로 읽어 **PASS 를 찍었다**.
+`PASS 389 · FAIL 0` 안에 실행되지 않은 시나리오가 하나 있었다는 뜻이다. R8 이 토큰을 고치고,
+하니스가 `THROW 50001/50002` 가 없는 비정상 종료를 FAIL 로 읽게 했다(`§38`). 회차 `R8` 은 8개 시나리오
+전부 `session A exit=0 / session B exit=0` 이다.
 
 `[I]` 회차 `A` 는 사용자가 머신 시각을 6시간 뒤로 옮겨 만든 창이다. **코드는 한 글자도 바꾸지 않았다** —
 `SYSDATETIME()` 이 시각의 유일한 입구이므로 SP·TVF·게이트가 전부 출하될 그대로 돌았다. 끝난 뒤 같은 크기로 되돌렸다.
@@ -2520,14 +2534,14 @@ artifacts/
 | G01 | WinForms 보호 | 변경 0건 (git diff + hash manifest 이중 증거) | **PASS** | `PASS WinForms 변경 0건` · `git diff --stat <R3 태그> -- winforms` **0줄** |
 | G02 | Preflight | 가드 6종 통과 · KST 540 · Version >= 11 | **PASS** | `PRE-001`~`PRE-006` (인스턴스·DB·호스트 `DESKTOP-DP7KRE4`·KST +09:00·`17.0.1125.2`·RCSI OFF) |
 | G03 | Clean Deploy | 빈 DB 전체 배포 성공 (exit 0) | **PASS** | `PASS RBD-003 빈 DB 에서 Deploy 전체 실행 exit 0` |
-| G04 | Object Inventory | `05` §1.3·§1.4 가 선언한 객체가 전건 실재 | **PASS** (회차 `R7`) | `VER-001`~`VER-004` · `RBD-004` 지문. **수치를 여기 적지 않는다** — `SP 16` 이라 적어 두었다가 R7 에서 거짓이 되었다 (ROOT `AGENTS.md` §6) |
-| G05 | Schema | `04` §8·§10.1 이 선언한 컬럼·Key·제약이 실제 DB 와 **양방향 차집합 0** | **PASS** (회차 `R7`) | `SCH-001`~`SCH-019` · `DOC-001`~`DOC-009`. **수치를 여기 적지 않는다** — `48컬럼·제약 24·Default 8` 이라 적어 두었다가 R7 에서 세 값이 **전부** 거짓이 되었다. 실측은 게이트가 낸다 (ROOT `AGENTS.md` §6) |
-| G06 | 금지 객체 | Trigger 0 / TVP 0 / **업무 테이블을 지우는 SP 0** / 추가 Table 0 | **PASS** (회차 `R7`) | `VER-006` · `SCH-010`·`SCH-011`·`SCH-012`. R7 에서 `DELETE_자체휴무일` 이 생겨 조건을 좁혔다 — 금지의 뜻은 *업무 데이터를 지우지 않는다* 였다(§18) |
-| G07 | Seed | `06` §13·§14 가 선언한 Seed 가 전건 값까지 일치 · 공휴일 등재 만료 전 | **PASS** (회차 `R7`) | `VER-007` · `RBD-006` · R7 부터 `verify-holiday-seed.sh` 가 §14 표와 `00` §7.4 임계를 함께 판정한다 |
+| G04 | Object Inventory | `05` §1.3·§1.4 가 선언한 객체가 전건 실재 | **PASS** (회차 `R8`) | `VER-001`~`VER-004` · `RBD-004` 지문. **수치를 여기 적지 않는다** — `SP 16` 이라 적어 두었다가 R7 에서 거짓이 되었다 (ROOT `AGENTS.md` §6) |
+| G05 | Schema | `04` §8·§10.1 이 선언한 컬럼·Key·제약이 실제 DB 와 **양방향 차집합 0** | **PASS** (회차 `R8`) | `SCH-001`~`SCH-019` · `DOC-001`~`DOC-009`. **수치를 여기 적지 않는다** — `48컬럼·제약 24·Default 8` 이라 적어 두었다가 R7 에서 세 값이 **전부** 거짓이 되었다. 실측은 게이트가 낸다 (ROOT `AGENTS.md` §6) |
+| G06 | 금지 객체 | Trigger 0 / TVP 0 / **업무 테이블을 지우는 SP 0** / 추가 Table 0 | **PASS** (회차 `R8`) | `VER-006` · `SCH-010`·`SCH-011`·`SCH-012`. R7 에서 `DELETE_자체휴무일` 이 생겨 조건을 좁혔다 — 금지의 뜻은 *업무 데이터를 지우지 않는다* 였다(§18) |
+| G07 | Seed | `06` §13·§14 가 선언한 Seed 가 전건 값까지 일치 · 공휴일 등재 만료 전 | **PASS** (회차 `R8`) | `VER-007` · `RBD-006` · R7 부터 `verify-holiday-seed.sh` 가 §14 표와 `00` §7.4 임계를 함께 판정한다 |
 | G08 | Rule | TGT/NEX/AEX/HOL 경계 전건 + `CORRUPT-3` 재검증금지 | **PASS** | `tests/03_Rule_Tests.sql` 51건 |
-| G09 | SP Contract | `05` §7~§12 Parameter 와 `sys.parameters` 가 `EXCEPT` 양방향 0 · SP 전건 후속 RS · RS0 결과코드 가 `05` §13 허용집합 내 | **PASS** (회차 `R7`) | `SCH-019` · `V17` · `V18`. **건수를 여기 적지 않는다** — `Parameter 99`·`16/16` 이 R7 에서 거짓이 되었다 (ROOT `AGENTS.md` §6) |
+| G09 | SP Contract | `05` §7~§12 Parameter 와 `sys.parameters` 가 `EXCEPT` 양방향 0 · SP 전건 후속 RS · RS0 결과코드 가 `05` §13 허용집합 내 | **PASS** (회차 `R8`) | `SCH-019` · `V17` · `V18` · `HOL-001`~`007`. **건수를 여기 적지 않는다** — `Parameter 99`·`16/16` 이 R7 에서 거짓이 되었다 (ROOT `AGENTS.md` §6). R7 은 휴무일 SP 4개의 계약 시험이 0건인 채 `PASS` 였다 — R8 이 7건을 신설하고서야 "SP 전건" 이 참이 되었다 | `SCH-019` · `V17` · `V18`. **건수를 여기 적지 않는다** — `Parameter 99`·`16/16` 이 R7 에서 거짓이 되었다 (ROOT `AGENTS.md` §6) |
 | G10 | Rollback | 부분저장 0건 | **PASS** | `RBK-001`~`RBK-007` · `RBK-008` 은 T-SQL 로 RS 개수를 셀 수 없어 `V18` 이 정적으로 판정 |
-| G11 | Concurrency | `CON-001`~`008` + `rc=1` 1건 이상 + `Msg 1205`·`50002` 각 0건 | **PASS** | **8/8** · `applock rc=1` 시나리오마다 1~2건 · `1205`·`50002`·`50001`·`2627`·`결과코드 100` 각 **0건** (회차 `A`) |
+| G11 | Concurrency | `CON-001`~`008` + `rc=1` 1건 이상 + `Msg 1205`·`50002` 각 0건 + **세션 비정상 종료 0건** | **PASS** (회차 `R8`) | **8/8** · `applock rc=1` 시나리오마다 1~2건 · `1205`·`50002`·`50001`·`2627`·`결과코드 100` 각 **0건** (회차 `A`) |
 | G12 | Security | `SEC-010` | **PASS** | 계정·권한은 **폐기**했다 (2026-09-07 사용자 결정, §32). 남은 `SEC-010`(배포 원본·로그·보고서 secret 0건)은 매 회귀에서 PASS |
 | **G13** | **SQL Server 호환성** `[D4-004]` | (a) 배포·시험 성공 · (b) 블랙리스트 0건 · (c) §9.2 준수 | **(a) PASS · (b) PASS · (c) REVIEWED** | (a) 회차 `A`·`B`·`C` exit 0 · (b) `verify-tsql-allowlist.sh` 0건 + `CREATE OR ALTER` 는 배포 안에만 · (c) `artifacts/reports/allowlist-review.md` — §9.2 허용 표를 파싱해 행마다 사용/미사용을 실측한다(사용 22 · 미사용 1 · 수동 0). **`tools/allowlist-review.js` 가 회귀 안에서 매 회차 재생성하고 목록 밖이 나오면 `FAIL` 이다**(`PASS G13-c`) — 그 BAN 에 없던 TVP·Trigger·FK Cascade 를 이것이 본다 |
 | G14 | Repeatability | Rebuild 2회 후 정렬 덤프 `diff` 0줄 | **PASS** | `RBD-005` 덤프 완전 동일 · `RBD-007`(Deploy 단독) · `RBD-008`(Procedure 단독) 도 동일 |
@@ -2594,7 +2608,7 @@ artifacts/
 | 개행 원인 여부 | **아님.** raw / LF변환 / CR제거 / CRLF변환 / 후행개행 정리 / BOM 제거 6변형 전부 불일치 |
 | 내부 메타데이터 | 정상 — 문서명·`FINAL / GO / READ-ONLY`·`v1.2`·`2026-09-03`·`HC-RSV-RCP-20260904-R3` |
 | 금지 marker | `암호화`·`복호화`·`HMAC`·`SEC_PATIENT_IDENTIFIERS`·`MST_NATIONAL_EXAMS`·`MST_ADDITIONAL_EXAMS` **0건** → 인계문서 §4.2-5 즉시중단 조건 미해당 |
-| 내용 정합성 | 문서 완결(23장, 말미 "최종 판정: GO"). 정원 20 / NEX 8~11 / AEX 7종 / 주민번호 13자리 / `수검자` 16컬럼 / 예약변경 자기 Work 오탐 방지 / 취소 복원 없음 — 전부 `04`·`05`와 모순 없음 |
+| 내용 정합성 | 문서 완결(23장, 말미 "최종 판정: GO"). 정원 20 / NEX 8~11 / AEX 7종 / 주민번호 13자리 / `수검자` 컬럼(수는 `04` §8.1.2가 단일 출처) / 예약변경 자기 Work 오탐 방지 / 취소 복원 없음 — 전부 `04`·`05`와 모순 없음 |
 | 사본 존재 | `docs` 전체에서 0건 |
 | **판정** | 사용자 결정으로 **현재 파일을 기준본으로 확정**. 원인은 규명되지 않은 채로 본 항목에 기록한다 |
 | 영향 | Phase 4 DB 객체계약에 **영향 없음** — `04`·`05`가 byte 일치이며 `03`은 우선순위 4위 UI 계약서다 |

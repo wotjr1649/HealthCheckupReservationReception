@@ -9,13 +9,13 @@ GO
 --     같은 이유로 **DB 상태**를 단언한다. RS0 코드 판정은 tests/contract 계열이 한다.
 --     여기서 보는 것은 "요청이 데이터를 바꿨는가 / 안 바꿨는가" 다.
 --
--- 이 파일은 Seed 를 건드리므로 **자기가 심은 것을 자기가 지운다.** 끝에서 40행 복귀를 확인한다.
+-- 이 파일은 Seed 를 건드리므로 **자기가 심은 것을 자기가 지운다.** 끝에서 41행 복귀를 확인한다.
 ----------------------------------------------------------------------------
 DECLARE @Fail INT = 0;
 
 DECLARE @H0 INT = (SELECT COUNT(*) FROM [dbo].[휴무일]);
-IF (@H0 = 40)
-    PRINT 'PASS HLD-000 사전조건 - 휴무일 Seed 40행';
+IF (@H0 = 41)
+    PRINT 'PASS HLD-000 사전조건 - 휴무일 Seed 41행';
 ELSE BEGIN PRINT 'FAIL HLD-000 사전조건 불일치 (실측 ' + CONVERT(VARCHAR(5), @H0) + '행)'; SET @Fail += 1; END
 
 DECLARE @D  DATE = '2027-03-15';          -- Seed 에 없는 날짜 (06 §14.4 에 3월 행이 없다)
@@ -34,11 +34,14 @@ IF EXISTS (SELECT 1 FROM [dbo].[휴무일]
     PRINT 'PASS HLD-001 자체휴무일 1행 등록 · 휴무구분 자동 고정';
 ELSE BEGIN PRINT 'FAIL HLD-001 등록되지 않았거나 휴무구분이 다르다'; SET @Fail += 1; END
 
--- HLD-002 감사·동시성 컬럼이 채워졌는가 (04 §8.4.2)
-IF EXISTS (SELECT 1 FROM [dbo].[휴무일]
-            WHERE [휴무일자] = @D AND [행버전] IS NOT NULL AND [최종수정일시] >= [생성일시])
-    PRINT 'PASS HLD-002 행버전 생성 · 최종수정일시 >= 생성일시';
-ELSE BEGIN PRINT 'FAIL HLD-002 감사·동시성 컬럼 이상'; SET @Fail += 1; END
+-- HLD-002 신규 행은 생성일시 = 최종수정일시 다 (SP 가 @저장시각 하나로 넣는다, 05 §12.6).
+-- [X] 여기 있던 단언은 [행버전] IS NOT NULL AND [최종수정일시] >= [생성일시] 였다.
+--     앞은 ROWVERSION 이라 불가능하고 뒤는 CK_휴무일_EDIT_DATE 가 이미 강제한다 —
+--     스키마가 보증하는 것만 보는 항진명제였다. 실패할 수 없는 단언은 시험이 아니다(06 §44.8).
+DECLARE @Cre DATETIME2(0) = (SELECT [생성일시] FROM [dbo].[휴무일] WHERE [휴무일자] = @D);
+IF ((SELECT [최종수정일시] FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = @Cre)
+    PRINT 'PASS HLD-002 신규 행의 생성일시 = 최종수정일시';
+ELSE BEGIN PRINT 'FAIL HLD-002 등록이 두 시각을 다른 값으로 넣었다'; SET @Fail += 1; END
 
 -- HLD-003 같은 날짜 재등록은 아무것도 바꾸지 않는다 (801)
 SELECT @Rv = [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D;
@@ -78,6 +81,30 @@ IF ((SELECT [휴무일명] FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = N
     AND @Rv2 <> @Rv)
     PRINT 'PASS HLD-006 자체휴무일 수정 반영 + 행버전 변경';
 ELSE BEGIN PRINT 'FAIL HLD-006 수정이 반영되지 않았거나 행버전이 그대로다'; SET @Fail += 1; END
+
+-- HLD-006b 수정은 생성일시를 건드리지 않는다. SET 목록에 [생성일시] 가 끼면 여기서 걸린다.
+IF ((SELECT [생성일시] FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = @Cre
+    AND (SELECT [최종수정일시] FROM [dbo].[휴무일] WHERE [휴무일자] = @D) >= @Cre)
+    PRINT 'PASS HLD-006b 수정이 생성일시를 바꾸지 않았다';
+ELSE BEGIN PRINT 'FAIL HLD-006b 수정이 생성일시를 건드렸다'; SET @Fail += 1; END
+
+-- HLD-006c 대소문자만 바꾼 이름이 저장되는가 (07a No-op 의 정렬 함정).
+-- Korean_Wansung_CI_AS 는 N''설비 점검(연장)'' 과 소문자 라틴 혼용을 같다고 본다.
+DECLARE @CaseName NVARCHAR(100) = N'HVAC 점검', @Rv3 BINARY(8);
+SELECT @Rv3 = [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D;
+EXEC [dbo].[USP_HC_자체휴무일_수정] @D, @Rv3, @CaseName, 1, N'HLD 시험';
+SELECT @Rv3 = [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D;
+EXEC [dbo].[USP_HC_자체휴무일_수정] @D, @Rv3, N'hvac 점검', 1, N'HLD 시험';
+IF ((SELECT [휴무일명] FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = N'hvac 점검'
+    AND CONVERT(VARBINARY(200), (SELECT [휴무일명] FROM [dbo].[휴무일] WHERE [휴무일자] = @D))
+        = CONVERT(VARBINARY(200), N'hvac 점검'))
+    PRINT 'PASS HLD-006c 대소문자만 바꾼 수정이 저장됐다 (No-op 으로 삼키지 않았다)';
+ELSE BEGIN PRINT 'FAIL HLD-006c 대소문자 변경이 No-op 으로 사라졌다'; SET @Fail += 1; END
+
+-- 뒤 시험이 이름에 기대므로 되돌린다.
+SELECT @Rv3 = [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D;
+EXEC [dbo].[USP_HC_자체휴무일_수정] @D, @Rv3, N'설비 점검(연장)', 1, N'HLD 시험';
+SELECT @Rv2 = [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D;
 
 -- HLD-007 stale 행버전 은 601 이고 아무것도 바꾸지 않는다
 EXEC [dbo].[USP_HC_자체휴무일_수정] @D, @Rv, N'stale시도', 0, NULL;
@@ -139,9 +166,9 @@ ELSE BEGIN PRINT 'FAIL HLD-014 휴무일 CRUD 가 감사행을 남겼다'; SET @
 
 -- HLD-015 시험이 심은 것을 전부 걷었다
 DECLARE @H1 INT = (SELECT COUNT(*) FROM [dbo].[휴무일]);
-IF (@H1 = 40)
-    PRINT 'PASS HLD-015 Seed 40행 복귀 - 시험이 남긴 행 0건';
-ELSE BEGIN PRINT 'FAIL HLD-015 Seed 행수 ' + CONVERT(VARCHAR(5), @H1) + ' (기대 40)'; SET @Fail += 1; END
+IF (@H1 = 41)
+    PRINT 'PASS HLD-015 Seed 41행 복귀 - 시험이 남긴 행 0건';
+ELSE BEGIN PRINT 'FAIL HLD-015 Seed 행수 ' + CONVERT(VARCHAR(5), @H1) + ' (기대 41)'; SET @Fail += 1; END
 
 -- @Fail 은 이 배치에서만 산다. GO 뒤로 넘기면 Msg 137 이다 (database/AGENTS.md §11).
 IF @Fail > 0 THROW 51015, N'휴무일 시험에 실패가 있습니다.', 1;

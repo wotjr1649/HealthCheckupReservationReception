@@ -95,8 +95,8 @@ LEFT=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
   DELETE FROM dbo.휴무일 WHERE [휴무일명] = N'OFF-308 시험용 임시 휴무일';
   SELECT CONVERT(VARCHAR(5), @@ROWCOUNT) + '/' + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM dbo.휴무일));" | tr -d ' \r')
 case "$LEFT" in
-  0/40) echo "PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 · 휴무일 Seed 40건" >> "$OUT" ;;
-  *)   echo "FAIL OFF-308-CLEAN 임시 휴무일 잔여/총계 = $LEFT (기대 0/40)" >> "$OUT"; FAILED=1 ;;
+  0/41) echo "PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 · 휴무일 Seed 41건" >> "$OUT" ;;
+  *)   echo "FAIL OFF-308-CLEAN 임시 휴무일 잔여/총계 = $LEFT (기대 0/41)" >> "$OUT"; FAILED=1 ;;
 esac
 
 cat "$OUT"

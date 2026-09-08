@@ -38,8 +38,9 @@ run tests/08_Rollback_Tests.sql           08
 # NOT RUN 으로 미루지 않는다 — 미룬 것이 아니라 산출물이 아니므로 잔여를 남기지 않는다.
 # 남은 SEC-010(secret 스캔)은 scripts/verify-no-secret.sh 가 아래에서 판정한다.
 run tests/15_Holiday_Tests.sql            15      # R7 — 기준정보 SP 4개. Seed 를 건드리므로 자기가 심은 것을 자기가 지운다.
-                                                  #   14 보다 **앞**에 둔다. 14 의 Seed 덤프가 RBD-005 의 diff 대상이라
-                                                  #   15 가 남긴 행이 하나라도 있으면 그 diff 가 깨진다 — 그것을 14 가 잡게 한다.
+                                                  #   14 보다 **앞**에 둔다. 15 가 남긴 행은 바로 뒤 14 의 RBD-004 지문
+                                                  #   (...|19|41)이 잡는다. RBD-005 의 diff 는 clean-rebuild-verify.sh 가
+                                                  #   매번 새 DB 에서 뜨므로 15 의 잔여가 거기까지 가지 못한다.
 run tests/14_Clean_Rebuild_Verify.sql     14
 
 # 계약 검증 (G09) — 스펙 §8.4 가 test.sh 범위로 지정했다

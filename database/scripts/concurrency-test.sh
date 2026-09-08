@@ -76,7 +76,7 @@ PIDB=$!
 RCA=0; RCB=0
 wait $PIDA || RCA=$?
 wait $PIDB || RCB=$?
-echo "INFO session A exit=$RCA / session B exit=$RCB   (업무실패로 끝나는 것이 정상이다)"
+echo "INFO session A exit=$RCA / session B exit=$RCB   (SP 가 THROW 50001/50002 로 끝나는 것은 정상이다)"
 
 RC=0
 # ── barrier 를 이미 지나 세션이 즉시 중단됐다면 경합 자체가 없었다. 판정으로 넘어가지 않는다.
@@ -85,6 +85,22 @@ if [ "$BARRMISS" -ne 0 ]; then
   echo "FAIL CON-00$SCEN barrier 시각을 이미 지나 세션이 중단됐다 (Msg 51001) — 경합이 발생하지 않았다"
   exit 1
 fi
+
+# ── [X] 세션이 0 이 아닌 코드로 끝나는 것을 통째로 "업무실패" 로 읽고 있었다.
+#    업무실패는 Result Set 으로 돌아오므로 exit 0 이다. exit != 0 의 정당한 원인은
+#    SP 가 THROW 한 50001(잠금실패)·50002(교착) 둘뿐이고, 그 밖의 오류는 **SP 에 닿기도 전에
+#    배치가 죽은 것**이다. 그러면 아무도 쓰지 않았으므로 뒤따르는 "값이 안 바뀌었다" 단언이
+#    전부 참이 되어 시나리오가 실행되지 않은 채 PASS 가 나간다.
+#    R7 에서 CON-004 가 그랬다 — 세션 A 가 Msg 257 로 죽었는데 PASS 였다.
+chk_session() {                       # chk_session <A|B> <rc>
+  [ "$2" -eq 0 ] && return 0
+  if cat16 "${L}_$1.log" | grep -qE 'Msg (50001|50002)'; then return 0; fi
+  echo "FAIL CON-00$SCEN session $1 이 exit=$2 인데 THROW 50001/50002 가 없다 — 시나리오 전에 배치가 죽었다"
+  cat16 "${L}_$1.log" | grep -iE 'HResult|^Msg |변환할 수 없습니다|구문' | head -3
+  return 1
+}
+chk_session A "$RCA" || RC=1
+chk_session B "$RCB" || RC=1
 
 # ── DB 최종 상태 판정
 sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -v Scenario="$SCEN" \

@@ -250,9 +250,16 @@ BEGIN
                 SET @성공여부 = 0; SET @결과코드 = 601; SET @오류항목 = N'행버전';
                 SET @결과메시지 = N'다른 사용자가 먼저 변경했습니다. 최신 정보를 다시 조회하십시오.';
             END
-            -- 실제 변경 여부는 NULL-safe 로 본다 (06 §28.2).
-            ELSE IF @현재명 = @휴무일명 AND @현재사용 = @사용여부
-                AND ((@현재비고 IS NULL AND @비고 IS NULL) OR @현재비고 = @비고)
+            -- 실제 변경 여부. NULL-safe 만으로는 부족하다 — 정렬이 Korean_Wansung_CI_AS 라
+            -- N'HVAC 점검' 과 N'hvac 점검' 을 **같다고** 본다(실측). 대소문자만 고친 이름이
+            -- 결과코드=1 '변경된 내용이 없습니다' 로 돌아오고 편집이 조용히 사라진다.
+            -- [X] 05_Procedures_Patient_Write.sql 이 이미 같은 사고를 겪고 VARBINARY 바이트
+            --     비교로 고쳤는데(그 자리 [X] 주석), R7 이 이 SP 를 새로 쓰면서 그 교훈 이전으로
+            --     되돌아갔다. COLLATE 는 06 §9.2 허용목록 밖이므로 여기서도 VARBINARY 를 쓴다.
+            ELSE IF CONVERT(VARBINARY(200), @현재명) = CONVERT(VARBINARY(200), @휴무일명)
+                AND @현재사용 = @사용여부
+                AND ((@현재비고 IS NULL AND @비고 IS NULL)
+                     OR CONVERT(VARBINARY(1000), @현재비고) = CONVERT(VARBINARY(1000), @비고))
             BEGIN
                 SET @결과코드 = 1;
                 SET @결과메시지 = N'변경된 내용이 없습니다.';
