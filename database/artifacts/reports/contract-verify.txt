@@ -30,7 +30,7 @@ PASS CWR-002_접수완료_미래예약일 Result Set 계약 일치 (1개 RS · R
 PASS CWR-003_접수완료_stale_RowVersion Result Set 계약 일치 (1개 RS · RS0 Code=601)
 PASS CWR-004_접수완료_CNR_Work Result Set 계약 일치 (1개 RS · RS0 Code=502)
 PASS CWR-005_접수완료_NEX0행 Result Set 계약 일치 (1개 RS · RS0 Code=701)
-SKIP CWR-006_접수완료_성공 PM 마감(16:00) 10분 전을 지났다 — 성공 경로는 마감 전에만 성립한다
+PASS CWR-006_접수완료_성공 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS CWR-007_접수완료_이미_RCP Result Set 계약 일치 (1개 RS · RS0 Code=502)
 PASS CWR-008_접수완료_과거예약일 Result Set 계약 일치 (1개 RS · RS0 Code=503)
 PASS CWR-009_접수완료_마감경과 Result Set 계약 일치 (1개 RS · RS0 Code=304)
