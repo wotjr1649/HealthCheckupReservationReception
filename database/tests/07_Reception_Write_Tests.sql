@@ -187,6 +187,12 @@ INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드],
 VALUES (@P10, CONVERT(DATE, SYSDATETIME()), 'PM', 'RSV', @Basic, NULL);
 SET @W = SCOPE_IDENTITY();
 SET @Rv = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @W);
+-- [X] CWR-006 의 '시간대 불변' 단언이 @시간대코드(현재시각으로 정해지는 값)와 비교했다.
+--     이 Work 는 위에서 'PM' 리터럴로 만드는데, 09:00~11:00 에 돌리면 @시간대코드 가 'AM' 이라
+--     접수가 정상 성공했는데도 FAIL 이 났다. 창 밖에서는 블록이 통째로 SKIP 되고 11:10~15:50
+--     에서는 둘 다 'PM' 이라 우연히 맞아, 두 회차를 다 돌려도 드러나지 않았다(실측 2026-09-08 10:00).
+--     불변 단언은 **저장된 값**과 비교해야 한다. 생성 시점 값을 여기서 잡는다.
+DECLARE @생성시간대 CHAR(2) = (SELECT [시간대코드] FROM [dbo].[예약접수] WHERE [업무ID] = @W);
 
 -- CWR-003  stale 행버전 은 전이시키지 않는다 (601 이 마감보다 앞이다)
 EXEC [dbo].[USP_HC_접수_완료] @W, 0x0000000000000001, N'TEST';
@@ -218,7 +224,7 @@ BEGIN
     SET @H1 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @W);
     IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @W) = 'RCP'
         AND (SELECT [예약일] FROM [dbo].[예약접수] WHERE [업무ID] = @W) = CONVERT(DATE, SYSDATETIME())
-        AND (SELECT [시간대코드] FROM [dbo].[예약접수] WHERE [업무ID] = @W) = @시간대코드
+        AND (SELECT [시간대코드] FROM [dbo].[예약접수] WHERE [업무ID] = @W) = @생성시간대
         AND (SELECT [국가검사항목] FROM [dbo].[예약접수] WHERE [업무ID] = @W) = @Basic
         AND (SELECT [추가검사항목] FROM [dbo].[예약접수] WHERE [업무ID] = @W) IS NULL)
         PRINT 'PASS CWR-006 접수 성공 - RCP 전이 · 예약일·시간대·검사구성 불변';
