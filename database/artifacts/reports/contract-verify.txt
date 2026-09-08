@@ -64,7 +64,7 @@ PASS PWR-010_유사후보_확인후등록 Result Set 계약 일치 (2개 RS · R
 PASS PWR-013_주민번호_14자리_경계절단 Result Set 계약 일치 (2개 RS · RS0 Code=2)
 PASS PWR-014_주민번호_비숫자 Result Set 계약 일치 (1개 RS · RS0 Code=101)
 PASS PWR-020_수정_Noop Result Set 계약 일치 (2개 RS · RS0 Code=1)
-PASS PWR-021_수정_stale_LastEditDate Result Set 계약 일치 (1개 RS · RS0 Code=600)
+PASS PWR-021_수정_stale_RowVersion Result Set 계약 일치 (1개 RS · RS0 Code=601)
 PASS PWR-022_수정_이름변경 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS PWR-023_주민번호변경_RSV보유 Result Set 계약 일치 (1개 RS · RS0 Code=205)
 PASS PWR-024_차트번호변경_RSV보유 Result Set 계약 일치 (2개 RS · RS0 Code=0)
@@ -109,4 +109,4 @@ PASS SEL-021_변경이력_정상 Result Set 계약 일치 (2개 RS · RS0 Code=0
 PASS SEL-022_변경이력_기록0건 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS SEL-023_변경이력_TargetTable_허용밖 Result Set 계약 일치 (1개 RS · RS0 Code=101)
 PASS SEL-024_변경이력_TargetTable_NULL Result Set 계약 일치 (1개 RS · RS0 Code=100)
-PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 · 휴무일 Seed 2건
+PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 · 휴무일 Seed 40건

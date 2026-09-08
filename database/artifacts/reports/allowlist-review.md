@@ -9,32 +9,34 @@
 
 | 파일 | 줄 |
 |---|---:|
-| `Deploy.sql` | 17 |
+| `Deploy.sql` | 18 |
 | `Rebuild.sql` | 61 |
 | `deploy/00_Preflight.sql` | 50 |
-| `deploy/01_Schema.sql` | 333 |
-| `deploy/02_Seed.sql` | 47 |
+| `deploy/01_Schema.sql` | 353 |
+| `deploy/02_Seed.sql` | 91 |
 | `deploy/03_Functions.sql` | 251 |
 | `deploy/04_Procedures_Select.sql` | 1022 |
-| `deploy/05_Procedures_Patient_Write.sql` | 715 |
+| `deploy/05_Procedures_Patient_Write.sql` | 714 |
 | `deploy/06_Procedures_Reservation_Write.sql` | 1029 |
 | `deploy/07_Procedures_Reception_Write.sql` | 759 |
+| `deploy/07a_Procedures_Holiday.sql` | 397 |
 | `deploy/08_Verify.sql` | 65 |
 | `tests/00_Test_Harness.sql` | 194 |
 | `tests/00b_Test_Harness_RCP.sql` | 66 |
-| `tests/01_Schema_Tests.sql` | 391 |
-| `tests/02_Seed_Tests.sql` | 148 |
+| `tests/01_Schema_Tests.sql` | 409 |
+| `tests/02_Seed_Tests.sql` | 167 |
 | `tests/03_Rule_Tests.sql` | 351 |
 | `tests/04_Select_SP_Tests.sql` | 70 |
-| `tests/05_Patient_Write_Tests.sql` | 360 |
+| `tests/05_Patient_Write_Tests.sql` | 369 |
 | `tests/06_Reservation_Write_Tests.sql` | 433 |
 | `tests/07_Reception_Write_Tests.sql` | 413 |
-| `tests/08_Rollback_Tests.sql` | 247 |
+| `tests/08_Rollback_Tests.sql` | 248 |
 | `tests/09_Concurrency_Setup.sql` | 114 |
 | `tests/10_Concurrency_Session_A.sql` | 110 |
 | `tests/11_Concurrency_Session_B.sql` | 72 |
 | `tests/12_Concurrency_Verify.sql` | 116 |
 | `tests/14_Clean_Rebuild_Verify.sql` | 133 |
+| `tests/15_Holiday_Tests.sql` | 150 |
 | `tests/contract/01_공통업무상태.sql` | 4 |
 | `tests/contract/02_수검자목록_조건없음.sql` | 4 |
 | `tests/contract/03_수검자목록_ChartNo.sql` | 4 |
@@ -84,7 +86,7 @@
 | `tests/contract/CWR-043_접수취소_이미_CNC.sql` | 7 |
 | `tests/contract/CWR-044_CNC_예약변경_불가.sql` | 7 |
 | `tests/contract/CWR-099_cleanup.sql` | 11 |
-| `tests/contract/OFF-308-01_업무일아님_수검자등록.sql` | 36 |
+| `tests/contract/OFF-308-01_업무일아님_수검자등록.sql` | 37 |
 | `tests/contract/OFF-309-01_업무시간밖_수검자등록.sql` | 7 |
 | `tests/contract/OFF-309-02_업무시간밖_예약등록.sql` | 6 |
 | `tests/contract/PWR-000_fixture.sql` | 10 |
@@ -100,7 +102,7 @@
 | `tests/contract/PWR-013_주민번호_14자리_경계절단.sql` | 11 |
 | `tests/contract/PWR-014_주민번호_비숫자.sql` | 6 |
 | `tests/contract/PWR-020_수정_Noop.sql` | 12 |
-| `tests/contract/PWR-021_수정_stale_LastEditDate.sql` | 12 |
+| `tests/contract/PWR-021_수정_stale_RowVersion.sql` | 13 |
 | `tests/contract/PWR-022_수정_이름변경.sql` | 12 |
 | `tests/contract/PWR-023_주민번호변경_RSV보유.sql` | 13 |
 | `tests/contract/PWR-024_차트번호변경_RSV보유.sql` | 12 |
@@ -145,7 +147,7 @@
 | `tests/contract/SEL-022_변경이력_기록0건.sql` | 6 |
 | `tests/contract/SEL-023_변경이력_TargetTable_허용밖.sql` | 5 |
 | `tests/contract/SEL-024_변경이력_TargetTable_NULL.sql` | 4 |
-| **합계 136개** | **8488** |
+| **합계 138개** | **9148** |
 
 ## 2. §9.2 허용목록 대조
 
@@ -155,27 +157,27 @@
 |---|---|---|
 | `SEQUENCE`, `NEXT VALUE FOR` | 사용 | `SEQUENCE` 4개 파일 · `NEXT VALUE FOR` 1개 파일 |
 | `TRY_CONVERT` | 사용 | `TRY_CONVERT` 4개 파일 |
-| `THROW` | 사용 | `THROW` 23개 파일 |
-| `ROWVERSION` | 사용 | `ROWVERSION` 4개 파일 |
+| `THROW` | 사용 | `THROW` 25개 파일 |
+| `ROWVERSION` | 사용 | `ROWVERSION` 5개 파일 |
 | Filtered Index | 사용 | `UX_검사코드_AEX_CODE` 1개 파일 |
 | `PERSISTED` 계산열 | 사용 | `PERSISTED` 1개 파일 |
-| `sp_getapplock` / `sp_releaseapplock` | 사용 | `sp_getapplock` 4개 파일 |
+| `sp_getapplock` / `sp_releaseapplock` | 사용 | `sp_getapplock` 5개 파일 |
 | `HASHBYTES('SHA2_256', …)` | 사용 | `HASHBYTES('SHA2_256', )` 2개 파일 |
 | `EXCEPT` / `INTERSECT` | 사용 | `EXCEPT` 5개 파일 · `INTERSECT` 1개 파일 |
-| `VALUES` 행 생성자 | 사용 | `VALUES` 22개 파일 |
+| `VALUES` 행 생성자 | 사용 | `VALUES` 23개 파일 |
 | Table Variable, CTE, `OUTER APPLY`, `CROSS APPLY` | 사용 | `OUTER APPLY` 1개 파일 · `CROSS APPLY` 5개 파일 |
-| `TOP (n)` + `ORDER BY` | 사용 | `TOP (n)` 57개 파일 · `ORDER BY` 37개 파일 |
+| `TOP (n)` + `ORDER BY` | 사용 | `TOP (n)` 57개 파일 · `ORDER BY` 38개 파일 |
 | `WHILE` 루프 | 사용 | `WHILE` 17개 파일 |
 | 쉼표 구분 문자열 + 양끝 패딩 `LIKE` | 사용 | `LIKE` 23개 파일 |
 | `OFFSET … FETCH`, `IIF`, `CONCAT`, `FORMAT` | 사용 | `OFFSET  FETCH` 3개 파일 · `FORMAT` 2개 파일 |
 | `DBCC CHECKIDENT(…, RESEED, n)` | 사용 | `DBCC CHECKIDENT` 1개 파일 |
-| `EXECUTE AS USER` / `REVERT`, `ALTER ROLE … ADD MEMBER` | 사용 | `ALTER ROLE  ADD MEMBER` 6개 파일 |
+| `EXECUTE AS USER` / `REVERT`, `ALTER ROLE … ADD MEMBER` | 사용 | `ALTER ROLE  ADD MEMBER` 7개 파일 |
 | `sys.dm_exec_describe_first_result_set(_for_object)` | 미사용 | `sys.dm_exec_describe_first_result_set(_for_object)` — 0건 |
 | `WAITFOR TIME` | 사용 | `WAITFOR TIME` 2개 파일 |
-| **예외적 허용 (SQL 2016 DDL 배관)** `CREATE OR ALTER`, `DROP … IF EXISTS` | 사용 | `CREATE OR ALTER` 7개 파일 · `DROP  IF EXISTS` 2개 파일 |
-| `STRING_SPLIT`, XML 파싱, JSON 함수/타입, `OPENJSON`, `FOR JSON` — `04` §3.8·§15.5 | 사용 | `FOR JSON` 10개 파일 · `04` 24개 파일 |
-| 비트마스크 — `04` §15.5 | 사용 | `04` 24개 파일 |
-| `SESSION_CONTEXT`, `AT TIME ZONE`, `STRING_AGG`, `TRIM()`, `CONCAT_WS`, `TRANSLATE`, `DATEDIFF_BIG`, `COMPRESS`, `GREATEST`/`LEAST`, `GENERATE_SERIES`, 정규식 함수, 벡터 타입 — 2012 이후 기능 | 사용 | `AT TIME ZONE` 47개 파일 · `TRIM()` 5개 파일 |
+| **예외적 허용 (SQL 2016 DDL 배관)** `CREATE OR ALTER`, `DROP … IF EXISTS` | 사용 | `CREATE OR ALTER` 8개 파일 · `DROP  IF EXISTS` 2개 파일 |
+| `STRING_SPLIT`, XML 파싱, JSON 함수/타입, `OPENJSON`, `FOR JSON` — `04` §3.8·§15.5 | 사용 | `FOR JSON` 11개 파일 · `04` 26개 파일 |
+| 비트마스크 — `04` §15.5 | 사용 | `04` 26개 파일 |
+| `SESSION_CONTEXT`, `AT TIME ZONE`, `STRING_AGG`, `TRIM()`, `CONCAT_WS`, `TRANSLATE`, `DATEDIFF_BIG`, `COMPRESS`, `GREATEST`/`LEAST`, `GENERATE_SERIES`, 정규식 함수, 벡터 타입 — 2012 이후 기능 | 사용 | `AT TIME ZONE` 41개 파일 · `TRIM()` 6개 파일 |
 
 사용 22 · 미사용 1 · 수동판단 0 (허용 행 23)
 
@@ -210,6 +212,6 @@
 | 항목 | 값 |
 |---|---|
 | 검토자 | Claude Opus 5 (세션 실행) |
-| 시각 | 2026-09-08 13:14 KST |
+| 시각 | 2026-09-08 13:36 KST |
 | 생성 | `node tools/allowlist-review.js` |
 | 대상 커밋 | (커밋 직전 트리) |

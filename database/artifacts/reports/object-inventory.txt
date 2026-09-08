@@ -1,4 +1,4 @@
-PASS RBD-004 인벤토리 지문 일치  INVENTORY|6|4|16|1|6|2|2|1|5|24|8|0|0|19|2
+PASS RBD-004 인벤토리 지문 일치  INVENTORY|6|4|20|1|6|2|2|1|5|26|10|0|0|19|40
 PASS RBD-006 Seed 역할 분포 NEX 13 / AEX 7 / 겸용 1 / AEX Active 7
 PASS RBD-010 DB 에 credential·대칭키·HC Login 0건 (파일 스캔은 verify-no-secret.sh)
 --- OBJECTS ---
@@ -25,7 +25,9 @@ OBJ|C |CK_예약접수_EXAM_PAIR
 OBJ|C |CK_예약접수_STATUS
 OBJ|C |CK_예약접수_TIME_SLOT
 OBJ|C |CK_완료이력_EXAM_FORMAT
+OBJ|C |CK_휴무일_EDIT_DATE
 OBJ|C |CK_휴무일_NAME_NOT_BLANK
+OBJ|C |CK_휴무일_TYPE
 OBJ|D |DF_검사코드_AEX_ACTIVE
 OBJ|D |DF_변경이력_CREATION_DATE
 OBJ|D |DF_수검자_CREATION_DATE
@@ -34,6 +36,8 @@ OBJ|D |DF_수검자_LAST_EDIT_DATE
 OBJ|D |DF_예약접수_CREATION_DATE
 OBJ|D |DF_예약접수_LAST_EDIT_DATE
 OBJ|D |DF_휴무일_ACTIVE
+OBJ|D |DF_휴무일_CREATION_DATE
+OBJ|D |DF_휴무일_LAST_EDIT_DATE
 OBJ|F |FK_예약접수_수검자
 OBJ|F |FK_완료이력_수검자
 OBJ|IF|UFN_HC_검진대상확인
@@ -53,9 +57,13 @@ OBJ|P |USP_HC_예약_취소
 OBJ|P |USP_HC_예약가능정보_조회
 OBJ|P |USP_HC_예약접수목록_조회
 OBJ|P |USP_HC_예약접수상세_조회
+OBJ|P |USP_HC_자체휴무일_등록
+OBJ|P |USP_HC_자체휴무일_삭제
+OBJ|P |USP_HC_자체휴무일_수정
 OBJ|P |USP_HC_접수_완료
 OBJ|P |USP_HC_접수_취소
 OBJ|P |USP_HC_접수추가검사_변경
+OBJ|P |USP_HC_휴무일목록_조회
 OBJ|PK|PK_검사코드
 OBJ|PK|PK_변경이력
 OBJ|PK|PK_수검자
@@ -87,39 +95,44 @@ COL|변경이력|6|컬럼명|nvarchar|60|0
 COL|변경이력|7|변경전|nvarchar|8000|1
 COL|변경이력|8|변경후|nvarchar|8000|1
 COL|수검자|1|수검자ID|bigint|8|0
-COL|수검자|2|차트번호|nvarchar|200|0
-COL|수검자|3|성명|nvarchar|200|0
-COL|수검자|4|주민번호|varchar|13|0
-COL|수검자|5|생년월일|varchar|8|0
-COL|수검자|6|성별|char|1|0
-COL|수검자|7|이메일|varchar|200|1
-COL|수검자|8|휴대전화|varchar|13|1
-COL|수검자|9|전화번호|varchar|13|1
-COL|수검자|10|우편번호|varchar|10|1
-COL|수검자|11|주소|nvarchar|400|1
-COL|수검자|12|상세주소|nvarchar|400|1
-COL|수검자|13|B형간염제외여부|bit|1|0
-COL|수검자|14|비고|nvarchar|-1|1
-COL|수검자|15|생성일시|datetime|8|0
-COL|수검자|16|최종수정일시|datetime|8|0
+COL|수검자|2|생성일시|datetime|8|0
+COL|수검자|3|최종수정일시|datetime|8|0
+COL|수검자|4|행버전|timestamp|8|0
+COL|수검자|5|차트번호|nvarchar|200|0
+COL|수검자|6|성명|nvarchar|200|0
+COL|수검자|7|주민번호|varchar|13|0
+COL|수검자|8|생년월일|varchar|8|0
+COL|수검자|9|성별|char|1|0
+COL|수검자|10|이메일|varchar|200|1
+COL|수검자|11|휴대전화|varchar|13|1
+COL|수검자|12|전화번호|varchar|13|1
+COL|수검자|13|우편번호|varchar|10|1
+COL|수검자|14|주소|nvarchar|400|1
+COL|수검자|15|상세주소|nvarchar|400|1
+COL|수검자|16|B형간염제외여부|bit|1|0
+COL|수검자|17|비고|nvarchar|-1|1
 COL|예약접수|1|업무ID|bigint|8|0
-COL|예약접수|2|수검자ID|bigint|8|0
-COL|예약접수|3|예약일|date|3|0
-COL|예약접수|4|시간대코드|char|2|0
-COL|예약접수|5|상태코드|char|3|0
-COL|예약접수|6|국가검사항목|nvarchar|200|0
-COL|예약접수|7|추가검사항목|nvarchar|100|1
-COL|예약접수|8|생성일시|datetime2|6|0
-COL|예약접수|9|최종수정일시|datetime2|6|0
-COL|예약접수|10|행버전|timestamp|8|0
+COL|예약접수|2|생성일시|datetime2|6|0
+COL|예약접수|3|최종수정일시|datetime2|6|0
+COL|예약접수|4|행버전|timestamp|8|0
+COL|예약접수|5|수검자ID|bigint|8|0
+COL|예약접수|6|예약일|date|3|0
+COL|예약접수|7|시간대코드|char|2|0
+COL|예약접수|8|상태코드|char|3|0
+COL|예약접수|9|국가검사항목|nvarchar|200|0
+COL|예약접수|10|추가검사항목|nvarchar|100|1
 COL|완료이력|1|수검자ID|bigint|8|0
 COL|완료이력|2|완료일자|date|3|0
 COL|완료이력|3|국가검사항목|nvarchar|200|1
 COL|완료이력|4|추가검사항목|nvarchar|100|1
 COL|휴무일|1|휴무일자|date|3|0
-COL|휴무일|2|휴무일명|nvarchar|200|0
-COL|휴무일|3|사용여부|bit|1|0
-COL|휴무일|4|비고|nvarchar|1000|1
+COL|휴무일|2|생성일시|datetime2|6|0
+COL|휴무일|3|최종수정일시|datetime2|6|0
+COL|휴무일|4|행버전|timestamp|8|0
+COL|휴무일|5|휴무일명|nvarchar|200|0
+COL|휴무일|6|휴무구분|nvarchar|20|0
+COL|휴무일|7|사용여부|bit|1|0
+COL|휴무일|8|비고|nvarchar|1000|1
 --- INDEXES ---
 IDX|검사코드|PK_검사코드|1|0|0|1|검사항목코드
 IDX|검사코드|UX_검사코드_AEX_CODE|1|1|0|1|추가검사코드
@@ -179,7 +192,7 @@ PRM|USP_HC_수검자목록_조회|5|@휴대전화|varchar|13
 PRM|USP_HC_수검자상세_조회|1|@수검자ID|bigint|8
 PRM|USP_HC_수검자유효업무_조회|1|@수검자ID|bigint|8
 PRM|USP_HC_수검자정보_수정|1|@수검자ID|bigint|8
-PRM|USP_HC_수검자정보_수정|2|@최종수정일시|datetime|8
+PRM|USP_HC_수검자정보_수정|2|@행버전|binary|8
 PRM|USP_HC_수검자정보_수정|3|@차트번호|nvarchar|200
 PRM|USP_HC_수검자정보_수정|4|@성명|nvarchar|200
 PRM|USP_HC_수검자정보_수정|5|@주민번호|varchar|13
@@ -238,6 +251,17 @@ PRM|USP_HC_예약접수목록_조회|3|@상태코드|char|3
 PRM|USP_HC_예약접수목록_조회|4|@차트번호|nvarchar|200
 PRM|USP_HC_예약접수목록_조회|5|@성명|nvarchar|200
 PRM|USP_HC_예약접수상세_조회|1|@업무ID|bigint|8
+PRM|USP_HC_자체휴무일_등록|1|@휴무일자|date|3
+PRM|USP_HC_자체휴무일_등록|2|@휴무일명|nvarchar|200
+PRM|USP_HC_자체휴무일_등록|3|@사용여부|bit|1
+PRM|USP_HC_자체휴무일_등록|4|@비고|nvarchar|1000
+PRM|USP_HC_자체휴무일_삭제|1|@휴무일자|date|3
+PRM|USP_HC_자체휴무일_삭제|2|@행버전|binary|8
+PRM|USP_HC_자체휴무일_수정|1|@휴무일자|date|3
+PRM|USP_HC_자체휴무일_수정|2|@행버전|binary|8
+PRM|USP_HC_자체휴무일_수정|3|@휴무일명|nvarchar|200
+PRM|USP_HC_자체휴무일_수정|4|@사용여부|bit|1
+PRM|USP_HC_자체휴무일_수정|5|@비고|nvarchar|1000
 PRM|USP_HC_접수_완료|1|@업무ID|bigint|8
 PRM|USP_HC_접수_완료|2|@행버전|binary|8
 PRM|USP_HC_접수_완료|3|@조작자명|nvarchar|100
@@ -254,6 +278,9 @@ PRM|USP_HC_접수추가검사_변경|7|@추가검사05선택여부|bit|1
 PRM|USP_HC_접수추가검사_변경|8|@추가검사06선택여부|bit|1
 PRM|USP_HC_접수추가검사_변경|9|@추가검사07선택여부|bit|1
 PRM|USP_HC_접수추가검사_변경|10|@조작자명|nvarchar|100
+PRM|USP_HC_휴무일목록_조회|1|@시작일자|date|3
+PRM|USP_HC_휴무일목록_조회|2|@종료일자|date|3
+PRM|USP_HC_휴무일목록_조회|3|@휴무구분|nvarchar|20
 --- GRANTS ---
 --- SEED ---
 SEED|EXAM|EX001|문진/진찰|NEX-01|-|-|0
@@ -275,6 +302,44 @@ SEED|EXAM|EX016|유방초음파|-|OPT03|F|1
 SEED|EXAM|EX017|PSA|-|OPT05|M|1
 SEED|EXAM|EX018|HbA1c|-|OPT06|A|1
 SEED|EXAM|EX019|HPV 검사|-|OPT07|F|1
+SEED|HOL|2026-01-01|신정|1
+SEED|HOL|2026-02-16|설날 연휴|1
+SEED|HOL|2026-02-17|설날|1
+SEED|HOL|2026-02-18|설날 연휴|1
+SEED|HOL|2026-03-02|삼일절 대체공휴일|1
+SEED|HOL|2026-05-01|노동절|1
+SEED|HOL|2026-05-05|어린이날|1
+SEED|HOL|2026-05-25|부처님오신날 대체공휴일|1
+SEED|HOL|2026-06-06|현충일|1
+SEED|HOL|2026-07-17|제헌절|1
+SEED|HOL|2026-08-15|광복절|1
+SEED|HOL|2026-08-17|광복절 대체공휴일|1
+SEED|HOL|2026-09-24|추석 연휴|1
+SEED|HOL|2026-09-25|추석|1
+SEED|HOL|2026-09-26|추석 연휴|1
+SEED|HOL|2026-10-03|개천절|1
+SEED|HOL|2026-10-05|개천절 대체공휴일|1
+SEED|HOL|2026-10-09|한글날|1
 SEED|HOL|2026-12-25|성탄절|1
 SEED|HOL|2026-12-26|센터 휴진일|1
+SEED|HOL|2027-01-01|신정|1
+SEED|HOL|2027-02-06|설날 연휴|1
+SEED|HOL|2027-02-08|설날 연휴|1
+SEED|HOL|2027-02-09|설날 대체공휴일|1
+SEED|HOL|2027-03-01|삼일절|1
+SEED|HOL|2027-05-01|노동절|1
+SEED|HOL|2027-05-03|노동절 대체공휴일|1
+SEED|HOL|2027-05-05|어린이날|1
+SEED|HOL|2027-05-13|부처님오신날|1
+SEED|HOL|2027-07-17|제헌절|1
+SEED|HOL|2027-07-19|제헌절 대체공휴일|1
+SEED|HOL|2027-08-16|광복절 대체공휴일|1
+SEED|HOL|2027-09-14|추석 연휴|1
+SEED|HOL|2027-09-15|추석|1
+SEED|HOL|2027-09-16|추석 연휴|1
+SEED|HOL|2027-10-04|개천절 대체공휴일|1
+SEED|HOL|2027-10-09|한글날|1
+SEED|HOL|2027-10-11|한글날 대체공휴일|1
+SEED|HOL|2027-12-25|성탄절|1
+SEED|HOL|2027-12-27|성탄절 대체공휴일|1
 === 14_Clean_Rebuild_Verify 완료 ===
