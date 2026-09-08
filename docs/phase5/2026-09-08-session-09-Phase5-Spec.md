@@ -15,7 +15,8 @@
 봉인          docs/baseline/ 에 00~06 일곱.  07 은 없다 — 이번에 만든다
 ```
 
-Phase 4 DB 는 **끝났고 봉인됐다** (`HC-RSV-RCP-20260908-R5`).
+Phase 4 DB 는 **끝났고 봉인됐다.** 어느 문서가 어느 회차인지는 `06` §4.1 이 단일 출처다 —
+여기에 회차 이름을 적지 않는다. 실제로 R5 라 적었다가 R6 하나에 낡았다.
 
 **회차별 실측과 Gate 판정은 `06` §42 가 단일 출처다 — 여기에 베끼지 않는다.**
 예전에 베껴 두었는데 R5 재봉인에 전부 낡았다: 창 안 회차는 `357`→`363`, `verify-docs` 는
@@ -61,6 +62,7 @@ Parameter 99 · Result Set 컬럼 고유 73종 · ResultCode 38종
     v1.0 FINAL / GO
     v1.1 R4 반영 -> 2026-09-08 docs/baseline/ 입주
     v1.2 R5 — 입주 뒤 §42 의 G00·G13·G16 이 실측과 어긋나 있던 것을 고쳤다
+    v1.3 R6 — R5 가 §42 에 남긴 "이후 안 바뀌었다" 는 미래 단정을 걷었다
 ```
 
 `[!]` **v1.1 -> v1.2 가 이 경로의 진짜 교훈이다.** `FINAL / GO` 로 봉인한 뒤에도 §42 는 세 칸이
@@ -198,16 +200,17 @@ C# 호출           이미 검증했다. csharp-probe CS-001~016 전건 PASS
                   Parameters 추가 순서를 뒤섞어도 이름으로 바인딩됨
 ```
 
-`[!]` **Codex 지침 예산.** 넘으면 경고 없이 잘리고 잘리는 쪽은 이 저장소다.
+`[!]` **Codex 지침 예산.** 넘으면 경고 없이 잘린다. **한도를 여기 적지 않는다** —
+`~/.codex/config.toml` 의 `project_doc_max_bytes` 가 소유하고, 기계 설정이라 언제든 바뀐다.
+예전에 `32,768` 이라 적어 두었는데 실측은 그 두 배였고 "킷을 설치하면 초과한다" 는 결론이
+거짓이었다 (ROOT `AGENTS.md` §6).
 
-```text
-전역 ~/.codex/AGENTS.md   11,426
-루트 AGENTS.md             6,302
-database/AGENTS.md         8,120
-                          ------
-                          25,848   한도 32,768   OK
-킷 AGENTS.md 13,674 를 더하면 39,522 -> 초과. 설치 시점에 합치면서 줄여야 한다
+```bash
+grep project_doc_max_bytes ~/.codex/config.toml
+cat ~/.codex/AGENTS.md AGENTS.md database/AGENTS.md | wc -c   # 저장소 루트에서
 ```
+
+킷 `AGENTS.md`(`NET461_DX20_MVP/`)를 더하면 합계가 크게 는다 — 설치 시점에 합치면서 줄인다.
 
 ## 8. 검증 방법 — 게이트를 회귀 안에 넣는다
 
@@ -249,7 +252,11 @@ git tag phase5-spec-start        # 착수 전에 박는다
 git reset --hard phase5-spec-start
 ```
 
-기준선이 걱정되면 `baseline-HC-RSV-RCP-20260908-R5` 태그가 지금 지점이다.
+기준선이 걱정되면 **가장 최근 `baseline-*` 태그**가 지금 지점이다 — 이름을 여기 적지 않는다.
+
+```bash
+git tag -l "baseline-*" | tail -1
+```
 
 ## 10. 완료 조건
 

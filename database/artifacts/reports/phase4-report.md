@@ -2,7 +2,7 @@
 
 - **작성:** 2026-09-07  ·  **R4 갱신:** 2026-09-08  ·  **R5 갱신:** 2026-09-08 (Phase 4 종료)
 - **대상:** `HealthCheckupReservationReceptionDb` · `.\SQLEXPRESS` · SQL Server 2025 Express `17.0.1125.2`
-- **기준선:** `HC-RSV-RCP-20260908-R5` (직전 `HC-RSV-RCP-20260908-R4`)
+- **기준선:** 문서마다 다르다 — `06` §4.1 이 단일 출처다 (여기에 베끼지 않는다)
 - **계약서:** `docs/baseline/06_DB_Transaction_Security_Seed.md` — 2026-09-08 봉인 입주
 - **브랜치:** `phase4-database`
 
@@ -24,7 +24,7 @@
 | Sequence | 1 |
 | 제약 | PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5 / CHECK 24 / Default 8 |
 | SP Parameter | 99 (`EXCEPT` 양방향 일치) — R4 로 전건 한글. 한글을 담지 않는 Parameter 0 |
-| Test ID 카탈로그 | 249 (`06` §45.2 단일 출처) |
+| Test ID 카탈로그 | `06` §45.2 가 단일 출처다 — 건수를 여기 적지 않는다 (`249` 로 적어 두었는데 실측은 247 이었다) |
 | Result Set 계약 시나리오 | 110 파일 (창 안 회차 108건 판정 · 창 밖 회차 32건 — 나머지는 시각 배타성으로 SKIP) |
 
 ### 회귀 회차 — 시각 의존 경로가 배타적이라 둘 다 필요하다
@@ -72,7 +72,7 @@
 | G13 호환성 | **(a) PASS · (b) PASS · (c) REVIEWED** | 배포·시험 exit 0 · 블랙리스트 0건 · (c) `allowlist-review.md` — `tools/allowlist-review.js` 가 매 회귀 재생성하고 목록 밖이면 FAIL |
 | G14 Repeatability | **PASS** | `RBD-005` diff 0줄 |
 | G15 Evidence | **PASS** | run ID·시각·업무시간 기록 |
-| G16 06 문서 | **PASS** | `06` §4.1 이 `FINAL / GO / READ-ONLY` (버전은 적지 않는다 — `v1.1` 로 적어 둔 채 v1.2 가 되었다) |
+| G16 06 문서 | **PASS** | `06` §4.1 이 `FINAL / GO / READ-ONLY` (버전은 적지 않는다 — 적어 두면 다음 재봉인에 낡는다) |
 | R4-1 계약 한글화 | **PASS** | SP 16 · Parameter 99 · Result Set 전건 · TVF 4. `r4-rename check` FAIL 0 |
 | R4-2 기대값 ↔ 기준선 | **PASS** | `verify-rs-contract` — 기대값 Result Set 170개가 기준선 `05` 의 표와 일치 |
 | R4-3 C# 호출 | **PASS** | `csharp-probe` `CS-001`~`016`. `csc.exe` 로 컴파일해 실제 ADO.NET 호출 |
