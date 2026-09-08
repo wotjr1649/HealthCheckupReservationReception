@@ -22,6 +22,13 @@ const F = (id, msg, detail) => {
 };
 
 const read = f => fs.readFileSync(f, 'utf8');
+const REPO = path.resolve(__dirname, '..', '..');
+// `CLAUDE.md` 는 `@AGENTS.md` 한 줄 스텁이다. 스텁을 가리키는 검사는 아무것도 훑지 않으면서
+// 초록이 되므로, 대상 목록은 파일 이름이 아니라 내용을 따라간다.
+const followImport = f => {
+  const m = /^@(\S+\.md)\s*$/.exec(read(f));
+  return m ? path.join(path.dirname(f), m[1]) : f;
+};
 const planFiles = fs.readdirSync(PLANDIR).filter(f => f.endsWith('.md')).map(f => path.join(PLANDIR, f));
 const spec = read(SPEC);
 const plans = Object.fromEntries(planFiles.map(f => [path.basename(f), read(f)]));
@@ -414,7 +421,9 @@ function splitFences(src) {
   for (const f of ['Rebuild.sql', 'Deploy.sql']) targets.push(path.join(DB, f));
   // 세션이 가장 먼저 읽는 파일이므로 R2 이름이 남으면 가장 오래 오해를 만든다.
   // 실제로 §6 이 필터형 인덱스를 R2 테이블명으로 설명한 채 R3 재봉인을 통과했다.
-  targets.push(path.join(DB, 'CLAUDE.md'));
+  // 이름이 아니라 **내용**을 따라간다 — 2026-09-08 에 본문이 CLAUDE.md 에서 AGENTS.md 로
+  // 옮겨가자 이 줄이 11바이트 `@AGENTS.md` 스텁을 훑으며 조용히 PASS 했다. 초록인 채 눈이 멀었다.
+  targets.push(followImport(path.join(DB, 'CLAUDE.md')));
   for (const d of ['deploy', 'tests'])
     for (const f of fs.readdirSync(path.join(DB, d)).filter(f => f.endsWith('.sql')))
       targets.push(path.join(DB, d, f));
@@ -681,6 +690,71 @@ function splitFences(src) {
   if (!rows.length) F('V20', '05 §16.5 대응표를 찾지 못했다 - 미실행은 PASS 가 아니다');
   else if (bad.length) F('V20', '이름 대응표가 어긋난다 ' + bad.length + '건', bad.join('\n'));
   else P('V20', '화면·C# ↔ DB 이름 대응 ' + rows.length + '종 양방향 실재 (05 §16.5)');
+}
+
+// V21 지침 §참조가 실재하는 절을 가리키는가.
+// 절 번호는 저장소 안에서 92곳이 이름으로 부르는 사실상의 공개 API 이고, 그중 봉인 문서
+// (04·06)에서 나온 것이 있어 고치려면 재봉인이다. 그런데 그 참조를 보는 검사가 없었다 —
+// V15 가 스텁을 훑으며 초록이던 것과 같은 구조의 구멍이었다. 절을 지우거나 번호를 옮기면
+// 여기서 FAIL 이 난다. 그때 고칠 것은 참조가 아니라 절을 움직인 쪽이다.
+//
+// 해석 규칙(실측 92건 전부와 일치):
+//   `database/` 접두 -> database/AGENTS.md      `ROOT `·`루트 ` 접두 -> ROOT AGENTS.md
+//   접두 없는 CLAUDE.md -> database/AGENTS.md   (절을 가진 CLAUDE.md 는 그쪽뿐이었다)
+//   접두 없는 AGENTS.md -> ROOT AGENTS.md       (모호하면 FAIL 이 나서 수식을 강제한다)
+// 옛 기록이 `CLAUDE.md §N` 이라 부르는 것은 그때 그 이름이었기 때문이고 절 번호는 같다
+// (database/AGENTS.md 머리말). 기록을 고쳐 쓰지 않으므로 검사 쪽이 이름을 정규화한다.
+{
+  const SECRE = /^#{2,6}[ ]+(\d+(?:\.\d+)?)\.?[ ]/gm;
+  const secsOf = f => new Set([...read(f).matchAll(SECRE)].map(m => m[1]));
+  const DOC = { root: path.join(REPO, 'AGENTS.md'), db: path.join(REPO, 'database', 'AGENTS.md') };
+  const SEC = { root: secsOf(DOC.root), db: secsOf(DOC.db) };
+
+  const files = [];
+  (function walk(d) {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      if (/^(node_modules|\.git|\.claude|output)$/.test(e.name)) continue;
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.(md|sh|js|sql|json)$/.test(e.name)) files.push(p);
+    }
+  })(REPO);
+
+  const REFRE = /(ROOT|루트)?[ ]*`?(database\/)?(AGENTS|CLAUDE)\.md`?[ ]*§(\d+(?:\.\d+)?)/g;
+  let n = 0; const bad = [];
+  for (const f of files) {
+    const buf = fs.readFileSync(f);
+    buf.slice(buf[0] === 0xEF ? 3 : 0).toString('utf8').split(/\r?\n/).forEach((l, i) => {
+      for (const m of l.matchAll(REFRE)) {
+        n++;
+        const db = !!m[2] || (!m[1] && m[3] === 'CLAUDE');
+        if (SEC[db ? 'db' : 'root'].has(m[4])) continue;
+        bad.push(path.relative(REPO, f).split(path.sep).join('/') + ':' + (i + 1) +
+                 '  `' + m[0].trim() + '` -> ' + (db ? 'database/' : '') + 'AGENTS.md 에 §' + m[4] + ' 가 없다');
+      }
+    });
+  }
+  if (!n) F('V21', '지침 §참조를 하나도 찾지 못했다 - 미실행은 PASS 가 아니다');
+  else if (bad.length) F('V21', '죽은 지침 §참조 ' + bad.length + '건', bad.join('\n'));
+  else P('V21', '지침 §참조 ' + n + '건 전부 실재하는 절 (ROOT ' + SEC.root.size + '절 · database ' + SEC.db.size + '절)');
+}
+
+// V22 `.sql` 의 UTF-8 BOM. 없으면 sqlcmd 가 한글 객체명을 깨뜨려 Msg 105/102 가 난다
+// (database/AGENTS.md §5). §5 의 다른 절반인 `N` 접두사는 V16 이 지켜 왔지만 BOM 쪽은
+// 관행만이 지키고 있었다 — 27개 파일이 우연히 전부 갖고 있었을 뿐 어떤 게이트도 보지 않았다.
+{
+  const DB3 = path.resolve(__dirname, '..');
+  const files = [path.join(DB3, 'Deploy.sql'), path.join(DB3, 'Rebuild.sql')];
+  for (const d of ['deploy', 'tests', 'scripts'])
+    for (const f of fs.readdirSync(path.join(DB3, d)).filter(f => f.endsWith('.sql')))
+      files.push(path.join(DB3, d, f));
+  const bad = files.filter(f => {
+    const b = fs.readFileSync(f);
+    return !(b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF);
+  }).map(f => path.relative(DB3, f).split(path.sep).join('/'));
+  if (!files.length) F('V22', '.sql 을 하나도 찾지 못했다 - 미실행은 PASS 가 아니다');
+  else if (bad.length) F('V22', 'UTF-8 BOM 이 없는 .sql ' + bad.length + '건 — sqlcmd 가 한글 객체명을 깨뜨린다', bad.join('\n'));
+  else P('V22', '.sql ' + files.length + '개 전부 UTF-8 BOM (§5)');
 }
 
 console.log('\n=== verify-docs: PASS ' + pass + ' / FAIL ' + fail + ' ===');
