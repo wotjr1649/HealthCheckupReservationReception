@@ -10,7 +10,7 @@
 ## 1. 지금 참인 것
 
 ```text
-브랜치        phase4-database
+브랜치        main (trunk). db-drift 병합 완료
 작업트리      clean
 봉인          docs/baseline/ 에 00~06 일곱.  07 은 없다 — 이번에 만든다
 ```
@@ -32,8 +32,8 @@ node tools/verify-docs.js      # FAIL 0
 ./scripts/verify-baseline.sh   # 봉인 전건 일치
 ```
 
-돌아가는 게이트: `verify-baseline` · `verify-docs`(V01~V23) · `verify-rs-contract` ·
-`verify-schema-doc` · `verify-winforms-unchanged` · `verify-tsql-allowlist` ·
+돌아가는 게이트: `verify-baseline` · `verify-docs`(V01~V24) · `verify-rs-contract` ·
+`verify-schema-doc`(DOC-001~009) · `verify-winforms-unchanged` · `verify-tsql-allowlist` ·
 `allowlist-review`(G13-c) · `verify-no-secret` · `verify-red` · `csharp-probe` · `r4-rename check`.
 `verify_output` 은 산출물 쪽이라 `test.sh` 밖이며 `tools/docgen/build_all.js` 가 부른다.
 
@@ -166,15 +166,20 @@ CommandText dbo.USP_HC_수검자_등록   한글 SP 이름을 그대로
 
 ## 6. 절대 어기면 안 되는 것
 
-**`04`·`05`·`06` 을 열지 마라.** 봉인돼 있다. 여는 조건은 셋뿐이다.
+`[!]` **2026-09-08 에 조건이 하나 늘었다.** 사용자가 `00` 을 포함한 재설계를 결정했고 그 작업은
+`db-redesign` 브랜치가 맡는다 — **`docs/redesign/` 의 인계문서를 먼저 읽어라.** Phase 5(WinForms
+구현)는 그 뒤로 미뤄졌다.
+
+**`04`·`05`·`06` 을 열지 마라.** 봉인돼 있다. 여는 조건은 넷이다.
 
 ```text
 07 을 쓰다가 SP 계약의 결함을 찾았을 때
 화면이 요구하는 것을 SP 가 못 준다는 것이 밝혀졌을 때
 07 이 FINAL 이 되어 baseline 에 입주시킬 때
+사용자가 재설계를 결정했을 때 — 2026-09-08. db-redesign 이 00·03·04·05·06 을 연다
 ```
 
-그 셋 중 하나면 **작업을 멈추고 사용자에게 보고한다.** 재봉인은 database 계열의 절차이고
+그 넷 중 하나면 **작업을 멈추고 사용자에게 보고한다.** 재봉인은 database 계열의 절차이고
 파일과 해시를 같은 커밋에 묶어야 한다(루트 `AGENTS.md` §2.2).
 
 그 밖에 지킬 것.

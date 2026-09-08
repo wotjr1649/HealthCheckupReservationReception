@@ -775,9 +775,10 @@ function splitFences(src) {
   addLive('AGENTS.md'); addLive('CLAUDE.md'); addLive('README.md');
   addLive('database/AGENTS.md'); addLive('database/README.md');
   addLive('docs/phase4/reseal-history.md');
-  for (const d of ['docs/baseline', 'docs/phase5'])
-    for (const f of fs.readdirSync(path.join(REPO, d)))
-      if (f.endsWith('.md')) addLive(d + '/' + f);
+  for (const d of ['docs/baseline', 'docs/phase5', 'docs/redesign'])
+    if (fs.existsSync(path.join(REPO, d)))
+      for (const f of fs.readdirSync(path.join(REPO, d)))
+        if (f.endsWith('.md')) addLive(d + '/' + f);
 
   // [X] `git log --diff-filter=A` 로는 부족하다 — 이름이 바뀌어 들어온 파일이 `A` 로 안 잡힌다.
   //     `06` 이 `_CANDIDATE.md` 에서 개명된 탓에 실제 낡은 참조 하나를 놓쳤다(실측). 트리 전수를 쓴다.
