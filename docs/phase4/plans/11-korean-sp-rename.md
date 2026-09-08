@@ -431,14 +431,14 @@ V11   개명표의 '현재' 칸은 사라진 이름을 적을 수밖에 없다. 
 ## 12. 실행 증거
 
 ```text
-2026-09-08 04:37  창 밖 회귀   exit 1(V11 만) · PASS 184 · FAIL 1 · SKIP 78 · NOT RUN 9
-                  V11 을 고친 뒤 verify-docs PASS 21 / FAIL 0
-                  R3 창 밖 기준선은 PASS 185 · FAIL 0 · SKIP 78 · NOT RUN 9 -> 동등
-2026-09-08 04:41  verify-baseline 6/6 · verify-rs-contract 170/0 · r4-rename check FAIL 0
-2026-09-08 04:45  csharp-probe CS-001~016 전건 PASS
-
-창 안 회귀        NOT RUN ― 업무시간(월~토 11:10~15:50) 밖이다. 사람이 시계를 옮기거나
-                  업무시간에 ./scripts/test.sh 를 한 번 더 돌려야 한다 (CLAUDE.md §10)
+2026-09-08 04:37  창 밖 회귀   exit 0 · PASS 185 · FAIL 0 · SKIP 78 · NOT RUN 9
+2026-09-08 12:59  창 안 회귀   exit 0 · PASS 357 · FAIL 0 · SKIP 2  · NOT RUN 1
+                              CON-001~008 8/8 · applock 경합 실측
+R3 기준선          창 밖 185/0/78/9 · 창 안 357/0/2/1 -> 두 회차 모두 동등
+                  SKIP·NOT RUN 항목까지 같다. 판정 대상이 줄지 않았다
+게이트            verify-baseline 6/6 · verify-docs 21/0 · contract 110/110
+                  verify-rs-contract 170/0 · verify-schema-doc 5/0 · r4-rename check 0
+                  csharp-probe CS-001~016 전건 PASS
 ```
 
 ## 13. C# 호출 사전 검수 ― `③` 단계
@@ -491,8 +491,18 @@ ROOT `.gitignore` 대상이라 **어떤 커밋에도 남지 않는다** — 재�
 `[!]` `build_00.js` 의 자체 검증이 금지 문자열 `"최종 판정"` 1건을 낸다. **R4 이전부터 있던 것이고**
 `00_Project_Policy.md` 는 R4 에서 한 바이트도 열지 않았다. 이 계열의 책임 밖이라 그대로 둔다.
 
-## 15. 남은 일
+## 15. 완료
 
 ```text
-[ ] 창 안 회귀 1회 (업무시간 월~토 11:10~15:50) ― 이것만 남았다
+[x] 매핑표 사용자 승인                    §7 D1~D4
+[x] SP 16 · Parameter 99 · Result Set 전건 한글화
+[x] 04 · 05 재봉인 (파일 + verify-baseline.sh 해시 2개를 같은 커밋에)
+[x] verify-baseline 6/6 · verify-docs 21/0 · contract 110/110 · clean-rebuild 0 · red-probe 0
+[x] 창 안 회귀 exit 0 · FAIL 0    창 밖 회귀 exit 0 · FAIL 0
+[x] C# 호출 사전 검수 결과 기록            §13 · CS-001~016
+[x] docs/baseline/output/ 에 00~05 여섯 종  §14
+[x] 06 §46 · phase4-report.md 갱신
 ```
+
+`NOT RUN` 으로 남는 것은 `RBD-001` 하나다 — 인스턴스가 1개라 잘못된 서버명 `50020` 을
+발화시킬 수 없다. 구조적 불가이며 R3 에서도 같았다.

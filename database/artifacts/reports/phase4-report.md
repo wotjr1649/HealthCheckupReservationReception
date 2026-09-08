@@ -1,9 +1,9 @@
-# Phase 4 DB 구현 — 실행 보고서
+﻿# Phase 4 DB 구현 — 실행 보고서
 
-- **작성:** 2026-09-07
+- **작성:** 2026-09-07  ·  **R4 갱신:** 2026-09-08
 - **대상:** `HealthCheckupReservationReceptionDb` · `.\SQLEXPRESS` · SQL Server 2025 Express `17.0.1125.2`
-- **기준선:** `HC-RSV-RCP-20260904-R3`
-- **계약서:** `docs/phase4/06_DB_Transaction_Security_Seed.md` v1.0 `FINAL / GO`
+- **기준선:** `HC-RSV-RCP-20260908-R4` (직전 `HC-RSV-RCP-20260904-R3`)
+- **계약서:** `docs/phase4/06_DB_Transaction_Security_Seed.md` v1.1 `FINAL / GO`
 - **브랜치:** `phase4-database`
 
 이 보고서는 **실행한 것만** 적는다. 실행하지 않은 것은 `NOT RUN` 으로 남기고 `SKIP` 을 `PASS` 로 세지 않는다.
@@ -16,10 +16,10 @@
 |---|---|
 | 물리 Table | 6 |
 | Inline TVF | 4 |
-| Stored Procedure | 16 (SELECT 8 / INSERT 2 / UPDATE 6 · DELETE 0) |
+| Stored Procedure | 16 (조회 8 / 등록 2 / 수정·변경·취소·완료 6 · 삭제 0) — R4 로 이름이 `USP_HC_{한글업무명}_{한글동사}` 다 |
 | Sequence | 1 |
 | 제약 | PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5 / CHECK 24 / Default 8 |
-| SP Parameter | 99 (`EXCEPT` 양방향 일치) |
+| SP Parameter | 99 (`EXCEPT` 양방향 일치) — R4 로 전건 한글. 한글을 담지 않는 Parameter 0 |
 | Test ID 카탈로그 | 249 (`06` §45.2 단일 출처) |
 | Result Set 계약 시나리오 | 110 파일 (창 안 회차 108건 판정 · 창 밖 회차 32건 — 나머지는 시각 배타성으로 SKIP) |
 
@@ -27,11 +27,16 @@
 
 | 회차 | 시각 | 업무시간 | exit | PASS | FAIL | SKIP | NOT RUN | 로그 |
 |---|---|---|---:|---:|---:|---:|---:|---|
-| `A` 창 안 | 2026-09-07 12:19 | 안 | 0 | **357** | 0 | 2 | **1** | `artifacts/logs/full_test_run.log` |
-| `B` 창 밖 | 2026-09-08 03:05 | 밖 | 0 | **185** | 0 | 78 | 9 | `artifacts/logs/full_test_run_off.log` |
+| `A` 창 안 (R3) | 2026-09-07 12:19 | 안 | 0 | **357** | 0 | 2 | **1** | — |
+| `B` 창 밖 (R3) | 2026-09-08 03:05 | 밖 | 0 | **185** | 0 | 78 | 9 | `artifacts/logs/full_test_run_off.log` |
+| `C` 창 밖 (R4) | 2026-09-08 04:37 | 밖 | 0 | **185** | 0 | 78 | 9 | — |
+| `D` 창 안 (R4) | 2026-09-08 12:59 | 안 | 0 | **357** | 0 | 2 | **1** | `artifacts/logs/full_test_run.log` |
 
 - 회차 `A` 의 `SKIP` 2건은 `OFF-309-01`·`02` 뿐이다 — 업무시간 안에서 `309` 는 **정의상** 나올 수 없고, 회차 `B` 에서 `PASS` 로 판정된다.
 - 회차 `B` 의 `SKIP` 78건은 업무시간 밖이라 성립하지 않는 Write SP 성공 경로다. 회차 `A` 가 판정한다.
+
+**R4 한글화는 판정 대상을 한 건도 줄이지 않았다.** 회차 `C`·`D` 가 `A`·`B` 와 `PASS`/`FAIL`/`SKIP`/`NOT RUN` 네 수치는 물론 **`SKIP`·`NOT RUN` 항목까지 같다** (`06` §46.4). R4 에서 새로 돈 것은 `verify-rs-contract` 170건과 `csharp-probe` 16건이다.
+
 - 회차 `A` 는 사용자가 머신 시각을 6시간 뒤로 옮겨 만든 창이다. **코드는 한 글자도 바꾸지 않았다** — `SYSDATETIME()` 이 시각의 유일한 입구다. 끝난 뒤 같은 크기로 되돌렸다.
 - 두 회차 모두 최종 코드로 돌렸다. 회차 `A` 의 `NOT RUN` 은 `RBD-001` 하나뿐이며 구조적으로 불가능하다.
 
@@ -57,7 +62,10 @@
 | G13 호환성 | **(a) PASS · (b) PASS · (c) REVIEWED** | 배포·시험 exit 0 · `.sql` 137개 0건 · (c) 자동 판정 불가 |
 | G14 Repeatability | **PASS** | `RBD-005` diff 0줄 |
 | G15 Evidence | **PASS** | run ID·시각·업무시간 기록 |
-| G16 06 문서 | **PASS** | v1.0 `FINAL / GO` |
+| G16 06 문서 | **PASS** | v1.1 `FINAL / GO` (R4 §46 추가) |
+| R4-1 계약 한글화 | **PASS** | SP 16 · Parameter 99 · Result Set 전건 · TVF 4. `r4-rename check` FAIL 0 |
+| R4-2 기대값 ↔ 기준선 | **PASS** | `verify-rs-contract` — 기대값 Result Set 170개가 기준선 `05` 의 표와 일치 |
+| R4-3 C# 호출 | **PASS** | `csharp-probe` `CS-001`~`016`. `csc.exe` 로 컴파일해 실제 ADO.NET 호출 |
 
 ---
 
@@ -76,7 +84,10 @@
   scripts/verify-baseline.sh             0    G00
   scripts/verify-winforms-unchanged.sh   0    G01
   scripts/verify-schema-doc.sh           0    G05
-  node tools/verify-docs.js              0    V01~V18 (20 판정)
+  node tools/verify-docs.js              0    V01~V19 (21 판정)
+node tools/verify-rs-contract.js         0    R4-2 기대값 Result Set 170개 ↔ 기준선 05
+node tools/r4-rename.js check            0    R4 개명 매핑의 빠짐·충돌·예산
+./scripts/verify-csharp-call.sh          0    R4-3 C# 호출. csc.exe 가 없으면 exit 3 = NOT RUN
 ./scripts/run-con-window.sh              0    CON 8종을 한 창에서
 ./scripts/make-summary.sh                0    artifacts/reports/test-summary.txt
 ```

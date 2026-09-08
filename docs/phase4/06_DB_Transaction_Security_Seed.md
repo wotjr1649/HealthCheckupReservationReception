@@ -2834,13 +2834,27 @@ scripts/verify-csharp-call.sh [신설] csc.exe 로 Probe.cs 를 컴파일해 실
 ## 46.4 실행 증거
 
 ```text
-2026-09-08 04:37  창 밖 회귀     PASS 184 · FAIL 1(V11, 그 자리에서 수정) · SKIP 78 · NOT RUN 9
-                                 R3 창 밖 기준선 PASS 185 · FAIL 0 · SKIP 78 · NOT RUN 9 과 동등
+2026-09-08 04:37  창 밖 회귀   exit 0 · PASS 185 · FAIL 0 · SKIP 78 · NOT RUN 9
+                  R3 창 밖 기준선 PASS 185 · FAIL 0 · SKIP 78 · NOT RUN 9  -> 동등
+2026-09-08 12:59  창 안 회귀   exit 0 · PASS 357 · FAIL 0 · SKIP 2  · NOT RUN 1
+                  R3 창 안 기준선 PASS 357 · FAIL 0 · SKIP 2  · NOT RUN 1  -> 동등
+                  CON-001~008 8/8. 001~005·007 에서 applock 대기 후 획득이 실측됐다
+                  (경합이 실제로 일어났다는 증거다 — §38.4)
                   verify-baseline 6/6 · verify-docs 21/0 · contract 110/110
                   verify-rs-contract 170개 Result Set 전건 = 기준선 05
+                  verify-schema-doc 5/0 · r4-rename check FAIL 0
                   csharp-probe CS-001~016 전건 PASS
-창 안 회귀        NOT RUN — 업무시간(월~토 11:10~15:50) 밖이다
 ```
 
-`[!]` **창 안 회귀는 아직 돌지 않았다.** `SKIP 78` 이 전부 그 창에서 판정된다.
-업무시간에 `./scripts/test.sh` 를 한 번 더 돌리기 전에는 R4 를 완료로 읽지 않는다 (`database/CLAUDE.md` §10).
+두 회차의 `SKIP`·`NOT RUN` 이 R3 와 **같은 항목**이다. 한글화가 판정 대상을 줄이지 않았다.
+
+```text
+창 안 SKIP 2      OFF-309-01 · OFF-309-02   정의상 업무시간 안에서는 309 가 나올 수 없다
+창 밖 SKIP 78     Write SP 계약 시나리오     308/309 를 업무 Rule 보다 먼저 판정한다
+NOT RUN 1         RBD-001                   인스턴스가 1개라 잘못된 서버명 50020 을 발화시킬 수 없다
+```
+
+`[!]` **창 안 회귀는 머신 시각을 옮겨 판정했다.** 2026-09-08 04:57 에 `Set-Date -Adjust +8h`
+(사람이 실행)로 12:58 로 옮기고 셸·SQL Server 양쪽 시각을 확인한 뒤 돌렸으며, 끝난 뒤 같은
+크기로 되돌렸다. 코드를 고치는 우회는 쓰지 않았다 — `rebuild` 가 매 시나리오마다 TVF 를
+되돌리므로 성립하지 않고, 배포 원본을 고치면 **다른 제품을 시험한 `PASS`** 가 된다.
