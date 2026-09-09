@@ -21,7 +21,7 @@ e0368116f3e52095b6f33963ac3ff4d9e14c61ff3b8bfd45e6a7b11e88e246ce *../winforms/.c
 d0d20f6aae468f5d2678bbf8a083e84f292fd460bd49d8c3dfdfc2c4b9c6339a *../winforms/.claude/skills/winforms-devexpress-ui/references/mvp-wiring.md
 97f61d6e5f725f35861dd94e7dd8a892aebb67e790afe6b01f39d44ef45e2d7d *../winforms/.claude/skills/winforms-devexpress-ui/references/performance.md
 b9c1f5c5bf130920c0457f576c902f7e43e23664790f40729e6094f51d08d65e *../winforms/.claude/skills/winforms-devexpress-ui/references/wireframe-layout.md
-9fd863b8b9ec325397a951e421ff0c00dd45d56ee0ae84654c958d25c74b8154 *../winforms/AGENTS.md
+75f0b22446c921317a1e1783d6b4f569aba5840ee60e6dcb3a7d4fe96b64662a *../winforms/AGENTS.md
 7e346e6424c8b55410783d7fca243321f9da7ea21ebae71161c2c18ad3491646 *../winforms/CLAUDE.md
 94732445f4c922609e3e15c196b1abf3519f03972705c04d2bde07582e5a3f9b *../winforms/HealthCheckupReservationReception.sln
 f2791bec2408d9b0c716ebf252900e4400f15a4dc3bea6320ad66063be564486 *../winforms/src/HealthCheckupReservationReception.WinForms/App.config

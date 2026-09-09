@@ -47,7 +47,3 @@ manifest in that same commit — the same rule ROOT `AGENTS.md` §2.2 applies to
 ### Connection strings use integrated authentication only
 
 `user id=`, `uid=`, and `integrated security=false` are forbidden values in this repository.
-
-### Read before starting
-
-`../docs/phase5/2026-09-09-session-11-Phase5-Start.md`
