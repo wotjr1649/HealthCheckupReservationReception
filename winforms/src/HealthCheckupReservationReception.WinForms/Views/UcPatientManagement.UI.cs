@@ -18,6 +18,10 @@ namespace HealthCheckupReservationReception.Views
             Align(colGender, HorzAlignment.Center);
             Align(colMobilePhone, HorzAlignment.Center);
 
+            // 03 §18 — 컬럼을 숨기는 길은 [컬럼설정] 하나뿐이다. 헤더를 밖으로 끌어
+            // 숨기는 경로를 열어 두면 실수로 사라진 컬럼을 되돌릴 방법을 사용자가 모른다.
+            gvPatientList.OptionsCustomization.AllowQuickHideColumns = false;
+
             // 03 §5.3 은 생년월일을 달력 입력으로 그린다. 조회는 yyyyMMdd 로 넘어간다.
             deBirthday.Properties.DisplayFormat.FormatType = FormatType.DateTime;
             deBirthday.Properties.DisplayFormat.FormatString = "yyyy-MM-dd";

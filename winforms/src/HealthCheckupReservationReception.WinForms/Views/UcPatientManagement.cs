@@ -1,6 +1,7 @@
 ﻿// 화면 ID: WF-PAT-01 — 수검자 관리 (03 §5)
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Base;
@@ -26,12 +27,16 @@ namespace HealthCheckupReservationReception.Views
         // 지금 화면이 "행이 골라진" 꼴로 보이는가. ShowSelection 이 유일한 쓰기 지점이다.
         private bool _rowPicked;
 
+        // 03 §18 `기본값 복원` 이 되돌릴 자리. Designer 가 직렬화한 그 상태다.
+        private readonly MemoryStream _defaultLayout = new MemoryStream();
+
         partial void ConfigureUI();
 
         public UcPatientManagement()
         {
             InitializeComponent();
             ConfigureUI();
+            gvPatientList.SaveLayoutToStream(_defaultLayout);
         }
 
         /// <summary>
@@ -154,10 +159,27 @@ namespace HealthCheckupReservationReception.Views
             RaiseSearchRequested();
         }
 
-        /// <summary>03 §5.5 — `[컬럼설정]` 은 Column Chooser 를 연다.</summary>
+        /// <summary>
+        /// 03 §5.5 · §18 — `[컬럼설정]`. 표시/숨김과 기본값 복원, 그 둘뿐이다.
+        /// </summary>
         public void ShowColumnChooser()
         {
-            gvPatientList.ShowCustomization();
+            using (var chooser = new FrmColumnChooser())
+            {
+                chooser.Bind(gvPatientList, RestoreDefaultColumns);
+                chooser.ShowDialog(FindForm());
+            }
+        }
+
+        /// <summary>
+        /// 03 §18 `기본값 복원`. 무엇이 기본인지는 Designer 가 직렬화한 그 상태이므로
+        /// 화면이 서는 순간 한 벌 떠 둔다 — 어느 컬럼이 기본인지를 코드에 다시 적으면
+        /// Designer 와 두 곳이 된다 (ROOT AGENTS.md §6).
+        /// </summary>
+        private void RestoreDefaultColumns()
+        {
+            _defaultLayout.Position = 0;
+            gvPatientList.RestoreLayoutFromStream(_defaultLayout);
         }
 
         private void btnSearch_Click(object sender, EventArgs e)

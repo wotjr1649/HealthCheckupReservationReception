@@ -249,6 +249,7 @@ Tab ↔ Ribbon Page 동기                       03 §4.2               ✅
 본문 좌 목록 0.62 · 우 상세 0.38             wf_pat_01.js          ✅  SplitContainerControl
 Grid 기본 컬럼 다섯 · 차트번호만 좌정렬      03 §5.5 · 설계        ✅  폭 비율도 설계값
 Column Chooser 후보 다섯을 숨긴 컬럼으로     03 §5.5               ✅  [컬럼설정] 이 연다
+컬럼설정 = 체크박스 표시/숨김 + 기본값 복원  03 §18                ✅  §3.2.2. 숨기는 길은 이것 하나다
 PatientId·정규화 컬럼을 Grid 에 내지 않는다  03 §5.5 · 설계 콜아웃⑦ ✅  AutoPopulateColumns=false
 성별 M/F → 남/여 · 생년월일 · 주민번호 표기  03 §5.6 No 7~9        ✅  CustomColumnDisplayText
 상세 4구획 · 전 항목 ReadOnly                설계 · 03 §5.4        ✅  주민번호는 마스킹 없음
@@ -265,6 +266,34 @@ Single Row Selection · Double Click 없음     03 §5.5               ✅  Mult
 Context Ribbon 에 있으므로 `[조회]`·`[컬럼설정]` 은 셸이 받아 UserControl 에 넘긴다. 반대로
 행 선택 여부는 `PatientManagementPresenter` 가 판정해 `RowSelected` 로 올리고, 셸이 그것을
 공통 업무가능 여부와 곱해 세 버튼에 그린다 — 두 판정이 만나는 자리는 Ribbon 을 가진 쪽뿐이다.
+
+### 3.2.2 `[컬럼설정]` — `03` §18 을 그대로 담는 창 `[D]`
+
+`[D]` **사용자 결정 (2026-09-09): 체크박스로 고른다.** DevExpress 기본 Customization Form 의
+더블클릭·드래그앤드롭 대신 체크 목록을 쓴다.
+
+`Views/FrmColumnChooser` 를 따로 둔 이유는 `03` §18 이 요구하는 것이 **둘**이기 때문이다.
+
+```text
+표시 / 숨김      체크박스 한 줄에 컬럼 하나. 체크하는 즉시 반영한다
+기본값 복원      Designer 가 직렬화한 그 상태로 되돌린다
+```
+
+DevExpress 20.2 에도 체크박스 방식이 있다 — `OptionsCustomization.UseAdvancedCustomizationForm`
+이고 실제로 띄워 확인했다. **그러나 `기본값 복원` 을 넣을 자리가 없다.** 리본에 버튼을 하나
+더 다는 것도 답이 아니다 — `03` §5.2 가 보기 그룹을 `[변경이력] [컬럼설정]` 둘로 잠갔고
+`SCR-003` 이 그것을 대조한다. 그래서 둘을 한 창에 담았다. 제목·문구가 전부 한글인 것은 덤이다.
+
+`[I]` **무엇이 기본인지를 코드에 적지 않는다.** 화면이 서는 순간 `SaveLayoutToStream` 으로
+한 벌 떠 두고 그것으로 되돌린다. 기본 컬럼 목록을 C# 에 다시 적으면 Designer 와 두 곳이
+된다 (ROOT `AGENTS.md` §6).
+
+`[I]` **숨기는 길은 이것 하나다.** `AllowQuickHideColumns` 를 끈다 — 헤더를 밖으로 끌어
+숨기는 경로를 열어 두면 실수로 사라진 컬럼을 되돌릴 방법을 사용자가 모른다.
+
+`[I]` **창은 Grid 하나를 받는다.** `03` §18 은 애초에 Grid 전체를 다스리는 정책이므로
+`WF-WRK-01` 도 같은 창을 그대로 쓴다. 화면별 후보 제한은 컬럼의
+`OptionsColumn.ShowInCustomizationForm` 이 갖는다.
 
 ## 3.3 DLG-PAT-01 / DLG-PAT-03 — 수검자 등록·수정·중복후보
 
@@ -751,6 +780,8 @@ cd winforms && ./scripts/test.sh          # P01~P07 · P10. DB 서버도 MSBuild
 **디자인 표면으로는 배치를 판정할 수 없다** — `references/designer.md` 가 적은 대로
 `Program.cs` 와 Presenter 가 디자인타임에 돌지 않아 글꼴·업무 Tab·상태바가 나타나지 않는다.
 그래서 실행 화면을 뜨는 수단을 둘 둔다. 목적이 다르다.
+
+산출물 이름은 `wf00_shell.png` · `wf_pat_01.png` · `wf_pat_01_columns.png` 다.
 
 | 수단 | 무엇을 보는가 | 누가 돌리는가 |
 |---|---|---|

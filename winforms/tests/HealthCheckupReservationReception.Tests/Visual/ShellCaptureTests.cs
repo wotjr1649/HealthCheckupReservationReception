@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
@@ -129,6 +130,50 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Assert.IsTrue(info.Exists && info.Length > 10 * 1024,
                 "PNG 가 비었거나 너무 작다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
             Console.WriteLine("캡처: " + path);
+        }
+
+        /// <summary>
+        /// 03 §18 Column Chooser. 체크박스 목록과 `기본값 복원` 이 실제로 어떻게 보이는지는
+        /// 시험이 아니라 이것으로만 알 수 있다.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void 컬럼설정_창을_PNG_로_뜬다()
+        {
+            string path = null;
+            RunSta(() =>
+            {
+                WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
+
+                var screen = new UcPatientManagement();
+                using (var chooser = new FrmColumnChooser())
+                {
+                    chooser.Bind(GridOf(screen), delegate { });
+                    chooser.StartPosition = FormStartPosition.Manual;
+                    chooser.Location = new Point(-32000, -32000);
+                    chooser.Show();
+                    Application.DoEvents();
+
+                    using (var bmp = new Bitmap(chooser.Width, chooser.Height))
+                    {
+                        chooser.DrawToBitmap(bmp, new Rectangle(Point.Empty, bmp.Size));
+                        path = Save(bmp, "wf_pat_01_columns.png");
+                    }
+
+                    chooser.Close();
+                }
+            });
+
+            var info = new FileInfo(path);
+            Assert.IsTrue(info.Exists && info.Length > 2 * 1024, "PNG 가 비었다: " + path);
+            Console.WriteLine("캡처: " + path);
+        }
+
+        private static DevExpress.XtraGrid.Views.Grid.GridView GridOf(UcPatientManagement screen)
+        {
+            return (DevExpress.XtraGrid.Views.Grid.GridView)typeof(UcPatientManagement)
+                .GetField("gvPatientList", BindingFlags.Instance | BindingFlags.NonPublic)
+                .GetValue(screen);
         }
 
         // 설계 wf_pat_01.js 의 예시 행 그대로다. 계약이 아니라 눈으로 견주기 위한 값이다.
