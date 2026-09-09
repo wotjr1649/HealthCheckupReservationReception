@@ -725,7 +725,7 @@ contract belongs to the service"*, *"Integrity and concurrency live in the datab
 | P08 | Build | MSBuild exit 0 · Warning 확인 | **`PASS`** — VS2019 Professional 16.11.6 · `Configuration=Debug` · exit 0 · Warning 0 (2026-09-09) |
 | P09 | Test | MSTest 전건 통과 | **`PASS`** — `vstest.console` 16.11.0 · 실패 0 (2026-09-09). **건수를 여기 적지 않는다** — 화면마다 늘어난다 |
 | P10 | 킷 §1 | 굴림 9pt · `SetPerMonitorDpiAware()` 가 `Main` 첫 문장 · `AutoScaleMode=Font` · Designer 가 자기 `Font` 를 직렬화 · manifest 에 DPI 없음 · `.cs` 전건 UTF-8 BOM + CRLF | **`PASS`** — `winforms/scripts/verify-ui-baseline.sh` `UIB-001`~`005` (2026-09-09) |
-| P11 | 시각 검증 | 100% · 125% 배율에서 잘림 0건 | `PLANNED` — `03` §1.4. 눈으로 봐야 한다 |
+| P11 | 시각 검증 | 100% · 125% 배율에서 잘림 0건 | **`PASS`** — 사용자 실측 (2026-09-09). §12.7 |
 | P14 | 배치 ↔ 설계 | 화면 ID·Navigation·Ribbon 그룹/버튼·라벨이 `tools/docgen/wireframe` 의 설계와 같다 | **`PASS`** — `winforms/tools/verify-screen-design.js` `SCR-000`~`004` (2026-09-09) |
 | P12 | manifest | winforms 변경 커밋마다 manifest 동봉 | `PLANNED` — `verify-winforms-unchanged.sh` |
 | P13 | `07` 문서 | 구현과 일치하는 FINAL | `PLANNED` — §12 가 비어 있는 동안 `CANDIDATE` |
@@ -862,6 +862,16 @@ SP-PAT-02  없는 수검자(-1) → 결과코드 200 · RS1 안 읽음          
 14:21  selftest   배경 실행   2시간 17분 정지 (강제 종료)
 15:35  selftest   배경 실행   1시간 02분 정지 (강제 종료)
 16:47  check      전경 실행   9분 정지 (강제 종료)
+17:5x  ?          전경 실행   회귀 FAIL 로 끝났다. 곧바로 다시 돌리니 82 PASS · exit 0
+```
+
+`[X]` **네 번째 것의 증거를 내가 없앴다.** `./scripts/test.sh 2>&1 | tail -2` 로 돌려서
+마지막 두 줄만 남겼고, 그 두 줄에 `FAIL` 이라는 사실 말고는 아무것도 없었다. 어느 게이트가
+왜 떨어졌는지, 경계에 걸린 것인지조차 모른다. **이 절이 바로 위에서 "판정은 출력을 보고
+한다" 고 적어 놓고 같은 짓을 했다.** 판정을 볼 때는 자르지 말고 받아라.
+
+```bash
+./scripts/test.sh > /tmp/gate.log 2>&1; echo "exit=$?"; grep -n 'FAIL' /tmp/gate.log
 ```
 
 실측 두 가지가 방향을 좁힌다.
@@ -890,10 +900,26 @@ verify-screen-design.js  selftest 의 자식마다 120초 · stdin 을 물려주
 `exit code 0` 으로 **완료** 보고됐다. `… | tail -N` 의 종료코드는 `tail` 것이고 `tail` 은
 stdin 이 닫히면 0 을 낸다. **출력 0바이트에 exit 0** 이다. 판정은 출력을 보고 한다.
 
+## 12.7 배율 시각 검증 `[D]`
+
+**사용자가 직접 배율을 바꿔 띄우고 눈으로 봤다 (2026-09-09).** 이것은 게이트가 대신할 수
+없는 부류다 — `03` §1.4 도 `P11` 도 "눈으로 봐야 한다" 고 적는다.
+
+```text
+배율   100%  ·  125%          둘 다
+화면   WF-00 셸               리본 · 업무 Tab · 상태바
+       WF-PAT-01              조회조건 두 줄 · Grid 컬럼 다섯 · 우측 상세 4구획
+       컬럼설정 창            체크 목록 · [기본값 복원] [닫기]
+결과   잘림 · 겹침 0건
+```
+
+`[I]` **화면이 둘일 때 봐서 값이 컸다.** 배율 결함은 나중에 찾을수록 고칠 화면이 는다.
+`[X]` 이 실측은 **지금 있는 세 화면에 대한 것**이다. 화면이 늘면 다시 봐야 한다 — `P11` 의
+`PASS` 는 그 시점의 실측이지 이후 화면까지 덮지 않는다.
+
 ## 12.2 아직 실행하지 않은 것
 
 ```text
-배율 100% · 125% 두 벌을 보지 않았다 — P11 은 PLANNED 그대로다
 화면 12개는 아직 없다. 실행본에서 볼 것은 셸과 WF-PAT-01 이다
 SP-PAT-02 의 RS1 열다섯 컬럼 — 수검자 한 행이 있어야 한다 (§12.5)
 Phase 5 계열이 빌드·시험까지 도는 회차를 언제 잡을지 정하지 않았다 (§11)
@@ -1089,10 +1115,13 @@ SP 계약의 단일 출처는 `05` 이며 `winforms/AGENTS.md` 가 그것을 킷
 # 15. 다음에 할 일
 
 ```text
-1. §14 의 X-01 · X-02 · X-04 를 사용자에게 올린다
-2. 화면 구현. 03 의 화면 목록을 따르고, 끝날 때마다 §10 의 PLANNED 를 실측으로 바꾼다
+1. 화면 구현. 다음은 수검자 계열 한 벌 — DLG-PAT-01 · DLG-PAT-03 · DLG-PAT-02
+   (2026-09-09 사용자 결정). 계약은 §3.3 · §3.4 가 이미 전건 갖고 있다
+2. 끝날 때마다 §10 의 PLANNED 를 실측으로 바꾸고 §12 에 실행 기록을 남긴다
 3. §12 가 채워지고 §10 이 전건 PASS 가 되면 FINAL 로 올려 docs/baseline/ 에 입주시킨다
    (ROOT AGENTS.md §2.1 · verify-baseline.sh 에 해시 한 줄)
+
+X-01 · X-02 는 R11 로 해소됐고(§14.1) X-04 는 그 전에 닫혔다.
 ```
 
 `[I]` §13 의 `verify-ui-db-matrix.sh` 는 만들었고 `winforms/scripts/test.sh` 안에서 돈다.

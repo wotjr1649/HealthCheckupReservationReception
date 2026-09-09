@@ -191,10 +191,33 @@ Phase 5 계열이 어떤 게이트 집합을 회귀로 돌릴지 아직 정하�
 §5 의 실측 두 줄이 이것으로 낡았다. **§5 를 고치지 않고 여기에 적는다** — §0 이 앞 문서에
 대해 한 것과 같은 처리다.
 
+**§6 의 넷을 전부 했다.** §8 의 "어떤 게이트 집합을 회귀로 돌릴지" 도 정해졌다 —
+`winforms/scripts/test.sh` 가 그것이다.
+
 ```text
-App.config          <connectionStrings> 의 HealthCheckupDb 를 넣었다 (§6.2, 05 §1.1)
-winforms 게이트     scripts/verify-no-secret.sh · check 와 selftest 두 하위명령 (§6.3)
+§6.1  07        docs/phase5/07_UI_DB_Matrix_Final_Validation.md · CANDIDATE
+§6.2  App.config <connectionStrings> 의 HealthCheckupDb (05 §1.1)
+§6.3  게이트     scripts/verify-no-secret.sh 로 시작해 여덟 벌이 됐다. 전부 check + selftest
+§6.4  화면       WF-00 셸 · WF-PAT-01 수검자 관리 · 컬럼설정 창
 ```
 
-§6 의 1(`07` 문서)·4(화면)는 아직 손대지 않았다. §8 의 "어떤 게이트 집합을 회귀로 돌릴지"도
-그대로 미정이다 — `verify-no-secret.sh` 는 만들었지만 어느 회귀에 편성할지는 정하지 않았다.
+§8 의 "빌드해 본 적이 없다"·"licenses.licx 가 없다" 도 낡았다 — 솔루션은 MSBuild 로 돌고
+`licenses.licx` 는 등재됐다. **이 문서를 더 고치지 않는다.** 뒤의 사실은 session-13 인계문서와
+`07` 이 갖는다.
+
+## 9.1 이 세션이 틀렸던 것 — 다음이 같은 자리에 빠지지 않게
+
+```text
+설계를 읽지 않고 화면을 만들었다
+  03_Wireframe_Definition.md 만 읽고 배치를 유추했다. 배치의 원본은 생성기다.
+  사용자가 pptx 를 짚어 알려 줬고, 그 뒤 배치 게이트(SCR-*)를 세웠다. 07 §2.1
+
+재현 실패를 부재의 증거로 썼다
+  게이트 정지를 "배경 실행에서만 난다" 고 결론지었는데 바로 다음 전경 실행에서 났다.
+  전경 재현 두 번이 통과한 것이 근거였다. 07 §12.6
+
+불일치를 얕게 읽고 넘겼다
+  X-02 를 "03 vs 05" 로 적어 두고 "구현이 막히지 않으니 기록만" 으로 닫았다.
+  DLG-PAT-01 직전에 다시 파 보니 03 이 자기 자신과 어긋나 있었고 01 에도 같은 줄이 있었다.
+  가장 높은 문서에 옛 문장이 남아 있었다. R11 로 셋 다 고쳤다. 07 §14.1
+```

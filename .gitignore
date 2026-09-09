@@ -12,6 +12,10 @@ TestResults/
 docs/baseline/output/~$*
 *.suo
 
+# Claude Code 의 기계별 설정. 저장소 산출물이 아니다 (2026-09-09 사용자 결정).
+# 추적 밖에 두면 git status 가 항상 더럽고, 그러면 "작업트리가 깨끗한가" 를 아무도 안 본다.
+.claude/settings.local.json
+
 # Phase 4 로그 (보고서는 커밋한다)
 database/artifacts/logs/
 integration/artifacts/logs/
