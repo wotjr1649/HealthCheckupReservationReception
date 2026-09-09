@@ -10,9 +10,9 @@ const exp={
  "01_Process_Definition.md":"39d34063b495f28a2d870bf6322c4f557a43ec1fd80418a08aef6c65cdf0b29a",
  "02_Function_Definition.xlsx":"cd616207717d4cbb8c2ed3284061d728af4933af00dac75acf835650865798c0",
  "03_Wireframe_Definition.md":"32450f1a363a5ddf078dc8182919e4096b7ae35b11e4d266db576f2af6d580fc",
- "04_DB_Design.md":"2485cc8d3f3c83d55e6376c33ae4b888f45910e7dfe9e983ba92c12ce2d8de59",
- "05_DB_Rule_SP_Contract.md":"f20bebdacd2d673415231abba9efc11dfeada5fb519368d0e83ccc1a78d50e8a",
- "06_DB_Transaction_Security_Seed.md":"33696ced9bdd874fb4c6823d039df4854b83ac47605c9535ddfdeeefebb19960"};
+ "04_DB_Design.md":"f8cf11c7c08b256e22ae0cbeec027adc1b795f67362d7d076241d8e2a5e4da2d",
+ "05_DB_Rule_SP_Contract.md":"d490bb461078fd63370b1dbb9f6279aa5911c936f31f761f3bfab44d87740077",
+ "06_DB_Transaction_Security_Seed.md":"284b3efaa0e2c6cfb47fd1451f482c4d83b5aeb11323005c0815519260af9119"};
 const N=Object.keys(exp).length;
 let ok=0;
 for(const [n,e] of Object.entries(exp)){

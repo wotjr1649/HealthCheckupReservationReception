@@ -76,7 +76,9 @@ const erd = require('./erd_04.js').build({ secs, owner, t7, S2, find, tbl });
 const wb = M.workbook('검진 예약·접수 DB 설계서', [
   ...erd.sheets,
 
-  { name: '테이블', title: '물리 테이블 6개', group: 0, ctr: [0],
+  // [R14] 제목의 수를 손으로 적지 않는다 — R13 이 7번째 테이블을 더했을 때 이 줄이
+  //       '6개' 인 채로 7행을 담은 시트를 공개본에 내보냈다 (ROOT AGENTS.md §6).
+  { name: '테이블', title: '물리 테이블 ' + S1.length + '개', group: 0, ctr: [0],
     head: ['No', '테이블', 'PK', '주요 FK', '핵심 고유성 / 역할'],
     w: [6, 14, 24, 12, 46], rows: S1 },
 

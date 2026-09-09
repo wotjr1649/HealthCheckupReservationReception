@@ -2,10 +2,11 @@
 
 - **문서명:** `05_DB_Rule_SP_Contract.md`
 - **상태:** FINAL / GO / READ-ONLY — Phase 3 Rule·Stored Procedure 계약 확정
-- **문서 버전:** v3.5
+- **문서 버전:** v3.6
 - **기준일:** 2026-09-08
-- **기준선 ID:** `HC-RSV-RCP-20260910-R13`
-- **직전 기준선:** `HC-RSV-RCP-20260909-R12` (2026-09-09, v3.4)
+- **기준선 ID:** `HC-RSV-RCP-20260910-R14`
+- **직전 기준선:** `HC-RSV-RCP-20260910-R13` (2026-09-10, v3.5)
+- **R14 개정 범위:** `04` 재봉인에 딸린다. 본문 두 곳의 옛 테이블 수를 걷고(§0.1·§0.2), **머리말의 「확정 객체」가 말하는 외부 호출 Stored Procedure 수를 §1.3 에 맞춘다** — R7 이 휴무일 SP 넷을 더해 §1.3 제목은 따라왔는데 머리말만 남아 **한 문서가 자기 자신과 어긋나 있었다.** 같은 값이 공개본 시트 제목에도 하드코딩돼 있어 `05` 산출물이 R7 이후 줄곧 옛 수를 내보내고 있었다(생성기는 이제 §1.3 을 세서 넣는다). SP·TVF·Parameter·Result Set·ResultCode·검증순서는 한 줄도 바뀌지 않는다. 재발은 `verify-docs.js` `V25` 가 막는다
 - **R13 개정 범위:** `04` 재봉인에 딸린다. **Rule 도 검증순서도 ResultCode 도 값도 바뀌지 않는다** — 운영시간과 마감시각 넷을 `UFN_HC_일정확인`·`SP-COM-01` 이 **어디서 읽는지**만 적는다(§2.4·§6.1.4·§7.1). 그 여섯은 R12 까지 SP 본문에 리터럴이었고, 그래서 시험이 창을 만들 수 없어 예약·접수 성공 경로가 하루 아홉 시간 안에서만 판정됐다(`06` §43-1). `04` §8.7 의 테이블 `운영기준` 이 값을 갖고, 소유자는 여전히 `00` 이다(CP-04 · §3장) — 이 문서도 Seed 도 그 수치를 두 번째로 적지 않으며 `verify-operating-baseline.sh` 가 둘의 일치를 매 회차 판정한다
 - **R12 개정 범위:** 수검자 Write SP 둘에서 **공통 업무 가능조건을 뺀다** — §10.1·§10.2 의 검증순서 한 줄과 §13 의 두 행이다. 수검자 Master 는 검진 업무가 아니라 기준정보이고, §12 의 휴무일 SP 넷이 이미 같은 이유로 `308`·`309` 를 적용하지 않는다. 같은 성격의 대상이 서로 다르게 묶여 있던 것을 맞춘다(`00` §1.1 R12). Parameter·Result Set·다른 ResultCode·검증순서의 나머지 항목과 순서는 바뀌지 않으며, 예약·접수 Write 는 이 예외의 대상이 아니다
 - **R11 개정 범위:** §4.2 의 `304` C# Enum 이름 한 칸을 `마감경과여부` 에서 `CutoffPassed` 로 고친다. 같은 표의 나머지가 전부 영문이고 §16.1 이 `CutoffPassed` 이며 §16.2 가 *"C# 계층은 영문을 유지한다"* 를 못 박는다 — R4 한글화가 한 칸 넘친 자국이다. 값·메시지·대상필드·Rule 책임은 바뀌지 않는다
@@ -17,7 +18,7 @@
 - **Database:** `HealthCheckupReservationReceptionDb`
 - **DB Domain Prefix:** `HC = Health Checkup`
 - **대상 환경:** C# WinForms / .NET Framework 4.6.1 / DevExpress Components 20.2 / Microsoft SQL Server 2012 이상 / Stored Procedure
-- **확정 객체:** 외부 호출 Stored Procedure 16개 / 내부 Inline TVF 4개 / Trigger 0개 / TVP 0개 / DELETE SP 0개
+- **확정 객체:** 외부 호출 Stored Procedure 20개 / 내부 Inline TVF 4개 / Trigger 0개 / TVP 0개 / DELETE SP 0개
 - **기준문서:**
   - `00_Project_Policy.md` — FINAL / GO / READ-ONLY
   - `01_Process_Definition.md` — FINAL / GO / READ-ONLY
@@ -33,7 +34,7 @@
 
 ## 0.1 목적
 
-본 문서는 `04_DB_Design.md`에서 확정한 6개 테이블을 변경하지 않고 다음 구현계약을 확정한다.
+본 문서는 `04_DB_Design.md`에서 확정한 물리 테이블을 변경하지 않고 다음 구현계약을 확정한다.
 
 ```text
 Rule Function 이름·입력·출력·책임
@@ -54,7 +55,7 @@ Phase 4 Transaction·잠금·권한·Seed 구현 인계
 다음은 `04_DB_Design.md` 기준을 그대로 사용한다.
 
 ```text
-물리 테이블 6개와 전체 컬럼
+물리 테이블 전건과 전체 컬럼
 PK / FK / UQ / CK / DF / Sequence
 수검자.주민번호 = 숫자 13자리 임의 테스트값
 상태코드 RSV / RCP / CNR / CNC

@@ -120,7 +120,9 @@ for (const r of t14.rows) {
 }
 
 const wb = M.workbook('검진 예약·접수 SP 계약서', [
-  { name: 'SP', title: '외부 호출 Stored Procedure 16개', ctr: [2],
+  // [R14] 제목의 수를 손으로 적지 않는다 — R7 이 휴무일 SP 4개를 더해 20개가 된 뒤에도
+  //       이 줄은 '16개' 였고 공개본이 그대로 나갔다 (ROOT AGENTS.md §6).
+  { name: 'SP', title: '외부 호출 Stored Procedure ' + S1.length + '개', ctr: [2],
     head: ['ID', '객체명', '구분', '책임', '허용 결과코드'],
     w: [12, 30, 8, 46, 52], rows: S1 },
 
@@ -136,7 +138,8 @@ const wb = M.workbook('검진 예약·접수 SP 계약서', [
     head: ['결과코드', 'C# Enum', '기본 결과메시지', '기본 오류항목'],
     w: [10, 26, 56, 22], rows: S4 },
 
-  { name: 'TVF', title: '내부 Inline TVF 4개', group: 0,
+  // [X] S5.length 는 TVF 수가 아니라 입력·반환까지 편 행 수다(실측 51). t14 가 TVF 목록표다.
+  { name: 'TVF', title: '내부 Inline TVF ' + t14.rows.length + '개', group: 0,
     head: ['TVF', 'ID', '구분', '이름', '타입', '비고'],
     w: [24, 12, 10, 22, 16, 52], rows: S5 },
 ]);

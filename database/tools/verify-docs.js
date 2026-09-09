@@ -905,5 +905,68 @@ function splitFences(src) {
     : P('V24', '하드코딩 생성기 ' + n + '개가 기준선보다 뒤처지지 않았다 (파싱형은 다시 돌리면 따라오므로 대상 아님)');
 }
 
+// V25 봉인 문서가 자기 목록과 다른 개수를 본문에 적었는가.
+//
+// [X] R13 이 테이블을 7번째로 더했는데 04·05·06 본문 열세 곳이 그대로 "6개 테이블" 이었다.
+//     어떤 게이트도 그것을 보지 않았다 — G05 는 §8 의 컬럼·제약을 보고, 생성기는 §7 의 표를
+//     읽을 뿐 본문 산문은 아무도 읽지 않는다. 같은 실패가 공개본에서도 나왔다: 시트 제목이
+//     "Stored Procedure 16개" 인 채 20행을 담고 있었고 **R7 부터 그랬다**.
+//     생성기 쪽은 제목을 세서 넣는 것으로 구조적으로 닫았고, 문서 쪽을 이 검사가 닫는다.
+//
+// 수의 단일 출처는 04 §7(테이블)과 05 §1.3(SP)이다. 본문이 그와 다른 수를 말하면 FAIL 이다.
+// 날짜·회차가 박힌 역사 기록은 그때 그 값이 사실이므로 정확한 문자열로만 연다.
+{
+  const nTable = (sec04Summary.match(/^\|\s*\d+\s*\|/gm) || []).length;
+  const base05 = read(BASE05);
+  // § 1.3 표의 행 모양은 문서 안에서 유일하다 — 다른 표는 SP-ID 와 [dbo].[USP_ 를 한 줄에 함께 두지 않는다.
+  const nSp = (base05.match(/^\| *SP-[A-Z]{3}-\d{2} *\| *`\[dbo\]\.\[USP_/gm) || []).length;
+
+  // 역사 기록 — 그 시점을 서술하므로 옛 값이 남는 것이 맞다.
+  const ALLOW = [
+    '6개 테이블 논리모델, 정·역방향 검수',      // 04 Phase 1.1 산출 기록
+    '테이블 6개·컬럼 48개',                     // 04 R4 재봉인 기록 (컬럼 48 도 그때 값이다)
+    '물리 테이블은 6개로 확정한다.',            // 04 Phase 1.1 판정 + 뒤에 R13 표기를 붙였다
+    '물리 테이블 6개로 축소하고',               // 04 리스크 CLOSED 기록
+    '`SEC-004` | 6개 테이블 직접',              // 06 폐기된 Security 계획 (§32)
+    '`SEC-005` | 6개 테이블 `INSERT`',          // 06 폐기된 Security 계획 (§32)
+    '최초 10개 테이블 후보 검토',                // 04 Phase 1 과거 검토안 (구현 금지)
+    '물리 테이블 5개를 한글 이름으로',           // 04 R4 재봉인 기록
+    '`변경이력` 1개 테이블로 확정',              // 04 총수가 아니라 테이블 하나를 세는 문장
+  ];
+
+  const PAT = [
+    [/물리 테이블 (\d+)개/g, () => nTable, '물리 테이블'],
+    [/(\d+)개 테이블/g, () => nTable, '테이블'],
+    // 'Write Stored Procedure 8개' 는 부분집합을 말하는 참인 문장이다. 총수 어구만 잡는다.
+    [/외부 호출 Stored Procedure (\d+)개/g, () => nSp, '외부 호출 SP'],
+  ];
+
+  const DOCS = [['04', base04], ['05', base05], ['06', spec]];
+  const bad = [];
+  let seen = 0;
+  if (nTable === 0 || nSp === 0) {
+    F('V25', '04 §7 또는 05 §1.3 을 못 읽었다 - 미실행은 PASS 가 아니다 (테이블 ' + nTable + ' · SP ' + nSp + ')');
+  } else {
+    for (const [name, src] of DOCS) {
+      src.split('\n').forEach((line, i) => {
+        if (ALLOW.some(a => line.includes(a))) return;
+        for (const [re, want, what] of PAT) {
+          re.lastIndex = 0;
+          let m;
+          while ((m = re.exec(line)) !== null) {
+            seen++;
+            if (Number(m[1]) !== want()) {
+              bad.push(name + ':' + (i + 1) + ' ' + what + ' ' + m[1] + ' (실측 ' + want() + ') — ' + line.trim().slice(0, 90));
+            }
+          }
+        }
+      });
+    }
+    bad.length
+      ? F('V25', '봉인 문서 본문이 자기 목록과 다른 개수를 말한다 ' + bad.length + '건', bad.join('\n'))
+      : P('V25', '봉인 문서의 개수 주장 ' + seen + '건이 04 §7(테이블 ' + nTable + ')·05 §1.3(SP ' + nSp + ')과 일치');
+  }
+}
+
 console.log('\n=== verify-docs: PASS ' + pass + ' / FAIL ' + fail + ' ===');
 process.exit(fail ? 1 : 0);

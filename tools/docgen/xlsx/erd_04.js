@@ -6,7 +6,7 @@
  * 이미지와 달리 선택·검색·인쇄가 되고 파일이 커지지 않는다. md.js 의 그리기 킷을 쓴다.
  *
  * [!] **좌표만 손으로 둔다.** 상자 안의 내용은 전부 기준선 04 에서 뽑지만 상자의 위치는
- *     6개 테이블을 전제로 배치했다. §7 이 바뀌면 그림이 조용히 깨지므로 guard() 가 먼저 멈춘다.
+ *     §7 의 테이블 전건을 전제로 배치했다. §7 이 바뀌면 그림이 조용히 깨지므로 guard() 가 먼저 멈춘다.
  */
 'use strict';
 const M = require('./md.js');
@@ -218,8 +218,10 @@ function build(ctx) {
 
   return {
     sheets: [
-      { name: '논리ERD', title: '논리 ERD — Entity 6 · 관계 2', w: LG, rowHeight: 17, draw: drawLogical },
-      { name: '물리ERD', title: '물리 ERD — Table 6 · Foreign Key 2', w: PG, rowHeight: 15, draw: drawPhysical },
+      // [R14] 여기도 수를 세서 넣는다. 위 guard() 가 EXPECT 와 §7 을 이미 맞췄으므로
+      //       이 값들은 §7 을 그대로 따라온다.
+      { name: '논리ERD', title: '논리 ERD — Entity ' + TABLES.length + ' · 관계 ' + rel44.rows.length, w: LG, rowHeight: 17, draw: drawLogical },
+      { name: '물리ERD', title: '물리 ERD — Table ' + TABLES.length + ' · Foreign Key ' + nFk, w: PG, rowHeight: 15, draw: drawPhysical },
     ],
     stat: { tables: TABLES.length, rel: rel44.rows.length, mermaid: mermaid.length, fk: nFk },
   };

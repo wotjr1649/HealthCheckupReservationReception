@@ -2,17 +2,18 @@
 
 - **문서명:** `04_DB_Design.md`
 - **상태:** FINAL / GO / READ-ONLY — Phase 2 물리 스키마 기준선 확정
-- **문서 버전:** v3.4
+- **문서 버전:** v3.5
 - **기준일:** 2026-09-10
-- **기준선 ID:** `HC-RSV-RCP-20260910-R13`
-- **직전 기준선:** `HC-RSV-RCP-20260908-R8` (2026-09-08, v3.3)
+- **기준선 ID:** `HC-RSV-RCP-20260910-R14`
+- **직전 기준선:** `HC-RSV-RCP-20260910-R13` (2026-09-10, v3.4)
+- **R14 개정 범위:** R13 의 잔재를 걷는다. R13 이 물리 테이블을 하나 더했는데 **이 문서 본문 열두 곳이 아직 R13 이전의 수를 말하고 있었다** — §0.4.1 의 동결 목록이 그중 하나였고, 그 줄은 *"후속 Phase에서 테이블을 추가하지 않는다"* 는 뜻이었으므로 R13 이 실제로 그것을 깨고도 열지 않은 셈이다. 어떤 게이트도 그것을 보지 않았다: `G05` 는 §8 의 컬럼·제약을 보고 생성기는 §7 의 표를 읽을 뿐, 본문 산문은 아무도 읽지 않았다. **수는 §7 하나가 갖는다** — 현재를 주장하는 문장에서 수를 걷고, 날짜·회차가 박힌 역사 기록은 그때 그 값이 사실이므로 그대로 둔다 (ROOT `AGENTS.md` §6). 테이블·컬럼·제약·Index·Seed·SP 계약은 한 줄도 바뀌지 않는다 — 바뀐 것은 이 문서가 자기 자신을 세는 방식뿐이다. 재발은 `verify-docs.js` `V25` 가 막는다
 - **R13 개정 범위:** 테이블 `운영기준` 을 더한다(§8.7). `00` CP-04 의 운영시간과 §3장의 마감시각 넷이 `UFN_HC_일정확인`·`USP_HC_공통업무상태_조회` 안에 리터럴로 박혀 있어 **시험이 그 창을 만들 수 없었고**, 그 결과 예약·접수 성공경로가 하루 아홉 시간 안에서만 판정됐다. `06` §43-14 가 남긴 답은 *"사람이 OS 시계를 옮긴다"* 뿐이었다. 값을 옮기는 것이지 **정책을 바꾸는 것이 아니다** — 수치는 `00` 이 그대로 소유하고 `verify-operating-baseline.sh` 가 Seed 와 `00` 을 대조한다. 관리 CRUD SP 를 만들지 않으므로 `00` §8.2 밖에 그대로 있다(`06` §43-21 이 정원 20 에 대해 세운 기준을 이 값이 어떻게 지나는지는 그 항목에 적었다). 다른 테이블·컬럼·FK·Index 는 한 줄도 바뀌지 않는다
 - **R8 개정 범위:** R7 직후의 약식 리뷰가 찾은 결함을 정정한다. `2026-06-03` 지방선거일 Seed 누락, `07a` No-op 의 정렬 함정, `03` Grid 의 `행버전` 누락, 게이트 세 곳의 fail-open, `G09` 과다 주장이 그것이다
 - **R7 개정 범위:** `00`·`02`·`03`·`04`·`05`·`06` 여섯 파일. 휴무일을 1테이블 + `휴무구분`으로 재정의하고(`00` HOL-03), 동시성 토큰을 `행버전`으로 통일하며, 컬럼 순서를 `PK → 감사 → FK → 일반`으로 고정한다
 - **R5 개정 범위:** 설계는 한 줄도 바뀌지 않았다. 아래 §0.1 이 각 문서의 기준선 ID 를 **베껴 적어** 두어 `06` 이 R5 로 재봉인되자 거짓이 되었다 — 값을 고치는 대신 단일 출처(`06` §4.1)를 가리키게 바꿨다 (ROOT `AGENTS.md` §6)
 - **R4 개정 범위:** `04_DB_Design.md` · `05_DB_Rule_SP_Contract.md` 두 파일. `00`·`01`·`02`·`03` 은 R3 원본을 **한 바이트도 바꾸지 않고** 그대로 계승한다 — SP 이름·Parameter·Result Set 컬럼이 그 네 문서에 0건이기 때문이다(실측).
 - **대상 환경:** C# WinForms / .NET Framework 4.6.1 / DevExpress Components 20.2 / Microsoft SQL Server / Stored Procedure
-- **최종 확정 범위:** 6개 테이블 논리·물리구조, 전체 컬럼·타입·NULL, PK/FK/UQ/CK/DF, 최소 Index, Sequence, 비-TVP AEX 7개 BIT 입력경계, 계산값·영속값·Aggregate·동시성 기준
+- **최종 확정 범위:** 물리 테이블 전건(§7)의 논리·물리구조, 전체 컬럼·타입·NULL, PK/FK/UQ/CK/DF, 최소 Index, Sequence, 비-TVP AEX 7개 BIT 입력경계, 계산값·영속값·Aggregate·동시성 기준
 - **후속 문서:** `05_DB_Rule_SP_Contract.md` → `06_DB_Transaction_Security_Seed.md` → `07_UI_DB_Matrix_Final_Validation.md`
 - **기준문서:**
   - `00_Project_Policy.md` — FINAL / GO / READ-ONLY
@@ -158,7 +159,7 @@ RS0.오류항목 을 VARCHAR(50) -> NVARCHAR(50) 으로                      05 
 후속 Phase와 구현에서는 다음을 추가·삭제·이름변경·분할·병합·형변경하지 않는다.
 
 ```text
-물리 테이블 6개
+물리 테이블 전건 (§7 이 목록이자 단일 출처다)
 전체 컬럼명과 데이터 타입
 NULL / NOT NULL
 IDENTITY / ROWVERSION
@@ -478,10 +479,10 @@ AND
 | 15 | Rule 재사용 | 소수의 명시적인 UDF/평가 SP만 사용 |
 | 16 | Trigger/Cascade | 업무 Trigger 없음, FK Cascade 없음 |
 
-## 3.2 6개 테이블과 비테이블 객체의 경계
+## 3.2 물리 테이블과 비테이블 객체의 경계
 
 ```text
-물리 테이블 6개
+물리 테이블 전건 (§7)
 
 + SEQ_HC_CHART_NO : Sequence
 + UFN_HC_*        : Rule Function
@@ -670,7 +671,7 @@ WHERE V.IsSelected = 1;
 
 ## 3.9 SQL Server 호환성 경계
 
-본 물리설계는 `SEQUENCE`, `TRY_CONVERT`, `THROW`, `ROWVERSION` 및 filtered index를 사용하므로 SQL Server 2012 이상을 최소 기준으로 한다. AEX 전달을 위해 `STRING_SPLIT`, XML/JSON 파싱, 사용자 정의 Table Type을 사용하지 않는다. 실제 DB Script 작성 전에 서버 버전과 Database Compatibility Level을 확인하되, 이 확인은 6개 테이블 논리모델을 변경하는 사유가 아니다.
+본 물리설계는 `SEQUENCE`, `TRY_CONVERT`, `THROW`, `ROWVERSION` 및 filtered index를 사용하므로 SQL Server 2012 이상을 최소 기준으로 한다. AEX 전달을 위해 `STRING_SPLIT`, XML/JSON 파싱, 사용자 정의 Table Type을 사용하지 않는다. 실제 DB Script 작성 전에 서버 버전과 Database Compatibility Level을 확인하되, 이 확인은 물리 테이블 논리모델을 변경하는 사유가 아니다.
 
 ## 3.10 Transaction·잠금 구현의 고정 결과조건
 
@@ -708,7 +709,7 @@ WHERE V.IsSelected = 1;
 
 ---
 
-# 4. Phase 1.1 — 6개 테이블 논리 데이터 모델
+# 4. Phase 1.1 — 논리 데이터 모델
 
 ## 4.1 Entity 목록
 
@@ -836,7 +837,7 @@ NEX 13개 + AEX 7개 - 공통 골밀도 1개 = 19개 Master 행
 | F-COM-008 | `변경이력` |
 | F-COM-009 | `휴무일` |
 
-18개 Function ID와 38개 기능정의 Row는 6개 테이블 및 Rule/SP 객체로 모두 추적 가능하다.
+18개 Function ID와 38개 기능정의 Row는 물리 테이블 및 Rule/SP 객체로 모두 추적 가능하다.
 
 `변경이력`은 Write Stored Procedure 8개(`F-PAT-002`·`F-PAT-003`·`F-RSV-001`~`003`·`F-RCP-001`~`003`)가 공통으로 남기는 부수 기록이다. 그 기록을 읽는 것은 `F-COM-008` 하나뿐이며 `DLG-LOG-01`이 대상 행 단위로 연다(`03` §23).
 
@@ -883,7 +884,7 @@ NEX 13개 + AEX 7개 - 공통 골밀도 1개 = 19개 Master 행
 
 > **Phase 1.1 FINAL GO**
 
-- 물리 테이블은 6개로 확정한다.
+- 물리 테이블은 6개로 확정한다. `[R13]` 그 뒤 `운영기준` 하나가 더해졌다 — 현재 수는 §7 이 갖는다.
 - `MST_NATIONAL_EXAMS`, `MST_ADDITIONAL_EXAMS` 및 주민번호 전용 보조 테이블은 생성하지 않는다.
 - 검사 역할은 `검사코드`에 통합한다.
 - 상위 산출물과 R2 기준선이 일치한다.
@@ -898,7 +899,7 @@ NEX 13개 + AEX 7개 - 공통 골밀도 1개 = 19개 Master 행
 Phase 2에서는 다음을 확정한다.
 
 ```text
-6개 테이블의 전체 컬럼과 타입
+물리 테이블 전건의 컬럼과 타입
 NULL / NOT NULL
 IDENTITY / ROWVERSION / DEFAULT
 PK / FK / UNIQUE / CHECK
@@ -1330,7 +1331,7 @@ Foreign Key 0개, Nonclustered Index 1개다.
   규모이고 Key Lookup 비용이 Index 비대화보다 싸다.
 
 `deploy/01_Schema.sql`은 이 테이블만 `DROP` 대상에서 제외하고 `IF OBJECT_ID(...) IS NULL` 가드로 만든다.
-감사 기록이 배포로 지워지면 안 되기 때문이며, 물리 테이블 6개 중 clean-create가 아닌 유일한 예외다.
+감사 기록이 배포로 지워지면 안 되기 때문이며, 물리 테이블 중 clean-create가 아닌 유일한 예외다.
 `Rebuild.sql`은 DB를 통째로 DROP하므로 그 경로에서는 보존되지 않는다 — 개발 전용 진입점이다.
 이 가드가 옛 구조를 유지하는 드리프트는 `verify-schema-doc`의 `DOC-001`~`DOC-005`가 **부분적으로만** 잡는다. 그 게이트는 컬럼(이름·타입·NULL·순서)과 제약·인덱스 **이름**을 보고 제약의 **정의 텍스트**는 보지 않는다. 컬럼이나 제약 이름이 바뀐 드리프트는 잡히고, 같은 이름으로 술어만 바뀐 드리프트는 잡히지 않는다.
 
@@ -1793,7 +1794,7 @@ Mermaid는 핵심 컬럼만 요약한다. 정확한 타입 길이·NULL·제약�
 - 상태/시간대/성별 공통 코드 테이블
 - 범용 Rule Engine, 업무 Trigger, Work Exam NEX/AEX 분리테이블
 
-유지한 6개 테이블은 각각 다음 독립 역할을 가진다.
+Phase 1.1 이 유지한 테이블은 각각 다음 독립 역할을 가진다.
 
 ```text
 Patient Master 1
@@ -1853,7 +1854,7 @@ TGT 입력자료 1
 
 ## 15.7 Phase 2 최종 판정
 
-> **FINAL / GO / READ-ONLY — 6개 테이블 물리 스키마 기준선 확정 / TVP 미사용 / 후속 Phase 진행 승인**
+> **FINAL / GO / READ-ONLY — 물리 스키마 기준선 확정 / TVP 미사용 / 후속 Phase 진행 승인**
 
 - 물리 테이블은 정확히 6개이며 추가·삭제·분할·병합할 필요가 없다.
 - 7개 테이블 60컬럼의 전체 컬럼명·타입·NULL과 PK 7 / FK 2 / UQ 2 / UX 1 / CK 28 / DF 10이 확정되었다.
@@ -1907,7 +1908,7 @@ Rule/UDF/SP의 이름·입력·출력·Result Set·ResultCode·검증순서·업
 Phase 3은 다음을 재논의하거나 변경하지 않는다.
 
 ```text
-6개 테이블과 전체 컬럼
+물리 테이블 전건과 전체 컬럼
 PK/FK/UQ/CK/DF 및 Sequence
 상태 RSV/RCP/CNR/CNC
 시간대 AM/PM
