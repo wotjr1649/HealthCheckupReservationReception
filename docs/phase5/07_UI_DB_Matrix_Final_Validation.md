@@ -559,15 +559,15 @@ contract belongs to the service"*, *"Integrity and concurrency live in the datab
 |---|---|---|---|
 | P00 | Baseline Hash | 봉인 전건 일치 | `PLANNED` — `verify-baseline.sh` |
 | P01 | winforms secret | winforms 전건에 자격증명 0건 | **`PASS`** — `winforms/scripts/verify-no-secret.sh` (2026-09-09) |
-| P02 | 실물 ↔ `05` §1.1 | 연결문자열 키·`Initial Catalog`·`providerName`·`RootNamespace`·`AssemblyName`·소스 `namespace` 일치 | **`PASS`** — `winforms/scripts/verify-contract-names.sh` `CFG-001`~`006` (2026-09-09) |
+| P02 | 실물 ↔ `05` §1.1 | 연결문자열 키·`Initial Catalog`·`providerName`·`RootNamespace`·`AssemblyName`·소스 `namespace`·화면 제목 일치 | **`PASS`** — `winforms/scripts/verify-contract-names.sh` `CFG-001`~`007` (2026-09-09) |
 | P03 | M1 화면 대조 | `03` §2 의 화면 전건이 §3 에 있다 (양방향 차집합 0) | **`PASS`** — `winforms/scripts/verify-ui-db-matrix.sh` `UIDB-001` (2026-09-09) |
 | P04 | M2 SP 대조 | `05` §1.3 의 SP 전건이 §4 에 있다 (양방향 차집합 0) | **`PASS`** — 같은 게이트 `UIDB-002`·`UIDB-003` (2026-09-09) |
 | P05 | 금지 호출 | C# 에 `UFN_HC_` 직접 호출 0건 · `05` §1.5 미생성 객체 0건 | `PLANNED` |
 | P06 | 금지 SQL | C# 에 inline `SELECT`/`INSERT`/`UPDATE`/`DELETE` 0건 · `AddWithValue` 0건 | `PLANNED` — 킷 §3 |
 | P07 | 계층 격리 | `SqlConnection`·`SqlCommand`·`SqlDataReader` 가 `Repositories/` 밖에 0건 · DevExpress 타입이 `Views/`·`Program.cs` 밖에 0건 | `PLANNED` — 킷 §2 |
-| P08 | Build | MSBuild exit 0 · Warning 확인 | `PLANNED` — 킷 `contract/build.md`. **이 솔루션을 빌드해 본 적이 아직 없다** |
-| P09 | Test | MSTest 전건 통과 | `PLANNED` |
-| P10 | UI baseline | 굴림 9pt · `SetPerMonitorDpiAware()` 가 `Main` 첫 문장 · `AutoScaleMode=Font` | `PLANNED` — 킷 §1 |
+| P08 | Build | MSBuild exit 0 · Warning 확인 | **`PASS`** — VS2019 Professional 16.11.6 · `Configuration=Debug` · exit 0 · Warning 0 (2026-09-09). DevExpress 20.2 참조가 들어간 뒤의 첫 빌드다 |
+| P09 | Test | MSTest 전건 통과 | **`PASS`** — `vstest.console` 16.11.0 · 통과 2 / 실패 0 (2026-09-09) |
+| P10 | UI baseline | 굴림 9pt · `SetPerMonitorDpiAware()` 가 `Main` 첫 문장 · `AutoScaleMode=Font` · Designer 가 자기 `Font` 를 직렬화 · manifest 에 DPI 없음 | **`PASS`** — `winforms/scripts/verify-ui-baseline.sh` `UIB-001`~`004` (2026-09-09) |
 | P11 | 시각 검증 | 100% · 125% 배율에서 잘림 0건 | `PLANNED` — `03` §1.4 |
 | P12 | manifest | winforms 변경 커밋마다 manifest 동봉 | `PLANNED` — `verify-winforms-unchanged.sh` |
 | P13 | `07` 문서 | 구현과 일치하는 FINAL | `PLANNED` — §12 가 비어 있는 동안 `CANDIDATE` |
@@ -580,7 +580,7 @@ contract belongs to the service"*, *"Integrity and concurrency live in the datab
 # 11. 회귀 편성
 
 ```bash
-cd winforms && ./scripts/test.sh          # P01~P04. DB 서버도 MSBuild 도 필요 없다
+cd winforms && ./scripts/test.sh          # P01~P04 · P10. DB 서버도 MSBuild 도 필요 없다
 ```
 
 `[I]` `../database/scripts/verify-winforms-unchanged.sh` 는 여기 넣지 않는다. 그것은
@@ -588,6 +588,10 @@ cd winforms && ./scripts/test.sh          # P01~P04. DB 서버도 MSBuild 도 �
 고치는 커밋에서는 red 가 되는 것이 정상이다 (`winforms/AGENTS.md`).
 
 **어느 게이트가 무엇을 판정하는지 여기 두 번 적지 않는다** — 스크립트가 출력하는 라벨이 출처다.
+
+`[X]` **`P08`(Build)·`P09`(Test)는 `test.sh` 밖이다.** MSBuild·vstest 가 있어야 돌고 수십 초가
+걸리므로 문서 회귀와 층이 다르다. 손으로 돌린 증거는 다음 회차에 썩으므로(`06` §42 의 같은 `[X]`)
+**화면이 늘기 시작하면 빌드까지 도는 회차를 따로 정해야 한다.** 아직 정하지 않았다.
 
 ---
 
@@ -643,6 +647,9 @@ cd winforms && ./scripts/verify-ui-db-matrix.sh
 |---|---|---|
 | `X-04` | `05` §1.1 vs `winforms/src/…/*.csproj` | `05` 는 Root Namespace 를 `HealthCheckupReservationReception` 이라 확정했는데 csproj 의 `<RootNamespace>` 는 `HealthCheckupReservationReception.WinForms` 였다. 소스의 `namespace` 선언도 후자를 따르고 있었다 |
 
+| `X-05` | `05` §1.1 vs `MainForm.Designer.cs` | `05` 는 사용자 화면 표시명을 `검진 예약·접수 관리 프로그램` 이라 확정했는데 Designer 의 `Text` 는 `건강검진 예약·접수` 였다 |
+| `X-06` | 킷 §1 vs 저장소 실물 | 킷은 C# 을 **UTF-8 BOM + CRLF** 로 정하는데 이 저장소의 `.cs` 는 전부 **BOM + LF** 다. `.editorconfig` 가 아직 없다 |
+
 `[D]` **사용자 결정 (2026-09-09): `X-04` 는 지금 맞췄다.** 소스가 넉 장뿐인 지금이 가장 싸다.
 csproj 의 `<RootNamespace>` 와 `Program.cs`·`Views/*` 의 `namespace` 선언을 `05` §1.1 에 맞췄고,
 `AssemblyName` 은 `05` §1.1 의 WinForms Project 이므로 그대로 두었다.
@@ -650,6 +657,20 @@ csproj 의 `<RootNamespace>` 와 `Program.cs`·`Views/*` 의 `namespace` 선언�
 **다시 어긋나지 않게 게이트를 붙였다** — `verify-contract-names.sh` `CFG-004`~`006`.
 `CFG-006` 은 루트만 고치고 소스가 따라오지 않는 경우를 잡는다. 접두사만 같은 이름
 (`…ReceptionExtra`)이 루트 안으로 새지 않는지도 `selftest` 가 시험한다.
+
+`[X]` **`X-06` 은 고치지 않았다.** 넉 장을 CRLF 로 바꿨다가 되돌렸다 — 줄바꿈을 바꾸면 그
+커밋의 diff 가 전 줄 교체가 되어 실제 변경이 묻힌다. 저장소 전체 규약이므로 별건이다.
+`.editorconfig` 를 두면 이후 파일이 자동으로 맞고 지금 파일은 그대로 남는다(킷의
+`editorconfig.example` 이 *"existing files are not rewritten on save"* 라 적었다).
+
+`[X]` **이 자리에서 한 번 틀렸다.** 처음 줄바꿈을 잴 때 `grep -c $''` 을 썼는데
+`contract/build.md` 가 정확히 그것을 경고한다 — `$(...)` 안에서 패턴이 빈 값으로 무너져 모든
+줄이 맞고, LF 파일이 CRLF 로 보고된다. `grep -cUP ''` 이 맞다. 게이트가 아니라 사람이 손으로
+잰 값이라 잡히지 않았다.
+
+`[I]` **`X-05` 는 `X-04` 와 같은 부류라 같은 자리에서 함께 고쳤다.** `MainForm` 을 `RibbonForm`
+으로 세우며 Designer 를 어차피 다시 쓰는 중이었다. `CFG-007` 이 대조한다 — 그리고 이 값을
+시험 코드에 다시 적지 않는다. 적으면 같은 값이 세 곳에 있게 된다.
 
 ## 14.3 `[A]` 이 문서가 택한 가정
 

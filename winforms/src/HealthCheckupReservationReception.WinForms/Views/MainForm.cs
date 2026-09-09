@@ -1,8 +1,8 @@
-﻿using System.Windows.Forms;
+﻿using DevExpress.XtraBars.Ribbon;
 
 namespace HealthCheckupReservationReception.Views
 {
-    public partial class MainForm : Form
+    public partial class MainForm : RibbonForm
     {
         public MainForm()
         {

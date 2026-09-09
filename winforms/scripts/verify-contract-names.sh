@@ -13,6 +13,7 @@ cd "$(dirname "$0")/.."
 : "${CFG:=src/HealthCheckupReservationReception.WinForms/App.config}"
 : "${PROJ:=src/HealthCheckupReservationReception.WinForms/HealthCheckupReservationReception.WinForms.csproj}"
 : "${SRC:=src/HealthCheckupReservationReception.WinForms}"
+: "${SHELL_DESIGNER:=src/HealthCheckupReservationReception.WinForms/Views/MainForm.Designer.cs}"
 FAIL=0
 
 # selftest — "불일치를 실제로 잡는가" 를 재현 가능하게 판정한다.
@@ -25,14 +26,15 @@ if [ "${1:-check}" = "selftest" ]; then
   D=$(mktemp -d); RC=0
   mkdir -p "$D/src"
 
-  # run <라벨> <기대 exit> <doc 본문> <config 본문> <csproj 본문> <cs 본문>
+  # run <라벨> <기대 exit> <doc 본문> <config 본문> <csproj 본문> <cs 본문> [designer 본문]
   run() {
     printf '%s\n' "$3" > "$D/doc.md"
     printf '%s\n' "$4" > "$D/app.config"
     printf '%s\n' "$5" > "$D/p.csproj"
     printf '%s\n' "$6" > "$D/src/A.cs"
+    printf '            this.Text = "%s";\n' "${7:-좋은 제목}" > "$D/Shell.Designer.cs"
     DOC="$D/doc.md" CFG="$D/app.config" PROJ="$D/p.csproj" SRC="$D/src" \
-      "$0" check > "$D/out.txt" 2>&1
+      SHELL_DESIGNER="$D/Shell.Designer.cs" "$0" check > "$D/out.txt" 2>&1
     local got=$?
     if [ "$got" -eq "$2" ]; then echo "PASS CFG-SELFTEST $1"
     else echo "FAIL CFG-SELFTEST $1 (기대 exit $2, 실제 $got)"; sed 's/^/    /' "$D/out.txt"; RC=1; fi
@@ -41,7 +43,8 @@ if [ "${1:-check}" = "selftest" ]; then
   DOCOK='| Database | `GoodDb` |
 | Connection String Name | `GoodKey` |
 | Root Namespace | `Good` |
-| WinForms Project | `Good.WinForms` |'
+| WinForms Project | `Good.WinForms` |
+| 사용자 화면 표시명 | `좋은 제목` |'
   CFGOK='<add name="GoodKey" connectionString="Initial Catalog=GoodDb" providerName="System.Data.SqlClient" />'
   PROJOK='<RootNamespace>Good</RootNamespace><AssemblyName>Good.WinForms</AssemblyName>'
   CSOK='namespace Good.Views'
@@ -56,9 +59,10 @@ if [ "${1:-check}" = "selftest" ]; then
   # Good 으로 시작하기만 하는 이름(GoodExtra)은 루트 안이 아니다 — 경계에서 새지 않는지 본다.
   run '접두사만 같은 namespace 를 잡는다' 1 "$DOCOK" "$CFGOK" "$PROJOK" 'namespace GoodExtra.Views'
   # 표 형식이 바뀌어 파싱이 빈 값을 내는 경우 — 통과가 아니라 FAIL 이어야 한다.
+  run '화면 제목 불일치를 잡는다'     1 "$DOCOK" "$CFGOK" "$PROJOK" "$CSOK" '낡은 제목'
   run '05 표를 못 읽으면 통과가 아니라 FAIL 이다' 1 '| Database : GoodDb |' "$CFGOK" "$PROJOK" "$CSOK"
 
-  rm -f "$D/doc.md" "$D/app.config" "$D/p.csproj" "$D/out.txt" "$D/src/A.cs"
+  rm -f "$D/doc.md" "$D/app.config" "$D/p.csproj" "$D/out.txt" "$D/src/A.cs" "$D/Shell.Designer.cs"
   rmdir "$D/src" "$D"
   exit $RC
 fi
@@ -135,6 +139,23 @@ if [ -z "$BAD" ]; then
 else
   say FAIL "CFG-006 루트 밖 namespace 선언"
   echo "$BAD" | sed 's/^/    /'
+fi
+
+# 화면 제목. MainForm 의 Designer 가 05 §1.1 「사용자 화면 표시명」을 그대로 쓰는지 본다.
+# [I] 이 값을 시험 코드에 다시 적지 않는다 — 여기 한 번만 대조한다 (ROOT AGENTS.md §6).
+CAPTION=$(row '사용자 화면 표시명')
+if [ -z "$CAPTION" ]; then
+  say FAIL "CFG-007 05 §1.1 에서 사용자 화면 표시명을 못 읽었다"
+elif [ ! -f "$SHELL_DESIGNER" ]; then
+  say FAIL "CFG-007 Shell Designer 가 없다: $SHELL_DESIGNER"
+else
+  # CRLF 여도 같은 판정이 나오게 CR 을 먼저 걷는다 — 줄끝에 걸린 검사는 조용히 빗나간다.
+  GOT=$(tr -d '\r' < "$SHELL_DESIGNER" | sed -n 's/^[[:space:]]*this\.Text = "\(.*\)";[[:space:]]*$/\1/p' | head -1)
+  if [ "$GOT" = "$CAPTION" ]; then
+    say PASS "CFG-007 MainForm 제목이 05 §1.1 과 같다 ($CAPTION)"
+  else
+    say FAIL "CFG-007 MainForm 제목 불일치 — Designer='$GOT' vs 05 §1.1='$CAPTION'"
+  fi
 fi
 
 if [ "$FAIL" -eq 0 ]; then echo "== PASS 실물 ↔ 05 §1.1 =="; else echo "== FAIL =="; fi
