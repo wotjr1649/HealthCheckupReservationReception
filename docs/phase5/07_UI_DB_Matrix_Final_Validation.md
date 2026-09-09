@@ -127,6 +127,17 @@ C# 식별자는 영문을 유지하고, 두 이름이 만나는 곳은 **Result 
 `[I]` **`SP-COM-01` 을 언제 다시 부르는지는 `03` 이 정하지 않았다.** `308`·`309` 는 시각이
 바뀌면 뒤집히므로 한 번 읽고 세션 내내 쓰면 안 된다. §14 `A-01`.
 
+`[I]` **구현 현황 (2026-09-09).** Shell 이 열릴 때 `SP-COM-01` 을 한 번 부르고 업무상태·조작자를
+`RibbonStatusBar` 에 그린다. `MainPresenter.RefreshWorkStatus()` 가 그 재호출 지점이며,
+`A-01` 이 말한 *"업무 Action 을 여는 시점"* 은 그 Action 이 아직 하나도 없어 비어 있다.
+
+`[I]` **`03` §1.3 의 *"공통 업무불가 상태에서는 업무 수행 Ribbon Action 을 비활성화한다"* 는
+아직 붙일 곳이 없다.** 비활성화 대상은 각 Tab 의 Context Ribbon Action 이고(`03` §5.2·§9.6·§9.7),
+상단 Navigation 은 데이터를 바꾸지 않으므로 그 대상이 아니다. 첫 Tab 화면과 함께 붙인다.
+
+`[I]` **업무 Tab 을 여는 Single Instance 계약(`03` §4.3)도 아직 없다.** `XtraTabControl` 은
+자리만 잡았고 `MainPresenter` 의 Navigation 처리는 EXTENSION POINT 다 — 열 화면이 하나도 없다.
+
 ## 3.2 WF-PAT-01 — 수검자 관리 Tab
 
 | Action / 시점 | 호출 SP | 계약 | 비고 |
@@ -562,11 +573,11 @@ contract belongs to the service"*, *"Integrity and concurrency live in the datab
 | P02 | 실물 ↔ `05` §1.1 | 연결문자열 키·`Initial Catalog`·`providerName`·`RootNamespace`·`AssemblyName`·소스 `namespace`·화면 제목 일치 | **`PASS`** — `winforms/scripts/verify-contract-names.sh` `CFG-001`~`007` (2026-09-09) |
 | P03 | M1 화면 대조 | `03` §2 의 화면 전건이 §3 에 있다 (양방향 차집합 0) | **`PASS`** — `winforms/scripts/verify-ui-db-matrix.sh` `UIDB-001` (2026-09-09) |
 | P04 | M2 SP 대조 | `05` §1.3 의 SP 전건이 §4 에 있다 (양방향 차집합 0) | **`PASS`** — 같은 게이트 `UIDB-002`·`UIDB-003` (2026-09-09) |
-| P05 | 금지 호출 | C# 에 `UFN_HC_` 직접 호출 0건 · `05` §1.5 미생성 객체 0건 | `PLANNED` |
-| P06 | 금지 SQL | C# 에 inline `SELECT`/`INSERT`/`UPDATE`/`DELETE` 0건 · `AddWithValue` 0건 | `PLANNED` — 킷 §3 |
-| P07 | 계층 격리 | `SqlConnection`·`SqlCommand`·`SqlDataReader` 가 `Repositories/` 밖에 0건 · DevExpress 타입이 `Views/`·`Program.cs` 밖에 0건 | `PLANNED` — 킷 §2 |
-| P08 | Build | MSBuild exit 0 · Warning 확인 | **`PASS`** — VS2019 Professional 16.11.6 · `Configuration=Debug` · exit 0 · Warning 0 (2026-09-09). DevExpress 20.2 참조가 들어간 뒤의 첫 빌드다 |
-| P09 | Test | MSTest 전건 통과 | **`PASS`** — `vstest.console` 16.11.0 · 통과 2 / 실패 0 (2026-09-09) |
+| P05 | 금지 호출 | C# 에 `UFN_HC_` 직접 호출 0건 · C# 이 부르는 SP 전건이 `05` §1.3 안 | **`PASS`** — `winforms/scripts/verify-layering.sh` `LAY-001`·`LAY-002` (2026-09-09) |
+| P06 | 금지 SQL | C# 에 inline `SELECT`/`INSERT`/`UPDATE`/`DELETE` 0건 · `AddWithValue` 0건 | **`PASS`** — 같은 게이트 `LAY-003` (2026-09-09) |
+| P07 | 계층 격리 | `SqlConnection`·`SqlCommand`·`SqlDataReader` 가 `Repositories/` 밖에 0건 · DevExpress 타입이 `Views/`·`Program.cs` 밖에 0건 · `IXxxView` 가 DevExpress-free | **`PASS`** — 같은 게이트 `LAY-004` (2026-09-09) |
+| P08 | Build | MSBuild exit 0 · Warning 확인 | **`PASS`** — VS2019 Professional 16.11.6 · `Configuration=Debug` · exit 0 · Warning 0 (2026-09-09) |
+| P09 | Test | MSTest 전건 통과 | **`PASS`** — `vstest.console` 16.11.0 · 실패 0 (2026-09-09). **건수를 여기 적지 않는다** — 화면마다 늘어난다 |
 | P10 | 킷 §1 | 굴림 9pt · `SetPerMonitorDpiAware()` 가 `Main` 첫 문장 · `AutoScaleMode=Font` · Designer 가 자기 `Font` 를 직렬화 · manifest 에 DPI 없음 · `.cs` 전건 UTF-8 BOM + LF | **`PASS`** — `winforms/scripts/verify-ui-baseline.sh` `UIB-001`~`005` (2026-09-09) |
 | P11 | 시각 검증 | 100% · 125% 배율에서 잘림 0건 | `PLANNED` — `03` §1.4 |
 | P12 | manifest | winforms 변경 커밋마다 manifest 동봉 | `PLANNED` — `verify-winforms-unchanged.sh` |
@@ -580,7 +591,7 @@ contract belongs to the service"*, *"Integrity and concurrency live in the datab
 # 11. 회귀 편성
 
 ```bash
-cd winforms && ./scripts/test.sh          # P01~P04 · P10. DB 서버도 MSBuild 도 필요 없다
+cd winforms && ./scripts/test.sh          # P01~P07 · P10. DB 서버도 MSBuild 도 필요 없다
 ```
 
 `[I]` `../database/scripts/verify-winforms-unchanged.sh` 는 여기 넣지 않는다. 그것은
@@ -648,6 +659,7 @@ cd winforms && ./scripts/verify-ui-db-matrix.sh
 | `X-04` | `05` §1.1 vs `winforms/src/…/*.csproj` | `05` 는 Root Namespace 를 `HealthCheckupReservationReception` 이라 확정했는데 csproj 의 `<RootNamespace>` 는 `HealthCheckupReservationReception.WinForms` 였다. 소스의 `namespace` 선언도 후자를 따르고 있었다 |
 
 | `X-05` | `05` §1.1 vs `MainForm.Designer.cs` | `05` 는 사용자 화면 표시명을 `검진 예약·접수 관리 프로그램` 이라 확정했는데 Designer 의 `Text` 는 `건강검진 예약·접수` 였다 |
+| `X-07` | 킷 §6 vs 킷 `references/mvp-wiring.md` | §6 은 *"show a Korean message without raw exception text"* 라 적는데 같은 킷의 참조 파일 예제는 `"조회 중 오류가 발생했습니다. " + ex.Message` 를 그대로 보여준다. 복사되기 쉬운 자리다 |
 | `X-06` | 킷 §1 vs 저장소 실물 | 킷은 C# 을 **UTF-8 BOM + CRLF** 로 정하는데 이 저장소의 `.cs` 는 전부 **BOM + LF** 다. `.editorconfig` 가 아직 없다 |
 
 `[D]` **사용자 결정 (2026-09-09): `X-04` 는 지금 맞췄다.** 소스가 넉 장뿐인 지금이 가장 싸다.
@@ -685,6 +697,7 @@ csproj 의 `<RootNamespace>` 와 `Program.cs`·`Views/*` 의 `namespace` 선언�
 | `A-01` | `SP-COM-01` 재호출 주기를 `03` 이 정하지 않았다 | 업무 Action 을 여는 시점마다 다시 읽는다. 별도 타이머를 두지 않는다 | 낮다 — 호출 지점 추가뿐 |
 | `A-02` | Targeted Navigation 의 SP 결선을 `03`·`05` 둘 다 명시하지 않았다 | `SP-WRK-02` 하나로 Grid 행과 Detail 을 함께 구성한다 (§3.6.2) | 낮다 — 계약 안에서 닫힌다 |
 | `A-03` | `DLG-RCP-02` 의 AEX 가용성을 다시 물을지 `03` 이 정하지 않았다 | 진입 시점의 `SP-WRK-02` RS3·RS4 로 충분하다고 본다. 선택할 때마다 다시 부르지 않는다 | 낮다 — 재호출 추가뿐 |
+| `A-04` | `03` §1.3 은 조작자를 *"WinForms 설정 파일의 값"* 이라 적고 키 이름을 정하지 않았다 | `App.config` `appSettings` 의 `OperatorName`. `05` §16.5 의 C# 이름과 같다 | 낮다 — 키 한 줄 |
 
 `[I]` 셋 다 킷 §8 이 말하는 *"smallest reversible reading"* 이다. 요구사항 자체가 비어 있는
 것이 아니라 **세부가 비어 있어** 확정 요구사항이 동작하지 않게 되는 자리이므로 `BLOCKED` 가

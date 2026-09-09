@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Windows.Forms;
+using HealthCheckupReservationReception.Tests.Presenters;
 using HealthCheckupReservationReception.Views;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -14,7 +15,7 @@ namespace HealthCheckupReservationReception.Tests
         {
             RunSta(() =>
             {
-                using (var form = new MainForm())
+                using (MainForm form = NewShell())
                 {
                     Assert.AreEqual(AutoScaleMode.Font, form.AutoScaleMode);
                     Assert.AreEqual("굴림", form.Font.Name);
@@ -31,7 +32,7 @@ namespace HealthCheckupReservationReception.Tests
         {
             RunSta(() =>
             {
-                using (var form = new MainForm())
+                using (MainForm form = NewShell())
                 {
                     Assert.IsNotNull(form.Ribbon, "Ribbon 이 없다");
                     Assert.IsNotNull(form.StatusBar, "StatusBar 가 없다");
@@ -39,6 +40,27 @@ namespace HealthCheckupReservationReception.Tests
                     Assert.AreSame(form.Ribbon, form.StatusBar.Ribbon);
                 }
             });
+        }
+
+        // 03 §4.1 상단 업무 Navigation 다섯. 하나라도 빠지면 Shell 이 아니다.
+        [TestMethod]
+        public void MainForm_은_업무_Navigation_다섯을_갖는다()
+        {
+            RunSta(() =>
+            {
+                using (MainForm form = NewShell())
+                {
+                    Assert.AreEqual(1, form.Ribbon.Pages.Count);
+                    Assert.AreEqual("업무", form.Ribbon.Pages[0].Text);
+                    Assert.AreEqual(1, form.Ribbon.Pages[0].Groups.Count);
+                    Assert.AreEqual(5, form.Ribbon.Pages[0].Groups[0].ItemLinks.Count);
+                }
+            });
+        }
+
+        private static MainForm NewShell()
+        {
+            return new MainForm(new FakeCommonStatusService(), "접수1번창구");
         }
 
         private static void RunSta(Action action)

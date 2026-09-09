@@ -1,13 +1,24 @@
 ﻿using System;
+using System.Configuration;
 using System.Drawing;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
+using HealthCheckupReservationReception.Repositories;
+using HealthCheckupReservationReception.Services;
 using HealthCheckupReservationReception.Views;
 
 namespace HealthCheckupReservationReception
 {
     internal static class Program
     {
+        // 05 §1.1 이 확정한 연결문자열 키. App.config 와 이 상수가 같은지는
+        // scripts/verify-contract-names.sh 가 05 §1.1 을 파싱해 대조한다.
+        private const string ConnectionName = "HealthCheckupDb";
+
+        // 03 §1.3 — 조작자는 설정 파일에서 읽어 읽기 전용으로 표시하고,
+        // Write SP 호출 때 @조작자명 으로 전달한다. 입력 Control 이 아니다.
+        private const string OperatorSettingName = "OperatorName";
+
         [STAThread]
         private static void Main()
         {
@@ -22,7 +33,19 @@ namespace HealthCheckupReservationReception
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+
+            ConnectionStringSettings connection = ConfigurationManager.ConnectionStrings[ConnectionName];
+            if (connection == null || string.IsNullOrWhiteSpace(connection.ConnectionString))
+            {
+                // 화면 표시명을 여기 적지 않는다 — 05 §1.1 의 값이 Designer 와 두 곳에 있게 된다.
+                XtraMessageBox.Show("App.config 에 연결문자열 '" + ConnectionName + "' 이 없습니다.");
+                return;
+            }
+
+            ICommonStatusService service = new CommonStatusService(
+                new CommonStatusRepository(connection.ConnectionString));
+
+            Application.Run(new MainForm(service, ConfigurationManager.AppSettings[OperatorSettingName]));
         }
     }
 }

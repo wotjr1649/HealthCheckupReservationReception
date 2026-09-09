@@ -21,6 +21,10 @@ run ./scripts/verify-contract-names.sh selftest
 run ./scripts/verify-contract-names.sh
 run ./scripts/verify-ui-baseline.sh selftest
 run ./scripts/verify-ui-baseline.sh
+run ./scripts/verify-dbcode.sh selftest
+run ./scripts/verify-dbcode.sh
+run ./scripts/verify-layering.sh selftest
+run ./scripts/verify-layering.sh
 run ./scripts/verify-ui-db-matrix.sh selftest
 run ./scripts/verify-ui-db-matrix.sh
 

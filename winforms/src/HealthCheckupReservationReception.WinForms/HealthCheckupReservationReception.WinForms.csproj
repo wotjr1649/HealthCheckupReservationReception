@@ -51,7 +51,18 @@
     <Reference Include="DevExpress.XtraEditors.v20.2" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\DbCode.cs" />
+    <Compile Include="Common\OperationResult.cs" />
+    <Compile Include="Models\CommonWorkStatusDto.cs" />
+    <Compile Include="Models\CommonWorkStatusReadDto.cs" />
+    <Compile Include="Models\DbResult.cs" />
+    <Compile Include="Presenters\MainPresenter.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="Repositories\CommonStatusRepository.cs" />
+    <Compile Include="Repositories\ICommonStatusRepository.cs" />
+    <Compile Include="Services\CommonStatusService.cs" />
+    <Compile Include="Services\ICommonStatusService.cs" />
+    <Compile Include="Views\IMainView.cs" />
     <Compile Include="Views\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
