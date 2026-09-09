@@ -142,7 +142,11 @@ App.config        <connectionStrings> 가 아직 없다
 `06` 이 정확히 그 경로를 밟았다. 오른쪽 절반(DB 가 확정한 것)은 **`06` §42 와 `05` 를 읽어**
 채운다 — 앞 문서의 수치를 옮겨 오지 마라.
 
-**2. `App.config` 에 `<connectionStrings>` 의 `AppDb` 를 넣는다.** 통합인증만 쓴다.
+**2. `App.config` 에 `<connectionStrings>` 의 `HealthCheckupDb` 를 넣는다.** 통합인증만 쓴다.
+초판은 여기에 `AppDb` 라 적었다 — 킷 `contract/repository.md` 의 **예시** 이름을 옮긴 것이고,
+실제 키 이름은 `05` §1.1 이 확정한다. 킷 자신이 *"Copy the shape, not the names"* 라 적었고
+`winforms/AGENTS.md` 가 `05` 를 킷 위에 둔다. 수치를 안 적겠다던 이 문서가 §4 와 같은 종류의
+함정에 한 칸 빠진 자리다(루트 `AGENTS.md` §6).
 `user id`·`uid` 를 싣거나 `integrated security` 를 끄는 연결문자열은 금지다(`winforms/AGENTS.md`).
 
 **여기서도 `=` 를 빼고 적었다.** secret 스캐너는 키에 값이 붙은 형태를 잡으므로, 금지 규칙을
@@ -179,3 +183,18 @@ licenses.licx 가 없다. DevExpress 컨트롤을 넣는 순간 필요해진다 
 docs/sp/ 부재가 실제 세션에서 BLOCKED 판정을 유발하는지 관측한 적 없다 — §4.1 로 막았다고 본다
 Phase 5 계열이 어떤 게이트 집합을 회귀로 돌릴지 아직 정하지 않았다
 ```
+
+---
+
+# 9. 착수 이후 실제로 들어간 것 (2026-09-09, 세션 12)
+
+§5 의 실측 두 줄이 이것으로 낡았다. **§5 를 고치지 않고 여기에 적는다** — §0 이 앞 문서에
+대해 한 것과 같은 처리다.
+
+```text
+App.config          <connectionStrings> 의 HealthCheckupDb 를 넣었다 (§6.2, 05 §1.1)
+winforms 게이트     scripts/verify-no-secret.sh · check 와 selftest 두 하위명령 (§6.3)
+```
+
+§6 의 1(`07` 문서)·4(화면)는 아직 손대지 않았다. §8 의 "어떤 게이트 집합을 회귀로 돌릴지"도
+그대로 미정이다 — `verify-no-secret.sh` 는 만들었지만 어느 회귀에 편성할지는 정하지 않았다.
