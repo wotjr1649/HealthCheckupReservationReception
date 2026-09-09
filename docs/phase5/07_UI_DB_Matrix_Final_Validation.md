@@ -740,6 +740,10 @@ contract belongs to the service"*, *"Integrity and concurrency live in the datab
 cd winforms && ./scripts/test.sh          # P01~P07 · P10. DB 서버도 MSBuild 도 필요 없다
 ```
 
+`[I]` **`[TestCategory("Db")]` 는 `scripts/test.sh` 밖이다.** SQLEXPRESS 가 있어야 돌고,
+이 회귀는 "DB 서버도 MSBuild 도 없이 어디서나 같은 판정" 이 목적이다. `vstest` 의
+`/TestCaseFilter:"TestCategory=Db"` 로 따로 돌린다 (§12.5).
+
 `[I]` `../database/scripts/verify-winforms-unchanged.sh` 는 여기 넣지 않는다. 그것은
 "database 계열이 winforms 를 안 건드렸는가" 를 보는 database 쪽 게이트라, winforms 를 정당하게
 고치는 커밋에서는 red 가 되는 것이 정상이다 (`winforms/AGENTS.md`).
@@ -828,12 +832,71 @@ cd winforms && ./scripts/test.sh          # P01~P07 · P10. DB 서버도 MSBuild
 `[X]` **둘 다 시험이 아니라 캡처가 잡았다.** 단위시험은 값을 보지 색을 보지 않는다.
 두 번째 것은 잡은 뒤 시험으로 옮겼다 — `목록을_실어도_행이_선택되지_않는다`.
 
+## 12.5 `SP-PAT-01` · `SP-PAT-02` 결선 실측 `[I]`
+
+**Repository 가 실물 DB 를 거쳐 처음 돌았다.** `tests/…/Integration/PatientRepositoryDbTests.cs`
+가 그 자리이고 `[TestCategory("Db")]` 다.
+
+```text
+SP-PAT-01  결과코드 0 · RS1 컬럼 11건 전부 이름을 찾았다 · 0행       PASS
+SP-PAT-02  없는 수검자(-1) → 결과코드 200 · RS1 안 읽음             PASS
+```
+
+`[I]` **0건이어도 컬럼 계약은 전건 검증된다.** `ReadRows` 가 `GetOrdinal` 열한 개를 루프
+**밖에서** 잡기 때문이다 — 행이 없어도 이름이 틀리면 그 자리에서 터진다. 데이터를 넣지 않고
+계약을 잰 것이 이 방식의 값이다.
+
+`[X]` **`SP-PAT-02` 의 RS1 열다섯 컬럼은 아직 못 쟀다.** 수검자 한 행이 있어야 하고 그 행을
+만드는 것은 `SP-PAT-03` 이다 — `DLG-PAT-01` 이 생기는 순간 닫힌다. `02_Seed.sql` 은 수검자를
+넣지 않는다(확인함). 지금 `수검자` 테이블은 0행이다.
+
+`[I]` **연결문자열을 시험에 적지 않는다.** `App.config` 을 XML 로 읽어 그 안의 유일한 항목을
+쓴다. `ConfigurationManager` 를 쓰지 않는 것은 그것이 machine.config 항목까지 섞기 때문이다.
+
+## 12.6 게이트가 간헐적으로 멈춘다 — 원인 미상 `[X]`
+
+`node tools/verify-screen-design.js` 가 **2026-09-09 에 세 번 멈췄다.** 원인을 못 짚었다.
+
+```text
+14:21  selftest   배경 실행   2시간 17분 정지 (강제 종료)
+15:35  selftest   배경 실행   1시간 02분 정지 (강제 종료)
+16:47  check      전경 실행   9분 정지 (강제 종료)
+```
+
+실측 두 가지가 방향을 좁힌다.
+
+```text
+CPU 시간이 두 표본 사이에 전혀 늘지 않았다 · state = S (sleeping)
+  → 무한 루프가 아니라 I/O 에서 잠들어 있다
+selftest 와 check 둘 다에서 났다
+  → 자식 프로세스를 띄우는 자리만의 문제가 아니다
+```
+
+`[X]` **처음에 "배경 실행에서만 난다" 고 적었다가 틀렸다.** 전경에서 두 번 재현을 시도해
+둘 다 통과했고 그것을 근거로 결론지었는데, 바로 다음 전경 실행에서 같은 일이 났다.
+**재현 실패는 부재의 증거가 아니다.**
+
+`[I]` **원인 대신 증상에 경계를 뒀다.** 원인을 모르는 것과 무한히 매달리는 것은 다른 문제다.
+
+```text
+scripts/test.sh   게이트마다 timeout -k 10 $GATE_TIMEOUT (기본 300초) → 초과하면 FAIL
+verify-screen-design.js  selftest 의 자식마다 120초 · stdin 을 물려주지 않는다
+```
+
+경계가 실제로 무는지는 `GATE_TIMEOUT=1` 로 돌려 확인했다 — 전 게이트가 `FAIL 시간 초과` 로 떨어진다.
+
+`[X]` **배경 실행의 "통과" 를 믿지 않는다.** 세 번 다 멈춘 프로세스를 죽이자 작업이
+`exit code 0` 으로 **완료** 보고됐다. `… | tail -N` 의 종료코드는 `tail` 것이고 `tail` 은
+stdin 이 닫히면 0 을 낸다. **출력 0바이트에 exit 0** 이다. 판정은 출력을 보고 한다.
+
 ## 12.2 아직 실행하지 않은 것
 
 ```text
 배율 100% · 125% 두 벌을 보지 않았다 — P11 은 PLANNED 그대로다
 화면 12개는 아직 없다. 실행본에서 볼 것은 셸과 WF-PAT-01 이다
+SP-PAT-02 의 RS1 열다섯 컬럼 — 수검자 한 행이 있어야 한다 (§12.5)
 Phase 5 계열이 빌드·시험까지 도는 회차를 언제 잡을지 정하지 않았다 (§11)
+verify-screen-design.js 가 왜 멈추는지 (§12.6). 경계만 둬 두었다
 ```
 
 ---

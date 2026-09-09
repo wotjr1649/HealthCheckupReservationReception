@@ -310,13 +310,33 @@ function selftest() {
     }
   };
 
+  // [X] 자식에 경계를 둔다. 이 파일이 2026-09-09 에 세 번 멈춰 있었다 — 두 번은 이
+  //     selftest 에서, 한 번은 그냥 `check` 에서. 원인은 아직 모른다(07 §12.5).
+  //     **원인을 모르는 것과 무한히 매달리는 것은 다른 문제다.** stdin 을 물려주지 않고
+  //     (핸들 상속 경로를 끊는다) 시간을 재서 FAIL 로 떨어뜨린다.
+  //     바깥 경계는 scripts/test.sh 의 GATE_TIMEOUT 이 따로 친다.
+  const CHILD_TIMEOUT_MS = 120000;
   let rc = 0;
   const run = (label, expect, env) => {
-    let code = 0, out = '';
+    let code = 0, out = '', timedOut = false;
     try {
-      out = execFileSync(process.execPath, [__filename, 'check'],
-        { env: Object.assign({}, process.env, env), encoding: 'utf8' });
-    } catch (e) { code = e.status; out = String(e.stdout || ''); }
+      out = execFileSync(process.execPath, [__filename, 'check'], {
+        env: Object.assign({}, process.env, env),
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: CHILD_TIMEOUT_MS,
+        killSignal: 'SIGKILL',
+      });
+    } catch (e) {
+      code = e.status;
+      out = String(e.stdout || '');
+      timedOut = e.killed || e.signal != null;
+    }
+    if (timedOut) {
+      console.log(`FAIL SCR-SELFTEST ${label} — 자식이 ${CHILD_TIMEOUT_MS / 1000}초 안에 끝나지 않았다`);
+      rc = 1;
+      return;
+    }
     if (code === expect) console.log(`PASS SCR-SELFTEST ${label}`);
     else {
       console.log(`FAIL SCR-SELFTEST ${label} (기대 exit ${expect}, 실제 ${code})`);
