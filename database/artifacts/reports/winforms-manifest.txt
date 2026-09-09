@@ -11,14 +11,14 @@ eb8e0aeed833e6acc14b56d6751e2e2513706b415bfd7511657924b7ee6bd1e0 *../winforms/.a
 59c5e4c81a0be507f671cab53b54cdced0bcbde157a5e439b3d76dca7305585a *../winforms/.agents/skills/winforms-devexpress-ui/SKILL.md
 e0368116f3e52095b6f33963ac3ff4d9e14c61ff3b8bfd45e6a7b11e88e246ce *../winforms/.agents/skills/winforms-devexpress-ui/references/designer.md
 58b2465ff98684e5fd1a2dc60666637d7adea695f4d6a2811a458fc7623b51ee *../winforms/.agents/skills/winforms-devexpress-ui/references/devexpress-controls.md
-d0d20f6aae468f5d2678bbf8a083e84f292fd460bd49d8c3dfdfc2c4b9c6339a *../winforms/.agents/skills/winforms-devexpress-ui/references/mvp-wiring.md
+00c843c468dd6b94fdca531bb44098bfe69406b23b57a5f7e5facb82f85ca5d8 *../winforms/.agents/skills/winforms-devexpress-ui/references/mvp-wiring.md
 97f61d6e5f725f35861dd94e7dd8a892aebb67e790afe6b01f39d44ef45e2d7d *../winforms/.agents/skills/winforms-devexpress-ui/references/performance.md
 b9c1f5c5bf130920c0457f576c902f7e43e23664790f40729e6094f51d08d65e *../winforms/.agents/skills/winforms-devexpress-ui/references/wireframe-layout.md
 ae1f4026a1e4734db6f2f3fbe6951f00ebce1c316429b0d05ac975794a480468 *../winforms/.claude/settings.local.json
 59c5e4c81a0be507f671cab53b54cdced0bcbde157a5e439b3d76dca7305585a *../winforms/.claude/skills/winforms-devexpress-ui/SKILL.md
 e0368116f3e52095b6f33963ac3ff4d9e14c61ff3b8bfd45e6a7b11e88e246ce *../winforms/.claude/skills/winforms-devexpress-ui/references/designer.md
 58b2465ff98684e5fd1a2dc60666637d7adea695f4d6a2811a458fc7623b51ee *../winforms/.claude/skills/winforms-devexpress-ui/references/devexpress-controls.md
-d0d20f6aae468f5d2678bbf8a083e84f292fd460bd49d8c3dfdfc2c4b9c6339a *../winforms/.claude/skills/winforms-devexpress-ui/references/mvp-wiring.md
+00c843c468dd6b94fdca531bb44098bfe69406b23b57a5f7e5facb82f85ca5d8 *../winforms/.claude/skills/winforms-devexpress-ui/references/mvp-wiring.md
 97f61d6e5f725f35861dd94e7dd8a892aebb67e790afe6b01f39d44ef45e2d7d *../winforms/.claude/skills/winforms-devexpress-ui/references/performance.md
 b9c1f5c5bf130920c0457f576c902f7e43e23664790f40729e6094f51d08d65e *../winforms/.claude/skills/winforms-devexpress-ui/references/wireframe-layout.md
 9a21755e266d5b73690b221d5e80996b7932ed23a5e9003ef3954df6a30960a9 *../winforms/.editorconfig

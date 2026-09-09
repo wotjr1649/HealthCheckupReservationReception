@@ -968,5 +968,102 @@ function splitFences(src) {
   }
 }
 
+// V26 정책 시각값이 `00` 을 따라오는가.
+//
+// [X] `00` CP-04 의 운영시간과 §3장의 마감 넷은 사슬 아래 다섯 문서에 **되풀이 적혀 있다**
+//     (실측 45곳). R13 이 테이블 수를 바꿨을 때 본문 열여섯 곳이 조용히 낡았던 것과 같은 자리다.
+//     `OPR-G1~G4` 는 `00` ↔ Seed ↔ DB 만 보고 문서 본문은 보지 않는다.
+//
+// 잡는 방식은 둘이다.
+//   (a) 캡처형 — 정책을 말하는 문장 꼴에서 값을 **뽑아** `00` 과 견준다.
+//   (b) 존재형 — `00` 에서 만든 경계 문자열이 시험 기대표에 실제로 있는지 본다.
+//
+// [!] 꼴마다 **최소 히트 수**를 건다. 문장을 다시 써서 패턴이 안 걸리면 조용히 통과하는데,
+//     그것이 이 부류 게이트의 대표적 fail-open 이다 (`V25` 를 만들 때 같은 함정을 밟았다).
+{
+  const pol = read(path.join(ROOT, 'baseline', '00_Project_Policy.md'));
+  const mh = /CP-04[^\n]*운영시간[^\n]*`(\d{2}:\d{2}) *<= *현재시각 *< *(\d{2}:\d{2})`/.exec(pol);
+  const mam = /^\| *\*\*평일 오전\*\* *\| *(\d{2}:\d{2}) *\| *(\d{2}:\d{2}) *\|/m.exec(pol);
+  const mpm = /^\| *\*\*평일 오후\*\* *\| *(\d{2}:\d{2}) *\| *(\d{2}:\d{2}) *\|/m.exec(pol);
+  if (!mh || !mam || !mpm) {
+    F('V26', '00 CP-04 / §3 마감표를 못 읽었다 - 미실행은 PASS 가 아니다');
+  } else {
+    const OPEN = mh[1], CLOSE = mh[2];           // 운영시작 · 운영종료
+    const NAM = mam[1], RAM = mam[2];            // 일반 당일예약 AM · 접수 AM
+    const NPM = mpm[1], RPM = mpm[2];            // 일반 당일예약 PM · 접수 PM
+
+    const DOCS = ['01_Process_Definition.md', '03_Wireframe_Definition.md',
+                  '04_DB_Design.md', '05_DB_Rule_SP_Contract.md',
+                  '06_DB_Transaction_Security_Seed.md'];
+    const src = {};
+    for (const d of DOCS) src[d] = read(path.join(ROOT, 'baseline', d));
+    const all = DOCS.map(d => src[d]).join('\n');
+
+    const bad = [];
+    let checked = 0;
+
+    // (a) 캡처형. [정규식, 기대값 배열, 최소 히트, 이름]
+    const CAP = [
+      [/(\d{2}:\d{2})\s*<=\s*현재시각\s*<\s*(\d{2}:\d{2})/g, [OPEN, CLOSE], 5, '운영시간 부등식'],
+      [/운영시간[^\n]{0,12}?\((\d{2}:\d{2})~(\d{2}:\d{2})\)/g, [OPEN, CLOSE], 1, '운영시간 (시작~끝)'],
+      [/업무시간\(월~토 (\d{2}:\d{2})~(\d{2}:\d{2})\)/g, [OPEN, CLOSE], 1, '업무시간 월~토'],
+      [/운영시작시각=(\d{2}:\d{2})/g, [OPEN], 1, '운영시작시각='],
+      [/운영종료시각=(\d{2}:\d{2})/g, [CLOSE], 1, '운영종료시각='],
+      [/^\| 일반 당일예약 \| (\d{2}:\d{2}) \| (\d{2}:\d{2}) \|/gm, [NAM, NPM], 1, '05 §2.4 일반 당일예약'],
+      [/^\| WalkIn 당일예약 \| (\d{2}:\d{2}) \| (\d{2}:\d{2}) \|/gm, [RAM, RPM], 1, '05 §2.4 WalkIn'],
+      [/^\| 접수 \| (\d{2}:\d{2}) \| (\d{2}:\d{2}) \|/gm, [RAM, RPM], 1, '05 §2.4 접수'],
+      [/NORMAL (\d{2}:\d{2}) \/ (\d{2}:\d{2})/g, [NAM, NPM], 1, '05 §6.1.4 NORMAL'],
+      [/RECEPTION (\d{2}:\d{2}) \/ (\d{2}:\d{2})/g, [RAM, RPM], 1, '05 §6.1.4 RECEPTION'],
+      [/^\| Normal 평일 \| (\d{2}:\d{2}) 전 \| (\d{2}:\d{2}) 전 \|/gm, [NAM, NPM], 1, '03 §8.6 Normal 평일'],
+      [/^\| WalkIn 평일 \| (\d{2}:\d{2}) 전 \| (\d{2}:\d{2}) 전 \|/gm, [RAM, RPM], 1, '03 §8.6 WalkIn 평일'],
+      [/^\| Normal 토요일 \| (\d{2}:\d{2}) 전 \|/gm, [NAM], 1, '03 §8.6 Normal 토요일'],
+      [/^\| WalkIn 토요일 \| (\d{2}:\d{2}) 전 \|/gm, [RAM], 1, '03 §8.6 WalkIn 토요일'],
+      [/^\| `AM` \| (\d{2}:\d{2}) \| (\d{2}:\d{2}) \|/gm, [NAM, RAM], 1, '06 마감표 AM'],
+      [/^\| `PM` \| (\d{2}:\d{2}) \| (\d{2}:\d{2}) \|/gm, [NPM, RPM], 1, '06 마감표 PM'],
+      [/마감은 시간대 마다 다르다\(AM (\d{2}:\d{2}) · PM (\d{2}:\d{2})\)/g, [RAM, RPM], 1, '06 §44 AM·PM'],
+    ];
+    for (const [re, want, min, name] of CAP) {
+      let m, hits = 0;
+      re.lastIndex = 0;
+      while ((m = re.exec(all)) !== null) {
+        hits++; checked++;
+        for (let i = 0; i < want.length; i++) {
+          if (m[i + 1] !== want[i]) {
+            bad.push(name + ' — 문서 ' + m[i + 1] + ' vs 00 ' + want[i] + '  [' + m[0].trim().slice(0, 60) + ']');
+          }
+        }
+      }
+      if (hits < min) bad.push(name + ' — 꼴이 ' + hits + '건뿐이다 (최소 ' + min + '). 문장이 바뀌어 패턴이 죽었다');
+    }
+
+    // (b) 존재형. 경계 시험표는 `00` 값과 그 직전 시각으로만 이뤄진다.
+    const prev = t => {                       // 'HH:MM' -> 'HH:MM' 의 1초 전 표기 앞부분
+      const [h, mi] = t.split(':').map(Number);
+      const d = new Date(2000, 0, 1, h, mi, 0);
+      d.setSeconds(d.getSeconds() - 1);
+      return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
+    };
+    const MUST = [
+      [OPEN + ':00.0000000', '05·06 경계표 운영시작'],
+      [prev(OPEN) + '.9999999', '05 §17.1 운영시작 직전'],
+      [CLOSE + ':00.0000000', '05·06 경계표 운영종료'],
+      [prev(CLOSE) + '.9999999', '05 §17.1 운영종료 직전'],
+      [NAM + ':00.0000000', '05 §17.1 AM 일반예약 마감'],
+      [RAM + ':00.0000000', '05 §17.1 AM 접수 마감'],
+      [NPM + ':00.0000000', '05 §17.1 PM 일반예약 마감'],
+      [RPM + ':00.0000000', '05 §17.1 PM 접수 마감'],
+    ];
+    for (const [str, name] of MUST) {
+      checked++;
+      if (all.indexOf(str) < 0) bad.push(name + ' — `' + str + '` 이 어느 문서에도 없다');
+    }
+
+    bad.length
+      ? F('V26', '정책 시각값이 00 과 어긋나거나 사라졌다 ' + bad.length + '건', bad.join('\n'))
+      : P('V26', '정책 시각값 주장 ' + checked + '건이 00 CP-04(' + OPEN + '~' + CLOSE + ')·§3 마감(' +
+                 NAM + '/' + NPM + ' · ' + RAM + '/' + RPM + ')과 일치');
+  }
+}
+
 console.log('\n=== verify-docs: PASS ' + pass + ' / FAIL ' + fail + ' ===');
 process.exit(fail ? 1 : 0);

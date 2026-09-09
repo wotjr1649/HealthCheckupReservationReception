@@ -181,9 +181,11 @@ namespace Hospital.Presenters
             {
                 result = _service.Search(request);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _view.ShowMessage("조회 중 오류가 발생했습니다. " + ex.Message);
+                // 킷 §6 — 원문 예외 문자열을 화면에 싣지 않는다. provider 메시지는
+                // DB 이름·서버 이름을 노출한다. 이 자리는 복사되기 쉬우므로 그대로 둔다.
+                _view.ShowMessage("조회 중 오류가 발생했습니다.");
                 return;
             }
 

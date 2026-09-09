@@ -9,6 +9,15 @@ NOTRUN=0
 
 ./scripts/rebuild.sh || { echo "rebuild 실패"; exit 1; }
 
+# 라이브 DB ↔ deploy/ 동기화 (G17). **rebuild 바로 뒤**가 자리다 — 방금 배포한 것이
+# 실제로 그대로 들어갔는지, 그리고 지금 붙어 있는 DB 가 배포 원본과 같은지를 함께 본다.
+# [!] 이 축은 회귀 전체에서 비어 있었다. winforms 의 TestCategory=Db 통합시험은 rebuild 없이
+#     살아 있는 DB 에 붙으므로, 누가 SSMS 에서 SP 를 고치면 그 시험이 다른 제품을 재게 된다.
+if ./scripts/verify-live-sync.sh selftest > /dev/null; then
+  echo "PASS SYNC-SELFTEST 배포목록 게이트가 누락·유령 참조를 실제로 잡는다"
+else ./scripts/verify-live-sync.sh selftest; FAILED=1; fi
+./scripts/verify-live-sync.sh || FAILED=1
+
 # 운영기준(04 §8.7) 게이트. R13 이 운영시간·마감시각을 SP 안 리터럴에서 테이블로 옮겼고,
 # 그래서 시험이 창을 옮겨 성공 경로를 24시간 판정할 수 있게 됐다. 그 대가로 새 실패 방식이
 # 하나 생긴다 — **넓힌 창을 되돌리지 않은 회차**. 그러면 다음 회차가 다른 제품을 시험한다.
