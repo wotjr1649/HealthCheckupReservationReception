@@ -1,3 +1,7 @@
+> **대체됨 (2026-09-09).** 이 문서는 세션 09 시점의 기록이다. 그 뒤 계약 재설계(R7~R9)와 킷
+> 설치로 수치·금지·경로가 낡았다. **착수는 `2026-09-09-session-11-Phase5-Start.md` 를 따른다.**
+> 여기 적힌 수치를 옮겨 쓰지 마라 — 무엇이 왜 낡았는지는 그 문서 §0 에 있다.
+
 # Phase 5 인계 — `07` UI–DB Matrix 를 CANDIDATE 로 쓴다
 
 작업 디렉터리는 `D:/AIDEV/HealthCheckupReservationReception` 이다.

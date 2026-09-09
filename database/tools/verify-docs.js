@@ -784,6 +784,7 @@ function splitFences(src) {
   const addLive = p => { if (fs.existsSync(path.join(REPO, p))) LIVE.push(p); };
   addLive('AGENTS.md'); addLive('CLAUDE.md'); addLive('README.md');
   addLive('database/AGENTS.md'); addLive('database/README.md');
+  addLive('winforms/AGENTS.md'); addLive('winforms/CLAUDE.md');
   addLive('docs/phase4/reseal-history.md');
   for (const d of ['docs/baseline', 'docs/phase5', 'docs/redesign'])
     if (fs.existsSync(path.join(REPO, d)))

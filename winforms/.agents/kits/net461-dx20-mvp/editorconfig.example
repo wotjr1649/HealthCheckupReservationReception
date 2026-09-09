@@ -1,0 +1,12 @@
+# Merge applicable sections into the existing project .editorconfig.
+
+# Visual Studio 2019 applies these to new lines and new files; existing files are not rewritten on save.
+[*.cs]
+charset = utf-8-bom
+end_of_line = crlf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+
+[*.{csproj,resx,config,settings}]
+end_of_line = crlf

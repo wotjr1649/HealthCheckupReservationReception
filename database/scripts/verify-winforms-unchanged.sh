@@ -4,10 +4,12 @@ cd "$(dirname "$0")/.."
 MANIFEST="artifacts/reports/winforms-manifest.txt"
 
 gen() {
-  find ../winforms -type f \
-    -not -path '*/obj/*' -not -path '*/bin/*' \
-    -not -path '*/.vs/*'  -not -path '*/TestResults/*' \
-    -print0 | sort -z | xargs -0 sha256sum
+  # [X] find 로 훑으면 .gitignore 대상까지 센다. 제외 목록을 손으로 적고 있었는데
+  #     winforms/artifacts/logs/ 가 빠져 있어 Phase 5 가 빌드하는 순간 manifest 가
+  #     churn 한다. git 이 나르는 것만 센다 — 무시 대상이 자동으로 빠지고, manifest 가
+  #     새 클론에서도 그대로 재현된다.
+  git -C .. ls-files --cached --others --exclude-standard -z -- winforms \
+    | sed -z 's|^|../|' | sort -z | xargs -0 sha256sum
 }
 
 # selftest — "변조를 실제로 감지하는가" 를 재현 가능하게 판정한다 (plans/01 T02 Step 4).
