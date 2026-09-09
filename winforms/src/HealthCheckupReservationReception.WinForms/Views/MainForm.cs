@@ -15,16 +15,30 @@ namespace HealthCheckupReservationReception.Views
     public partial class MainForm : RibbonForm, IMainView
     {
         private readonly MainPresenter _presenter;
+        private readonly IPatientService _patientService;
         private readonly Dictionary<BusinessTab, XtraTabPage> _pages = new Dictionary<BusinessTab, XtraTabPage>();
 
         // Presenter 가 시킨 변경이 다시 event 로 돌아와 무한 왕복하는 것을 막는다.
         private bool _suppressEvents;
 
-        public MainForm(ICommonStatusService service, string operatorName)
+        // 03 §5.2 의 Action 상태는 두 판정의 곱이다 — 공통 업무가능 여부(MainPresenter)와
+        // 행 선택 여부(PatientManagementPresenter). 곱하는 자리는 Ribbon 을 가진 여기뿐이다.
+        private bool _businessAllowed = true;
+        private bool _patientRowSelected;
+
+        private UcPatientManagement _patientView;
+
+        public MainForm(ICommonStatusService statusService, IPatientService patientService, string operatorName)
         {
             InitializeComponent();
             ClampToWorkingArea();
-            _presenter = new MainPresenter(this, service, operatorName);
+            _patientService = patientService;
+
+            // Designer 는 버튼을 켜진 채로 만든다. Presenter 가 붙기 전에 03 §5.2 의
+            // 초기 상태(행 미선택)로 맞춘다.
+            ApplyPatientRowActions();
+
+            _presenter = new MainPresenter(this, statusService, operatorName);
         }
 
         /// <summary>
@@ -67,9 +81,11 @@ namespace HealthCheckupReservationReception.Views
         {
             set
             {
+                // [정보수정]·[신규예약] 은 여기 없다 — 행 선택도 함께 봐야 하므로
+                // ApplyPatientRowActions 가 혼자 정한다 (03 §5.2).
                 BarItem[] gated =
                 {
-                    barBtnPatientSearch, barBtnPatientNew, barBtnPatientEdit, barBtnPatientReserve,
+                    barBtnPatientSearch, barBtnPatientNew,
                     barBtnReservationSave,
                     barBtnRsvSearch, barBtnRsvEdit, barBtnRsvCancel, barBtnRsvReception,
                     barBtnRcpSearch, barBtnRcpWalkIn, barBtnRcpRsvEdit, barBtnRcpStart,
@@ -80,7 +96,32 @@ namespace HealthCheckupReservationReception.Views
                 {
                     item.Enabled = value;
                 }
+
+                _businessAllowed = value;
+                ApplyPatientRowActions();
             }
+        }
+
+        /// <summary>
+        /// 03 §5.2 — 수검자 목록의 행 선택 여부. 판정은 PatientManagementPresenter 가 하고
+        /// 어느 버튼이 열리는지는 Ribbon 을 가진 이 화면이 그린다.
+        /// </summary>
+        public bool PatientRowSelected
+        {
+            set
+            {
+                _patientRowSelected = value;
+                ApplyPatientRowActions();
+            }
+        }
+
+        private void ApplyPatientRowActions()
+        {
+            // 03 §5.2 표 — [정보수정]·[신규예약] 은 행 선택 + 공통 업무가능이 모두 필요하고,
+            // [변경이력] 은 조회 Action 이라 공통 업무불가에도 행만 잡혀 있으면 열린다(§23.4).
+            barBtnPatientEdit.Enabled = _patientRowSelected && _businessAllowed;
+            barBtnPatientReserve.Enabled = _patientRowSelected && _businessAllowed;
+            barBtnPatientLog.Enabled = _patientRowSelected;
         }
 
         public void OpenTab(BusinessTab tab, string caption)
@@ -91,8 +132,40 @@ namespace HealthCheckupReservationReception.Views
             }
 
             var page = new XtraTabPage { Text = caption, Tag = tab };
+
+            Control content = CreateTabContent(tab);
+            if (content != null)
+            {
+                content.Dock = DockStyle.Fill;
+                page.Controls.Add(content);
+            }
+
             _pages.Add(tab, page);
             tabBusiness.TabPages.Add(page);
+        }
+
+        /// <summary>
+        /// 03 §1.4 — 업무 Tab 의 내용은 화면마다 하나의 XtraUserControl 이다.
+        /// 아직 만들지 않은 화면은 빈 Tab 으로 열린다.
+        /// </summary>
+        private Control CreateTabContent(BusinessTab tab)
+        {
+            if (tab != BusinessTab.PatientManagement)
+            {
+                // EXTENSION POINT: WF-RSV-01 · WF-WRK-01.
+                return null;
+            }
+
+            var view = new UcPatientManagement();
+            view.RowActionsChanged += PatientView_RowActionsChanged;
+            view.Attach(_patientService);
+            _patientView = view;
+            return view;
+        }
+
+        private void PatientView_RowActionsChanged(object sender, bool rowSelected)
+        {
+            PatientRowSelected = rowSelected;
         }
 
         public void ActivateTab(BusinessTab tab)
@@ -132,6 +205,12 @@ namespace HealthCheckupReservationReception.Views
             }
 
             _pages.Remove(tab);
+            if (tab == BusinessTab.PatientManagement)
+            {
+                _patientView = null;
+                PatientRowSelected = false;
+            }
+
             _suppressEvents = true;
             try
             {
@@ -233,6 +312,44 @@ namespace HealthCheckupReservationReception.Views
             {
                 handler(this, BusinessNavigation.HolidayManagement);
             }
+        }
+
+        // [X] 마지막 업무 Tab 을 닫으면 남는 것이 Ribbon 뿐이고, 이미 선택돼 있는 Page 를
+        //     다시 눌러도 SelectedPageChanged 가 나지 않아 돌아갈 길이 없었다.
+        //     업무 Action 이 자기 Tab 을 먼저 보장하게 해서 막다른 골목을 없앤다 (07 §14.3 A-08).
+        private void barBtnPatientSearch_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            UcPatientManagement view = EnsurePatientTab();
+            if (view != null)
+            {
+                view.RequestSearch();
+            }
+        }
+
+        private void barBtnPatientColumns_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            UcPatientManagement view = EnsurePatientTab();
+            if (view != null)
+            {
+                view.ShowColumnChooser();
+            }
+        }
+
+        private void barBtnNotImplemented_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            // EXTENSION POINT: DLG-PAT-01 · DLG-PAT-02 · WF-RSV-01 · DLG-LOG-01.
+            XtraMessageBox.Show(this, e.Item.Caption + " 화면은 아직 만들지 않았습니다.", Text);
+        }
+
+        private UcPatientManagement EnsurePatientTab()
+        {
+            EventHandler<BusinessNavigation> handler = NavigationRequested;
+            if (handler != null)
+            {
+                handler(this, BusinessNavigation.PatientManagement);
+            }
+
+            return _patientView;
         }
 
         private void tabBusiness_CloseButtonClick(object sender, EventArgs e)

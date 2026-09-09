@@ -42,10 +42,13 @@ namespace HealthCheckupReservationReception
                 return;
             }
 
-            ICommonStatusService service = new CommonStatusService(
+            ICommonStatusService statusService = new CommonStatusService(
                 new CommonStatusRepository(connection.ConnectionString));
+            IPatientService patientService = new PatientService(
+                new PatientRepository(connection.ConnectionString));
 
-            Application.Run(new MainForm(service, ConfigurationManager.AppSettings[OperatorSettingName]));
+            Application.Run(new MainForm(
+                statusService, patientService, ConfigurationManager.AppSettings[OperatorSettingName]));
         }
     }
 }

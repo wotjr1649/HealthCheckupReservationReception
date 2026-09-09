@@ -219,15 +219,16 @@ Single Instance Tab · Workbench Caption 전환 03 §4.3 · §9.1        ✅  Pr
 Tab ↔ Ribbon Page 동기                       03 §4.2               ✅
 업무 상태 · 조작자                           03 §1.3               ✅  SP-COM-01
 공통 업무불가 → 업무 Action 비활성           03 §1.3 · §5.2        ✅  변경이력·컬럼설정만 남는다
-업무 Tab 의 내용(XtraUserControl)            03 §1.4               ✗  각 화면이 채운다
+업무 Tab 의 내용(XtraUserControl)            03 §1.4               ◐  WF-PAT-01 만 채웠다 (§3.2.1)
 ```
 
 `[I]` **화면 ID 는 C# 파일 상단 주석이 갖는다** — `// 화면 ID: WF-00`. 게이트가 그것으로
 설계 화면과 C# 을 짝짓는다. 타입 이름 규칙이 바뀌어도 대조가 깨지지 않고, 한 화면이 여러
 파일(View · Designer · Presenter)에 걸쳐도 같은 단위로 묶인다.
 
-`[I]` **Tab 은 열리지만 비어 있다.** `03` §1.4 가 Tab 내용을 *"업무별 `XtraUserControl`"* 로
-두었고 그 UserControl 은 각 화면의 산출물이다. 셸은 컨테이너와 수명주기까지가 자기 몫이다.
+`[I]` **Tab 의 내용은 화면의 산출물이다.** `03` §1.4 가 Tab 내용을 *"업무별
+`XtraUserControl`"* 로 두었고 셸은 컨테이너와 수명주기까지가 자기 몫이다. 아직 없는 화면은
+빈 Tab 으로 열린다 — `MainForm.CreateTabContent` 가 그 자리다.
 
 ## 3.2 WF-PAT-01 — 수검자 관리 Tab
 
@@ -240,6 +241,30 @@ Tab ↔ Ribbon Page 동기                       03 §4.2               ✅
 | `[신규예약]` | SP 없음 | — | `BeginNewReservation(Context, PatientId, Source)` (`03` §3) |
 | `[변경이력]` | SP 없음 | — | `DLG-LOG-01` 을 연다. `TargetTable=수검자` (`03` §23.2) |
 | `[컬럼설정]` | SP 없음 | — | Column Chooser. DB 저장 없음 (`03` §18) |
+
+### 3.2.1 구현 현황 (2026-09-09)
+
+```text
+조회조건 밴드 2행 + 우측 [조회]              wf_pat_01.js          ✅  SCR-004 가 라벨 20건 대조
+본문 좌 목록 0.62 · 우 상세 0.38             wf_pat_01.js          ✅  SplitContainerControl
+Grid 기본 컬럼 다섯 · 차트번호만 좌정렬      03 §5.5 · 설계        ✅  폭 비율도 설계값
+Column Chooser 후보 다섯을 숨긴 컬럼으로     03 §5.5               ✅  [컬럼설정] 이 연다
+PatientId·정규화 컬럼을 Grid 에 내지 않는다  03 §5.5 · 설계 콜아웃⑦ ✅  AutoPopulateColumns=false
+성별 M/F → 남/여 · 생년월일 · 주민번호 표기  03 §5.6 No 7~9        ✅  CustomColumnDisplayText
+상세 4구획 · 전 항목 ReadOnly                설계 · 03 §5.4        ✅  주민번호는 마스킹 없음
+최소 1개 조건 · 빈 문자열은 미입력           03 §5.3               ✅  Presenter 가 판정
+`-` 제거 후 정확검색 · 이름은 앞부분 일치    03 §5.3 · 05 §7.2     ✅  정규화는 Service
+재조회 시 선택행·상세 초기화                 03 §5.3 · §5.5        ✅  §14.3 A-10 (Grid 실측)
+행 선택 → [정보수정]·[신규예약]·[변경이력]   03 §5.2               ✅  MainForm 이 두 판정을 곱한다
+[조회] 는 자기 Tab 을 보장한다               §14.3 A-08            ✅  마지막 Tab 을 닫아도 길이 있다
+Single Row Selection · Double Click 없음     03 §5.5               ✅  MultiSelect=false
+[신규등록]·[정보수정]·[신규예약]·[변경이력]  03 §5.2               ✗  여는 화면이 아직 없다
+```
+
+`[I]` **Ribbon 은 `MainForm` 것이고 화면은 `UcPatientManagement` 다.** `03` §5.2 의 Action 이
+Context Ribbon 에 있으므로 `[조회]`·`[컬럼설정]` 은 셸이 받아 UserControl 에 넘긴다. 반대로
+행 선택 여부는 `PatientManagementPresenter` 가 판정해 `RowSelected` 로 올리고, 셸이 그것을
+공통 업무가능 여부와 곱해 세 버튼에 그린다 — 두 판정이 만나는 자리는 Ribbon 을 가진 쪽뿐이다.
 
 ## 3.3 DLG-PAT-01 / DLG-PAT-03 — 수검자 등록·수정·중복후보
 
@@ -754,11 +779,29 @@ cd winforms && ./scripts/test.sh          # P01~P07 · P10. DB 서버도 MSBuild
 이미 선택된 `[수검자 관리]` 를 눌러도 이벤트가 없어 **영원히 열리지 않았다.** 게이트도
 단위시험도 못 보던 자리이고, 실행해서 눈으로 봐야만 보이는 부류다. §14.3 `A-06`.
 
+## 12.4 WF-PAT-01 실행 화면 `[I]`
+
+`ShellCaptureTests.WFPAT01_실행_화면을_PNG_로_뜬다` 가 목록·상세를 채운 채로 뜬다 —
+빈 화면으로는 컬럼 폭도 좌우 비율도 볼 수 없다. 산출은 `artifacts/logs/wf_pat_01.png`.
+셸 캡처(`wf00_shell.png`)에도 이제 이 화면이 Tab 안에 들어 있다.
+
+```text
+확인됨   조회조건 2행 + 우측 [조회] · 좌 목록 / 우 상세 비율 · Grid 컬럼 다섯과 정렬
+         상세 4구획([ 기본정보 ] [ 연락처 ] [ 주소 ] [ 메모 ]) 전 항목 ReadOnly
+         행 미선택이라 [정보수정]·[신규예약]·[변경이력] 이 회색이다 (03 §5.2)
+잡은 결함 1. GroupControl 캡션 위에 첫 줄이 겹쳤다 — 캡션 높이는 ClientRectangle 에서
+            빠지지 않는다. Dock 은 DisplayRectangle 을 쓰지만 절대좌표 자식은 테두리부터 센다
+         2. 고르지도 않은 첫 행이 선택된 것처럼 칠해졌다 → §14.3 A-10
+```
+
+`[X]` **둘 다 시험이 아니라 캡처가 잡았다.** 단위시험은 값을 보지 색을 보지 않는다.
+두 번째 것은 잡은 뒤 시험으로 옮겼다 — `목록을_실어도_행이_선택되지_않는다`.
+
 ## 12.2 아직 실행하지 않은 것
 
 ```text
 배율 100% · 125% 두 벌을 보지 않았다 — P11 은 PLANNED 그대로다
-화면 13개는 아직 없다. 실행본에서 볼 것은 셸뿐이다
+화면 12개는 아직 없다. 실행본에서 볼 것은 셸과 WF-PAT-01 이다
 Phase 5 계열이 빌드·시험까지 도는 회차를 언제 잡을지 정하지 않았다 (§11)
 ```
 
@@ -888,12 +931,15 @@ csproj 의 `<RootNamespace>` 와 `Program.cs`·`Views/*` 의 `namespace` 선언�
 | `A-01` | `SP-COM-01` 재호출 주기를 `03` 이 정하지 않았다 | 업무 Action 을 여는 시점마다 다시 읽는다. 별도 타이머를 두지 않는다 | 낮다 — 호출 지점 추가뿐 |
 | `A-02` | Targeted Navigation 의 SP 결선을 `03`·`05` 둘 다 명시하지 않았다 | `SP-WRK-02` 하나로 Grid 행과 Detail 을 함께 구성한다 (§3.6.2) | 낮다 — 계약 안에서 닫힌다 |
 | `A-03` | `DLG-RCP-02` 의 AEX 가용성을 다시 물을지 `03` 이 정하지 않았다 | 진입 시점의 `SP-WRK-02` RS3·RS4 로 충분하다고 본다. 선택할 때마다 다시 부르지 않는다 | 낮다 — 재호출 추가뿐 |
+| `A-09` | 화면마다 Service 가 늘어나는데 `MainForm` 이 그것을 어떻게 받을지 `03`·킷 어디에도 없다 | 지금은 생성자 인자로 받는다. 킷 §2 의 *"같은 모양이 구체 화면 둘에 생기기 전에는 추상을 만들지 않는다"* 를 따라, **셋째 화면**에서 컨테이너 여부를 다시 본다 | 낮다 — 생성자 한 줄 |
+| `A-10` | `03` §5.3·§5.5 는 재조회 시 *"SelectedRow 해제"* 를 요구하는데 **DevExpress `GridView` 는 행이 있으면 반드시 하나를 focus 한다** — `FocusedRowHandle = InvalidRowHandle` 은 대입 직후 `0` 으로 돌아온다(실측). 뒤로 미뤄도(`DataSourceChanged`·`BeginInvoke`) 같다 | focus 를 없애는 대신 **선택으로 보이는 것**을 끈다: `EnableAppearanceFocusedRow`·`FocusedCell` 을 목록을 실을 때 끄고 사용자가 행을 고를 때 켠다. 그러면 Presenter 의 상태(상세 비움 · Action 닫힘)와 화면이 어긋나지 않는다. 첫 행은 이미 focus 되어 있어 `FocusedRowChanged` 가 나지 않으므로 `RowClick` 이 짝을 이룬다 | 낮다 — 화면 안에서 닫힌다 |
+| `A-08` | 마지막 업무 Tab 을 닫으면 그 Page 로 돌아올 수 없다. 이미 선택된 Page 는 `SelectedPageChanged` 가 나지 않고 (A-06 과 같은 원인) DevExpress 20.2 에 Page 헤더 클릭 이벤트가 없다(실측) | **최소 1개 유지로 막지 않는다** — `03` §4.1 이 모든 탭에 `×` 를 그리고 §8.10 이 탭 닫기를 정상 조작으로 둔다. 대신 **업무 Action 이 탭 진입을 보장한다**: `[조회]` 를 누르면 그 화면의 탭이 없을 때 연다. 표준 `ItemClick` 만 쓴다 | 낮다 — WF-PAT-01 배선에 포함된다 |
 | `A-07` | `03` 은 `RibbonControl` 이 기본으로 켜는 크롬(Application Button · 리본 표시 옵션 · 접기 버튼 · Quick Access Toolbar)을 언급하지 않는다. §20 Out-of-Scope 는 업무 기능만 적어 이런 것을 잠그지 않는다 | 전부 끄고 펼친 상태로 고정한다. 설계에 없는 조작 경로를 화면에 두지 않는다. `AllowMinimizeRibbon` 도 함께 끈다 — 버튼만 숨기면 페이지 헤더 더블클릭 경로가 남는다 | 낮다 — 속성 다섯 줄 |
 | `A-06` | `03` 은 기동 직후 어느 업무 Tab 이 열려 있는지 정하지 않았다 | Shell 이 첫 Page(`수검자 관리`)의 Tab 을 직접 연다. 그러지 않으면 이미 선택된 첫 Page 를 눌러도 이벤트가 없어 Tab 이 영원히 열리지 않는다 (§12.3) | 낮다 — 여는 줄 하나 |
 | ~~`A-05`~~ | ~~`휴무일 관리` 를 `PageHeaderItemLinks` 버튼으로 둔다~~ | **철회 (2026-09-09).** 근거로 든 *"설계에 `navActive:4` 가 없다"* 가 성립하지 않는 근거였다 — 휴무일은 Modal 이라 셸을 그린 슬라이드가 애초에 없다. 다섯이 동등한 `RibbonPage` 다 (§3.1.1) | — |
 | `A-04` | `03` §1.3 은 조작자를 *"WinForms 설정 파일의 값"* 이라 적고 키 이름을 정하지 않았다 | `App.config` `appSettings` 의 `OperatorName`. `05` §16.5 의 C# 이름과 같다 | 낮다 — 키 한 줄 |
 
-`[I]` 셋 다 킷 §8 이 말하는 *"smallest reversible reading"* 이다. 요구사항 자체가 비어 있는
+`[I]` 전부 킷 §8 이 말하는 *"smallest reversible reading"* 이다. 요구사항 자체가 비어 있는
 것이 아니라 **세부가 비어 있어** 확정 요구사항이 동작하지 않게 되는 자리이므로 `BLOCKED` 가
 아니라 가정으로 적는다.
 

@@ -43,6 +43,7 @@
     <Reference Include="DevExpress.Utils.v20.2" />
     <Reference Include="DevExpress.XtraBars.v20.2" />
     <Reference Include="DevExpress.XtraEditors.v20.2" />
+    <Reference Include="DevExpress.XtraGrid.v20.2" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
@@ -51,7 +52,9 @@
   <ItemGroup>
     <Compile Include="MainFormTests.cs" />
     <Compile Include="Presenters\MainPresenterTests.cs" />
+    <Compile Include="Presenters\PatientManagementPresenterTests.cs" />
     <Compile Include="Services\CommonStatusServiceTests.cs" />
+    <Compile Include="Views\UcPatientManagementTests.cs" />
     <Compile Include="Visual\ShellCaptureTests.cs" />
   </ItemGroup>
   <ItemGroup>

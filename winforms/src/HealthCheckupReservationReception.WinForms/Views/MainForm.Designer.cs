@@ -127,6 +127,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientSearch.Id = 2;
             this.barBtnPatientSearch.Name = "barBtnPatientSearch";
             this.barBtnPatientSearch.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.barBtnPatientSearch.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnPatientSearch_ItemClick);
             //
             // barBtnPatientNew
             //
@@ -134,6 +135,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientNew.Id = 3;
             this.barBtnPatientNew.Name = "barBtnPatientNew";
             this.barBtnPatientNew.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.barBtnPatientNew.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
             //
             // barBtnPatientEdit
             //
@@ -141,6 +143,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientEdit.Id = 4;
             this.barBtnPatientEdit.Name = "barBtnPatientEdit";
             this.barBtnPatientEdit.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.barBtnPatientEdit.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
             //
             // barBtnPatientReserve
             //
@@ -148,6 +151,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientReserve.Id = 5;
             this.barBtnPatientReserve.Name = "barBtnPatientReserve";
             this.barBtnPatientReserve.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.barBtnPatientReserve.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
             //
             // barBtnPatientLog
             //
@@ -155,6 +159,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientLog.Id = 6;
             this.barBtnPatientLog.Name = "barBtnPatientLog";
             this.barBtnPatientLog.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.barBtnPatientLog.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
             //
             // barBtnPatientColumns
             //
@@ -162,6 +167,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientColumns.Id = 7;
             this.barBtnPatientColumns.Name = "barBtnPatientColumns";
             this.barBtnPatientColumns.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.barBtnPatientColumns.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnPatientColumns_ItemClick);
             //
             // barBtnReservationSave
             //

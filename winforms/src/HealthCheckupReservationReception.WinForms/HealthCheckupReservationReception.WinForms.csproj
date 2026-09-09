@@ -49,6 +49,7 @@
     <Reference Include="DevExpress.Utils.v20.2" />
     <Reference Include="DevExpress.XtraBars.v20.2" />
     <Reference Include="DevExpress.XtraEditors.v20.2" />
+    <Reference Include="DevExpress.XtraGrid.v20.2" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common\DbCode.cs" />
@@ -62,6 +63,7 @@
     <Compile Include="Models\PatientListReadDto.cs" />
     <Compile Include="Models\PatientSearchRequest.cs" />
     <Compile Include="Presenters\MainPresenter.cs" />
+    <Compile Include="Presenters\PatientManagementPresenter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Repositories\CommonStatusRepository.cs" />
     <Compile Include="Repositories\DbResultReader.cs" />
@@ -73,11 +75,22 @@
     <Compile Include="Services\IPatientService.cs" />
     <Compile Include="Services\PatientService.cs" />
     <Compile Include="Views\IMainView.cs" />
+    <Compile Include="Views\IPatientManagementView.cs" />
     <Compile Include="Views\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Views\MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UcPatientManagement.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\UcPatientManagement.Designer.cs">
+      <DependentUpon>UcPatientManagement.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UcPatientManagement.UI.cs">
+      <DependentUpon>UcPatientManagement.cs</DependentUpon>
+      <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>

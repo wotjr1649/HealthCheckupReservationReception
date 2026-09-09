@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Threading;
@@ -55,7 +56,7 @@ namespace HealthCheckupReservationReception.Tests.Visual
                     }),
                 };
 
-                using (var form = new MainForm(service, "접수1번창구"))
+                using (var form = new MainForm(service, new FakePatientService(), "접수1번창구"))
                 {
                     // 화면 밖에 띄운다. 보이지 않으면 DevExpress 가 스킨을 그리지 않는다.
                     form.StartPosition = FormStartPosition.Manual;
@@ -78,6 +79,96 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Assert.IsTrue(info.Exists && info.Length > 10 * 1024,
                 "PNG 가 비었거나 너무 작다 — 폼이 그려지지 않았다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
             Console.WriteLine("캡처: " + path);
+        }
+
+        /// <summary>
+        /// WF-PAT-01 을 목록·상세가 찬 상태로 뜬다. 빈 화면으로는 컬럼 폭과 좌우 비율을
+        /// 볼 수 없다 — 설계(wf_pat_01.js)와 견주려면 값이 들어 있어야 한다.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void WFPAT01_실행_화면을_PNG_로_뜬다()
+        {
+            string path = null;
+            RunSta(() =>
+            {
+                WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
+                WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
+
+                var screen = new UcPatientManagement();
+                screen.Attach(new FakePatientService());
+
+                using (var host = new Form())
+                {
+                    host.StartPosition = FormStartPosition.Manual;
+                    host.Location = new Point(-32000, -32000);
+                    host.ClientSize = new Size(1916, 887);
+                    screen.Dock = DockStyle.Fill;
+                    host.Controls.Add(screen);
+                    host.Show();
+                    Application.DoEvents();
+
+                    // 실행 순서 그대로다 — 화면이 먼저 서고 그 다음 조회 결과가 들어온다.
+                    // 순서를 뒤집으면 Grid 가 핸들을 만들 때 자기 마음대로 0행을 잡는다.
+                    IPatientManagementView view = screen;
+                    view.Rows = SampleRows();
+                    view.Detail = SampleDetail();
+                    Application.DoEvents();
+
+                    using (var bmp = new Bitmap(host.ClientSize.Width, host.ClientSize.Height))
+                    {
+                        host.DrawToBitmap(bmp, new Rectangle(Point.Empty, bmp.Size));
+                        path = Save(bmp, "wf_pat_01.png");
+                    }
+
+                    host.Close();
+                }
+            });
+
+            var info = new FileInfo(path);
+            Assert.IsTrue(info.Exists && info.Length > 10 * 1024,
+                "PNG 가 비었거나 너무 작다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
+            Console.WriteLine("캡처: " + path);
+        }
+
+        // 설계 wf_pat_01.js 의 예시 행 그대로다. 계약이 아니라 눈으로 견주기 위한 값이다.
+        private static IList<PatientListItemDto> SampleRows()
+        {
+            return new List<PatientListItemDto>
+            {
+                Row(1, "2026-000121", "수검자1", "19800511", "M", "010-0000-0001"),
+                Row(2, "2026-000122", "수검자2", "19721103", "F", "010-0000-0002"),
+                Row(3, "2026-000123", "홍길동", "19660312", "F", "010-0000-0003"),
+                Row(4, "2026-000124", "수검자4", "19950827", "M", "010-0000-0004"),
+            };
+        }
+
+        private static PatientListItemDto Row(long id, string chartNo, string name, string birthday, string gender, string mobile)
+        {
+            return new PatientListItemDto
+            {
+                PatientId = id,
+                ChartNo = chartNo,
+                Name = name,
+                Birthday = birthday,
+                Gender = gender,
+                MobilePhone = mobile,
+                SocialNumber = birthday.Substring(2) + (gender == "M" ? "1000019" : "2000019"),
+            };
+        }
+
+        private static PatientDetailDto SampleDetail()
+        {
+            return new PatientDetailDto
+            {
+                PatientId = 3,
+                ChartNo = "2026-000123",
+                Name = "홍길동",
+                SocialNumber = "6603122000019",
+                Birthday = "19660312",
+                Gender = "F",
+                MobilePhone = "010-0000-0003",
+            };
         }
 
         private static string Save(Bitmap bmp, string name)

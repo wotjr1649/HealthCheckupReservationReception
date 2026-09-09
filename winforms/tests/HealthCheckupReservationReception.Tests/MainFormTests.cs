@@ -97,6 +97,10 @@ namespace HealthCheckupReservationReception.Tests
                 using (MainForm form = NewShell())
                 {
                     IMainView view = form;
+
+                    // 03 §5.2 는 행 선택과 공통 업무가능을 따로 센다. 여기서 보는 것은
+                    // 공통 업무불가 쪽이므로 행은 잡혀 있는 상태로 둔다.
+                    form.PatientRowSelected = true;
                     view.BusinessActionsEnabled = false;
 
                     var stillOpen = new List<string>();
@@ -122,6 +126,87 @@ namespace HealthCheckupReservationReception.Tests
                     CollectionAssert.DoesNotContain(closed, "컬럼설정");
                 }
             });
+        }
+
+        // 03 §5.2 표의 첫 두 줄 — 행 미선택이면 [정보수정]·[신규예약]·[변경이력]이 닫히고
+        // 행을 고르면 셋이 함께 열린다. 공통 업무불가는 별개의 축이다.
+        [TestMethod]
+        public void 행_미선택이면_정보수정_신규예약_변경이력이_닫힌다()
+        {
+            RunSta(() =>
+            {
+                using (MainForm form = NewShell())
+                {
+                    IMainView view = form;
+                    view.BusinessActionsEnabled = true;
+
+                    form.PatientRowSelected = false;
+                    Assert.IsFalse(Enabled(form, "정보수정"));
+                    Assert.IsFalse(Enabled(form, "신규예약"));
+                    Assert.IsFalse(PatientLogEnabled(form));
+                    Assert.IsTrue(Enabled(form, "신규등록"), "신규등록은 행과 무관하다");
+
+                    form.PatientRowSelected = true;
+                    Assert.IsTrue(Enabled(form, "정보수정"));
+                    Assert.IsTrue(Enabled(form, "신규예약"));
+                    Assert.IsTrue(PatientLogEnabled(form));
+
+                    // §5.2 각주 — [변경이력]은 조회 Action 이라 공통 업무불가에도 열린다.
+                    view.BusinessActionsEnabled = false;
+                    Assert.IsFalse(Enabled(form, "정보수정"));
+                    Assert.IsTrue(PatientLogEnabled(form));
+                }
+            });
+        }
+
+        // 03 §1.4 — 업무 Tab 은 화면마다 하나의 UserControl 을 담는다.
+        [TestMethod]
+        public void 수검자_관리_Tab_은_설계_화면을_담는다()
+        {
+            RunSta(() =>
+            {
+                using (MainForm form = NewShell())
+                {
+                    IMainView view = form;
+                    view.OpenTab(BusinessTab.PatientManagement, "수검자 관리");
+
+                    DevExpress.XtraTab.XtraTabControl tabs = BusinessTabs(form);
+                    Assert.AreEqual(1, tabs.TabPages.Count);
+                    Assert.AreEqual(1, tabs.TabPages[0].Controls.Count, "Tab 이 비어 있다");
+                    Assert.IsInstanceOfType(tabs.TabPages[0].Controls[0], typeof(UcPatientManagement));
+                    Assert.AreEqual(DockStyle.Fill, tabs.TabPages[0].Controls[0].Dock);
+                }
+            });
+        }
+
+        private static bool Enabled(MainForm form, string caption)
+        {
+            foreach (DevExpress.XtraBars.BarItem item in form.Ribbon.Items)
+            {
+                if (item.Caption == caption)
+                {
+                    return item.Enabled;
+                }
+            }
+
+            throw new AssertFailedException("Ribbon 에 " + caption + " 이 없다");
+        }
+
+        // `변경이력`은 세 Page 에 하나씩 있다. 수검자 Page 의 것만 본다.
+        private static bool PatientLogEnabled(MainForm form)
+        {
+            foreach (DevExpress.XtraBars.Ribbon.RibbonPageGroup group in form.Ribbon.Pages[0].Groups)
+            {
+                foreach (DevExpress.XtraBars.BarItemLink link in group.ItemLinks)
+                {
+                    if (link.Item.Caption == "변경이력")
+                    {
+                        return link.Item.Enabled;
+                    }
+                }
+            }
+
+            throw new AssertFailedException("수검자 Page 에 변경이력이 없다");
         }
 
         // [X] 03 에 없는 리본 크롬은 RibbonControl 을 만들면 자동으로 켜진다 — 내가 넣은 것이
@@ -154,7 +239,14 @@ namespace HealthCheckupReservationReception.Tests
 
         private static MainForm NewShell()
         {
-            return new MainForm(new FakeCommonStatusService(), "접수1번창구");
+            return new MainForm(new FakeCommonStatusService(), new FakePatientService(), "접수1번창구");
+        }
+
+        private static DevExpress.XtraTab.XtraTabControl BusinessTabs(MainForm form)
+        {
+            Control[] found = form.Controls.Find("tabBusiness", true);
+            Assert.AreEqual(1, found.Length, "업무 Tab Control 을 찾지 못했다");
+            return (DevExpress.XtraTab.XtraTabControl)found[0];
         }
 
         private static void RunSta(Action action)
