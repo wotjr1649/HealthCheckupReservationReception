@@ -1,4 +1,4 @@
-PASS RBD-004 인벤토리 지문 일치  INVENTORY|6|4|20|1|6|2|2|1|5|26|10|0|0|19|41
+PASS RBD-004 인벤토리 지문 일치  INVENTORY|7|4|20|1|7|2|2|1|5|28|10|0|0|19|41
 PASS RBD-006 Seed 역할 분포 NEX 13 / AEX 7 / 겸용 1 / AEX Active 7
 PASS RBD-010 DB 에 credential·대칭키·HC Login 0건 (파일 스캔은 verify-no-secret.sh)
 --- OBJECTS ---
@@ -25,6 +25,8 @@ OBJ|C |CK_예약접수_EXAM_PAIR
 OBJ|C |CK_예약접수_STATUS
 OBJ|C |CK_예약접수_TIME_SLOT
 OBJ|C |CK_완료이력_EXAM_FORMAT
+OBJ|C |CK_운영기준_HOURS
+OBJ|C |CK_운영기준_SINGLETON
 OBJ|C |CK_휴무일_EDIT_DATE
 OBJ|C |CK_휴무일_NAME_NOT_BLANK
 OBJ|C |CK_휴무일_TYPE
@@ -69,6 +71,7 @@ OBJ|PK|PK_변경이력
 OBJ|PK|PK_수검자
 OBJ|PK|PK_예약접수
 OBJ|PK|PK_완료이력
+OBJ|PK|PK_운영기준
 OBJ|PK|PK_휴무일
 OBJ|SO|SEQ_HC_CHART_NO
 OBJ|U |검사코드
@@ -76,6 +79,7 @@ OBJ|U |변경이력
 OBJ|U |수검자
 OBJ|U |예약접수
 OBJ|U |완료이력
+OBJ|U |운영기준
 OBJ|U |휴무일
 OBJ|UQ|UQ_수검자_CHART_NO
 OBJ|UQ|UQ_수검자_SOCIAL_NUMBER
@@ -125,6 +129,13 @@ COL|완료이력|1|수검자ID|bigint|8|0
 COL|완료이력|2|완료일자|date|3|0
 COL|완료이력|3|국가검사항목|nvarchar|200|1
 COL|완료이력|4|추가검사항목|nvarchar|100|1
+COL|운영기준|1|기준ID|tinyint|1|0
+COL|운영기준|2|운영시작시각|time|3|0
+COL|운영기준|3|운영종료시각|time|3|0
+COL|운영기준|4|일반예약AM마감|time|3|0
+COL|운영기준|5|일반예약PM마감|time|3|0
+COL|운영기준|6|접수AM마감|time|3|0
+COL|운영기준|7|접수PM마감|time|3|0
 COL|휴무일|1|휴무일자|date|3|0
 COL|휴무일|2|생성일시|datetime2|6|0
 COL|휴무일|3|최종수정일시|datetime2|6|0
@@ -166,6 +177,7 @@ IDX|예약접수|IX_예약접수_SLOT|0|0|1|0|수검자ID
 IDX|예약접수|PK_예약접수|1|0|0|1|업무ID
 IDX|완료이력|PK_완료이력|1|0|0|1|수검자ID
 IDX|완료이력|PK_완료이력|1|0|0|2|완료일자
+IDX|운영기준|PK_운영기준|1|0|0|1|기준ID
 IDX|휴무일|PK_휴무일|1|0|0|1|휴무일자
 --- PARAMETERS ---
 PRM|USP_HC_변경이력_조회|1|@대상테이블|nvarchar|20

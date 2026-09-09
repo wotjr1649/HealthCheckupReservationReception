@@ -22,33 +22,50 @@ L="artifacts/logs/conc_${RUN}_${SCEN}"      # [X] 고정 파일명을 쓰면 8�
 q() { sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON; $1" 2>/dev/null | tr -d ' \r' | head -1; }
 cat16() { iconv -f UTF-16 -t UTF-8 "$@" 2>/dev/null; }
 
-# ── 업무시간 게이트. Write SP 전부가 308/309 를 내므로 창 밖에서는 어떤 시나리오도 성립하지 않는다.
+# ── 업무일 게이트. Write SP 전부가 308 을 내므로 업무일이 아니면 어떤 시나리오도 성립하지 않는다.
 #    실행하지 않은 검증을 PASS 로 적지 않는다 (CLAUDE.md §10) — exit 3 = NOT RUN 이다.
-#    상한은 17:58 이다. 한 시나리오의 실측 주기가 약 16초다 (rebuild+harness 2s · setup 1s ·
-#    barrier 8s · A 선점 3s · 판정 2s). 2분이면 주기의 7배라 18:00 을 넘길 수 없다.
-#    10분 여유를 두면 쓸 수 있는 창을 그냥 버린다.
-BIZ=$(q "SELECT CASE WHEN DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
-                      AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
-                      AND CONVERT(TIME(0), SYSDATETIME()) <  '17:58:00'
-                      AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
-                                       WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [사용여부] = 1)
-                     THEN 1 ELSE 0 END;")
-if [ "${BIZ:-0}" -ne 1 ]; then
-  echo "NOT RUN CON-00$SCEN 업무시간(월~토 09:00~17:58, 비휴무일) 밖 — Write SP 가 308/309 를 낸다"
+#
+# [X] R12 까지는 여기에 09:00~17:58 이 함께 있었다. 그래서 야간 회귀는 CON-001~008 을 전부
+#     NOT RUN 으로 남겼고, 동시성은 주간에만 재는 검증이 되어 있었다.
+# [R13] 운영시간이 04 §8.7 [운영기준] 으로 나왔다. 요일·휴무일만 남기고 시각은 창을 넓혀 없앤다.
+#     요일·휴무일은 00 이 **날짜로** 정한 것이라 넓히지 않는다.
+DAYOK=$(q "SELECT CASE WHEN DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
+                        AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
+                                         WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [사용여부] = 1)
+                       THEN 1 ELSE 0 END;")
+if [ "${DAYOK:-0}" -ne 1 ]; then
+  echo "NOT RUN CON-00$SCEN 업무일(월~토, 비휴무일) 밖 — Write SP 가 308 을 낸다"
   exit 3
 fi
-# CON-005·CON-008 은 접수완료 성공이 필요해 PM 접수마감(16:00) 전이어야 한다 (스펙 §38.7).
-# 10분 여유를 둔다 — 게이트 시작 후 마감을 넘어가면 304 로 시나리오가 무너진다.
-if [ "$SCEN" = "5" ] || [ "$SCEN" = "8" ]; then
-  CUT=$(q "SELECT CASE WHEN CONVERT(TIME(0), SYSDATETIME()) >= '11:00:00'
-                        AND CONVERT(TIME(0), SYSDATETIME()) <  '15:50:00' THEN 1 ELSE 0 END;")
-  if [ "${CUT:-0}" -ne 1 ]; then
-    echo "NOT RUN CON-00$SCEN PM Slot 창(11:00~15:50) 밖 — 접수완료 성공 경로가 성립하지 않는다 (스펙 §38.7)"
-    exit 3
-  fi
+
+# 자정 가드. barrier 가 WAITFOR TIME 이라 하루를 넘기면 wait 에 timeout 이 없어 약 24시간
+# 정지한다. 시각과 무관한 게이트가 아니지만 **업무시간과도 무관하다** — 넓힐 수 있는 창이 아니라
+# 도구의 한계다. 아래 barrier 계산 직전에서 한 번 더 묻는다: 그 사이에 시가 바뀔 수 있다.
+near_midnight() { [ "$(date +%H)" = "23" ]; }
+if near_midnight; then
+  echo "NOT RUN CON-00$SCEN 자정 근처에서는 실행하지 않습니다"
+  exit 3
 fi
 
 [ "$CHECKONLY" -eq 1 ] && exit 0
+
+# ── 창을 넓힌다. CON-005·CON-008 은 접수완료 성공이 필요하므로 PM 접수마감도 함께 늦춘다
+#    (setup 이 시간대를 'PM' 으로 고정한다 — tests/09 §시나리오 5·8).
+# [!] 어떻게 끝나든 되돌린다. 되돌아왔는지는 회차 끝에서 verify-operating-baseline.sh OPR-G4 가
+#     따로 판정한다 — 여기 trap 이 안 돌아도 그 게이트가 red 를 낸다.
+OPRSAVE=$(q "SELECT CONVERT(VARCHAR(8), [운영시작시각]) + '|' + CONVERT(VARCHAR(8), [운영종료시각])
+               + '|' + CONVERT(VARCHAR(8), [접수PM마감]) FROM [dbo].[운영기준] WHERE [기준ID] = 1;")
+if [ -z "$OPRSAVE" ]; then
+  echo "FAIL CON-00$SCEN 운영기준 1행을 읽지 못했다 — 창을 넓힐 수도 되돌릴 수도 없다"; exit 1
+fi
+OPR_A=${OPRSAVE%%|*}; OPR_R=${OPRSAVE#*|}; OPR_B=${OPR_R%%|*}; OPR_C=${OPR_R#*|}
+restore_opr() {
+  q "UPDATE [dbo].[운영기준] SET [운영시작시각] = '$OPR_A', [운영종료시각] = '$OPR_B',
+        [접수PM마감] = '$OPR_C' WHERE [기준ID] = 1;" > /dev/null
+}
+trap 'restore_opr' EXIT
+q "UPDATE [dbo].[운영기준] SET [운영시작시각] = '00:00:00', [운영종료시각] = '23:59:59',
+      [접수PM마감] = '23:59:59' WHERE [기준ID] = 1;" > /dev/null
 
 # ── 사전상태
 sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -v Scenario="$SCEN" \
@@ -58,8 +75,7 @@ if [ $? -ne 0 ]; then echo "FAIL CON-00$SCEN setup 실패"; cat16 "${L}_setup.lo
 # ── barrier 는 **setup 이 끝난 뒤에** 계산한다.
 #    앞에서 계산하면 setup 이 그 시각을 넘겼을 때 WAITFOR TIME 이 다음 날까지 대기하고,
 #    wait 에 timeout 이 없어 스크립트가 약 24시간 정지한다.
-NOWH=$(date +%H)
-[ "$NOWH" = "23" ] && { echo "NOT RUN CON-00$SCEN 자정 근처에서는 실행하지 않습니다"; exit 3; }
+near_midnight && { echo "NOT RUN CON-00$SCEN 자정 근처에서는 실행하지 않습니다"; exit 3; }
 # [X] -v 값에 콜론을 넣지 않는다. sqlcmd 가 ':MM:SS' 를 별도 인수로 잘라 즉시 죽는다 (실측).
 #     세션 스크립트가 STUFF 로 콜론을 다시 끼운다.
 BARRIER=$(date -d '+8 seconds' +%H%M%S)

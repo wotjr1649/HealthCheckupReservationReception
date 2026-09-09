@@ -10,32 +10,32 @@
 | 파일 | 줄 |
 |---|---:|
 | `Deploy.sql` | 18 |
-| `Rebuild.sql` | 61 |
+| `Rebuild.sql` | 62 |
 | `deploy/00_Preflight.sql` | 50 |
-| `deploy/01_Schema.sql` | 353 |
-| `deploy/02_Seed.sql` | 92 |
-| `deploy/03_Functions.sql` | 251 |
-| `deploy/04_Procedures_Select.sql` | 1022 |
+| `deploy/01_Schema.sql` | 375 |
+| `deploy/02_Seed.sql` | 101 |
+| `deploy/03_Functions.sql` | 258 |
+| `deploy/04_Procedures_Select.sql` | 1025 |
 | `deploy/05_Procedures_Patient_Write.sql` | 719 |
 | `deploy/06_Procedures_Reservation_Write.sql` | 1029 |
 | `deploy/07_Procedures_Reception_Write.sql` | 759 |
 | `deploy/07a_Procedures_Holiday.sql` | 404 |
-| `deploy/08_Verify.sql` | 65 |
+| `deploy/08_Verify.sql` | 66 |
 | `tests/00_Test_Harness.sql` | 194 |
 | `tests/00b_Test_Harness_RCP.sql` | 66 |
-| `tests/01_Schema_Tests.sql` | 409 |
+| `tests/01_Schema_Tests.sql` | 419 |
 | `tests/02_Seed_Tests.sql` | 167 |
 | `tests/03_Rule_Tests.sql` | 351 |
 | `tests/04_Select_SP_Tests.sql` | 70 |
 | `tests/05_Patient_Write_Tests.sql` | 323 |
-| `tests/06_Reservation_Write_Tests.sql` | 433 |
-| `tests/07_Reception_Write_Tests.sql` | 413 |
-| `tests/08_Rollback_Tests.sql` | 251 |
+| `tests/06_Reservation_Write_Tests.sql` | 452 |
+| `tests/07_Reception_Write_Tests.sql` | 437 |
+| `tests/08_Rollback_Tests.sql` | 270 |
 | `tests/09_Concurrency_Setup.sql` | 114 |
 | `tests/10_Concurrency_Session_A.sql` | 113 |
 | `tests/11_Concurrency_Session_B.sql` | 72 |
 | `tests/12_Concurrency_Verify.sql` | 116 |
-| `tests/14_Clean_Rebuild_Verify.sql` | 133 |
+| `tests/14_Clean_Rebuild_Verify.sql` | 136 |
 | `tests/15_Holiday_Tests.sql` | 177 |
 | `tests/contract/01_공통업무상태.sql` | 4 |
 | `tests/contract/02_수검자목록_조건없음.sql` | 4 |
@@ -68,10 +68,10 @@
 | `tests/contract/CWR-003_접수완료_stale_RowVersion.sql` | 17 |
 | `tests/contract/CWR-004_접수완료_CNR_Work.sql` | 9 |
 | `tests/contract/CWR-005_접수완료_NEX0행.sql` | 9 |
-| `tests/contract/CWR-006_접수완료_성공.sql` | 19 |
+| `tests/contract/CWR-006_접수완료_성공.sql` | 25 |
 | `tests/contract/CWR-007_접수완료_이미_RCP.sql` | 7 |
 | `tests/contract/CWR-008_접수완료_과거예약일.sql` | 17 |
-| `tests/contract/CWR-009_접수완료_마감경과.sql` | 17 |
+| `tests/contract/CWR-009_접수완료_마감경과.sql` | 22 |
 | `tests/contract/CWR-011_접수완료_Master역할불일치.sql` | 17 |
 | `tests/contract/CWR-020_접수추가검사_동일집합.sql` | 7 |
 | `tests/contract/CWR-021_접수추가검사_실제변경.sql` | 6 |
@@ -94,7 +94,7 @@
 | `tests/contract/HOL-006_자체휴무일_수정_법정공휴일.sql` | 7 |
 | `tests/contract/HOL-007_자체휴무일_삭제_미존재.sql` | 5 |
 | `tests/contract/OFF-308-01_업무일아님_예약등록.sql` | 38 |
-| `tests/contract/OFF-309-02_업무시간밖_예약등록.sql` | 6 |
+| `tests/contract/OFF-309-02_업무시간밖_예약등록.sql` | 24 |
 | `tests/contract/PWR-000_fixture.sql` | 10 |
 | `tests/contract/PWR-001_신규등록_자동차트.sql` | 5 |
 | `tests/contract/PWR-002_동일주민_동일이름.sql` | 6 |
@@ -153,7 +153,7 @@
 | `tests/contract/SEL-022_변경이력_기록0건.sql` | 6 |
 | `tests/contract/SEL-023_변경이력_TargetTable_허용밖.sql` | 5 |
 | `tests/contract/SEL-024_변경이력_TargetTable_NULL.sql` | 4 |
-| **합계 144개** | **9181** |
+| **합계 144개** | **9328** |
 
 ## 2. §9.2 허용목록 대조
 
@@ -183,7 +183,7 @@
 | **예외적 허용 (SQL 2016 DDL 배관)** `CREATE OR ALTER`, `DROP … IF EXISTS` | 사용 | `CREATE OR ALTER` 8개 파일 · `DROP  IF EXISTS` 2개 파일 |
 | `STRING_SPLIT`, XML 파싱, JSON 함수/타입, `OPENJSON`, `FOR JSON` — `04` §3.8·§15.5 | 사용 | `FOR JSON` 11개 파일 · `04` 26개 파일 |
 | 비트마스크 — `04` §15.5 | 사용 | `04` 26개 파일 |
-| `SESSION_CONTEXT`, `AT TIME ZONE`, `STRING_AGG`, `TRIM()`, `CONCAT_WS`, `TRANSLATE`, `DATEDIFF_BIG`, `COMPRESS`, `GREATEST`/`LEAST`, `GENERATE_SERIES`, 정규식 함수, 벡터 타입 — 2012 이후 기능 | 사용 | `AT TIME ZONE` 41개 파일 · `TRIM()` 6개 파일 |
+| `SESSION_CONTEXT`, `AT TIME ZONE`, `STRING_AGG`, `TRIM()`, `CONCAT_WS`, `TRANSLATE`, `DATEDIFF_BIG`, `COMPRESS`, `GREATEST`/`LEAST`, `GENERATE_SERIES`, 정규식 함수, 벡터 타입 — 2012 이후 기능 | 사용 | `AT TIME ZONE` 42개 파일 · `TRIM()` 6개 파일 |
 
 사용 22 · 미사용 1 · 수동판단 0 (허용 행 23)
 
@@ -218,6 +218,6 @@
 | 항목 | 값 |
 |---|---|
 | 검토자 | Claude Opus 5 (세션 실행) |
-| 시각 | 2026-09-09 22:57 KST |
+| 시각 | 2026-09-10 00:39 KST |
 | 생성 | `node tools/allowlist-review.js` |
 | 대상 커밋 | (커밋 직전 트리) |

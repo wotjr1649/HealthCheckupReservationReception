@@ -33,11 +33,14 @@ BEGIN
                                WHEN 3 THEN N'목요일' WHEN 4 THEN N'금요일' WHEN 5 THEN N'토요일'
                                ELSE N'일요일' END AS NVARCHAR(10))
         , [휴무일명]   = CAST(s.[휴무일명] AS NVARCHAR(100))
-        , [운영시작시각]      = CAST('09:00:00' AS TIME(0))
-        , [운영종료시각]     = CAST('18:00:00' AS TIME(0))
+        -- [R13] 05 §7.1 이 이 둘을 Result Set 컬럼으로 정해 두었다 — 계약이 처음부터
+        --       "운영시각은 DB 가 쥐고 화면에 건네주는 값" 으로 모델링했다는 뜻이다.
+        --       지금까지는 SP 가 리터럴로 지어내서 돌려주고 있었다 (04 §8.7.1).
+        , [운영시작시각]      = CAST((SELECT o.[운영시작시각] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1) AS TIME(0))
+        , [운영종료시각]     = CAST((SELECT o.[운영종료시각] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1) AS TIME(0))
         , [업무일여부] = CAST(s.[업무일여부] AS BIT)
-        , [운영시간내여부]   = CAST(CASE WHEN CONVERT(TIME(7), @서버시각) >= CONVERT(TIME(7), '09:00:00')
-                                     AND CONVERT(TIME(7), @서버시각) <  CONVERT(TIME(7), '18:00:00')
+        , [운영시간내여부]   = CAST(CASE WHEN CONVERT(TIME(7), @서버시각) >= (SELECT o.[운영시작시각] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1)
+                                     AND CONVERT(TIME(7), @서버시각) <  (SELECT o.[운영종료시각] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1)
                                     THEN 1 ELSE 0 END AS BIT)
         , [현재업무가능]    = CAST(s.[현재업무가능] AS BIT)
         , [차단코드]     = CAST(s.[업무가능코드] AS INT)

@@ -74,10 +74,10 @@ function build(ctx) {
   const colsOf = t => S2.filter(r => r[0] === t);
 
   /* ---- guard ---- */
-  const EXPECT = ['수검자', '예약접수', '검사코드', '휴무일', '완료이력', '변경이력'];
+  const EXPECT = ['수검자', '예약접수', '검사코드', '휴무일', '완료이력', '변경이력', '운영기준'];
   const fail = [];
   if (TABLES.join(',') !== EXPECT.join(','))
-    fail.push('ERD 좌표는 다음 6개를 전제로 손으로 배치했다\n  기대: ' + EXPECT.join(', ')
+    fail.push('ERD 좌표는 다음 7개를 전제로 손으로 배치했다\n  기대: ' + EXPECT.join(', ')
               + '\n  실측: ' + TABLES.join(', ') + '\n  §7 이 바뀌었다 — erd_04.js 의 좌표를 함께 고쳐라');
   if (rel44.rows.length !== 2) fail.push('§4.4 관계가 2건이 아니다: ' + rel44.rows.length);
   if (mermaid.length !== 2) fail.push('§4.5 mermaid 관계선이 2건이 아니다: ' + mermaid.length);
@@ -109,6 +109,9 @@ function build(ctx) {
     mk('검사코드', 16, 2);
     mk('휴무일', 21, 1);
     mk('변경이력', 21, 3);
+    // [R13] 관계선이 없는 1행짜리 Master 다. 아래 한 칸에 따로 둔다 — 위 두 줄과 같은 줄에
+    //       놓으면 "관계선 없음" 주석(24행)이 셋 중 둘만 가리키는 것처럼 읽힌다.
+    mk('운영기준', 26, 2);
 
     // 수검자 1:N 예약접수 · 수검자 1:N 완료이력 — §4.4 · §4.5 의 두 줄이 이것이다.
     M.vline(ws, G[2], 7, 8);
@@ -130,9 +133,9 @@ function build(ctx) {
           { font: { size: 8, bold: true, color: { argb: 'FF8B6914' } }, align: CTR });
 
     M.merge(ws, 24, G[1], 24, G[3] + 1);
-    M.put(ws, 24, G[1], '휴무일 · 변경이력 은 관계선이 없다', { font: NOTE, align: CTR });
+    M.put(ws, 24, G[1], '휴무일 · 변경이력 · 운영기준 은 관계선이 없다', { font: NOTE, align: CTR });
 
-    let y = table(ws, 27, 2, '관계 (04)', ['부모', '자식', '관계', '의미'], rel44.rows);
+    let y = table(ws, 31, 2, '관계 (04)', ['부모', '자식', '관계', '의미'], rel44.rows);
     y = table(ws, y, 2, 'Entity (04)', ['테이블', '구분', 'PK', '책임'],
               TABLES.map(t => [t, meta[t].kind, meta[t].pk, meta[t].duty]));
     // mermaid 원문 표는 넣지 않는다 — 독자에게 필요한 것은 그림이지 그림의 소스가 아니다.

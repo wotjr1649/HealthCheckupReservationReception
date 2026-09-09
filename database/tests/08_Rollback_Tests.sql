@@ -1,19 +1,32 @@
 ﻿SET NOCOUNT ON;
 DECLARE @Fail INT = 0;
 
+-- [R13] 업무 운영시간을 이 배치 동안만 넓힌다. 값이 04 §8.7 [운영기준] 에 있어서 가능해졌다 --
+--       R12 까지는 SP 안 리터럴이라 창 밖 회차가 성공 경로를 **한 번도** 재지 못했다 (NOT RUN).
+-- [!] 넓힌 것은 창뿐이다. 성공 경로가 판정하는 것(정원·중복·상태전이·감사)은 그대로다.
+--     창 자체의 계약(308/309 경계)은 이 파일이 아니라 tests/03 의 RUL-T01~T04 와
+--     tests/contract/OFF-* 가 **진짜 값으로** 잰다. 그래서 여기서 넓혀도 그 계약은 안 비어 있다.
+-- [X] 되돌리지 못한 채 끝나면 다음 회차가 다른 제품을 시험한 PASS 를 낸다 (06 §43-14).
+--     파일 끝에서 되돌리고, 되돌아왔는지는 scripts/verify-operating-baseline.sh OPR-G4 가
+--     회차마다 따로 판정한다 -- 여기서 THROW 로 빠져나가도 그 게이트는 red 가 된다.
+DECLARE @OprFrom TIME(0), @OprTo TIME(0);
+SELECT @OprFrom = [운영시작시각], @OprTo = [운영종료시각] FROM [dbo].[운영기준] WHERE [기준ID] = 1;
+UPDATE [dbo].[운영기준] SET [운영시작시각] = '00:00:00', [운영종료시각] = '23:59:59' WHERE [기준ID] = 1;
+
 -- 부분저장 0건 (스펙 §21.3·§37, G10). 업무실패 시 Master/Detail 이 **전혀** 바뀌지 않았음을
 -- SP 반환값이 아니라 **행수와 값**으로 증명한다. RS 는 받지 않는다 (INSERT … EXEC 금지, §33.1a).
 --
--- 업무시간 가드 (스펙 §33.2a). 이 파일의 실패 유도는 전부 접수마감과 무관하다 —
+-- 업무일 가드 (스펙 §33.2a). 이 파일의 실패 유도는 전부 접수마감과 무관하다 —
 -- 접수완료를 쓰지 않기 때문이다.
--- [!] 업무시간 밖이라고 건너뛰지 않는다. 창 밖에서 Write SP 가 308/309 를 내고 **아무것도
---     바꾸지 않는다** 는 것은 계약이지 시험 사정이 아니다 (05 §5 우선순위 9번).
---     SKIP 은 PASS 가 아니므로(CLAUDE.md §10) 창 밖에서는 그 계약을 실제로 판정한다.
---     아래 호출들은 **창 안이면 성공했을 인자**다. 그래서 "실패라 안 바뀌었다" 가 아니라
---     "업무시간 밖이라 성공 경로가 차단됐다" 를 본다. RS0 결과코드 판정은 tests/contract/OFF-* 가 한다.
+-- [!] 업무일 밖이라고 건너뛰지 않는다. 밖에서 Write SP 가 308 을 내고 **아무것도 바꾸지
+--     않는다** 는 것은 계약이지 시험 사정이 아니다 (05 §5 우선순위 9번).
+--     SKIP 은 PASS 가 아니므로(CLAUDE.md §10) 밖에서는 그 계약을 실제로 판정한다.
+--     아래 호출들은 **안이면 성공했을 인자**다. 그래서 "실패라 안 바뀌었다" 가 아니라
+--     "업무일이 아니라 성공 경로가 차단됐다" 를 본다. RS0 결과코드 판정은 tests/contract/OFF-* 가 한다.
+-- [R13] 시각 조건이 빠졌다 -- 위에서 창을 넓혔으므로 언제나 참이다. 남은 것은 요일과 휴무일이고
+--       이 둘은 00 이 **날짜로** 정한 것이라 넓힐 대상이 아니다. 일요일·휴무일에는 여전히
+--       NOT RUN 이며, 그때도 아래 분기가 "아무것도 바뀌지 않았다" 를 실제로 판정한다.
 DECLARE @BizOk BIT = CASE WHEN DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
-                           AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
-                           AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
                            AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
                                             WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME())
                                               AND [사용여부] = 1)
@@ -54,11 +67,14 @@ BEGIN
                      DATEDIFF(SECOND, '2020-01-01', [최종수정일시]))), 0) FROM [dbo].[예약접수]));
 
     IF @Off0 = @Off1 AND @@TRANCOUNT = 0
-        PRINT 'PASS RBK-OFF 업무시간 밖 Write SP 호출이 DB 를 바꾸지 않았다  ' + @Off1;
+        PRINT 'PASS RBK-OFF 업무일 밖 Write SP 호출이 DB 를 바꾸지 않았다  ' + @Off1;
     ELSE BEGIN PRINT 'FAIL RBK-OFF 창 밖 호출이 데이터를 바꿨다  ' + @Off0 + ' -> ' + @Off1;
                SET @Fail += 1; END
 
-    PRINT 'NOT RUN RBK-001~008 업무시간(월~토 09:00~18:00, 비휴무일) 밖 - 성공 경로는 창 안에서만 성립한다';
+    PRINT 'NOT RUN RBK-001~008 업무일(월~토, 비휴무일) 밖 - 요일·휴무일은 00 이 날짜로 정한 것이라 넓히지 않는다';
+    -- [R13] 넓힌 창을 되돌린다. OPR-G4 가 회차 끝에서 이 줄이 실제로 돌았는지 판정한다.
+    UPDATE [dbo].[운영기준] SET [운영시작시각] = @OprFrom, [운영종료시각] = @OprTo WHERE [기준ID] = 1;
+
     IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
     PRINT '=== 08_Rollback_Tests 완료 (창 밖 분기) ===';
     RETURN;
@@ -243,6 +259,9 @@ PRINT 'NOT RUN RBK-008 실패 응답 RS 개수 - T-SQL 로 셀 수 없다. verif
 -- 이 파일이 바꾼 Fixture 상태를 되돌린다. 변경이력은 되돌리지 않는다 (04 §8.6.3).
 DELETE FROM [dbo].[예약접수] WHERE [수검자ID] IN (@P09, @P16);
 UPDATE [dbo].[예약접수] SET [상태코드] = 'CNR' WHERE [수검자ID] = @Pf;
+
+-- [R13] 넓힌 창을 되돌린다. OPR-G4 가 회차 끝에서 이 줄이 실제로 돌았는지 판정한다.
+UPDATE [dbo].[운영기준] SET [운영시작시각] = @OprFrom, [운영종료시각] = @OprTo WHERE [기준ID] = 1;
 
 -- @Fail 은 이 배치에서만 산다. GO 뒤로 넘기면 Msg 137 이다 (CLAUDE.md §11).
 IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;

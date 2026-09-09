@@ -10,8 +10,8 @@ GO
 --     하위 쿼리는 변수에 먼저 담는다. DATABASEPROPERTYEX 는 함수라 그대로 둔다.
 DECLARE @Fail INT = 0;
 
-IF ((SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0) = 6)
-    PRINT 'PASS VER-001 Table 6';
+IF ((SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0) = 7)
+    PRINT 'PASS VER-001 Table 7';
 ELSE BEGIN PRINT 'FAIL VER-001 Table 수 불일치'; SET @Fail += 1; END
 
 IF ((SELECT COUNT(*) FROM sys.objects WHERE type = 'IF' AND name LIKE 'UFN[_]HC[_]%') = 4)
@@ -28,7 +28,7 @@ IF ((SELECT COUNT(*) FROM sys.sequences) = 1)
 ELSE BEGIN PRINT 'FAIL VER-004 Sequence 수 불일치'; SET @Fail += 1; END
 
 -- 사용자 테이블 한정(is_ms_shipped = 0). SCH-007·RBD-004 와 같은 기준을 쓴다.
-IF ((SELECT COUNT(*) FROM sys.key_constraints WHERE type = 'PK') = 6
+IF ((SELECT COUNT(*) FROM sys.key_constraints WHERE type = 'PK') = 7
     AND (SELECT COUNT(*) FROM sys.foreign_keys) = 2
     AND (SELECT COUNT(*) FROM sys.key_constraints WHERE type = 'UQ') = 2
     AND (SELECT COUNT(*) FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id
@@ -36,7 +36,7 @@ IF ((SELECT COUNT(*) FROM sys.key_constraints WHERE type = 'PK') = 6
     AND (SELECT COUNT(*) FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id
           WHERE t.is_ms_shipped = 0 AND i.type = 2
             AND i.is_primary_key = 0 AND i.is_unique_constraint = 0 AND i.is_unique = 0) = 5)
-    PRINT 'PASS VER-005 PK 6 / FK 2 / UQ 2 / UX 1 / NCI 5';
+    PRINT 'PASS VER-005 PK 7 / FK 2 / UQ 2 / UX 1 / NCI 5';
 ELSE BEGIN PRINT 'FAIL VER-005 Key·Index 수 불일치'; SET @Fail += 1; END
 
 -- 04 §9.1 이 Trigger 0 · TVP 0 을 못박았다. 06 §9.2 허용목록 밖이기도 하다.
@@ -46,11 +46,12 @@ IF ((SELECT COUNT(*) FROM sys.triggers WHERE is_ms_shipped = 0) = 0
 ELSE BEGIN PRINT 'FAIL VER-006 금지 객체 존재'; SET @Fail += 1; END
 
 -- R7 값이다. 휴무일이 CK 2개(TYPE·EDIT_DATE)와 DF 2개(생성일시·최종수정일시)를 얻었다 (04 §10.1).
-IF ((SELECT COUNT(*) FROM sys.check_constraints) = 26
+-- [R13] 운영기준이 CK 2개(SINGLETON·HOURS)를 더해 26 -> 28 이다. DF 는 그대로다 (04 §8.7.3).
+IF ((SELECT COUNT(*) FROM sys.check_constraints) = 28
     AND (SELECT COUNT(*) FROM sys.default_constraints) = 10
     AND (SELECT COUNT(*) FROM [dbo].[검사코드]) = 19
     AND (SELECT COUNT(*) FROM [dbo].[휴무일]) = 41)
-    PRINT 'PASS VER-007 CHECK 26 / DEFAULT 10 / Seed Exam 19 / Holiday 41';
+    PRINT 'PASS VER-007 CHECK 28 / DEFAULT 10 / Seed Exam 19 / Holiday 41';
 ELSE BEGIN PRINT 'FAIL VER-007 제약 또는 Seed 수 불일치'; SET @Fail += 1; END
 
 DECLARE @Compat VARCHAR(10);

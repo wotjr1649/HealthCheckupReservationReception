@@ -9,33 +9,39 @@ mkdir -p artifacts/logs artifacts/reports
 : > "$OUT"
 FAILED=0
 
-# Write SP 의 성공 시나리오는 업무시간(월~토 09:00~18:00, 비휴무일) 밖에서 RS0(308/309) 하나만
-# 반환한다. expected-contracts.json 이 RS 2개를 기대하므로 야간 회귀는 반드시 FAIL 한다.
-# Write SP 계약은 업무시간에만 판정하고, 밖이면 SKIP 을 남긴다. SKIP 은 PASS 가 아니다.
-BIZ=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
-  SELECT CASE WHEN DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
-              AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
-              AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
-              AND NOT EXISTS (SELECT 1 FROM dbo.휴무일
-                               WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME()) AND [사용여부] = 1)
-         THEN 1 ELSE 0 END;" | tr -d ' \r')
-
-# 접수마감(AM 11:00 / PM 16:00) 판정. 이 값은 게이트 시작 시 한 번만 재므로 경계 10분 전부터는
-# 어느 쪽도 판정하지 않는다 — 실측: 15:59 에 시작한 회차가 16:00 을 넘겨 CWR-006 이 304 를 받았다.
+# Write SP 의 성공 시나리오는 창 밖에서 RS0(308/309) 하나만 반환한다.
+# expected-contracts.json 이 RS 2개를 기대하므로 창 밖 회차는 반드시 FAIL 한다.
 #
-# [X] 초안은 하나의 3상태 변수로 006 과 009 를 갈랐다. 그래서 둘이 "배타적" 이 됐는데,
-#     배타성은 Rule 이 아니라 **둘 다 PM Work 를 쓴 선택**의 결과였다. 마감은 Slot 마다 다르다.
-#     TVF 에 시각을 주입해 실측: 13:00 에 AM Work 는 CutoffPassed=1, PM Work 는 0 이다.
-#     CWR-009 를 AM 으로 옮기면 11:10~15:50 에 둘 다 판정된다.
-#     이전 구성에서 CWR-009 는 16:00~18:00 에만 돌아 일반 회귀가 한 번도 닿지 못했다.
-#   CUTPM  PM Work 성공 경로(CWR-006)     15:50 전이면 1
-#   CUTAM  AM Work 마감경과 경로(CWR-009)  11:10 이후면 1
-CUTPM=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
-  SELECT CASE WHEN CONVERT(TIME(0), SYSDATETIME()) <  CONVERT(TIME(0), '15:50:00') THEN 1 ELSE 0 END;" | tr -d ' \r')
-CUTAM=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
-  SELECT CASE WHEN CONVERT(TIME(0), SYSDATETIME()) >= CONVERT(TIME(0), '11:10:00') THEN 1 ELSE 0 END;" | tr -d ' \r')
+# [X] R12 까지는 그래서 "업무시간 밖이면 SKIP" 이었다. SKIP 은 PASS 가 아니므로(CLAUDE.md §10)
+#     야간·주말 회차는 RWR/CWR 계약을 **한 건도** 판정하지 못한 채 green 을 냈다.
+# [R13] 운영시간이 04 §8.7 [운영기준] 으로 나왔다. 루프 동안만 창을 넓힌다.
+#     넓힌 것은 창뿐이고, 창 자체의 계약은 OFF-308-01(휴무일을 심는다)·OFF-309-02(창을 좁힌다)가
+#     루프 안에서 **자기 조건을 자기가 만들어** 판정한다 — 이제 셋 다 시계를 기다리지 않는다.
+# [!] 루프가 어떻게 끝나든 아래에서 되돌린다. 되돌아왔는지는 회차 끝에서
+#     scripts/verify-operating-baseline.sh OPR-G4 가 따로 판정한다.
+OPRSAVE=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
+  SELECT CONVERT(VARCHAR(8), [운영시작시각]) + '|' + CONVERT(VARCHAR(8), [운영종료시각])
+    FROM [dbo].[운영기준] WHERE [기준ID] = 1;" | tr -d ' \r')
+if [ -z "$OPRSAVE" ]; then
+  echo "FAIL 운영기준 1행을 읽지 못했다 — 창을 넓힐 수도 되돌릴 수도 없다" >> "$OUT"; FAILED=1
+else
+  sqlcmd -S "$SRV" -E -d "$DB" -b -I -Q "UPDATE [dbo].[운영기준]
+     SET [운영시작시각] = '00:00:00', [운영종료시각] = '23:59:59' WHERE [기준ID] = 1;" > /dev/null || FAILED=1
+fi
+restore_opr() {
+  [ -n "$OPRSAVE" ] || return 0
+  sqlcmd -S "$SRV" -E -d "$DB" -b -I -Q "UPDATE [dbo].[운영기준]
+     SET [운영시작시각] = '${OPRSAVE%%|*}', [운영종료시각] = '${OPRSAVE##*|}'
+   WHERE [기준ID] = 1;" > /dev/null || return 1
+}
+trap 'restore_opr' EXIT
 
-# 업무일 여부. BIZ 와 나눠 재야 창 밖에서 308 과 309 를 갈라 판정할 수 있다.
+# 접수마감 가드는 R13 이 걷었다. CWR-006(성공)·CWR-009(마감경과)이 [운영기준] 의 마감을
+# 자기 시나리오 안에서 옮겼다 되돌리므로, 둘 다 하루 중 언제 돌려도 성립한다.
+# 마감 **경계** 는 여기가 아니라 RUL-T07·T08·T11·T12 가 TVF 에 시각을 주입해 진짜 값으로 잰다.
+
+# 업무일 여부. 요일·휴무일은 00 이 **날짜로** 정한 것이라 넓히지 않는다 — 일요일·휴무일 회차는
+# 여전히 SKIP 이고, 그 자리는 OFF-308-01 이 휴무일을 심어 반대편에서 메운다.
 DAYOK=$(sqlcmd -S "$SRV" -E -d "$DB" -b -I -h-1 -W -Q "SET NOCOUNT ON;
   SELECT CASE WHEN DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
               AND NOT EXISTS (SELECT 1 FROM dbo.휴무일
@@ -63,26 +69,17 @@ for f in tests/contract/*.sql; do
   case "$k" in
     # [R12] PWR-* 는 가드하지 않는다 — 수검자 Write 는 308/309 를 내지 않는다 (05 §10.1·§10.2).
     RWR-*|CWR-*)
-      if [ "${BIZ:-0}" -ne 1 ]; then
-        echo "SKIP $k 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다" >> "$OUT"
+      if [ "${DAYOK:-0}" -ne 1 ]; then
+        echo "SKIP $k 업무일 밖 — 예약·접수 Write 는 308 을 업무 Rule 보다 먼저 판정한다" >> "$OUT"
         continue
       fi ;;
   esac
-  # OFF-* 는 업무시간 **밖**에서만 성립한다. PWR/RWR/CWR 과 정확히 배타적이라
-  # 어느 시각에 돌려도 Write SP 의 업무시간 계약이 한쪽에서 반드시 판정된다.
+  # OFF-* 는 자기 조건을 자기가 만든다 — 308 은 오늘을 휴무일로 심고, 309 는 창을 좁힌다.
+  # 시각 가드가 필요 없는 이유가 그것이다. 309 만 업무일이어야 한다: 일요일·휴무일에는
+  # 오늘업무일=0 이 먼저 판정돼 308 이 나오고 309 에 닿지 못한다 (UFN_HC_일정확인 업무가능코드 CASE).
   case "$k" in
-    OFF-309-*) if [ "${BIZ:-0}" -eq 1 ] || [ "${DAYOK:-0}" -ne 1 ]; then
-        echo "SKIP $k 업무시간 안이거나 업무일이 아님 — 309 는 업무일의 시간 밖에서만 나온다" >> "$OUT"; continue; fi ;;
-    # OFF-308 은 가드하지 않는다. 시험이 오늘을 활성 휴무일로 **직접 심고** 지운다 —
-    # 일요일을 기다리던 구성에서는 평일 회차마다 SKIP 이라 한 번도 판정된 적이 없었다.
-  esac
-  # 접수완료는 업무시간 안에서도 접수마감(AM 11:00 / PM 16:00) 전이어야 성공한다 (05 §2.4).
-  # CWR-006(성공)과 CWR-009(마감경과)는 배타적이라 시각으로 갈라 하나만 판정한다.
-  case "$k" in
-    CWR-006_*) if [ "${CUTPM:-0}" -ne 1 ]; then
-        echo "SKIP $k PM 마감(16:00) 10분 전을 지났다 — 성공 경로는 마감 전에만 성립한다" >> "$OUT"; continue; fi ;;
-    CWR-009_*) if [ "${CUTAM:-0}" -ne 1 ]; then
-        echo "SKIP $k 11:10 이전 — AM 마감(11:00) 경과 경로는 그 뒤에만 성립한다" >> "$OUT"; continue; fi ;;
+    OFF-309-*) if [ "${DAYOK:-0}" -ne 1 ]; then
+        echo "SKIP $k 업무일이 아님 — 309 는 업무일에만 나온다 (그날은 308 이 먼저다)" >> "$OUT"; continue; fi ;;
   esac
   # -W -w 65535 를 빼지 않는다. 기본 폭 80 에서 줄이 접히면 파서가 무너진다(실측 확인).
   sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -W -w 65535 -s"|" \

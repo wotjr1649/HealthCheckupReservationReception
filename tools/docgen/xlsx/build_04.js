@@ -102,11 +102,11 @@ const declared = secs
   .filter(Boolean).reduce((a, m) => a + Number(m[1]), 0);
 
 M.emit(wb, '04_검진_예약접수_DB설계서.xlsx', [
-  ['ERD Entity', erd.stat.tables, 6],
+  ['ERD Entity', erd.stat.tables, 7],
   ['ERD 관계 (§4.4)', erd.stat.rel, 2],
   ['ERD 관계선 (§4.5 mermaid)', erd.stat.mermaid, 2],
   ['ERD Foreign Key (§8)', erd.stat.fk, 2],
-  ['테이블 수', S1.length, 6],
+  ['테이블 수', S1.length, 7],
   // [X] `declared` 와 S2 는 **같은 정규식**으로 걸러낸 같은 소제목 집합에서 나온다.
   //     소제목을 `컬럼 (8)` -> `컬럼 목록 (8)` 로 바꾸면 양변에서 동시에 빠져
   //     45 === 45 로 통과하고 공개본은 한 테이블의 컬럼을 통째로 잃는다.
@@ -117,7 +117,7 @@ M.emit(wb, '04_검진_예약접수_DB설계서.xlsx', [
   //     손으로 유지하는 사본이었다(ROOT AGENTS.md §6). R7 에서 53 이 되자 윗줄은 스스로
   //     따라왔고 이 줄만 깨졌다. 컬럼 집합의 진짜 방어는 DOC-001(04 §8 <-> 실제 DB)이다.
   ['컬럼 전건 (§8 선언 합계와 대조)', S2.length, declared],
-  ['제약 전건', S3.length, 47],
+  ['제약 전건', S3.length, 50],
   ['인덱스 전건', S4.length, 8],
   ['명명규칙 행', S5.length, 12],
 ]).catch(e => { console.error(e); process.exit(1); });
