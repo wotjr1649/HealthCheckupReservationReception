@@ -86,4 +86,24 @@ const desc = [
   { n: '8', text: 'WorkId·PatientId·주민등록번호는 이 Grid에 노출하지 않는다' },
 ];
 
-module.exports = { title: '예약 · 접수 공통 Workbench', draw, desc };
+// 그리지 않는 Context 를 **선언만** 해 둔다. 그림은 위 주석대로 Tab Caption 과 같은 하나뿐이고
+// 이 배열은 어떤 도형도 만들지 않는다 — 산출물은 한 바이트도 달라지지 않는다.
+//
+// 왜 필요한가: WF-WRK-01 은 Context 가 둘인데 그림은 하나다. 구현은 둘 다 만들어야 하므로
+// 예약 Context 의 Ribbon 구성이 이 저장소 어디에도 기계가 읽을 수 있는 형태로 없었다.
+// 그 구성은 desc 콜아웃 ② 가 산문으로만 적고 있었다("[예약취소]가 대신 있다").
+// 산문을 파싱하는 대신 여기 데이터로 둔다 — 그림의 ribbon 과 같은 모양이라 한 곳에서 읽힌다.
+// 출처는 원문 03 §9.6.
+const altShells = [
+  {
+    navActive: 2,   // 예약 관리
+    ribbon: [
+      { name: '검색', buttons: [{ t: '조회' }] },
+      { name: '예약 업무', buttons: [{ t: '예약변경' }, { t: '예약취소' }, { t: '접수' }] },
+      { name: '보기', buttons: [{ t: '변경이력' }, { t: '컬럼설정' }] },
+    ],
+    tabs: ['예약 관리'],
+  },
+];
+
+module.exports = { title: '예약 · 접수 공통 Workbench', draw, desc, altShells };

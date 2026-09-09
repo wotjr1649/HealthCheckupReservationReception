@@ -54,4 +54,4 @@ c7f76150955a3bc034375d63cd7a6e05d4e98fca9bdf2cf7f9f46ba6aa463205 *../winforms/te
 fedc8bfdbae540cbd109135f0a8afb7c69c7ec11f050d79d17bbdfb2b1518d0d *../winforms/tests/HealthCheckupReservationReception.Tests/MainFormTests.cs
 52d868c2f9f687a1379dd7d3b7d2a85fea72819c3fd012da7b819a1621adcd56 *../winforms/tests/HealthCheckupReservationReception.Tests/Presenters/MainPresenterTests.cs
 61902ce61a48c1e5c9353de2e23bc15dc58c18ec214dd8564dab407bae68c803 *../winforms/tests/HealthCheckupReservationReception.Tests/Services/CommonStatusServiceTests.cs
-1b5d147745c4ed4738fbd76710d4fcd52f69ae92e600ea87cbf5206a13a70e68 *../winforms/tools/verify-screen-design.js
+5c335fedaf0424c972daea5feca5f05e1d89cb311e82bbfef71b03d312cf9d2a *../winforms/tools/verify-screen-design.js

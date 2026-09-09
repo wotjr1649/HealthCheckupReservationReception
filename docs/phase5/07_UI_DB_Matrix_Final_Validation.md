@@ -136,8 +136,22 @@ docs/baseline/output/03_…화면설계서.pptx             위 셋이 만들어
 
 `[X]` **`wf_00.js` 의 Ribbon 은 셸 도해라 축약돼 있다.** 그룹명이 `현재 업무 Action`(§4.2 의
 일반 슬롯 이름)이고 보기 그룹이 `[컬럼설정]` 뿐이다 — `03` §9.6 은 `[변경이력] [컬럼설정]` 이다.
-**계약은 `03` 이므로** 게이트가 `wf_00` 의 Ribbon 을 대조에서 뺀다. 그 대가로 `예약 관리`
-Page 는 설계 소스가 없고 `03` §9.6 만이 근거다 — 게이트가 매 실행에서 그 사실을 출력한다.
+**계약은 `03` 이므로** 게이트가 `wf_00` 의 Ribbon 을 대조에서 뺀다.
+
+`[D]` **`예약 관리` Context 는 설계가 그리지 않는다** — `wf_wrk_01.js` 머리말이 *"Ribbon은 Tab
+Caption과 같은 Context 하나만 그린다 … 합집합을 한 그림에 그리면 Tab과 어긋난 Ribbon을 보여주게
+된다"* 고 그 결정을 적어 두었다. 그래서 **슬라이드를 새로 그리지 않았다.** 대신 그 파일에
+`altShells` 로 그리지 않는 Context 를 **선언만** 더했다 (출처 `03` §9.6).
+
+```text
+그림      Reception Context 한 장          바뀌지 않았다
+선언      altShells = [{ navActive: 2, ribbon: […] }]   도형을 만들지 않는다
+게이트    선언을 그림과 똑같이 대조한다     SCR-003 이 Page 넷을 전건 피복한다
+```
+
+`[I]` **산출물이 그대로임을 확인했다.** 생성기를 임시 경로에 다시 돌려 커밋본과 비교했다 —
+슬라이드 28장, 텍스트가 다른 슬라이드 **0건**. 산문(desc 콜아웃 ②)에만 있던 구성이 기계가
+읽는 자리로 옮겨왔을 뿐이다.
 
 ---
 
@@ -735,7 +749,7 @@ cd winforms && node tools/verify-screen-design.js
 | `SCR-000` | 설계를 못 읽으면 통과가 아니라 FAIL |
 | `SCR-001` | `screens/*.js` 의 화면 ID 전건 ↔ `03` §2 양방향 차집합 0 |
 | `SCR-002` | `kit.js` 의 `NAV` 전건·순서 ↔ `MainForm` 의 `RibbonPage` 캡션 순서 |
-| `SCR-003` | 화면마다 `K.shell` 의 Ribbon 그룹명·버튼 ↔ `Ribbon.Pages[navActive]` |
+| `SCR-003` | 화면마다 `K.shell`·`altShells` 의 Ribbon 그룹명·버튼 ↔ `Ribbon.Pages[navActive]` · **그룹 있는 Page 전건 피복** |
 | `SCR-004` | 화면마다 설계의 라벨·캡션·헤더 ⊆ 그 화면 ID 를 단 C# 의 문자열 |
 
 `[I]` **산출물을 파싱하지 않는다.** `kit` 의 `shell`·`modal`·`confirm`·`searchBand`·`panel`·
@@ -745,6 +759,11 @@ cd winforms && node tools/verify-screen-design.js
 
 `[X]` **selftest 는 실물 C# 을 사본으로 떠서 변조한다.** 픽스처를 손으로 적으면 설계가 바뀔 때
 픽스처도 같이 낡고 그 낡음을 아무도 보지 않는다 (`verify-winforms-unchanged.sh` 의 같은 `[X]`).
+
+`[I]` **설계가 닿지 않는 Page 가 있으면 FAIL 이다.** 예전에는 그 사실을 문구로만 알렸는데
+문구는 아무도 red 로 만들지 않는다. 다만 **그룹이 없는 Page 는 Modal 진입점**이라 대조할
+Ribbon 이 없다(`휴무일 관리`, `03` §24.2) — 인덱스를 박지 않고 그 성질로 가르므로, 그 Page 에
+그룹이 생기는 순간 설계 근거를 요구한다.
 
 `[I]` **미구현 화면은 건너뛴다.** `// 화면 ID` 주석을 단 C# 이 없으면 그 화면은 `SCR-004`
 대상이 아니다. 그렇지 않으면 첫날부터 13건 red 라 게이트가 무의미해진다 — 건너뛴 화면 ID 를

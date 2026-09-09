@@ -26,7 +26,6 @@ const DOC03 = process.env.DOC03 || path.resolve(HERE, '../../docs/baseline/03_Wi
 let FAIL = 0;
 const say = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!ok) FAIL = 1; };
 const norm = s => String(s).replace(/\s+/g, ' ').trim();
-const listOf = set => [...set].sort();
 const diff = (a, b) => a.filter(x => !b.includes(x));
 
 // ── 설계 읽기 ────────────────────────────────────────────────────────
@@ -47,12 +46,13 @@ function readDesign() {
   const orig = {};
   for (const fn of ['shell', 'modal', 'confirm', 'searchBand', 'panel', 'field', 'grid']) orig[fn] = K[fn];
 
+  const asShell = (o, drawn) => ({
+    navActive: o.navActive, drawn,
+    groups: (o.ribbon || []).map(g => ({ name: g.name, buttons: (g.buttons || []).map(b => b.t) })),
+    tabs: (o.tabs || []).slice(), status: o.status,
+  });
   K.shell = function (c, o) {
-    if (cur) cur.shell = {
-      nav: (o.nav || K.NAV).slice(), navActive: o.navActive,
-      groups: (o.ribbon || []).map(g => ({ name: g.name, buttons: (g.buttons || []).map(b => b.t) })),
-      tabs: (o.tabs || []).slice(), status: o.status,
-    };
+    if (cur) cur.shells.push(asShell(o, true));
     return orig.shell.apply(this, arguments);
   };
   K.modal = function (c, o) {
@@ -82,9 +82,11 @@ function readDesign() {
 
   const dir = path.join(WF_DIR, 'screens');
   for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.js') && isScreen(f)).sort()) {
-    cur = { id: idOf(file), file, shell: null, labels: new Set() };
+    cur = { id: idOf(file), file, shells: [], labels: new Set() };
     const mod = require(path.join(dir, file));
     for (const page of (Array.isArray(mod.pages) ? mod.pages : [mod])) page.draw(new Canvas());
+    // 그리지 않는 Context 선언. 도형을 만들지 않으므로 draw 로는 잡히지 않는다.
+    for (const alt of (mod.altShells || [])) cur.shells.push(asShell(alt, false));
     screens.push(cur);
     cur = null;
   }
@@ -168,11 +170,10 @@ function readDoc03Ids() {
 //   그룹명  `현재 업무 Action` — 03 §4.2 가 쓰는 일반 슬롯 이름이지 업무 그룹명이 아니다
 //   버튼    보기 그룹이 `[컬럼설정]` 뿐이다. 03 §9.6 은 `[변경이력] [컬럼설정]` 이다
 // 계약은 03 이므로 wf_00 의 Ribbon 은 대조 대상에서 뺀다.
-// [X] 그 대가로 `예약 관리` Page 는 설계 소스가 없다 — navActive:2 를 그리는 화면이
-//     wf_00 뿐이기 때문이다. 그 Page 의 근거는 03 §9.6 뿐이고 기계가 보지 않는다.
-//     매 실행에서 그 사실을 출력해 잊히지 않게 한다.
+// [I] `예약 관리` Page 는 그림이 없다 — WF-WRK-01 은 Tab Caption 과 같은 Context 하나만
+//     그린다(그 파일 머리말). 그래서 그 파일이 `altShells` 로 **선언만** 해 두었고
+//     여기서 그림과 똑같이 대조한다. 산출물은 그대로다.
 const SHELL_RIBBON_SKIP = new Set(['WF-00']);
-const UNCOVERED_NOTE = '예약 관리 Page 는 설계 소스가 없어 03 §9.6 만이 근거다';
 
 function check() {
   let design;
@@ -222,33 +223,52 @@ function check() {
 
   // SCR-003
   let scr3 = true, scr3n = 0;
+  const covered = new Set();
   for (const s of design.screens) {
-    if (!s.shell || !ribbon || SHELL_RIBBON_SKIP.has(s.id)) continue;
-    const page = ribbon[s.shell.navActive];
+    if (!ribbon || SHELL_RIBBON_SKIP.has(s.id)) continue;
+    for (const sh of s.shells) {
+    const page = ribbon[sh.navActive];
     if (!page) {
-      say(false, `SCR-003 ${s.id} navActive=${s.shell.navActive} 에 해당하는 RibbonPage 가 없다`);
+      say(false, `SCR-003 ${s.id} navActive=${sh.navActive} 에 해당하는 RibbonPage 가 없다`);
       scr3 = false; continue;
     }
-    scr3n++;
-    const wantBtn = s.shell.groups.flatMap(g => g.buttons).slice().sort();
+    scr3n++; covered.add(sh.navActive);
+    const wantBtn = sh.groups.flatMap(g => g.buttons).slice().sort();
     const gotBtn = page.groups.flatMap(g => g.buttons).sort();
+    const label = `${s.id}${sh.drawn ? '' : '(선언)'} → ${page.name}`;
     const a = diff(wantBtn, gotBtn), b = diff(gotBtn, wantBtn);
     if (a.length || b.length) {
-      say(false, `SCR-003 ${s.id} → ${page.name} 버튼 불일치`);
+      say(false, `SCR-003 ${label} 버튼 불일치`);
       a.forEach(x => console.log('    설계에만: ' + x));
       b.forEach(x => console.log('    C# 에만: ' + x));
       scr3 = false;
     }
-    const wantG = s.shell.groups.map(g => g.name), gotG = page.groups.map(g => g.name);
+    const wantG = sh.groups.map(g => g.name), gotG = page.groups.map(g => g.name);
     if (wantG.length !== gotG.length || !wantG.every((v, i) => v === gotG[i])) {
-      say(false, `SCR-003 ${s.id} → ${page.name} 그룹명·순서 불일치`);
+      say(false, `SCR-003 ${label} 그룹명·순서 불일치`);
       console.log('    설계: ' + wantG.join(' → '));
       console.log('    C#  : ' + gotG.join(' → '));
       scr3 = false;
     }
+    }
   }
-  if (scr3) say(true, `SCR-003 셸 화면 ${scr3n}건의 Ribbon 그룹·버튼이 설계와 같다` +
-    ` · ${[...SHELL_RIBBON_SKIP].join(',')} 제외 — ${UNCOVERED_NOTE}`);
+  // [X] Page 하나라도 설계가 닿지 않으면 통과가 아니다. 예전에는 그 사실을 문구로만
+  //     알렸고, 문구는 아무도 red 로 만들지 않는다.
+  // [I] 그룹이 없는 Page 는 Modal 진입점이라 대조할 Ribbon 이 없다 — 휴무일 관리가 그것이다
+  //     (03 §24.2). 존재와 순서는 SCR-002 가 지킨다. 인덱스를 박지 않고 성질로 가른다:
+  //     그 Page 에 그룹이 생기는 순간 설계 근거를 요구한다.
+  const missPages = ribbon
+    ? ribbon.map((p, i) => i).filter(i => !covered.has(i) && ribbon[i].groups.length > 0)
+    : [];
+  if (missPages.length) {
+    say(false, `SCR-003 설계가 닿지 않는 RibbonPage: ` +
+      missPages.map(i => `[${i}] ${ribbon[i].name}`).join(', '));
+    scr3 = false;
+  }
+  const modalPages = ribbon ? ribbon.filter(p => !p.groups.length).map(p => p.name) : [];
+  if (scr3) say(true, `SCR-003 Ribbon 구성 ${scr3n}건이 설계와 같다 · 그룹 있는 Page 전건 피복` +
+    (modalPages.length ? ` · Modal 진입점 ${modalPages.join(',')} 는 Ribbon 없음` : '') +
+    ` · ${[...SHELL_RIBBON_SKIP].join(',')} 제외 (셸 도해라 Ribbon 이 축약돼 있다)`);
 
   // SCR-004
   let scr4 = true, done = 0, skipped = [];
@@ -325,6 +345,13 @@ function selftest() {
   copyTree();
   tamper(DESIGNER, 'this.barGroupPatientWork.Text = "수검자";', 'this.barGroupPatientWork.Text = "수검자 업무";');
   run('Ribbon 그룹명 변조를 잡는다', 1, { SRC_DIR: tmp });
+
+  copyTree();
+  // 그룹이 생긴 Page 는 설계 근거를 요구한다 — 휴무일 Page 에 그룹을 하나 붙여 본다.
+  tamper(DESIGNER, 'this.barPageHoliday.Name = "barPageHoliday";',
+    'this.barPageHoliday.Groups.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPageGroup[] '
+    + '{ this.barGroupRsvView }); this.barPageHoliday.Name = "barPageHoliday";');
+  run('설계가 닿지 않는 Page 에 그룹이 생기면 잡는다', 1, { SRC_DIR: tmp });
 
   copyTree();
   run('03 을 못 읽으면 통과가 아니라 FAIL 이다', 1, { SRC_DIR: tmp, DOC03: path.join(tmp, '없는파일.md') });
