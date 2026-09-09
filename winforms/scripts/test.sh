@@ -19,6 +19,8 @@ run ./scripts/verify-no-secret.sh selftest
 run ./scripts/verify-no-secret.sh
 run ./scripts/verify-appconfig-doc.sh selftest
 run ./scripts/verify-appconfig-doc.sh
+run ./scripts/verify-ui-db-matrix.sh selftest
+run ./scripts/verify-ui-db-matrix.sh
 
 echo
 if [ "$FAIL" -eq 0 ]; then
