@@ -7,12 +7,12 @@ const DIR="../docs/baseline";
 // 봉인 목록. 문서가 FINAL 이 되어 입주할 때 한 줄이 늘어난다 (ROOT AGENTS.md §2.1).
 const exp={
  "00_Project_Policy.md":"4e8f70fe07ca0f459aa9c41a5dadb88c0df5c33539cdf34eb2596fe2a8100722",
- "01_Process_Definition.md":"079891e98f69d40082d822b53ad50ba81f16d21ee74ce3e45fd5b499e80811a0",
+ "01_Process_Definition.md":"39d34063b495f28a2d870bf6322c4f557a43ec1fd80418a08aef6c65cdf0b29a",
  "02_Function_Definition.xlsx":"cd616207717d4cbb8c2ed3284061d728af4933af00dac75acf835650865798c0",
- "03_Wireframe_Definition.md":"b848d51f1eb88150967dc94374286f555e6e31aaa4f0a5f48640c105ab499905",
+ "03_Wireframe_Definition.md":"fea36bbdd45b15c6b9ee1447c4fbf8f1bf1fbdbf3febbee2155b256c2db841ab",
  "04_DB_Design.md":"004864e313df74c25f62da46bb5a78573633c3d86ee6db121a421ef51b4a902e",
- "05_DB_Rule_SP_Contract.md":"4a019f6365657205d63b233c23121b6783a81a6516e90c318967e30529ffd8f2",
- "06_DB_Transaction_Security_Seed.md":"3e2ee88d833a937914da3792d6629317adea2c797e1919a7cd2f80aad1ab3399"};
+ "05_DB_Rule_SP_Contract.md":"646d2ccbea0d90dd528aadceed3d8866b93f908765278f1435ff01c4f898d444",
+ "06_DB_Transaction_Security_Seed.md":"b37f3ac3388e0a2a80387b81e3590951610fcc3629d9d790b4985b4aa1474791"};
 const N=Object.keys(exp).length;
 let ok=0;
 for(const [n,e] of Object.entries(exp)){

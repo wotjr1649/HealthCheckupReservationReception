@@ -2,9 +2,10 @@
 
 - **문서명:** `03_Wireframe_Definition.md`
 - **상태:** FINAL / GO / READ-ONLY
-- **문서 버전:** v1.6  (v1.5 → R8 리뷰 정정. v1.6 → R10 §1.4 기동 크기)
+- **문서 버전:** v1.7  (v1.5 → R8 리뷰 정정. v1.6 → R10 §1.4 기동 크기. v1.7 → R11 수검자 동시성값)
 - **기준일:** 2026-09-09
-- **기준선 ID:** `HC-RSV-RCP-20260909-R10`  (직전 `HC-RSV-RCP-20260908-R8`)
+- **기준선 ID:** `HC-RSV-RCP-20260909-R11`  (직전 `HC-RSV-RCP-20260909-R10`)
+- **R11 개정 범위:** 수검자 Edit 의 숨은 동시성값을 `LastEditDate` 에서 `RowVersion` 으로 고친다 — §6.4 와 §16 두 줄뿐이다. 같은 회차에서 `01` §P01-04 의 같은 문장도 함께 고쳤다. `05` R7 이 수검자 동시성 토큰을 `행버전` 으로 통일했을 때 §5.6 만 따라오고 이 둘이 남았고, 그래서 **이 문서가 자기 자신과 어긋나 있었다**(§5.6 No 3 은 `LastEditDate` 를 *"동시성 기준이 아니다"* 라 적는다). 설계 선택이 아니라 갱신 누락의 정정이다. 화면 ID·Navigation·Action·입력/ReadOnly 범위·Validation 의미는 바뀌지 않는다
 - **R10 개정 범위:** §1.4 의 기동 크기 한 줄만 고친다. `MainForm은 기본 Maximized로 연다` 를 **기본 크기는 권장 기준이고 최대화를 지원한다** 로 바꾼다(2026-09-09 사용자 결정). 화면 ID·Navigation·Action·입력/ReadOnly 범위·Validation 의미는 한 글자도 바뀌지 않는다. §25 의 기준선 ID 표기가 R7 에 멈춰 있던 것도 함께 맞춘다
 - **R8 개정 범위:** R7 직후의 약식 리뷰가 찾은 결함을 정정한다. `2026-06-03` 지방선거일 Seed 누락, `07a` No-op 의 정렬 함정, `03` Grid 의 `행버전` 누락, 게이트 세 곳의 fail-open, `G09` 과다 주장이 그것이다
 - **대상 환경:** C# WinForms / .NET Framework 4.6.1 / DevExpress Components 20.2 / MSSQL
@@ -446,7 +447,7 @@ Mode = New / Edit
 - 차트번호 변경에는 활성업무 검증 미적용
 - Edit에서는 자동발급 전환 없이 기존 ChartNo 수동수정만 허용
 - 기존 업무의 TGT/NEX/AEX 자동 재판정·취소 없음
-- 기대 LastEditDate 불일치 시 저장하지 않고 최신값을 다시 조회
+- 기대 RowVersion 불일치 시 저장하지 않고 최신값을 다시 조회
 
 ## 6.5 DLG-PAT-03 — 중복 후보 확인
 
@@ -1078,7 +1079,7 @@ Context 전환
 
 # 16. Refresh·동시성·No-op UI 계약
 
-- 수검자 Edit Modal은 원본 `LastEditDate`를 숨은 값으로 유지한다.
+- 수검자 Edit Modal은 원본 `RowVersion`을 숨은 값으로 유지한다.
 - Work 관련 Modal은 원본 `RowVersion`을 숨은 값으로 유지한다.
 - 저장 성공 응답의 새 동시성값으로 화면 모델을 교체한다.
 - 저장 실패 후 기존 RowVersion으로 재시도하지 않는다.
@@ -1483,4 +1484,4 @@ Grid 컬럼은 `SP-HOL-01` RS1 여섯 중 다섯이다 — `HolidayDate` · `Hol
 12. `03_Wireframe_Definition.md`만 유효 기준본으로 사용한다.
 13. 후속 Phase는 이 문서를 재봉인 절차 밖에서 수정하지 않고 Table/SP/Transaction 계약을 구현한다.
 
-> **최종 판정: GO — 본 문서는 `HC-RSV-RCP-20260909-R10` 기준선의 최종 UI 구현 기준이며 이후 READ-ONLY로 사용한다.**
+> **최종 판정: GO — 본 문서는 `HC-RSV-RCP-20260909-R11` 기준선의 최종 UI 구현 기준이며 이후 READ-ONLY로 사용한다.**

@@ -42,7 +42,7 @@ const pages = tablePages('부록 A.  화면 동작 규칙', [
     kind: 'table', caption: 'A-4.  Refresh · 동시성 · No-op 계약',
     cols: [{ t: '항목', w: 3.20, align: 'left' }, { t: '계약', flex: 1, align: 'left' }],
     rows: [
-      ['수검자 Edit Modal', '원본 LastEditDate를 숨은 값으로 유지한다.'],
+      ['수검자 Edit Modal', '원본 RowVersion을 숨은 값으로 유지한다.'],
       ['Work 관련 Modal', '원본 RowVersion을 숨은 값으로 유지한다.'],
       ['저장 성공', '응답의 새 동시성값으로 화면 모델을 교체한다.'],
       ['저장 실패', '기존 RowVersion으로 재시도하지 않는다.'],
