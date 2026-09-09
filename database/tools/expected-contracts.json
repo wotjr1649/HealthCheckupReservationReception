@@ -2519,40 +2519,6 @@
     "sp": "(fixture)",
     "resultSets": []
   },
-  "OFF-308-01_업무일아님_수검자등록": {
-    "sp": "USP_HC_수검자_등록",
-    "rs0Success": 0,
-    "rs0Code": 308,
-    "resultSets": [
-      {
-        "columns": [
-          "성공여부",
-          "결과코드",
-          "결과메시지",
-          "오류항목",
-          "서버시각"
-        ],
-        "rows": 1
-      }
-    ]
-  },
-  "OFF-309-01_업무시간밖_수검자등록": {
-    "sp": "USP_HC_수검자_등록",
-    "rs0Success": 0,
-    "rs0Code": 309,
-    "resultSets": [
-      {
-        "columns": [
-          "성공여부",
-          "결과코드",
-          "결과메시지",
-          "오류항목",
-          "서버시각"
-        ],
-        "rows": 1
-      }
-    ]
-  },
   "OFF-309-02_업무시간밖_예약등록": {
     "sp": "USP_HC_예약_등록",
     "rs0Success": 0,
@@ -2712,6 +2678,23 @@
     "sp": "USP_HC_자체휴무일_삭제",
     "rs0Success": 0,
     "rs0Code": 800,
+    "resultSets": [
+      {
+        "columns": [
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "OFF-308-01_업무일아님_예약등록": {
+    "sp": "USP_HC_예약_등록",
+    "rs0Success": 0,
+    "rs0Code": 308,
     "resultSets": [
       {
         "columns": [

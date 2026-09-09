@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Xml.Linq;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
@@ -76,7 +77,7 @@ namespace HealthCheckupReservationReception.Tests.Integration
         public void SP_PAT_03_과_04_로_등록부터_동시성까지_한_벌을_돈다()
         {
             IPatientRepository repository = NewRepository();
-            string social = NewSocialNumber(0);
+            string social = NewSocialNumber(repository);
             string name = "시험수검자" + social.Substring(7);
 
             // ── 등록 (05 §10.1). 차트번호는 저장 Transaction 이 확정한다 (03 §6.3).
@@ -137,8 +138,8 @@ namespace HealthCheckupReservationReception.Tests.Integration
         public void SP_PAT_03_은_유사후보에_203_과_후보목록을_돌려준다()
         {
             IPatientRepository repository = NewRepository();
-            string first = NewSocialNumber(0);
-            string second = NewSocialNumber(1);
+            string first = NewSocialNumber(repository);
+            string second = NewSocialNumber(repository);
             string name = "유사수검자" + first.Substring(7);
 
             PatientSaveReadDto created = Run(() => repository.Register(NewRequest(first, name, true)));
@@ -158,14 +159,36 @@ namespace HealthCheckupReservationReception.Tests.Integration
             Assert.AreNotEqual(created.Rows[0].PatientId, separate.Rows[0].PatientId);
         }
 
+        // [X] 초판은 꼬리를 HHmmss 로 만들었다. 같은 초 안에 도는 두 시험이 같은 값을 받아
+        //     뒤 시험이 202(동일 주민번호·다른 이름)로 떨어졌다 — 실측으로 잡혔다.
+        // [X] 마이크로초 + 단조 카운터로 고쳤더니 **회차 안**만 안전해졌다. 꼬리가 여섯 자리라
+        //     공간이 10^6 이고 시험이 만든 행은 영영 지우지 않으므로(07 §12.9), 누적 행이
+        //     늘수록 이전 회차의 값과 부딪힐 확률이 커진다. 부딪히면 정확히 같은 202 로 깨진다.
+        private static int _seq;
+
         /// <summary>
         /// 앞 6자리는 고정 날짜(1999-07-07), 7번째는 `2`(1900년대 여), 나머지 여섯은 실행 시각이다.
-        /// 회차마다 다른 사람이 되어야 `2`(동일 수검자)와 `203`(유사 후보)이 뒤섞이지 않는다.
+        /// **아직 쓰이지 않은 값인지 SP-PAT-01 로 확인하고 돌려준다** — 회차 사이 충돌까지 막는
+        /// 것은 이것뿐이다. 확률에 기대지 않는다.
         /// </summary>
-        private static string NewSocialNumber(int offset)
+        private static string NewSocialNumber(IPatientRepository repository)
         {
-            long tail = long.Parse(DateTime.Now.ToString("HHmmss")) + offset;
-            return "990707" + "2" + (tail % 1000000).ToString("D6");
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                long tail = (DateTime.Now.Ticks / 10 + Interlocked.Increment(ref _seq)) % 1000000;
+                string candidate = "990707" + "2" + tail.ToString("D6");
+
+                PatientListReadDto read = Run(() =>
+                    repository.Search(new PatientSearchRequest { SocialNumber = candidate }));
+                if (read.Result != null && read.Result.Success
+                    && (read.Rows == null || read.Rows.Count == 0))
+                {
+                    return candidate;
+                }
+            }
+
+            Assert.Inconclusive("쓰이지 않은 주민번호를 스무 번 안에 찾지 못했다 — 누적 행이 너무 많다");
+            return null;
         }
 
         /// <summary>

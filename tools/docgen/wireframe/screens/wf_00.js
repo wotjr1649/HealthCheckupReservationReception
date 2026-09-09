@@ -35,7 +35,7 @@ const desc = [
   { n: '2', text: 'Ribbon Group 순서는 검색 → 현재 업무 Action → 보기' },
   { n: '3', text: '동일 업무 Tab은 중복 생성하지 않는다 (Single Instance)' },
   { n: '4', text: '주요 Action은 하단이 아니라 Context Ribbon에 둔다' },
-  { n: '5', text: '휴무일 · 운영시간 외(09:00~18:00)면 업무 Action 전체 비활성' },
+  { n: '5', text: '휴무일 · 운영시간 외(09:00~18:00)면 업무 불가로 표시한다. Action은 막지 않는다' },
   { n: '', text: '상태 표시는 안내값이며 저장 성공을 보장하지 않는다. 저장·상태전이는 Stored Procedure/Transaction이 현재 조건을 다시 검증한다.' },
 ];
 

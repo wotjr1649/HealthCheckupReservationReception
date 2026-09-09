@@ -21,9 +21,6 @@ namespace HealthCheckupReservationReception.Views
         string WorkStatusText { set; }
         string OperatorText { set; }
 
-        /// <summary>공통 업무불가면 업무 수행 Action 을 비활성한다 (03 §1.3 · §5.2 · §9.6 · §9.7).</summary>
-        bool BusinessActionsEnabled { set; }
-
         void OpenTab(BusinessTab tab, string caption);
         void ActivateTab(BusinessTab tab);
         void SetTabCaption(BusinessTab tab, string caption);

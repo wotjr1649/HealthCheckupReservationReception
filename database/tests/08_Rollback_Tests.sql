@@ -21,6 +21,8 @@ DECLARE @BizOk BIT = CASE WHEN DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
 
 IF @BizOk = 0
 BEGIN
+    -- [R12] 수검자 COUNT 를 남긴다. 이 분기가 부르는 것은 예약등록뿐이지만 그 호출이
+    --       수검자를 만들지 **않는다** 는 것도 이 지문이 지키는 불변조건이다.
     DECLARE @Off0 VARCHAR(300) =
           CONVERT(VARCHAR(12), (SELECT COUNT(*) FROM [dbo].[수검자]))     + '|'
         + CONVERT(VARCHAR(12), (SELECT COUNT(*) FROM [dbo].[예약접수]))   + '|'
@@ -32,12 +34,13 @@ BEGIN
         + CONVERT(VARCHAR(20), (SELECT ISNULL(SUM(CONVERT(BIGINT,
                      DATEDIFF(SECOND, '2020-01-01', [최종수정일시]))), 0) FROM [dbo].[예약접수]));
 
-    DECLARE @OPt BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T015');
+    -- [R12] @OPt 를 걷었다. 수검자 등록 호출을 뺀 뒤로 쓰이지 않는다.
     DECLARE @OP9 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T009');
 
+    -- [R12] 수검자 등록 호출을 뺐다. 05 §10.1 에서 공통 업무 가능조건이 빠졌으므로 창 밖에도
+    --       정상 저장된다 — 여기서 재는 것은 "창 밖에 막히는 Write 가 아무것도 안 바꾼다" 이고
+    --       그 대상은 이제 예약·접수뿐이다 (06 §33.2a).
     EXEC [dbo].[USP_HC_예약_등록] @OP9, 'NORMAL', '2026-11-17', 'AM', 0,0,0,0,0,0,0, N'TEST';
-    EXEC [dbo].[USP_HC_수검자_등록] 1, NULL, N'창밖롤백', '9601011000018',
-         NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, N'TEST';
 
     DECLARE @Off1 VARCHAR(300) =
           CONVERT(VARCHAR(12), (SELECT COUNT(*) FROM [dbo].[수검자]))     + '|'

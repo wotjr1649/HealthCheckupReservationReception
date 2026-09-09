@@ -15,7 +15,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         // ── 03 §1.3 공통 업무조건 표시
 
         [TestMethod]
-        public void 업무가능이면_업무_가능을_표시하고_업무_Action_을_연다()
+        public void 업무가능이면_업무_가능을_표시한다()
         {
             var view = new FakeMainView();
             var service = new FakeCommonStatusService { Result = Ok(Allowed()) };
@@ -25,12 +25,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
             Assert.AreEqual("업무 상태 : 업무 가능", view.WorkStatusText);
             Assert.AreEqual("조작자 : 접수1번창구", view.OperatorText);
-            Assert.IsTrue(view.BusinessActionsEnabled);
             Assert.IsNull(view.LastMessage);
         }
 
         [TestMethod]
-        public void 운영시간_밖이면_DB_가_준_운영시각을_붙이고_업무_Action_을_닫는다()
+        public void 운영시간_밖이면_DB_가_준_운영시각을_붙여_표시만_한다()
         {
             CommonWorkStatusDto status = Allowed();
             status.IsWorkAllowed = false;
@@ -45,7 +44,9 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(
                 "업무 상태 : 업무 불가 — 현재는 업무 운영시간이 아닙니다. (09:00~18:00)",
                 view.WorkStatusText);
-            Assert.IsFalse(view.BusinessActionsEnabled);
+
+            // [R12] 상태는 표시만 한다. 화면이 Action 을 닫는 경로는 IMainView 에 아예 없다
+            // (`00` §1.1 · 03 §1.3) — 없다는 것은 컴파일이 지킨다.
         }
 
         [TestMethod]
@@ -95,7 +96,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             view.RaiseShellLoaded();
 
             Assert.AreEqual("업무 상태 : 확인 불가", view.WorkStatusText);
-            Assert.IsFalse(view.BusinessActionsEnabled);
             Assert.AreEqual("공통 업무상태를 읽지 못했습니다.", view.LastMessage);
         }
 
@@ -114,7 +114,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
             Assert.AreEqual("업무 상태 : 확인 불가", view.WorkStatusText);
             Assert.AreEqual("업무 상태를 확인하지 못했습니다.", view.LastMessage);
-            Assert.IsFalse(view.BusinessActionsEnabled);
             StringAssert.DoesNotMatch(view.LastMessage, new System.Text.RegularExpressions.Regex("DESKTOP"));
         }
 
@@ -263,7 +262,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakeMainView();
             new MainPresenter(view, new FakeCommonStatusService { Result = Ok(status) }, "창구");
             view.RaiseShellLoaded();
-            Assert.IsFalse(view.BusinessActionsEnabled);
             view.Calls.Clear();
 
             view.RaiseNavigationRequested(BusinessNavigation.HolidayManagement);
@@ -345,7 +343,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         public string WorkStatusText { get; set; }
         public string OperatorText { get; set; }
-        public bool BusinessActionsEnabled { get; set; }
         public string LastMessage { get; private set; }
 
         public void OpenTab(BusinessTab tab, string caption) { Calls.Add("OpenTab:" + tab + ":" + caption); }

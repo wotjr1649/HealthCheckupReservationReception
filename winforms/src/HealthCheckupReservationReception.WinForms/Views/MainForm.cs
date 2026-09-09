@@ -22,9 +22,8 @@ namespace HealthCheckupReservationReception.Views
         // Presenter 가 시킨 변경이 다시 event 로 돌아와 무한 왕복하는 것을 막는다.
         private bool _suppressEvents;
 
-        // 03 §5.2 의 Action 상태는 두 판정의 곱이다 — 공통 업무가능 여부(MainPresenter)와
-        // 행 선택 여부(PatientManagementPresenter). 곱하는 자리는 Ribbon 을 가진 여기뿐이다.
-        private bool _businessAllowed = true;
+        // 03 §5.2 의 Action 상태는 행 선택 여부 하나로 정해진다. 판정은
+        // PatientManagementPresenter 가 하고 그리는 자리는 Ribbon 을 가진 여기다.
         private bool _patientRowSelected;
 
         private UcPatientManagement _patientView;
@@ -75,36 +74,6 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// 03 §5.2 · §9.6 · §9.7 의 `공통 업무불가` 행 그대로다 —
-        /// `변경이력`·`컬럼설정`만 남고 나머지 업무 Action 은 전부 비활성이다.
-        /// `휴무일 관리`는 이 규칙 밖이다 (03 §24.2).
-        /// </summary>
-        public bool BusinessActionsEnabled
-        {
-            set
-            {
-                // [정보수정]·[신규예약] 은 여기 없다 — 행 선택도 함께 봐야 하므로
-                // ApplyPatientRowActions 가 혼자 정한다 (03 §5.2).
-                BarItem[] gated =
-                {
-                    barBtnPatientSearch, barBtnPatientNew,
-                    barBtnReservationSave,
-                    barBtnRsvSearch, barBtnRsvEdit, barBtnRsvCancel, barBtnRsvReception,
-                    barBtnRcpSearch, barBtnRcpWalkIn, barBtnRcpRsvEdit, barBtnRcpStart,
-                    barBtnRcpExtra, barBtnRcpCancel
-                };
-
-                foreach (BarItem item in gated)
-                {
-                    item.Enabled = value;
-                }
-
-                _businessAllowed = value;
-                ApplyPatientRowActions();
-            }
-        }
-
-        /// <summary>
         /// 03 §5.2 — 수검자 목록의 행 선택 여부. 판정은 PatientManagementPresenter 가 하고
         /// 어느 버튼이 열리는지는 Ribbon 을 가진 이 화면이 그린다.
         /// </summary>
@@ -117,12 +86,17 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
+        /// <summary>
+        /// 03 §5.2 표 — 이 셋은 **행 선택 하나만** 본다.
+        ///
+        /// [R12] 공통 업무불가는 더 이상 Action 을 닫지 않는다 (03 §1.3 · `00` §1.1).
+        ///       화면이 미리 닫으면 저장 시점의 DB 판정을 사용자가 받아볼 수 없고, 수검자
+        ///       기준정보는 애초에 `308`/`309` 의 대상이 아니다. 업무 상태는 상태영역이 보인다.
+        /// </summary>
         private void ApplyPatientRowActions()
         {
-            // 03 §5.2 표 — [정보수정]·[신규예약] 은 행 선택 + 공통 업무가능이 모두 필요하고,
-            // [변경이력] 은 조회 Action 이라 공통 업무불가에도 행만 잡혀 있으면 열린다(§23.4).
-            barBtnPatientEdit.Enabled = _patientRowSelected && _businessAllowed;
-            barBtnPatientReserve.Enabled = _patientRowSelected && _businessAllowed;
+            barBtnPatientEdit.Enabled = _patientRowSelected;
+            barBtnPatientReserve.Enabled = _patientRowSelected;
             barBtnPatientLog.Enabled = _patientRowSelected;
         }
 

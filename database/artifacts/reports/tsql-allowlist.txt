@@ -1,3 +1,3 @@
 PASS G13-b2 CREATE OR ALTER 는 배포 원본 안에만 있다
-PASS G13-b 허용목록 밖 T-SQL 0건 (.sql 145 개 · 주석 제외)
+PASS G13-b 허용목록 밖 T-SQL 0건 (.sql 144 개 · 주석 제외)
 INFO G13 은 세 갈래다 — (a) 배포·시험 성공 (b) 이 스캔 (c) §9.2 준수는 REVIEWED (자동 판정 불가)

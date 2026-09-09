@@ -77,16 +77,19 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
+            // 03 §1.3 — 공통 업무 상태는 **표시만** 한다. R12 부터 화면은 그것으로 Action 을
+            // 막지 않으며 판정은 저장 시점에 DB 가 한다 (`00` §1.1 · §9 9항).
             _view.WorkStatusText = FormatWorkStatus(result.Value);
-
-            // 03 §1.3 · §5.2 · §9.6 · §9.7 — 공통 업무불가면 업무 수행 Action 을 비활성한다.
-            _view.BusinessActionsEnabled = result.Value.IsWorkAllowed;
         }
 
+        /// <summary>
+        /// 업무 상태를 못 읽었을 때다. 상태를 `확인 불가` 로 적고 알리기만 한다 —
+        /// [R12] 화면이 Action 을 닫지 않는다. 상태를 못 읽은 것이 업무 불가를 뜻하지도 않고,
+        /// 닫아 버리면 사용자가 저장을 눌러 DB 판정을 받아볼 길이 사라진다.
+        /// </summary>
         private void Block(string statusTail, string message)
         {
             _view.WorkStatusText = StatusPrefix + statusTail;
-            _view.BusinessActionsEnabled = false;
             _view.ShowMessage(message);
         }
 

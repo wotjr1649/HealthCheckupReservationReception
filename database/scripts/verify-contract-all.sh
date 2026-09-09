@@ -61,9 +61,10 @@ for f in tests/contract/*.sql; do
   k=$(basename "$f" .sql)
   # SELECT SP 계약은 시간대와 무관하다. Write SP 계약만 가드한다 (T36 이 추가한다).
   case "$k" in
-    PWR-*|RWR-*|CWR-*)
+    # [R12] PWR-* 는 가드하지 않는다 — 수검자 Write 는 308/309 를 내지 않는다 (05 §10.1·§10.2).
+    RWR-*|CWR-*)
       if [ "${BIZ:-0}" -ne 1 ]; then
-        echo "SKIP $k 업무시간 밖 — Write SP 는 308/309 를 업무 Rule 보다 먼저 판정한다" >> "$OUT"
+        echo "SKIP $k 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다" >> "$OUT"
         continue
       fi ;;
   esac

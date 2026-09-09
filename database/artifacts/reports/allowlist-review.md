@@ -16,7 +16,7 @@
 | `deploy/02_Seed.sql` | 92 |
 | `deploy/03_Functions.sql` | 251 |
 | `deploy/04_Procedures_Select.sql` | 1022 |
-| `deploy/05_Procedures_Patient_Write.sql` | 723 |
+| `deploy/05_Procedures_Patient_Write.sql` | 719 |
 | `deploy/06_Procedures_Reservation_Write.sql` | 1029 |
 | `deploy/07_Procedures_Reception_Write.sql` | 759 |
 | `deploy/07a_Procedures_Holiday.sql` | 404 |
@@ -27,10 +27,10 @@
 | `tests/02_Seed_Tests.sql` | 167 |
 | `tests/03_Rule_Tests.sql` | 351 |
 | `tests/04_Select_SP_Tests.sql` | 70 |
-| `tests/05_Patient_Write_Tests.sql` | 369 |
+| `tests/05_Patient_Write_Tests.sql` | 323 |
 | `tests/06_Reservation_Write_Tests.sql` | 433 |
 | `tests/07_Reception_Write_Tests.sql` | 413 |
-| `tests/08_Rollback_Tests.sql` | 248 |
+| `tests/08_Rollback_Tests.sql` | 251 |
 | `tests/09_Concurrency_Setup.sql` | 114 |
 | `tests/10_Concurrency_Session_A.sql` | 113 |
 | `tests/11_Concurrency_Session_B.sql` | 72 |
@@ -93,8 +93,7 @@
 | `tests/contract/HOL-005_자체휴무일_등록_날짜중복.sql` | 6 |
 | `tests/contract/HOL-006_자체휴무일_수정_법정공휴일.sql` | 7 |
 | `tests/contract/HOL-007_자체휴무일_삭제_미존재.sql` | 5 |
-| `tests/contract/OFF-308-01_업무일아님_수검자등록.sql` | 37 |
-| `tests/contract/OFF-309-01_업무시간밖_수검자등록.sql` | 7 |
+| `tests/contract/OFF-308-01_업무일아님_예약등록.sql` | 38 |
 | `tests/contract/OFF-309-02_업무시간밖_예약등록.sql` | 6 |
 | `tests/contract/PWR-000_fixture.sql` | 10 |
 | `tests/contract/PWR-001_신규등록_자동차트.sql` | 5 |
@@ -154,7 +153,7 @@
 | `tests/contract/SEL-022_변경이력_기록0건.sql` | 6 |
 | `tests/contract/SEL-023_변경이력_TargetTable_허용밖.sql` | 5 |
 | `tests/contract/SEL-024_변경이력_TargetTable_NULL.sql` | 4 |
-| **합계 145개** | **9234** |
+| **합계 144개** | **9181** |
 
 ## 2. §9.2 허용목록 대조
 
@@ -219,6 +218,6 @@
 | 항목 | 값 |
 |---|---|
 | 검토자 | Claude Opus 5 (세션 실행) |
-| 시각 | 2026-09-09 12:06 KST |
+| 시각 | 2026-09-09 22:57 KST |
 | 생성 | `node tools/allowlist-review.js` |
 | 대상 커밋 | (커밋 직전 트리) |

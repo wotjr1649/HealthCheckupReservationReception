@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Threading;
 using System.Windows.Forms;
 using DevExpress.Utils;
 using DevExpress.XtraBars.Ribbon;
+using HealthCheckupReservationReception.Common;
+using HealthCheckupReservationReception.Models;
 using HealthCheckupReservationReception.Tests.Presenters;
 using HealthCheckupReservationReception.Views;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -89,47 +92,59 @@ namespace HealthCheckupReservationReception.Tests
         }
 
         // 03 §1.3 · §5.2 · §9.6 · §9.7 — 공통 업무불가면 변경이력·컬럼설정만 남는다.
+        // [R12] 공통 업무불가는 Action 을 닫지 않는다 (`00` §1.1 · 03 §1.3 · §5.2 · §9.6 · §9.7).
+        //       화면이 미리 닫으면 저장 시점의 DB 판정을 사용자가 받아볼 수 없다.
+        //       R12 이전에는 이 자리가 "변경이력·컬럼설정만 남는다" 를 재는 시험이었다.
         [TestMethod]
-        public void 공통_업무불가면_변경이력과_컬럼설정만_남는다()
+        public void 공통_업무불가여도_업무_Action_이_닫히지_않는다()
         {
             RunSta(() =>
             {
-                using (MainForm form = NewShell())
+                var blocked = new CommonWorkStatusDto
                 {
-                    IMainView view = form;
+                    Today = new DateTime(2026, 9, 9),
+                    DayName = "수요일",
+                    OpenTime = new TimeSpan(9, 0, 0),
+                    CloseTime = new TimeSpan(18, 0, 0),
+                    IsBusinessDay = true,
+                    IsWithinHours = false,
+                    IsWorkAllowed = false,
+                    BlockCode = (int)DbCode.OutsideHours,
+                    BlockMessage = "현재는 업무 운영시간이 아닙니다.",
+                };
 
-                    // 03 §5.2 는 행 선택과 공통 업무가능을 따로 센다. 여기서 보는 것은
-                    // 공통 업무불가 쪽이므로 행은 잡혀 있는 상태로 둔다.
+                var service = new FakeCommonStatusService
+                {
+                    Result = OperationResult<CommonWorkStatusDto>.Success(blocked),
+                };
+
+                using (var form = new MainForm(service, new FakePatientService(), "접수1번창구"))
+                {
+                    form.StartPosition = FormStartPosition.Manual;
+                    form.Location = new Point(-32000, -32000);
+                    form.Show();
+                    Application.DoEvents();
                     form.PatientRowSelected = true;
-                    view.BusinessActionsEnabled = false;
 
-                    var stillOpen = new List<string>();
-                    var closed = new List<string>();
-                    foreach (DevExpress.XtraBars.BarItem item in form.Ribbon.Items)
+                    // [X] "모든 버튼이 열려 있다" 로 재지 않는다. R12 가 요구하는 것은
+                    //     "공통 업무불가가 닫지 않는다" 뿐이고, 03 §9.6·§9.7 은 여전히
+                    //     Work 상태로 닫는 칸을 갖는다 — WF-WRK-01 이 그 표대로 구현되는
+                    //     순간 과잉 단언이 red 가 된다. 03 §5.2 가 실제로 다루는 Action 만 센다.
+                    string[] shouldStayOpen = { "조회", "신규등록", "정보수정", "신규예약", "컬럼설정" };
+                    foreach (string caption in shouldStayOpen)
                     {
-                        var button = item as DevExpress.XtraBars.BarButtonItem;
-                        if (button == null)
-                        {
-                            continue;
-                        }
-
-                        (button.Enabled ? stillOpen : closed).Add(button.Caption);
+                        Assert.IsTrue(Enabled(form, caption),
+                            "업무불가인데 닫혔다: " + caption);
                     }
 
-                    CollectionAssert.Contains(stillOpen, "변경이력");
-                    CollectionAssert.Contains(stillOpen, "컬럼설정");
-                    CollectionAssert.Contains(closed, "조회");
-                    CollectionAssert.Contains(closed, "신규등록");
-                    CollectionAssert.Contains(closed, "예약저장");
-                    CollectionAssert.Contains(closed, "현장 당일예약");
-                    CollectionAssert.DoesNotContain(closed, "변경이력");
-                    CollectionAssert.DoesNotContain(closed, "컬럼설정");
+                    Assert.IsTrue(PatientLogEnabled(form), "업무불가인데 [변경이력]이 닫혔다");
+                    form.Close();
                 }
             });
         }
 
-        // 03 §5.2 표의 첫 두 줄 — 행 미선택이면 [정보수정]·[신규예약]·[변경이력]이 닫히고
-        // 행을 고르면 셋이 함께 열린다. 공통 업무불가는 별개의 축이다.
+        // 03 §5.2 표 — 행 미선택이면 [정보수정]·[신규예약]·[변경이력]이 닫히고
+        // 행을 고르면 셋이 함께 열린다. [R12] 이제 이 표에 다른 축은 없다.
         [TestMethod]
         public void 행_미선택이면_정보수정_신규예약_변경이력이_닫힌다()
         {
@@ -137,9 +152,6 @@ namespace HealthCheckupReservationReception.Tests
             {
                 using (MainForm form = NewShell())
                 {
-                    IMainView view = form;
-                    view.BusinessActionsEnabled = true;
-
                     form.PatientRowSelected = false;
                     Assert.IsFalse(Enabled(form, "정보수정"));
                     Assert.IsFalse(Enabled(form, "신규예약"));
@@ -149,11 +161,6 @@ namespace HealthCheckupReservationReception.Tests
                     form.PatientRowSelected = true;
                     Assert.IsTrue(Enabled(form, "정보수정"));
                     Assert.IsTrue(Enabled(form, "신규예약"));
-                    Assert.IsTrue(PatientLogEnabled(form));
-
-                    // §5.2 각주 — [변경이력]은 조회 Action 이라 공통 업무불가에도 열린다.
-                    view.BusinessActionsEnabled = false;
-                    Assert.IsFalse(Enabled(form, "정보수정"));
                     Assert.IsTrue(PatientLogEnabled(form));
                 }
             });
