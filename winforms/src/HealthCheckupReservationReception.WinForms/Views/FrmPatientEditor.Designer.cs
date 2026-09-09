@@ -210,6 +210,7 @@ namespace HealthCheckupReservationReception.Views
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtMobilePhone.Location = new System.Drawing.Point(137, 215);
             this.txtMobilePhone.Name = "txtMobilePhone";
+            this.txtMobilePhone.Leave += new System.EventHandler(this.Phone_Leave);
             this.txtMobilePhone.Properties.MaxLength = 13;
             this.txtMobilePhone.Size = new System.Drawing.Size(440, 20);
             this.txtMobilePhone.TabIndex = 15;
@@ -228,6 +229,7 @@ namespace HealthCheckupReservationReception.Views
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtPhone.Location = new System.Drawing.Point(137, 241);
             this.txtPhone.Name = "txtPhone";
+            this.txtPhone.Leave += new System.EventHandler(this.Phone_Leave);
             this.txtPhone.Properties.MaxLength = 13;
             this.txtPhone.Size = new System.Drawing.Size(440, 20);
             this.txtPhone.TabIndex = 17;

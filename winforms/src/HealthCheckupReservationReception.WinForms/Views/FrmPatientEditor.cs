@@ -254,6 +254,28 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
+        /// <summary>
+        /// 전화 두 칸은 **칸을 떠날 때** `-` 를 넣어 정렬한다.
+        ///
+        /// [X] 라이브 마스크로는 못 한다 — 한국 지역번호는 자릿수가 아니라 번호대로 정해져서
+        ///     `0212345678` 을 `02-1234-5678` 로 끊을지 `021-234-5678` 로 끊을지 입력 중에는
+        ///     알 수 없다 (`clsPatientText.FormatPhone` 주석).
+        ///
+        /// [!] 여기서 안 해도 저장값은 같다 — `PatientService` 가 같은 함수로 한 번 더 맞춘다.
+        ///     이 자리는 **사용자가 눈으로 확인하게** 하는 것이 목적이다.
+        /// </summary>
+        private void Phone_Leave(object sender, EventArgs e)
+        {
+            var editor = sender as TextEdit;
+            if (editor == null) { return; }
+
+            string formatted = clsPatientText.FormatPhone(editor.Text);
+            if (formatted != null && formatted != editor.Text)
+            {
+                editor.Text = formatted;
+            }
+        }
+
         private void btnClose_Click(object sender, EventArgs e)
         {
             CloseWith(null, null);

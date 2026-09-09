@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 namespace HealthCheckupReservationReception.Common
 {
@@ -33,6 +34,70 @@ namespace HealthCheckupReservationReception.Common
             return value != null && value.Length == 13
                 ? value.Substring(0, 6) + "-" + value.Substring(6)
                 : value;
+        }
+
+
+        /// <summary>
+        /// 전화번호 표기. 숫자만 뽑아 한국 번호대 규칙으로 `-` 를 넣는다.
+        ///
+        /// [X] **라이브 마스크로는 못 한다.** `0212345678` 이 `02-1234-5678`(서울)인지
+        ///     `021-234-5678` 인지는 입력 중에 알 수 없다 — 한국 지역번호는 자릿수가 아니라
+        ///     **번호대**로 정해지기 때문이다. 그래서 다 친 뒤에 한 번 정렬한다
+        ///     (2026-09-10 사용자 결정).
+        ///
+        /// [!] **13자를 넘기면 숫자만 돌려준다.** `휴대전화`·`전화번호` 는 `VARCHAR(13)` 이고
+        ///     (`04` §8.1.2) `0504-1234-5678` 은 14자다. 하이픈을 고집하면 저장이 거부되므로
+        ///     그 자리에서는 하이픈을 포기한다 — 번호를 잃는 것보다 낫다.
+        ///
+        /// 분류할 수 없는 값은 **숫자 그대로** 돌려준다. 지어내지 않는다.
+        /// </summary>
+        public static string FormatPhone(string value)
+        {
+            string d = Digits(value);
+            if (d == null)
+            {
+                return null;
+            }
+
+            string formatted = Split(d);
+            return formatted != null && formatted.Length <= PhoneStoreMax ? formatted : d;
+        }
+
+        /// <summary>`04` §8.1.2 — `휴대전화`·`전화번호` 의 저장 폭.</summary>
+        private const int PhoneStoreMax = 13;
+
+        /// <summary>
+        /// 번호대별 끊는 자리. 앞의 것이 먼저 걸린다.
+        ///
+        ///   02        서울           02-XXX-XXXX      / 02-XXXX-XXXX
+        ///   050X      안심·인터넷    0504-XXXX-XXXX   (12자리)
+        ///   0XX       그 밖의 지역·이동통신·070
+        ///                            0XX-XXX-XXXX     / 0XX-XXXX-XXXX
+        ///   1XXX      대표번호       1588-XXXX        (8자리)
+        /// </summary>
+        private static string Split(string d)
+        {
+            if (d.StartsWith("02", StringComparison.Ordinal) && (d.Length == 9 || d.Length == 10))
+            {
+                return "02-" + d.Substring(2, d.Length - 6) + "-" + d.Substring(d.Length - 4);
+            }
+
+            if (d.Length == 12 && d.StartsWith("050", StringComparison.Ordinal))
+            {
+                return d.Substring(0, 4) + "-" + d.Substring(4, 4) + "-" + d.Substring(8);
+            }
+
+            if (d.StartsWith("0", StringComparison.Ordinal) && (d.Length == 10 || d.Length == 11))
+            {
+                return d.Substring(0, 3) + "-" + d.Substring(3, d.Length - 7) + "-" + d.Substring(d.Length - 4);
+            }
+
+            if (d.Length == 8 && d.StartsWith("1", StringComparison.Ordinal))
+            {
+                return d.Substring(0, 4) + "-" + d.Substring(4);
+            }
+
+            return null;
         }
 
         /// <summary>05 §2.2 — 숫자만 남긴다. 하나도 없으면 미입력이다.</summary>

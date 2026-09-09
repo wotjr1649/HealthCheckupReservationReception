@@ -150,8 +150,11 @@ namespace HealthCheckupReservationReception.Services
                 ChartNo = Trim(r.ChartNo),
                 Name = Trim(r.Name),
                 SocialNumber = clsPatientText.Digits(r.SocialNumber),
-                MobilePhone = Trim(r.MobilePhone),
-                Phone = Trim(r.Phone),
+                // [2026-09-10 사용자 결정] 전화 두 칸은 `-` 를 넣은 꼴로 저장한다.
+                // DB 는 그대로다 — CK_수검자_CEL_DIGIT 가 `-` 를 벗기고 검사하고,
+                // 조회도 REPLACE 라 옵션 없이 맞는다 (05 §7.2). 화면 표기와 저장값이 같아진다.
+                MobilePhone = clsPatientText.FormatPhone(r.MobilePhone),
+                Phone = clsPatientText.FormatPhone(r.Phone),
                 Email = Trim(r.Email),
                 Zipcode = Trim(r.Zipcode),
                 Address = Trim(r.Address),
