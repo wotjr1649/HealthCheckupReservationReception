@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
-# 킷 §1 UI 베이스라인이 소스에 실제로 있는가 (07 §10 P10).
+# 킷 §1 이 소스에 실제로 지켜지는가 (07 §10 P10).
 #
 # UIB-001  SetPerMonitorDpiAware() 가 Main 의 **첫 문장**이다
 # UIB-002  DefaultFont · DefaultMenuFont 가 굴림 9pt 다
 # UIB-003  Designer 전건이 AutoScaleMode=Font · AutoScaleDimensions(7F,12F) · 자기 Font 를 직렬화한다
 # UIB-004  app.manifest 에 DPI 설정이 없다
+# UIB-005  .cs 전건이 UTF-8 BOM + LF 다 (.editorconfig)
+#
+# [X] UIB-005 는 사람이 손으로 재다 틀렸던 값이다. contract/build.md 가 경고한 대로
+#     grep -c $'\r' 은 $(...) 안에서 패턴이 무너져 LF 파일을 CRLF 로 보고한다.
+#     -cUP '\r' 이 맞고, 그래서 사람이 아니라 이 게이트가 잰다 (07 §14 X-06).
 #
 # [X] UIB-003 이 이 게이트의 핵심이다. references/designer.md 함정 9 — Program.cs 는 디자인타임에
 #     돌지 않으므로, 폼이 자기 Font 를 직렬화하지 않으면 **디자이너가 한 번 저장하는 순간**
@@ -39,13 +44,19 @@ if [ "${1:-check}" = "selftest" ]; then
             WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
             WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
         }'
-  run() { # run <라벨> <기대 exit> <Program.cs> <Designer 본문>
-    printf '%s\n' "$3" > "$D/src/Program.cs"
-    printf '%s\n' "$4" > "$D/src/Views/Frm.Designer.cs"
-    PROGRAM="$D/src/Program.cs" SRC="$D/src" "$0" check > "$D/out.txt" 2>&1
+  mkdir -p "$D/empty"
+  # 픽스처는 실물과 같은 인코딩(UTF-8 BOM + LF)으로 쓴다. UIB-005 가 그것을 본다.
+  wcs() { printf '\xEF\xBB\xBF' > "$1"; printf '%s\n' "$2" >> "$1"; }
+  fire() { # fire <라벨> <기대 exit>
+    PROGRAM="$D/src/Program.cs" SRC="$D/src" TESTS="$D/empty" "$0" check > "$D/out.txt" 2>&1
     local got=$?
     if [ "$got" -eq "$2" ]; then echo "PASS UIB-SELFTEST $1"
     else echo "FAIL UIB-SELFTEST $1 (기대 exit $2, 실제 $got)"; sed 's/^/    /' "$D/out.txt"; RC=1; fi
+  }
+  run() { # run <라벨> <기대 exit> <Program.cs> <Designer 본문>
+    wcs "$D/src/Program.cs" "$3"
+    wcs "$D/src/Views/Frm.Designer.cs" "$4"
+    fire "$1" "$2"
   }
   run '전부 맞으면 통과한다'                0 "$GOODPROG" "$GOODDES"
   run 'DPI 호출이 첫 문장이 아니면 잡는다'   1 "${GOODPROG/            WindowsFormsSettings.SetPerMonitorDpiAware();/            Application.EnableVisualStyles();
@@ -54,8 +65,17 @@ if [ "${1:-check}" = "selftest" ]; then
   run 'Designer 의 Font 누락을 잡는다'       1 "$GOODPROG" "${GOODDES/            this.Font = new System.Drawing.Font(\"굴림\", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));/}"
   run 'AutoScaleDimensions 변조를 잡는다'    1 "$GOODPROG" "${GOODDES/SizeF(7F, 12F)/SizeF(7F, 14F)}"
   run 'AutoScaleMode 변조를 잡는다'          1 "$GOODPROG" "${GOODDES/AutoScaleMode.Font/AutoScaleMode.Dpi}"
+
+  # UIB-005 — 인코딩·줄바꿈. 픽스처를 정상으로 되돌린 뒤 한 항목씩 무너뜨린다.
+  run '기준 상태로 되돌린다'                 0 "$GOODPROG" "$GOODDES"
+  printf '%s\n' "$GOODPROG" > "$D/src/Program.cs"          # BOM 없이 다시 쓴다
+  fire 'BOM 누락을 잡는다'                   1
+  wcs "$D/src/Program.cs" "$GOODPROG"
+  sed -i 's/$/\r/' "$D/src/Program.cs"
+  fire 'CRLF 를 잡는다'                      1
+
   rm -f "$D/src/Program.cs" "$D/src/Views/Frm.Designer.cs" "$D/out.txt"
-  rmdir "$D/src/Views" "$D/src" "$D"
+  rmdir "$D/src/Views" "$D/src" "$D/empty" "$D"
   exit $RC
 fi
 
@@ -116,5 +136,24 @@ else
   echo "$MAN" | sed 's/^/    /'
 fi
 
-if [ "$FAIL" -eq 0 ]; then echo "== PASS UI 베이스라인 =="; else echo "== FAIL =="; fi
+# ── UIB-005  .cs 전건이 UTF-8 BOM + LF 인가 (.editorconfig)
+CSFILES=$(find "$SRC" "${TESTS:-tests}" -name '*.cs' -not -path '*/obj/*' -not -path '*/bin/*' 2>/dev/null | sort)
+if [ -z "$CSFILES" ]; then
+  say FAIL "UIB-005 .cs 파일을 하나도 못 찾았다"
+else
+  N=0; BAD=
+  while IFS= read -r f; do
+    N=$((N + 1))
+    [ "$(head -c3 "$f" | od -An -tx1 | tr -d ' \n')" = "efbbbf" ] || BAD="$BAD\n    $f — BOM 없음"
+    [ "$(grep -cUP '\r' "$f" || true)" -eq 0 ] || BAD="$BAD\n    $f — CRLF"
+  done <<< "$CSFILES"
+  if [ -z "$BAD" ]; then
+    say PASS "UIB-005 .cs $N 건 전부 UTF-8 BOM + LF 다"
+  else
+    say FAIL "UIB-005 인코딩·줄바꿈 위반"
+    printf '%b\n' "$BAD"
+  fi
+fi
+
+if [ "$FAIL" -eq 0 ]; then echo "== PASS 킷 §1 =="; else echo "== FAIL =="; fi
 exit $FAIL

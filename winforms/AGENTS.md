@@ -44,6 +44,19 @@ changes anything under `winforms/`, run
 `cd ../database && ./scripts/verify-winforms-unchanged.sh init` and include the regenerated
 manifest in that same commit — the same rule ROOT `AGENTS.md` §2.2 applies to reseals.
 
+### Line endings are LF, against the kit
+
+The kit fixes C# sources at UTF-8 BOM + **CRLF**. This repository is LF everywhere — the
+sealed documents, the database series SQL and scripts, and the C# that was here before the
+kit arrived. LF wins, by the kit's own precedence rule.
+
+The values live in `.editorconfig`, and `scripts/verify-ui-baseline.sh` `UIB-005` judges
+them; do not restate either here.
+
+`.editorconfig` reaches new lines and new files only, so an existing file keeps whatever it
+has. Converting one is a commit of its own — folded into a functional change it turns the
+diff into a whole-file replacement and buries what actually changed.
+
 ### Connection strings use integrated authentication only
 
 A connection string that supplies `user id` or `uid`, or that turns `integrated security`

@@ -567,7 +567,7 @@ contract belongs to the service"*, *"Integrity and concurrency live in the datab
 | P07 | 계층 격리 | `SqlConnection`·`SqlCommand`·`SqlDataReader` 가 `Repositories/` 밖에 0건 · DevExpress 타입이 `Views/`·`Program.cs` 밖에 0건 | `PLANNED` — 킷 §2 |
 | P08 | Build | MSBuild exit 0 · Warning 확인 | **`PASS`** — VS2019 Professional 16.11.6 · `Configuration=Debug` · exit 0 · Warning 0 (2026-09-09). DevExpress 20.2 참조가 들어간 뒤의 첫 빌드다 |
 | P09 | Test | MSTest 전건 통과 | **`PASS`** — `vstest.console` 16.11.0 · 통과 2 / 실패 0 (2026-09-09) |
-| P10 | UI baseline | 굴림 9pt · `SetPerMonitorDpiAware()` 가 `Main` 첫 문장 · `AutoScaleMode=Font` · Designer 가 자기 `Font` 를 직렬화 · manifest 에 DPI 없음 | **`PASS`** — `winforms/scripts/verify-ui-baseline.sh` `UIB-001`~`004` (2026-09-09) |
+| P10 | 킷 §1 | 굴림 9pt · `SetPerMonitorDpiAware()` 가 `Main` 첫 문장 · `AutoScaleMode=Font` · Designer 가 자기 `Font` 를 직렬화 · manifest 에 DPI 없음 · `.cs` 전건 UTF-8 BOM + LF | **`PASS`** — `winforms/scripts/verify-ui-baseline.sh` `UIB-001`~`005` (2026-09-09) |
 | P11 | 시각 검증 | 100% · 125% 배율에서 잘림 0건 | `PLANNED` — `03` §1.4 |
 | P12 | manifest | winforms 변경 커밋마다 manifest 동봉 | `PLANNED` — `verify-winforms-unchanged.sh` |
 | P13 | `07` 문서 | 구현과 일치하는 FINAL | `PLANNED` — §12 가 비어 있는 동안 `CANDIDATE` |
@@ -658,10 +658,16 @@ csproj 의 `<RootNamespace>` 와 `Program.cs`·`Views/*` 의 `namespace` 선언�
 `CFG-006` 은 루트만 고치고 소스가 따라오지 않는 경우를 잡는다. 접두사만 같은 이름
 (`…ReceptionExtra`)이 루트 안으로 새지 않는지도 `selftest` 가 시험한다.
 
-`[X]` **`X-06` 은 고치지 않았다.** 넉 장을 CRLF 로 바꿨다가 되돌렸다 — 줄바꿈을 바꾸면 그
-커밋의 diff 가 전 줄 교체가 되어 실제 변경이 묻힌다. 저장소 전체 규약이므로 별건이다.
-`.editorconfig` 를 두면 이후 파일이 자동으로 맞고 지금 파일은 그대로 남는다(킷의
-`editorconfig.example` 이 *"existing files are not rewritten on save"* 라 적었다).
+`[D]` **사용자 결정 (2026-09-09): `X-06` 은 LF 로 간다.** 킷 §1 의 CRLF 를 이 저장소의
+예외로 두고 `winforms/.editorconfig` 와 `winforms/AGENTS.md` 에 기록했다 — 킷 자신이
+*"Existing applicable project instructions take precedence over this kit"* 라 적었고,
+기준선 문서부터 database 계열까지 이 저장소는 전부 LF 다(`06` §4.2).
+
+**기존 파일을 한 줄도 바꾸지 않았다.** `.editorconfig` 는 새 줄과 새 파일에만 닿는다(킷
+`editorconfig.example` 의 같은 주석). 줄바꿈 변환을 기능 변경과 같은 커밋에 넣으면 diff 가
+전 줄 교체가 되어 실제 변경이 묻힌다.
+
+판정은 `verify-ui-baseline.sh` `UIB-005` 가 한다 — 사람이 손으로 재는 구조로 두지 않는다.
 
 `[X]` **이 자리에서 한 번 틀렸다.** 처음 줄바꿈을 잴 때 `grep -c $''` 을 썼는데
 `contract/build.md` 가 정확히 그것을 경고한다 — `$(...)` 안에서 패턴이 빈 값으로 무너져 모든
