@@ -26,7 +26,7 @@ namespace HealthCheckupReservationReception.Repositories
                 connection.Open();
                 using (SqlDataReader reader = command.ExecuteReader())
                 {
-                    read.Result = ReadResult(reader);
+                    read.Result = DbResultReader.Read(reader);
 
                     // RS0 이 실패면 후속 Result Set 을 쓰지 않는다 (05 §16.4).
                     if (read.Result != null && read.Result.Success && reader.NextResult())
@@ -37,25 +37,6 @@ namespace HealthCheckupReservationReception.Repositories
             }
 
             return read;
-        }
-
-        // 컬럼은 이름으로 읽는다. 순서에 기대지 않는다 (05 §16.2).
-        private static DbResult ReadResult(SqlDataReader reader)
-        {
-            if (!reader.Read())
-            {
-                return null;
-            }
-
-            int ordField = reader.GetOrdinal("오류항목");
-            return new DbResult
-            {
-                Success = reader.GetBoolean(reader.GetOrdinal("성공여부")),
-                Code = reader.GetInt32(reader.GetOrdinal("결과코드")),
-                Message = reader.GetString(reader.GetOrdinal("결과메시지")),
-                Field = reader.IsDBNull(ordField) ? null : reader.GetString(ordField),
-                ServerTime = reader.GetDateTime(reader.GetOrdinal("서버시각"))
-            };
         }
 
         private static CommonWorkStatusDto ReadStatus(SqlDataReader reader)

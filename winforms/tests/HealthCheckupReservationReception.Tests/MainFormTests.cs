@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Forms;
+using DevExpress.Utils;
 using DevExpress.XtraBars.Ribbon;
 using HealthCheckupReservationReception.Tests.Presenters;
 using HealthCheckupReservationReception.Views;
@@ -119,6 +120,34 @@ namespace HealthCheckupReservationReception.Tests
                     CollectionAssert.Contains(closed, "현장 당일예약");
                     CollectionAssert.DoesNotContain(closed, "변경이력");
                     CollectionAssert.DoesNotContain(closed, "컬럼설정");
+                }
+            });
+        }
+
+        // [X] 03 에 없는 리본 크롬은 RibbonControl 을 만들면 자동으로 켜진다 — 내가 넣은 것이
+        //     아니라 끄지 않았던 것이다. 배치 게이트(SCR-*)는 설계 소스에 **있는** 것만 보므로
+        //     "설계에 없는데 켜진 것" 은 잡지 못한다. 그 자리를 이 시험이 맡는다.
+        [TestMethod]
+        public void 설계에_없는_리본_크롬은_꺼져_있다()
+        {
+            RunSta(() =>
+            {
+                using (MainForm form = NewShell())
+                {
+                    RibbonControl ribbon = form.Ribbon;
+                    Assert.AreEqual(DefaultBoolean.False, ribbon.ShowApplicationButton,
+                        "Application Button — Office 의 [파일] 탭 자리");
+                    Assert.AreEqual(DefaultBoolean.False, ribbon.ShowDisplayOptionsMenuButton,
+                        "제목표시줄의 리본 표시 옵션");
+                    Assert.AreEqual(DefaultBoolean.False, ribbon.ShowExpandCollapseButton,
+                        "리본 접기 버튼");
+                    Assert.AreEqual(RibbonQuickAccessToolbarLocation.Hidden, ribbon.ToolbarLocation,
+                        "Quick Access Toolbar");
+                    Assert.IsFalse(ribbon.ShowToolbarCustomizeItem, "도구모음 사용자 지정");
+
+                    // 버튼만 숨기면 페이지 헤더 더블클릭으로 여전히 접힌다. 경로를 막고 상태를 고정한다.
+                    Assert.IsFalse(ribbon.AllowMinimizeRibbon, "리본 최소화 경로");
+                    Assert.IsFalse(ribbon.Minimized, "리본은 펼친 상태로 고정한다");
                 }
             });
         }

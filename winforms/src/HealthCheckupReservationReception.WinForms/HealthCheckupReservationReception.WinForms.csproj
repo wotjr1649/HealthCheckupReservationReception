@@ -56,12 +56,22 @@
     <Compile Include="Models\CommonWorkStatusDto.cs" />
     <Compile Include="Models\CommonWorkStatusReadDto.cs" />
     <Compile Include="Models\DbResult.cs" />
+    <Compile Include="Models\PatientDetailDto.cs" />
+    <Compile Include="Models\PatientDetailReadDto.cs" />
+    <Compile Include="Models\PatientListItemDto.cs" />
+    <Compile Include="Models\PatientListReadDto.cs" />
+    <Compile Include="Models\PatientSearchRequest.cs" />
     <Compile Include="Presenters\MainPresenter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Repositories\CommonStatusRepository.cs" />
+    <Compile Include="Repositories\DbResultReader.cs" />
+    <Compile Include="Repositories\IPatientRepository.cs" />
+    <Compile Include="Repositories\PatientRepository.cs" />
     <Compile Include="Repositories\ICommonStatusRepository.cs" />
     <Compile Include="Services\CommonStatusService.cs" />
     <Compile Include="Services\ICommonStatusService.cs" />
+    <Compile Include="Services\IPatientService.cs" />
+    <Compile Include="Services\PatientService.cs" />
     <Compile Include="Views\IMainView.cs" />
     <Compile Include="Views\MainForm.cs">
       <SubType>Form</SubType>

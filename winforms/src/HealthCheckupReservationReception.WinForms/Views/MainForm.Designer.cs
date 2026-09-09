@@ -103,6 +103,18 @@ namespace HealthCheckupReservationReception.Views
             this.barPageRsvDesk,
             this.barPageRcpDesk,
             this.barPageHoliday});
+            // 03 에 없는 리본 크롬을 끈다. RibbonControl 을 만들면 자동으로 켜지는 것들이라
+            // 능동적으로 넣은 것이 아니라 끄지 않았던 것이다 (07 §14.3 A-07).
+            //   ShowApplicationButton         Office 의 [파일] 탭 자리. 03 에 없다
+            //   ShowDisplayOptionsMenuButton  제목표시줄의 리본 표시 옵션 드롭다운
+            //   ShowExpandCollapseButton      리본 우측 하단의 접기 버튼
+            //   AllowMinimizeRibbon           [X] 버튼만 숨기면 페이지 헤더 더블클릭으로 여전히 접힌다
+            //   Minimized                     펼친 상태로 고정
+            this.barRibbonMain.AllowMinimizeRibbon = false;
+            this.barRibbonMain.Minimized = false;
+            this.barRibbonMain.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
+            this.barRibbonMain.ShowDisplayOptionsMenuButton = DevExpress.Utils.DefaultBoolean.False;
+            this.barRibbonMain.ShowExpandCollapseButton = DevExpress.Utils.DefaultBoolean.False;
             this.barRibbonMain.ShowToolbarCustomizeItem = false;
             this.barRibbonMain.Size = new System.Drawing.Size(1920, 143);
             this.barRibbonMain.StatusBar = this.barStatusMain;
