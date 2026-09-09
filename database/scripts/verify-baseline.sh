@@ -12,7 +12,7 @@ const exp={
  "03_Wireframe_Definition.md":"c53d52047ca03caeb72dc2db8fb201ae8699a02300d373fc2965062accf6029f",
  "04_DB_Design.md":"004864e313df74c25f62da46bb5a78573633c3d86ee6db121a421ef51b4a902e",
  "05_DB_Rule_SP_Contract.md":"4a019f6365657205d63b233c23121b6783a81a6516e90c318967e30529ffd8f2",
- "06_DB_Transaction_Security_Seed.md":"1220ba1d8ad8b3f4c02a51432d6c06383c4cf975637ce96570f49cff47bbd3d8"};
+ "06_DB_Transaction_Security_Seed.md":"d3c857d704906ef7aacae70e5ae37d325cbdea995213224eddbbc8596c466888"};
 const N=Object.keys(exp).length;
 let ok=0;
 for(const [n,e] of Object.entries(exp)){

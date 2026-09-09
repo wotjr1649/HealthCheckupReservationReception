@@ -2507,10 +2507,15 @@ artifacts/
 | `R7` 창 안 | 2026-09-08 13:00 | 안 (화, 비휴무일 · PM 창 11:10~15:50) | `artifacts/logs/full_test_run_r7.log` — exit 0 · PASS 389 · FAIL 0 · SKIP 2 · NOT RUN 1 |
 | `R8` 창 안 | 2026-09-08 13:35 | 안 (화, 비휴무일 · PM 창 11:10~15:50) | `artifacts/logs/full_test_run_r8.log` — exit 0 · PASS 399 · FAIL 0 · SKIP 2 · NOT RUN 1 |
 | `R9` 창 밖 | 2026-09-09 08:0x | 밖 (수, 09:00 이전) | `artifacts/logs/full_test_run_r9_off.log` — exit 0 · PASS 227 · FAIL 0 · SKIP 78 · NOT RUN 9 |
+| `R9` 창 안 | 2026-09-09 11:59 | 안 (수, 비휴무일 · PM 창 11:10~15:50) | `artifacts/logs/full_test_run_r9.log` — exit 0 · PASS 399 · FAIL 0 · SKIP 2 · NOT RUN 1 |
 
-`[I]` **회차 `R9` 는 창 밖이다.** R9 가 바꾼 것은 `verify-contract-all.sh` 의 판정 한 줄뿐이고 그것은 창과
-무관하게 매 회차 실행된다. 시각 의존 경로의 증거는 회차 `R8` 이 그대로 갖는다 — R9 는 SQL·계약·Seed 를
-한 줄도 바꾸지 않았다.
+`[I]` **회차 `R9` 는 두 번 돌았다.** 창 밖에서 먼저 `verify-contract-all.sh` 의 바뀐 판정을 확인했고 —
+그 판정은 창과 무관하게 매 회차 실행된다 — `main` 병합 전에 창 안에서 한 번 더 돌려 시각 의존 경로까지
+이 트리로 판정했다.
+
+R9 는 SQL·계약·Seed 를 한 줄도 바꾸지 않았으므로 회차 `R8` 과 **같은 수치가 나오는 것이 정상**이고,
+실제로 `PASS 399 · FAIL 0 · SKIP 2 · NOT RUN 1` 로 같다. 그 일치 자체가 R9 가 시험 대상을 건드리지
+않았다는 증거다 — 달랐다면 "안 건드렸다" 는 주장이 거짓이었을 것이다.
 
 `[X]` **회차 `R7` 은 `CON-004` 를 판정하지 못했다.** `tests/10` 이 R7 이 바꾼 동시성 토큰을 따라가지 못해
 세션 A 가 `Msg 257` 로 죽었는데, 하니스가 `exit != 0` 을 통째로 "업무실패" 로 읽어 **PASS 를 찍었다**.
