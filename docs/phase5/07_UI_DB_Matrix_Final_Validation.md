@@ -209,6 +209,10 @@ Navigation RibbonPage 다섯                   03 §1.1 · §4.1        ✅  SCR
 휴무일 Page → Modal · 직전 Page 복귀         03 §24.2              ✅
 기동 시 첫 업무 Tab 을 연다                  §14.3 A-06            ✅  실행 캡처로 잡은 결함
 리본 버튼 가로 한 줄 (RibbonItemStyles.Large) 03 §4.1 목업          ✅  실행 캡처로 확인
+기본 크기 1920×1080 · 최대화 지원            사용자 지시 X-11      ✅  03 §1.4 는 Maximized 다
+최소 크기 1366×768                           03 §1.4 최소 검증     ✅  화면이 작으면 작업영역에 맞춘다
+Quick Access Toolbar 숨김                    03 에 없는 요소       ✅  §1.4 "별도 도구모음 중복 금지"
+상태바 조작자 오른쪽 정렬                    가독성                ✅  두 값이 붙어 읽기 어려웠다
 XtraTabControl · 탭마다 × 닫기               03 §4.1               ✅
 Single Instance Tab · Workbench Caption 전환 03 §4.3 · §9.1        ✅  Presenter 가 상태를 갖는다
 Tab ↔ Ribbon Page 동기                       03 §4.2               ✅
@@ -718,9 +722,16 @@ cd winforms && ./scripts/test.sh          # P01~P07 · P10. DB 서버도 MSBuild
 
 ## 12.3 WF-00 실행 화면 `[I]`
 
-`winforms/tools/capture-shell.ps1` 로 실행본을 띄워 창을 PNG 로 떴다. **디자인 표면이 아니다** —
-`references/designer.md` 가 적은 대로 `Program.cs` 와 Presenter 는 디자인타임에 돌지 않으므로
-디자이너 화면으로는 배치를 판정할 수 없다.
+**디자인 표면으로는 배치를 판정할 수 없다** — `references/designer.md` 가 적은 대로
+`Program.cs` 와 Presenter 가 디자인타임에 돌지 않아 글꼴·업무 Tab·상태바가 나타나지 않는다.
+그래서 실행 화면을 뜨는 수단을 둘 둔다. 목적이 다르다.
+
+| 수단 | 무엇을 보는가 | 누가 돌리는가 |
+|---|---|---|
+| `tests/…/Visual/ShellCaptureTests.cs` | 클라이언트 영역. fake 로 상태를 고정해 **결정적**이다 | `vstest` 안에서 돈다 → 매 회귀에서 새로 그려진다 |
+| `tools/capture-shell.ps1` | 실제 창(제목표시줄 포함) · **실물 DB** 를 거친 화면 | 사람이 돌린다 |
+
+산출은 `winforms/artifacts/logs/wf00_shell.png` — `.gitignore` 대상이라 manifest 를 흔들지 않는다.
 
 ```text
 확인됨   Navigation Page 다섯 · 그룹 검색→업무→보기 · 버튼 가로 한 줄
@@ -831,6 +842,7 @@ ROOT `AGENTS.md` §6 으로 경계한 상태다. `X-10` 은 게이트가 처리�
 | `X-05` | `05` §1.1 vs `MainForm.Designer.cs` | `05` 는 사용자 화면 표시명을 `검진 예약·접수 관리 프로그램` 이라 확정했는데 Designer 의 `Text` 는 `건강검진 예약·접수` 였다 |
 | `X-07` | 킷 §6 vs 킷 `references/mvp-wiring.md` | §6 은 *"show a Korean message without raw exception text"* 라 적는데 같은 킷의 참조 파일 예제는 `"조회 중 오류가 발생했습니다. " + ex.Message` 를 그대로 보여준다. 복사되기 쉬운 자리다 |
 | `X-10` | `wf_00.js` vs `03` §9.6 | 셸 도해의 Ribbon 이 축약돼 있다 — 그룹명이 `현재 업무 Action` 이고 보기 그룹이 `[컬럼설정]` 뿐이다. `03` §9.6 은 `[변경이력] [컬럼설정]` 이다. **`03` 이 이긴다**; 게이트가 `wf_00` Ribbon 을 대조에서 뺀다 (§2.1) |
+| `X-11` | `03` §1.4 vs 사용자 지시 | §1.4 는 *"MainForm은 기본 Maximized로 연다"* 고 적는다. 사용자가 **기본 1920×1080 · 최대화는 지원**으로 바꾸라고 지시했다 (2026-09-09). 지시를 따랐다 — §3.1.2 |
 | `X-09` | ROOT `AGENTS.md` §3 vs 저장소 실물 | *"`output/` 은 `.gitignore` 대상이라 어떤 커밋에도 남지 않는다"* 가 산출물 추적 커밋으로 거짓이 되었다. `verify-baseline.sh:27` 주석도 같은 문장을 참조한다 |
 | `X-08` | `03` §4.1 vs `05` §1.1 | 타이틀 밴드가 `검진 예약·접수 관리` 인데 `05` §1.1 「사용자 화면 표시명」은 `검진 예약·접수 관리 프로그램` 이다. `03` 본문 제목도 후자다 — ASCII 스케치의 줄임으로 보고 `05` 를 따랐다 (`CFG-007`) |
 | `X-06` | 킷 §1 vs 저장소 실물 | 킷은 C# 을 **UTF-8 BOM + CRLF** 로 정하는데 이 저장소의 `.cs` 는 전부 **BOM + LF** 다. `.editorconfig` 가 아직 없다 |

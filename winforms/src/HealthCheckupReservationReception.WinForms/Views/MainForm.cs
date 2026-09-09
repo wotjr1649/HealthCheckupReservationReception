@@ -1,6 +1,8 @@
 ﻿// 화면 ID: WF-00 — MainForm Shell (03 §4)
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Windows.Forms;
 using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
 using DevExpress.XtraEditors;
@@ -21,7 +23,24 @@ namespace HealthCheckupReservationReception.Views
         public MainForm(ICommonStatusService service, string operatorName)
         {
             InitializeComponent();
+            ClampToWorkingArea();
             _presenter = new MainPresenter(this, service, operatorName);
+        }
+
+        /// <summary>
+        /// 기본 크기는 03 §1.4 의 권장 기준 1920x1080 이고 최대화도 그대로 쓴다.
+        /// 화면이 그보다 작으면 작업 영역에 맞춘다 — 그러지 않으면 창의 아래·오른쪽이
+        /// 화면 밖으로 나가 상태바와 Tab 스트립을 볼 수 없다 (03 §1.4 최소 검증 1366x768).
+        /// </summary>
+        private void ClampToWorkingArea()
+        {
+            Rectangle work = Screen.PrimaryScreen.WorkingArea;
+            if (Width <= work.Width && Height <= work.Height)
+            {
+                return;
+            }
+
+            Size = new Size(Math.Min(Width, work.Width), Math.Min(Height, work.Height));
         }
 
         public event EventHandler ShellLoaded;

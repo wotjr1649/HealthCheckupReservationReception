@@ -52,6 +52,7 @@
     <Compile Include="MainFormTests.cs" />
     <Compile Include="Presenters\MainPresenterTests.cs" />
     <Compile Include="Services\CommonStatusServiceTests.cs" />
+    <Compile Include="Visual\ShellCaptureTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\HealthCheckupReservationReception.WinForms\HealthCheckupReservationReception.WinForms.csproj">

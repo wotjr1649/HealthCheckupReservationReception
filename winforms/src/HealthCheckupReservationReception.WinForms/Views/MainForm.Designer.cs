@@ -103,8 +103,10 @@ namespace HealthCheckupReservationReception.Views
             this.barPageRsvDesk,
             this.barPageRcpDesk,
             this.barPageHoliday});
-            this.barRibbonMain.Size = new System.Drawing.Size(1024, 143);
+            this.barRibbonMain.ShowToolbarCustomizeItem = false;
+            this.barRibbonMain.Size = new System.Drawing.Size(1920, 143);
             this.barRibbonMain.StatusBar = this.barStatusMain;
+            this.barRibbonMain.ToolbarLocation = DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Hidden;
             this.barRibbonMain.SelectedPageChanged += new System.EventHandler(this.barRibbonMain_SelectedPageChanged);
             //
             // barBtnPatientSearch
@@ -261,6 +263,7 @@ namespace HealthCheckupReservationReception.Views
             //
             // barStaticOperator
             //
+            this.barStaticOperator.Alignment = DevExpress.XtraBars.BarItemLinkAlignment.Right;
             this.barStaticOperator.Id = 24;
             this.barStaticOperator.Name = "barStaticOperator";
             //
@@ -380,10 +383,10 @@ namespace HealthCheckupReservationReception.Views
             //
             this.barStatusMain.ItemLinks.Add(this.barStaticWorkStatus);
             this.barStatusMain.ItemLinks.Add(this.barStaticOperator);
-            this.barStatusMain.Location = new System.Drawing.Point(0, 678);
+            this.barStatusMain.Location = new System.Drawing.Point(0, 1058);
             this.barStatusMain.Name = "barStatusMain";
             this.barStatusMain.Ribbon = this.barRibbonMain;
-            this.barStatusMain.Size = new System.Drawing.Size(1024, 22);
+            this.barStatusMain.Size = new System.Drawing.Size(1920, 22);
             //
             // tabBusiness
             //
@@ -391,7 +394,7 @@ namespace HealthCheckupReservationReception.Views
             this.tabBusiness.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabBusiness.Location = new System.Drawing.Point(0, 143);
             this.tabBusiness.Name = "tabBusiness";
-            this.tabBusiness.Size = new System.Drawing.Size(1024, 535);
+            this.tabBusiness.Size = new System.Drawing.Size(1920, 915);
             this.tabBusiness.TabIndex = 2;
             this.tabBusiness.CloseButtonClick += new System.EventHandler(this.tabBusiness_CloseButtonClick);
             this.tabBusiness.SelectedPageChanged += new DevExpress.XtraTab.TabPageChangedEventHandler(this.tabBusiness_SelectedPageChanged);
@@ -401,7 +404,8 @@ namespace HealthCheckupReservationReception.Views
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1024, 700);
+            this.ClientSize = new System.Drawing.Size(1920, 1080);
+            this.MinimumSize = new System.Drawing.Size(1366, 768);
             this.Controls.Add(this.tabBusiness);
             this.Controls.Add(this.barStatusMain);
             this.Controls.Add(this.barRibbonMain);
@@ -410,7 +414,6 @@ namespace HealthCheckupReservationReception.Views
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.StatusBar = this.barStatusMain;
             this.Text = "검진 예약·접수 관리 프로그램";
-            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             ((System.ComponentModel.ISupportInitialize)(this.barRibbonMain)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.tabBusiness)).EndInit();
             this.ResumeLayout(false);
