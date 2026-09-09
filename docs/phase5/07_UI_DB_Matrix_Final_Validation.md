@@ -559,7 +559,7 @@ contract belongs to the service"*, *"Integrity and concurrency live in the datab
 |---|---|---|---|
 | P00 | Baseline Hash | 봉인 전건 일치 | `PLANNED` — `verify-baseline.sh` |
 | P01 | winforms secret | winforms 전건에 자격증명 0건 | **`PASS`** — `winforms/scripts/verify-no-secret.sh` (2026-09-09) |
-| P02 | App.config ↔ `05` §1.1 | 키 이름·`Initial Catalog`·`providerName` 일치 | **`PASS`** — `winforms/scripts/verify-appconfig-doc.sh` (2026-09-09) |
+| P02 | 실물 ↔ `05` §1.1 | 연결문자열 키·`Initial Catalog`·`providerName`·`RootNamespace`·`AssemblyName`·소스 `namespace` 일치 | **`PASS`** — `winforms/scripts/verify-contract-names.sh` `CFG-001`~`006` (2026-09-09) |
 | P03 | M1 화면 대조 | `03` §2 의 화면 전건이 §3 에 있다 (양방향 차집합 0) | **`PASS`** — `winforms/scripts/verify-ui-db-matrix.sh` `UIDB-001` (2026-09-09) |
 | P04 | M2 SP 대조 | `05` §1.3 의 SP 전건이 §4 에 있다 (양방향 차집합 0) | **`PASS`** — 같은 게이트 `UIDB-002`·`UIDB-003` (2026-09-09) |
 | P05 | 금지 호출 | C# 에 `UFN_HC_` 직접 호출 0건 · `05` §1.5 미생성 객체 0건 | `PLANNED` |
@@ -633,17 +633,23 @@ cd winforms && ./scripts/verify-ui-db-matrix.sh
 | `X-02` | `03` §16 vs `05` §16.5 | 수검자 Edit 의 숨은 동시성값이 `LastEditDate` 와 `행버전` 으로 다르다. R7 이 바꿨다 | `05` 를 따른다 (§8) |
 | `X-03` | `03` §25 vs `06` §4.1 | `03` 본문 말미의 기준선 회차 표기가 `06` §4.1 의 값보다 한 회차 뒤처져 있다 | 어느 쪽도 이 문서에 옮기지 않는다. `06` §4.1 이 단일 출처다 |
 
-`[I]` `X-03` 은 구현에 영향이 없다. 같은 값을 두 곳에 둔 자국이며 ROOT `AGENTS.md` §6 이
-경고한 그 모양이다 — 기록만 남긴다.
+`[D]` **사용자 결정 (2026-09-09): `X-01`·`X-02`·`X-03` 은 지금 재봉인하지 않고 기록만 남긴다.**
+`X-01`·`X-02` 는 `05` 우선으로 이미 결선돼 있어 구현이 막히지 않고(§6.4·§8), `X-03` 은 구현에
+영향이 없다. 봉인을 여는 것은 database 계열의 절차이므로 여기서 열지 않는다.
 
 ## 14.2 `[X]` 저장소 실물과 계약의 불일치
 
 | ID | 위치 | 내용 |
 |---|---|---|
-| `X-04` | `05` §1.1 vs `winforms/src/…/*.csproj` | `05` 는 Root Namespace 를 `HealthCheckupReservationReception` 이라 확정했는데 csproj 의 `<RootNamespace>` 는 `HealthCheckupReservationReception.WinForms` 다. 현재 소스의 `namespace` 선언도 후자를 따른다 |
+| `X-04` | `05` §1.1 vs `winforms/src/…/*.csproj` | `05` 는 Root Namespace 를 `HealthCheckupReservationReception` 이라 확정했는데 csproj 의 `<RootNamespace>` 는 `HealthCheckupReservationReception.WinForms` 였다. 소스의 `namespace` 선언도 후자를 따르고 있었다 |
 
-`[I]` `X-04` 를 계약에 맞추면 모든 소스의 `namespace` 선언이 바뀐다. 지금 고치는 것이 나중보다
-싸지만, 범위가 이 문서의 밖이라 사용자 판단을 받는다.
+`[D]` **사용자 결정 (2026-09-09): `X-04` 는 지금 맞췄다.** 소스가 넉 장뿐인 지금이 가장 싸다.
+csproj 의 `<RootNamespace>` 와 `Program.cs`·`Views/*` 의 `namespace` 선언을 `05` §1.1 에 맞췄고,
+`AssemblyName` 은 `05` §1.1 의 WinForms Project 이므로 그대로 두었다.
+
+**다시 어긋나지 않게 게이트를 붙였다** — `verify-contract-names.sh` `CFG-004`~`006`.
+`CFG-006` 은 루트만 고치고 소스가 따라오지 않는 경우를 잡는다. 접두사만 같은 이름
+(`…ReceptionExtra`)이 루트 안으로 새지 않는지도 `selftest` 가 시험한다.
 
 ## 14.3 `[A]` 이 문서가 택한 가정
 

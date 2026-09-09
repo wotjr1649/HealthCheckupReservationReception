@@ -69,7 +69,10 @@ if [ "${1:-check}" = "selftest" ]; then
   run7 '07 §4 에 SP 가 빠지면 잡는다' 1 "${GOOD/| \`SP-PAT-01\` | DLG-X-01 |/}"
   run7 '07 §4 에만 있는 SP 를 잡는다' 1 "${GOOD/| \`SP-PAT-01\` | DLG-X-01 |/| \`SP-ZZZ-99\` | DLG-X-01 |}"
   run7 '구획을 못 읽으면 통과가 아니라 FAIL 이다' 1 '내용 없음'
-  rm -rf "$D"
+  # [I] 만든 파일만 지우고 빈 디렉터리를 닫는다. 재귀 삭제를 쓰지 않는다 —
+  #     변수가 빈 값이 되는 순간 지우는 범위가 통째로 달라지는 부류의 명령이다.
+  rm -f "$D/wf.md" "$D/sp.md" "$D/07.md" "$D/out.txt"
+  rmdir "$D"
   exit $RC
 fi
 
@@ -77,7 +80,8 @@ for f in "$WF" "$SP" "$M7"; do
   [ -f "$f" ] || { say FAIL "UIDB-000 파일이 없다: $f"; echo "== FAIL =="; exit 1; }
 done
 
-T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
+T=$(mktemp -d)
+trap 'rm -f "$T"/03.screens "$T"/07.screens "$T"/05.sps "$T"/07.sps "$T"/07.m1sps; rmdir "$T"' EXIT
 SCREEN='\b(WF|DLG|CNF)-[A-Z0-9]+(-[0-9]+)?\b'
 SPID='\bSP-[A-Z]{3}-[0-9]{2}\b'
 

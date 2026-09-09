@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Windows.Forms;
-using HealthCheckupReservationReception.WinForms.Views;
+using HealthCheckupReservationReception.Views;
 
-namespace HealthCheckupReservationReception.WinForms
+namespace HealthCheckupReservationReception
 {
     internal static class Program
     {

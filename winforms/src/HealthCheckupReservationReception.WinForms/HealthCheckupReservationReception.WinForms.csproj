@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4D1F2A70-8C33-4B21-9E0A-1A2B3C4D5E01}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>HealthCheckupReservationReception.WinForms</RootNamespace>
+    <RootNamespace>HealthCheckupReservationReception</RootNamespace>
     <AssemblyName>HealthCheckupReservationReception.WinForms</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

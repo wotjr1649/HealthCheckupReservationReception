@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading;
-using HealthCheckupReservationReception.WinForms.Views;
+using HealthCheckupReservationReception.Views;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace HealthCheckupReservationReception.Tests

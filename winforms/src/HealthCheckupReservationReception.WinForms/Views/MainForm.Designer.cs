@@ -1,4 +1,4 @@
-﻿namespace HealthCheckupReservationReception.WinForms.Views
+﻿namespace HealthCheckupReservationReception.Views
 {
     partial class MainForm
     {

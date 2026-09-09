@@ -1,6 +1,6 @@
 ﻿using System.Windows.Forms;
 
-namespace HealthCheckupReservationReception.WinForms.Views
+namespace HealthCheckupReservationReception.Views
 {
     public partial class MainForm : Form
     {
