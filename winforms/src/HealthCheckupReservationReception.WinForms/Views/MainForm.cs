@@ -1,4 +1,5 @@
-﻿using System;
+﻿// 화면 ID: WF-00 — MainForm Shell (03 §4)
+using System;
 using System.Collections.Generic;
 using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
@@ -174,6 +175,7 @@ namespace HealthCheckupReservationReception.Views
                 case BusinessNavigation.NewReservation: return barPageNewReservation;
                 case BusinessNavigation.ReservationDesk: return barPageRsvDesk;
                 case BusinessNavigation.ReceptionDesk: return barPageRcpDesk;
+                case BusinessNavigation.HolidayManagement: return barPageHoliday;
                 default: return null;
             }
         }
@@ -208,12 +210,7 @@ namespace HealthCheckupReservationReception.Views
             {
                 handler(this, BusinessNavigation.ReceptionDesk);
             }
-        }
-
-        private void barBtnHoliday_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            EventHandler<BusinessNavigation> handler = NavigationRequested;
-            if (handler != null)
+            else if (selected == barPageHoliday)
             {
                 handler(this, BusinessNavigation.HolidayManagement);
             }

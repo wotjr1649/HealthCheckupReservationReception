@@ -1,4 +1,5 @@
-﻿namespace HealthCheckupReservationReception.Views
+﻿// 화면 ID: WF-00 — MainForm Shell (03 §4)
+namespace HealthCheckupReservationReception.Views
 {
     partial class MainForm
     {
@@ -18,7 +19,6 @@
         private void InitializeComponent()
         {
             this.barRibbonMain = new DevExpress.XtraBars.Ribbon.RibbonControl();
-            this.barBtnHoliday = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnPatientSearch = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnPatientNew = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnPatientEdit = new DevExpress.XtraBars.BarButtonItem();
@@ -53,6 +53,7 @@
             this.barGroupRsvWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupRsvView = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barPageRcpDesk = new DevExpress.XtraBars.Ribbon.RibbonPage();
+            this.barPageHoliday = new DevExpress.XtraBars.Ribbon.RibbonPage();
             this.barGroupRcpSearch = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupRcpWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupRcpView = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
@@ -67,7 +68,6 @@
             this.barRibbonMain.ExpandCollapseItem.Id = 0;
             this.barRibbonMain.Items.AddRange(new DevExpress.XtraBars.BarItem[] {
             this.barRibbonMain.ExpandCollapseItem,
-            this.barBtnHoliday,
             this.barBtnPatientSearch,
             this.barBtnPatientNew,
             this.barBtnPatientEdit,
@@ -94,24 +94,18 @@
             this.barRibbonMain.Location = new System.Drawing.Point(0, 0);
             this.barRibbonMain.MaxItemId = 25;
             this.barRibbonMain.Name = "barRibbonMain";
-            // 03 §24.2 — [휴무일 관리]는 Tab 을 열지 않는 Modal 진입 버튼이라 Page 가 아니다.
-            // Page 헤더 줄에 두어 03 §1.1 의 상단 Navigation 다섯 자리를 지킨다.
-            this.barRibbonMain.PageHeaderItemLinks.Add(this.barBtnHoliday);
+            // 03 §1.1 상단 업무 Navigation 다섯. 화면설계서 slide4 가 y=101 한 줄에
+            // 같은 크기(w=122)로 다섯을 그린다 — 휴무일 관리도 동등한 Page 다.
+            // 열리는 것이 Tab 이 아니라 Modal 이라는 것은 선택 시 동작이 정한다 (03 §24.2).
             this.barRibbonMain.Pages.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPage[] {
             this.barPagePatient,
             this.barPageNewReservation,
             this.barPageRsvDesk,
-            this.barPageRcpDesk});
+            this.barPageRcpDesk,
+            this.barPageHoliday});
             this.barRibbonMain.Size = new System.Drawing.Size(1024, 143);
             this.barRibbonMain.StatusBar = this.barStatusMain;
             this.barRibbonMain.SelectedPageChanged += new System.EventHandler(this.barRibbonMain_SelectedPageChanged);
-            //
-            // barBtnHoliday
-            //
-            this.barBtnHoliday.Caption = "휴무일 관리";
-            this.barBtnHoliday.Id = 1;
-            this.barBtnHoliday.Name = "barBtnHoliday";
-            this.barBtnHoliday.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnHoliday_ItemClick);
             //
             // barBtnPatientSearch
             //
@@ -354,6 +348,13 @@
             this.barGroupRcpView.Name = "barGroupRcpView";
             this.barGroupRcpView.Text = "보기";
             //
+            // barPageHoliday
+            //
+            // 그룹이 없다. 이 Page 는 선택되는 즉시 DLG-HOL-01 을 열고 직전 Page 로 돌아간다
+            // — 03 §24.2 가 업무 Tab 을 열지 않는다고 확정했다.
+            this.barPageHoliday.Name = "barPageHoliday";
+            this.barPageHoliday.Text = "휴무일 관리";
+            //
             // barStatusMain
             //
             this.barStatusMain.ItemLinks.Add(this.barStaticWorkStatus);
@@ -403,6 +404,7 @@
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageNewReservation;
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageRsvDesk;
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageRcpDesk;
+        private DevExpress.XtraBars.Ribbon.RibbonPage barPageHoliday;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientSearch;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientWork;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientView;
@@ -413,7 +415,6 @@
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRcpSearch;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRcpWork;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRcpView;
-        private DevExpress.XtraBars.BarButtonItem barBtnHoliday;
         private DevExpress.XtraBars.BarButtonItem barBtnPatientSearch;
         private DevExpress.XtraBars.BarButtonItem barBtnPatientNew;
         private DevExpress.XtraBars.BarButtonItem barBtnPatientEdit;

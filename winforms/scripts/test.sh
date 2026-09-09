@@ -27,6 +27,8 @@ run ./scripts/verify-layering.sh selftest
 run ./scripts/verify-layering.sh
 run ./scripts/verify-rs-columns.sh selftest
 run ./scripts/verify-rs-columns.sh
+run node tools/verify-screen-design.js selftest
+run node tools/verify-screen-design.js
 run ./scripts/verify-ui-db-matrix.sh selftest
 run ./scripts/verify-ui-db-matrix.sh
 

@@ -222,16 +222,52 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 new List<string> { "SelectNavigationPage:ReceptionDesk" }, view.Calls);
         }
 
-        // 03 §24.2 — 휴무일 관리는 Tab 을 열지 않는다.
+        // 03 §24.2 — 휴무일 관리는 Tab 을 열지 않고, 고른 뒤에는 직전 Page 로 돌아간다.
         [TestMethod]
-        public void 휴무일_관리는_Tab_을_열지_않고_Modal_만_연다()
+        public void 휴무일_관리는_Tab_을_열지_않고_직전_Page_로_돌아간다()
         {
             FakeMainView view = LoadedShell();
+            view.RaiseNavigationRequested(BusinessNavigation.ReceptionDesk);
             view.Calls.Clear();
 
             view.RaiseNavigationRequested(BusinessNavigation.HolidayManagement);
 
-            CollectionAssert.AreEqual(new List<string> { "ShowHolidayManagement" }, view.Calls);
+            // 되돌린 뒤에 연다 — 반대면 빈 Ribbon 이 Modal 뒤에 남는다.
+            CollectionAssert.AreEqual(
+                new List<string> { "SelectNavigationPage:ReceptionDesk", "ShowHolidayManagement" },
+                view.Calls);
+        }
+
+        [TestMethod]
+        public void 아무_업무_Page_도_고르기_전에_휴무일을_열면_첫_Page_로_돌아간다()
+        {
+            FakeMainView view = LoadedShell();
+
+            view.RaiseNavigationRequested(BusinessNavigation.HolidayManagement);
+
+            CollectionAssert.AreEqual(
+                new List<string> { "SelectNavigationPage:PatientManagement", "ShowHolidayManagement" },
+                view.Calls);
+        }
+
+        // 03 §24.2 — 공통 업무조건이 이 화면에는 적용되지 않는다.
+        [TestMethod]
+        public void 공통_업무불가여도_휴무일_관리는_열린다()
+        {
+            CommonWorkStatusDto status = Allowed();
+            status.IsWorkAllowed = false;
+            status.BlockCode = (int)DbCode.CenterClosed;
+            status.BlockMessage = "오늘은 업무일이 아닙니다.";
+
+            var view = new FakeMainView();
+            new MainPresenter(view, new FakeCommonStatusService { Result = Ok(status) }, "창구");
+            view.RaiseShellLoaded();
+            Assert.IsFalse(view.BusinessActionsEnabled);
+            view.Calls.Clear();
+
+            view.RaiseNavigationRequested(BusinessNavigation.HolidayManagement);
+
+            CollectionAssert.Contains(view.Calls, "ShowHolidayManagement");
         }
 
         private static FakeMainView LoadedShell()

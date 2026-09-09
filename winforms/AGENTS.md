@@ -44,6 +44,18 @@ changes anything under `winforms/`, run
 `cd ../database && ./scripts/verify-winforms-unchanged.sh init` and include the regenerated
 manifest in that same commit — the same rule ROOT `AGENTS.md` §2.2 applies to reseals.
 
+### A screen is built from its design source, not from `03` alone
+
+`03_Wireframe_Definition.md` states the rules and the fields; it does not state the layout.
+The layout lives in `../tools/docgen/wireframe/screens/<screen>.js`, one file per screen ID,
+with `kit.js` holding the shared parts and the `NAV` list. Read that file before building the
+screen, and do not reverse-engineer the generated `pptx` — running the generator hands you the
+same thing directly.
+
+`tools/verify-screen-design.js` judges the result and runs in `scripts/test.sh`. Mark each C#
+file of a screen with `// 화면 ID: <ID>` at the top; that comment is how the gate pairs design
+with implementation.
+
 ### Line endings are LF, against the kit
 
 The kit fixes C# sources at UTF-8 BOM + **CRLF**. This repository is LF everywhere — the

@@ -76,14 +76,19 @@ M2  05 §1.3 이 선언한 SP 마다 그것을 부르는 화면이 있는가 (�
 M3  화면에 나타나는 값마다 DB 쪽 이름이 있는가                            §5
 M4  SP 가 돌려줄 수 있는 ResultCode 마다 화면 표현이 정해져 있는가         §6
 M5  같은 검증을 화면·Service·DB 중 어디가 판정하는가 (중복·누락 0건)      §7
+M6  화면의 구성이 화면설계서와 같은가 (Navigation·Ribbon·라벨)            §13
 ```
+
+`[X]` **M6 은 처음에 §1.2 의 "판정하지 않는다" 에 있었다.** 그 한 줄이 WF-00 을 설계와
+다르게 만들고도 아무 게이트가 red 가 되지 않은 이유다. 좌표는 여전히 판정하지 않지만
+**구성은 판정한다** — 03 변경 통제가 잠근 것이 정확히 그쪽이다.
 
 ## 1.2 판정하지 않는다
 
 ```text
 SQL 구현의 옳음                   06 이 Phase 4 에서 판정했다 (§42)
 Rule 의 업무적 옳음               00·01 이 확정했다
-화면의 시각적 완성도              킷의 winforms-devexpress-ui 와 03 §1.4
+배율별 잘림·겹침                  눈으로 봐야 한다. 03 §1.4 · 킷 §10 Visual Verified
 성능                              측정 대상이 아직 없다
 ```
 
@@ -109,20 +114,30 @@ Rule 의 업무적 옳음               00·01 이 확정했다
 C# 식별자는 영문을 유지하고, 두 이름이 만나는 곳은 **Result Set 컬럼명 문자열과 Parameter
 이름뿐이다** (`05` §16.2).
 
-## 2.1 `03` 은 두 벌로 읽는다 `[X]`
+## 2.1 `03` 은 세 벌로 읽는다 — 배치의 원본은 생성기다 `[X]`
 
 ```text
-docs/baseline/03_Wireframe_Definition.md            원본. 규칙·계약·필드가 여기 있다
-docs/baseline/output/03_검진_예약접수_화면설계서.pptx  공개본. 도형 좌표로 **밴드 구조**가 드러난다
+docs/baseline/03_Wireframe_Definition.md            규칙·계약·필드 목록
+tools/docgen/wireframe/screens/*.js  (14개)         **배치의 원본.** 화면 ID 마다 한 파일
+tools/docgen/wireframe/kit.js · spec.js             화면 공통 부품과 규격. NAV 단일 출처
+docs/baseline/output/03_…화면설계서.pptx             위 셋이 만들어 낸 산출물
 ```
 
-**둘 다 봐야 한다.** `.md` 의 ASCII 스케치는 밴드를 구분해 주지 못한다 — 어느 줄이 Ribbon Page
-헤더이고 어느 줄이 그 페이지의 Group 인지 `.md` 만으로는 두 가지로 읽힌다. pptx 는 도형
-좌표를 갖고 있어 그 모호함이 없다.
+**`.md` 는 배치를 담지 못한다.** ASCII 스케치는 어느 줄이 Ribbon Page 헤더이고 어느 줄이 그
+페이지의 Group 인지 구분해 주지 않는다. 그 구조는 `screens/*.js` 에 선언형으로 있고 —
+`K.shell({ navActive, ribbon:[{name, buttons}], tabs })` — pptx 는 그것을 그린 결과일 뿐이다.
 
-`[X]` **WF-00 을 처음 만들 때 pptx 를 열지 않았고 그래서 셸 구조를 틀렸다** (§3.1).
-`output/` 이 `.gitignore` 대상이라 커밋에 없다는 이유로 건너뛰었는데(ROOT `AGENTS.md` §3),
-없는 것은 **커밋 기록**이지 화면 근거가 아니었다. 재현은 `node tools/docgen/build_all.js` 다.
+`[X]` **WF-00 을 처음 만들 때 `.md` 만 읽고 배치를 유추했다.** `output/` 이 `.gitignore`
+대상이라 근거가 아니라고 판단했는데(ROOT `AGENTS.md` §3), 없는 것은 **커밋 기록**이었고
+**생성기는 처음부터 git 안에 있었다.** 산출물을 건너뛴 것이 아니라 원본을 건너뛴 것이다.
+
+`[I]` **산출물을 역추출하지 않는다.** `node` 로 `screens/*.js` 의 `draw()` 를 실제 `Canvas` 에
+돌리면 `K.shell` 인자와 모든 라벨이 그대로 나온다. §13 의 게이트가 그렇게 한다.
+
+`[X]` **`wf_00.js` 의 Ribbon 은 셸 도해라 축약돼 있다.** 그룹명이 `현재 업무 Action`(§4.2 의
+일반 슬롯 이름)이고 보기 그룹이 `[컬럼설정]` 뿐이다 — `03` §9.6 은 `[변경이력] [컬럼설정]` 이다.
+**계약은 `03` 이므로** 게이트가 `wf_00` 의 Ribbon 을 대조에서 뺀다. 그 대가로 `예약 관리`
+Page 는 설계 소스가 없고 `03` §9.6 만이 근거다 — 게이트가 매 실행에서 그 사실을 출력한다.
 
 ---
 
@@ -144,7 +159,7 @@ docs/baseline/output/03_검진_예약접수_화면설계서.pptx  공개본. 도
 
 ### 3.1.1 셸 밴드 구조 `[B]`
 
-pptx `slide4` 의 도형 좌표가 밴드를 확정한다.
+`kit.js` 의 `shell()` 이 네 밴드를 순서대로 그리고, pptx `slide4` 의 도형 좌표가 그것을 확증한다.
 
 ```text
 y=101  x=55/184/312/441/570 (각 w=122)   수검자 관리·신규 예약·예약 관리·접수 관리·휴무일 관리
@@ -163,23 +178,32 @@ y=184  [수검자 관리 ×] [신규 예약 ×] [예약 관리 ×]   ← XtraTab
 하나(`업무 이동`)를 두고 Navigation 다섯을 `BarButtonItem` 으로 넣었다. `.md` 만 읽고
 만들었기 때문이다(§2.1). 지금은 위 구조로 다시 세웠다.
 
-`[A]` **`휴무일 관리`만 `RibbonPage` 가 아니다.** `03` §24.2 가 *"Tab 을 열지 않고 Modal 을
-연다"* 고 못박았으므로 Page 로 두면 선택했다가 되돌리는 UX 가 된다. `PageHeaderItemLinks` 에
-`BarButtonItem` 으로 두어 같은 밴드에 다섯이 서게 했다. §14 `A-05`.
+`[D]` **다섯이 동등한 `RibbonPage` 다** (사용자 결정 2026-09-09). 두 번째 판은 `휴무일 관리`
+만 `PageHeaderItemLinks` 의 버튼으로 뺐었다 — 근거로 든 *"설계에 `navActive:4` 가 없다"* 가
+성립하지 않는 근거였다. 휴무일은 Modal 이라 셸을 그린 슬라이드가 **애초에 없다.**
+설계는 `kit.NAV` 다섯을 같은 밴드에 같은 크기(`bw=1.28`)로 그린다.
+
+**선택하면 직전 Page 로 먼저 돌아간 뒤 `DLG-HOL-01` 을 연다.** 순서가 반대면 빈 Ribbon 이
+Modal 뒤에 남는다. 업무 Tab 은 열지 않고 열린 Tab 의 상태도 바꾸지 않는다 (`03` §24.2).
 
 ### 3.1.2 구현 현황 (2026-09-09)
 
 ```text
-Ribbon Page 넷 + 휴무일 헤더 버튼           03 §1.1 · §4.1        ✅
-페이지별 Group 검색 → 업무 → 보기            03 §4.2 · §5.2 ·      ✅  버튼은 만들었고
-                                             §8.2 · §9.6 · §9.7        핸들러는 각 화면이 붙인다
+Navigation RibbonPage 다섯                   03 §1.1 · §4.1        ✅  SCR-002 가 kit.NAV 와 대조
+페이지별 Group 검색 → 업무 → 보기            03 §4.2 · §5.2 ·      ✅  SCR-003 이 설계와 대조
+                                             §8.2 · §9.6 · §9.7        (예약 관리 Page 는 §2.1 참조)
+휴무일 Page → Modal · 직전 Page 복귀         03 §24.2              ✅
 XtraTabControl · 탭마다 × 닫기               03 §4.1               ✅
 Single Instance Tab · Workbench Caption 전환 03 §4.3 · §9.1        ✅  Presenter 가 상태를 갖는다
 Tab ↔ Ribbon Page 동기                       03 §4.2               ✅
 업무 상태 · 조작자                           03 §1.3               ✅  SP-COM-01
-공통 업무불가 → 업무 Action 비활성           03 §1.3 · §5.2        ✅  변경이력·컬럼설정·휴무일만 남는다
+공통 업무불가 → 업무 Action 비활성           03 §1.3 · §5.2        ✅  변경이력·컬럼설정만 남는다
 업무 Tab 의 내용(XtraUserControl)            03 §1.4               ✗  각 화면이 채운다
 ```
+
+`[I]` **화면 ID 는 C# 파일 상단 주석이 갖는다** — `// 화면 ID: WF-00`. 게이트가 그것으로
+설계 화면과 C# 을 짝짓는다. 타입 이름 규칙이 바뀌어도 대조가 깨지지 않고, 한 화면이 여러
+파일(View · Designer · Presenter)에 걸쳐도 같은 단위로 묶인다.
 
 `[I]` **Tab 은 열리지만 비어 있다.** `03` §1.4 가 Tab 내용을 *"업무별 `XtraUserControl`"* 로
 두었고 그 UserControl 은 각 화면의 산출물이다. 셸은 컨테이너와 수명주기까지가 자기 몫이다.
@@ -625,7 +649,8 @@ contract belongs to the service"*, *"Integrity and concurrency live in the datab
 | P08 | Build | MSBuild exit 0 · Warning 확인 | **`PASS`** — VS2019 Professional 16.11.6 · `Configuration=Debug` · exit 0 · Warning 0 (2026-09-09) |
 | P09 | Test | MSTest 전건 통과 | **`PASS`** — `vstest.console` 16.11.0 · 실패 0 (2026-09-09). **건수를 여기 적지 않는다** — 화면마다 늘어난다 |
 | P10 | 킷 §1 | 굴림 9pt · `SetPerMonitorDpiAware()` 가 `Main` 첫 문장 · `AutoScaleMode=Font` · Designer 가 자기 `Font` 를 직렬화 · manifest 에 DPI 없음 · `.cs` 전건 UTF-8 BOM + LF | **`PASS`** — `winforms/scripts/verify-ui-baseline.sh` `UIB-001`~`005` (2026-09-09) |
-| P11 | 시각 검증 | 100% · 125% 배율에서 잘림 0건 | `PLANNED` — `03` §1.4 |
+| P11 | 시각 검증 | 100% · 125% 배율에서 잘림 0건 | `PLANNED` — `03` §1.4. 눈으로 봐야 한다 |
+| P14 | 배치 ↔ 설계 | 화면 ID·Navigation·Ribbon 그룹/버튼·라벨이 `tools/docgen/wireframe` 의 설계와 같다 | **`PASS`** — `winforms/tools/verify-screen-design.js` `SCR-000`~`004` (2026-09-09) |
 | P12 | manifest | winforms 변경 커밋마다 manifest 동봉 | `PLANNED` — `verify-winforms-unchanged.sh` |
 | P13 | `07` 문서 | 구현과 일치하는 FINAL | `PLANNED` — §12 가 비어 있는 동안 `CANDIDATE` |
 
@@ -699,6 +724,32 @@ cd winforms && ./scripts/verify-ui-db-matrix.sh
 | `UIDB-002` | `05` §1.3 의 SP ID 전건이 `07` §4 에 있다 (양방향 차집합 0) |
 | `UIDB-003` | `07` §4 가 쓰는 SP ID 가 `07` §3 에도 나타난다 (두 표가 서로 어긋나지 않는다) |
 
+## 13.1 배치를 지키는 게이트
+
+```bash
+cd winforms && node tools/verify-screen-design.js
+```
+
+| 검사 | 내용 |
+|---|---|
+| `SCR-000` | 설계를 못 읽으면 통과가 아니라 FAIL |
+| `SCR-001` | `screens/*.js` 의 화면 ID 전건 ↔ `03` §2 양방향 차집합 0 |
+| `SCR-002` | `kit.js` 의 `NAV` 전건·순서 ↔ `MainForm` 의 `RibbonPage` 캡션 순서 |
+| `SCR-003` | 화면마다 `K.shell` 의 Ribbon 그룹명·버튼 ↔ `Ribbon.Pages[navActive]` |
+| `SCR-004` | 화면마다 설계의 라벨·캡션·헤더 ⊆ 그 화면 ID 를 단 C# 의 문자열 |
+
+`[I]` **산출물을 파싱하지 않는다.** `kit` 의 `shell`·`modal`·`confirm`·`searchBand`·`panel`·
+`field`·`grid` 를 가로채 인자를 받는다. 그래서 `K.grid` 의 데이터 행(`홍길동`·`2026-000123`)과
+`markLeft` 의 콜아웃 번호가 **자동으로 빠진다** — 낱말을 통째로 긁었다면 그 값들이 전부
+요구사항이 되었을 것이다.
+
+`[X]` **selftest 는 실물 C# 을 사본으로 떠서 변조한다.** 픽스처를 손으로 적으면 설계가 바뀔 때
+픽스처도 같이 낡고 그 낡음을 아무도 보지 않는다 (`verify-winforms-unchanged.sh` 의 같은 `[X]`).
+
+`[I]` **미구현 화면은 건너뛴다.** `// 화면 ID` 주석을 단 C# 이 없으면 그 화면은 `SCR-004`
+대상이 아니다. 그렇지 않으면 첫날부터 13건 red 라 게이트가 무의미해진다 — 건너뛴 화면 ID 를
+매 실행에서 출력해 남은 일이 보이게 한다.
+
 **게이트 목록을 여기 두 번 적지 않는다** — `scripts/test.sh` 가 부르는 것이 전부이고 각
 스크립트가 자기 검사 ID 를 출력한다.
 
@@ -720,6 +771,10 @@ cd winforms && ./scripts/verify-ui-db-matrix.sh
 | `X-02` | `03` §16 vs `05` §16.5 | 수검자 Edit 의 숨은 동시성값이 `LastEditDate` 와 `행버전` 으로 다르다. R7 이 바꿨다 | `05` 를 따른다 (§8) |
 | `X-03` | `03` §25 vs `06` §4.1 | `03` 본문 말미의 기준선 회차 표기가 `06` §4.1 의 값보다 한 회차 뒤처져 있다 | 어느 쪽도 이 문서에 옮기지 않는다. `06` §4.1 이 단일 출처다 |
 
+`[D]` **사용자 결정 (2026-09-09): `X-09` 는 내가 고친다.** 산출물을 추적하기로 한 것이
+사용자 지시이므로 §3 의 문장이 거짓이 되었고, 지침이 거짓인 채로 남는 것이 이 저장소가
+ROOT `AGENTS.md` §6 으로 경계한 상태다. `X-10` 은 게이트가 처리한다(§2.1).
+
 `[D]` **사용자 결정 (2026-09-09): `X-01`·`X-02`·`X-03` 은 지금 재봉인하지 않고 기록만 남긴다.**
 `X-01`·`X-02` 는 `05` 우선으로 이미 결선돼 있어 구현이 막히지 않고(§6.4·§8), `X-03` 은 구현에
 영향이 없다. 봉인을 여는 것은 database 계열의 절차이므로 여기서 열지 않는다.
@@ -732,6 +787,8 @@ cd winforms && ./scripts/verify-ui-db-matrix.sh
 
 | `X-05` | `05` §1.1 vs `MainForm.Designer.cs` | `05` 는 사용자 화면 표시명을 `검진 예약·접수 관리 프로그램` 이라 확정했는데 Designer 의 `Text` 는 `건강검진 예약·접수` 였다 |
 | `X-07` | 킷 §6 vs 킷 `references/mvp-wiring.md` | §6 은 *"show a Korean message without raw exception text"* 라 적는데 같은 킷의 참조 파일 예제는 `"조회 중 오류가 발생했습니다. " + ex.Message` 를 그대로 보여준다. 복사되기 쉬운 자리다 |
+| `X-10` | `wf_00.js` vs `03` §9.6 | 셸 도해의 Ribbon 이 축약돼 있다 — 그룹명이 `현재 업무 Action` 이고 보기 그룹이 `[컬럼설정]` 뿐이다. `03` §9.6 은 `[변경이력] [컬럼설정]` 이다. **`03` 이 이긴다**; 게이트가 `wf_00` Ribbon 을 대조에서 뺀다 (§2.1) |
+| `X-09` | ROOT `AGENTS.md` §3 vs 저장소 실물 | *"`output/` 은 `.gitignore` 대상이라 어떤 커밋에도 남지 않는다"* 가 산출물 추적 커밋으로 거짓이 되었다. `verify-baseline.sh:27` 주석도 같은 문장을 참조한다 |
 | `X-08` | `03` §4.1 vs `05` §1.1 | 타이틀 밴드가 `검진 예약·접수 관리` 인데 `05` §1.1 「사용자 화면 표시명」은 `검진 예약·접수 관리 프로그램` 이다. `03` 본문 제목도 후자다 — ASCII 스케치의 줄임으로 보고 `05` 를 따랐다 (`CFG-007`) |
 | `X-06` | 킷 §1 vs 저장소 실물 | 킷은 C# 을 **UTF-8 BOM + CRLF** 로 정하는데 이 저장소의 `.cs` 는 전부 **BOM + LF** 다. `.editorconfig` 가 아직 없다 |
 
@@ -770,7 +827,7 @@ csproj 의 `<RootNamespace>` 와 `Program.cs`·`Views/*` 의 `namespace` 선언�
 | `A-01` | `SP-COM-01` 재호출 주기를 `03` 이 정하지 않았다 | 업무 Action 을 여는 시점마다 다시 읽는다. 별도 타이머를 두지 않는다 | 낮다 — 호출 지점 추가뿐 |
 | `A-02` | Targeted Navigation 의 SP 결선을 `03`·`05` 둘 다 명시하지 않았다 | `SP-WRK-02` 하나로 Grid 행과 Detail 을 함께 구성한다 (§3.6.2) | 낮다 — 계약 안에서 닫힌다 |
 | `A-03` | `DLG-RCP-02` 의 AEX 가용성을 다시 물을지 `03` 이 정하지 않았다 | 진입 시점의 `SP-WRK-02` RS3·RS4 로 충분하다고 본다. 선택할 때마다 다시 부르지 않는다 | 낮다 — 재호출 추가뿐 |
-| `A-05` | `03` §1.1 은 `휴무일 관리` 를 Navigation 다섯 중 하나로 두는데 §24.2 는 Tab 을 열지 않는 Modal 진입이라 한다 | `RibbonPage` 가 아니라 `PageHeaderItemLinks` 의 `BarButtonItem` 으로 둔다. 같은 밴드에 다섯이 서고 Page 선택 되돌림이 없다 | 낮다 — Page 로 옮기면 된다 |
+| ~~`A-05`~~ | ~~`휴무일 관리` 를 `PageHeaderItemLinks` 버튼으로 둔다~~ | **철회 (2026-09-09).** 근거로 든 *"설계에 `navActive:4` 가 없다"* 가 성립하지 않는 근거였다 — 휴무일은 Modal 이라 셸을 그린 슬라이드가 애초에 없다. 다섯이 동등한 `RibbonPage` 다 (§3.1.1) | — |
 | `A-04` | `03` §1.3 은 조작자를 *"WinForms 설정 파일의 값"* 이라 적고 키 이름을 정하지 않았다 | `App.config` `appSettings` 의 `OperatorName`. `05` §16.5 의 C# 이름과 같다 | 낮다 — 키 한 줄 |
 
 `[I]` 셋 다 킷 §8 이 말하는 *"smallest reversible reading"* 이다. 요구사항 자체가 비어 있는

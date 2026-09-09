@@ -44,27 +44,23 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // 03 §1.1 · §4.1 — 상단 업무 Navigation 다섯.
-        // 앞 넷은 RibbonPage 이고 [휴무일 관리]만 Page 헤더 줄의 버튼이다 (§24.2).
+        // 03 §1.1 · §4.1 — 상단 업무 Navigation 다섯이 같은 밴드에 동등하게 선다.
+        // 화면설계서 slide4 는 y=101 한 줄에 같은 크기(w=122)로 다섯을 그린다.
+        // 목록·순서의 단일 출처는 kit.js 의 NAV 이고 verify-screen-design.js SCR-002 가 지킨다 —
+        // 여기서는 다섯이라는 것과 휴무일이 마지막이라는 것만 본다.
         [TestMethod]
-        public void 상단_Navigation_은_Page_넷과_휴무일_버튼_하나다()
+        public void 상단_Navigation_은_동등한_Page_다섯이다()
         {
             RunSta(() =>
             {
                 using (MainForm form = NewShell())
                 {
-                    var captions = new List<string>();
-                    foreach (RibbonPage page in form.Ribbon.Pages)
-                    {
-                        captions.Add(page.Text);
-                    }
-
-                    CollectionAssert.AreEqual(
-                        new List<string> { "수검자 관리", "신규 예약", "예약 관리", "접수 관리" },
-                        captions);
-
-                    Assert.AreEqual(1, form.Ribbon.PageHeaderItemLinks.Count);
-                    Assert.AreEqual("휴무일 관리", form.Ribbon.PageHeaderItemLinks[0].Item.Caption);
+                    Assert.AreEqual(5, form.Ribbon.Pages.Count);
+                    Assert.AreEqual("휴무일 관리", form.Ribbon.Pages[4].Text);
+                    Assert.AreEqual(0, form.Ribbon.PageHeaderItemLinks.Count,
+                        "다섯째만 Page 헤더 버튼으로 빼지 않는다");
+                    Assert.AreEqual(0, form.Ribbon.Pages[4].Groups.Count,
+                        "휴무일 Page 는 선택 즉시 Modal 을 열고 돌아가므로 그룹이 없다");
                 }
             });
         }
@@ -117,7 +113,6 @@ namespace HealthCheckupReservationReception.Tests
 
                     CollectionAssert.Contains(stillOpen, "변경이력");
                     CollectionAssert.Contains(stillOpen, "컬럼설정");
-                    CollectionAssert.Contains(stillOpen, "휴무일 관리");
                     CollectionAssert.Contains(closed, "조회");
                     CollectionAssert.Contains(closed, "신규등록");
                     CollectionAssert.Contains(closed, "예약저장");

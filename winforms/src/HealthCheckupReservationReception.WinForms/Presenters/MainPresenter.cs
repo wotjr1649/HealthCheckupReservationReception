@@ -1,4 +1,5 @@
-﻿using System;
+﻿// 화면 ID: WF-00 — MainForm Shell (03 §4)
+using System;
 using System.Collections.Generic;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
@@ -24,6 +25,9 @@ namespace HealthCheckupReservationReception.Presenters
 
         // 03 §9.1 — Workbench 는 Tab 하나를 Reservation / Reception 두 Context 가 나눠 쓴다.
         private BusinessNavigation _workbenchContext = BusinessNavigation.ReservationDesk;
+
+        // 휴무일 관리 Page 에서 돌아올 자리. Shell 은 첫 Page 가 선택된 채 열린다 (03 §1.1 순서).
+        private BusinessNavigation _lastBusinessPage = BusinessNavigation.PatientManagement;
 
         public MainPresenter(IMainView view, ICommonStatusService service, string operatorName)
         {
@@ -118,10 +122,13 @@ namespace HealthCheckupReservationReception.Presenters
             // 공통 업무조건도 이 화면에는 걸리지 않으므로 여기서 막지 않는다.
             if (target == BusinessNavigation.HolidayManagement)
             {
+                // 먼저 직전 Page 로 돌려놓고 연다. 반대로 하면 빈 Ribbon 이 Modal 뒤에 남는다.
+                _view.SelectNavigationPage(_lastBusinessPage);
                 _view.ShowHolidayManagement();
                 return;
             }
 
+            _lastBusinessPage = target;
             BusinessTab tab = TabOf(target);
 
             if (tab == BusinessTab.Workbench)
