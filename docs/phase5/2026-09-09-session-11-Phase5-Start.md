@@ -84,8 +84,8 @@ additive-v1.8/results/validation.md`, 2026-09-08 합격 판정)도 `repository.m
 
 ## 4. 킷과 이 저장소가 어긋나는 두 곳
 
-`winforms/AGENTS.md` 는 이것을 한 줄로 덮는다 — *"SP·DB 계약의 단일 출처는 `05` 이며 킷의
-SP 관련 규칙보다 `05` 가 이긴다."* 구체는 여기 적는다.
+`winforms/AGENTS.md` 의 **`05` outranks the kit** 절이 이것을 한 줄로 덮는다. 충돌을 열거하지
+않는 이유는 킷이 갱신되면 그 목록이 낡기 때문이다. 구체는 여기 적는다.
 
 ### 4.1 SP 계약이 어디 있는가 — 매 세션 들어오는 문장이다
 
