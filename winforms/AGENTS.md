@@ -46,4 +46,9 @@ manifest in that same commit — the same rule ROOT `AGENTS.md` §2.2 applies to
 
 ### Connection strings use integrated authentication only
 
-`user id=`, `uid=`, and `integrated security=false` are forbidden values in this repository.
+A connection string that supplies `user id` or `uid`, or that turns `integrated security`
+off, is forbidden in this repository.
+
+Written without the `=` that would follow each of those keys in a real connection string:
+the secret scanner matches key-plus-value, so spelling them out here would make this very
+rule the first thing it reports.

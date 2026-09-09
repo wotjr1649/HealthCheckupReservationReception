@@ -143,7 +143,11 @@ App.config        <connectionStrings> 가 아직 없다
 채운다 — 앞 문서의 수치를 옮겨 오지 마라.
 
 **2. `App.config` 에 `<connectionStrings>` 의 `AppDb` 를 넣는다.** 통합인증만 쓴다.
-`user id=`·`uid=`·`integrated security=false` 는 금지값이다(`winforms/AGENTS.md`).
+`user id`·`uid` 를 싣거나 `integrated security` 를 끄는 연결문자열은 금지다(`winforms/AGENTS.md`).
+
+**여기서도 `=` 를 빼고 적었다.** secret 스캐너는 키에 값이 붙은 형태를 잡으므로, 금지 규칙을
+그대로 적으면 그 규칙이 첫 HIT 로 잡힌다 — `verify-no-secret.sh` 가 초판에 자기 자신을 세었던
+것과 같은 함정이다(그 스크립트의 `[X]` 주석).
 
 **3. winforms 계열의 secret 스캔을 만든다.** `database/scripts/verify-no-secret.sh` 는
 `Deploy.sql`·`deploy/`·`scripts/`·`tests/`·`tools/`·`artifacts/` 만 훑는다(실측). **winforms 는
