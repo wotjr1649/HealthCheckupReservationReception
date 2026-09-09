@@ -694,7 +694,7 @@ contract belongs to the service"*, *"Integrity and concurrency live in the datab
 | P07 | 계층 격리 | `SqlConnection`·`SqlCommand`·`SqlDataReader` 가 `Repositories/` 밖에 0건 · DevExpress 타입이 `Views/`·`Program.cs` 밖에 0건 · `IXxxView` 가 DevExpress-free | **`PASS`** — 같은 게이트 `LAY-004` (2026-09-09) |
 | P08 | Build | MSBuild exit 0 · Warning 확인 | **`PASS`** — VS2019 Professional 16.11.6 · `Configuration=Debug` · exit 0 · Warning 0 (2026-09-09) |
 | P09 | Test | MSTest 전건 통과 | **`PASS`** — `vstest.console` 16.11.0 · 실패 0 (2026-09-09). **건수를 여기 적지 않는다** — 화면마다 늘어난다 |
-| P10 | 킷 §1 | 굴림 9pt · `SetPerMonitorDpiAware()` 가 `Main` 첫 문장 · `AutoScaleMode=Font` · Designer 가 자기 `Font` 를 직렬화 · manifest 에 DPI 없음 · `.cs` 전건 UTF-8 BOM + LF | **`PASS`** — `winforms/scripts/verify-ui-baseline.sh` `UIB-001`~`005` (2026-09-09) |
+| P10 | 킷 §1 | 굴림 9pt · `SetPerMonitorDpiAware()` 가 `Main` 첫 문장 · `AutoScaleMode=Font` · Designer 가 자기 `Font` 를 직렬화 · manifest 에 DPI 없음 · `.cs` 전건 UTF-8 BOM + CRLF | **`PASS`** — `winforms/scripts/verify-ui-baseline.sh` `UIB-001`~`005` (2026-09-09) |
 | P11 | 시각 검증 | 100% · 125% 배율에서 잘림 0건 | `PLANNED` — `03` §1.4. 눈으로 봐야 한다 |
 | P14 | 배치 ↔ 설계 | 화면 ID·Navigation·Ribbon 그룹/버튼·라벨이 `tools/docgen/wireframe` 의 설계와 같다 | **`PASS`** — `winforms/tools/verify-screen-design.js` `SCR-000`~`004` (2026-09-09) |
 | P12 | manifest | winforms 변경 커밋마다 manifest 동봉 | `PLANNED` — `verify-winforms-unchanged.sh` |
@@ -894,7 +894,7 @@ ROOT `AGENTS.md` §6 으로 경계한 상태다. `X-10` 은 게이트가 처리�
 | ~~`X-11`~~ | ~~`03` §1.4 vs 사용자 지시~~ | **해소 (2026-09-09).** `03` 을 `HC-RSV-RCP-20260909-R10` 으로 재봉인해 §1.4 를 *"기본 크기를 권장 기준으로 열고 최대화를 지원한다"* 로 고쳤다. 이제 구현이 계약과 같다 — 이탈이 아니다 |
 | `X-09` | ROOT `AGENTS.md` §3 vs 저장소 실물 | *"`output/` 은 `.gitignore` 대상이라 어떤 커밋에도 남지 않는다"* 가 산출물 추적 커밋으로 거짓이 되었다. `verify-baseline.sh:27` 주석도 같은 문장을 참조한다 |
 | `X-08` | `03` §4.1 vs `05` §1.1 | 타이틀 밴드가 `검진 예약·접수 관리` 인데 `05` §1.1 「사용자 화면 표시명」은 `검진 예약·접수 관리 프로그램` 이다. `03` 본문 제목도 후자다 — ASCII 스케치의 줄임으로 보고 `05` 를 따랐다 (`CFG-007`) |
-| `X-06` | 킷 §1 vs 저장소 실물 | 킷은 C# 을 **UTF-8 BOM + CRLF** 로 정하는데 이 저장소의 `.cs` 는 전부 **BOM + LF** 다. `.editorconfig` 가 아직 없다 |
+| ~~`X-06`~~ | ~~킷 §1 vs 저장소 실물~~ | **해소 (2026-09-09).** 킷 §1 의 **UTF-8 BOM + CRLF** 를 그대로 따른다. `.editorconfig` 와 `UIB-005` 가 그것을 지킨다 |
 
 `[D]` **사용자 결정 (2026-09-09): `X-04` 는 지금 맞췄다.** 소스가 넉 장뿐인 지금이 가장 싸다.
 csproj 의 `<RootNamespace>` 와 `Program.cs`·`Views/*` 의 `namespace` 선언을 `05` §1.1 에 맞췄고,
@@ -904,16 +904,29 @@ csproj 의 `<RootNamespace>` 와 `Program.cs`·`Views/*` 의 `namespace` 선언�
 `CFG-006` 은 루트만 고치고 소스가 따라오지 않는 경우를 잡는다. 접두사만 같은 이름
 (`…ReceptionExtra`)이 루트 안으로 새지 않는지도 `selftest` 가 시험한다.
 
-`[D]` **사용자 결정 (2026-09-09): `X-06` 은 LF 로 간다.** 킷 §1 의 CRLF 를 이 저장소의
-예외로 두고 `winforms/.editorconfig` 와 `winforms/AGENTS.md` 에 기록했다 — 킷 자신이
-*"Existing applicable project instructions take precedence over this kit"* 라 적었고,
-기준선 문서부터 database 계열까지 이 저장소는 전부 LF 다(`06` §4.2).
+`[D]` **사용자 결정 (2026-09-09): `X-06` 은 결국 CRLF 로 간다 — 킷 §1 과 같다.**
 
-**기존 파일을 한 줄도 바꾸지 않았다.** `.editorconfig` 는 새 줄과 새 파일에만 닿는다(킷
-`editorconfig.example` 의 같은 주석). 줄바꿈 변환을 기능 변경과 같은 커밋에 넣으면 diff 가
-전 줄 교체가 되어 실제 변경이 묻힌다.
+같은 날 두 번 결정됐고 뒤의 것이 이긴다. 첫 결정은 *"LF 로 간다"* 였다 — 킷 자신이
+*"Existing applicable project instructions take precedence over this kit"* 라 적었고
+이 저장소가 기준선 문서부터 database 계열까지 전부 LF 이기 때문이다(`06` §4.2).
+
+**그 결정을 실물이 반증했다.** `.cs` 와 csproj 를 쓰는 것은 사람이 아니라 Visual Studio 와
+DevExpress 디자이너이고, 그것들은 저장할 때마다 CRLF 로 다시 쓴다. 실제로 이 세션에서
+csproj 두 개가 CRLF+BOM 으로 되돌아왔고 사람이 손으로 다시 LF 로 돌렸다. **도구가 매번
+되돌리는 규칙은 규칙이 아니라 상시 결함이다.**
+
+```text
+*.cs                     UTF-8 BOM + CRLF   킷 §1. VS·디자이너가 쓴다
+그 밖의 winforms 파일    LF                  저장소를 따른다. VS 가 만지지 않는다
+```
+
+`[I]` **줄바꿈 변환은 자기 커밋 하나로 했다** (`winforms/AGENTS.md` 의 같은 규칙). 기능 변경과
+섞으면 diff 가 전 줄 교체가 되어 실제 변경이 묻힌다. 그 커밋에는 게이트 전환도 함께 들어간다 —
+변환만 하고 게이트를 두면 red 가 되고, 게이트만 뒤집으면 실물이 어긋난다.
 
 판정은 `verify-ui-baseline.sh` `UIB-005` 가 한다 — 사람이 손으로 재는 구조로 두지 않는다.
+**"CR 이 있는 줄이 하나라도 있는가" 로 재지 않는다** — 그러면 한 줄만 CRLF 인 파일이 통과한다.
+CR 로 끝나지 **않는** 줄이 0건인지를 본다.
 
 `[X]` **이 자리에서 한 번 틀렸다.** 처음 줄바꿈을 잴 때 `grep -c $''` 을 썼는데
 `contract/build.md` 가 정확히 그것을 경고한다 — `$(...)` 안에서 패턴이 빈 값으로 무너져 모든

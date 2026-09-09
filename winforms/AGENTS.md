@@ -56,11 +56,12 @@ same thing directly.
 file of a screen with `// 화면 ID: <ID>` at the top; that comment is how the gate pairs design
 with implementation.
 
-### Line endings are LF, against the kit
+### C# follows the kit; everything else follows the repository
 
-The kit fixes C# sources at UTF-8 BOM + **CRLF**. This repository is LF everywhere — the
-sealed documents, the database series SQL and scripts, and the C# that was here before the
-kit arrived. LF wins, by the kit's own precedence rule.
+C# sources take the kit's line endings. Everything else here is LF, like the rest of the
+repository. The split is not a compromise — it is where the toolchain writes: Visual Studio
+and the DevExpress designer rewrite `.cs` (and the csproj) on every save, and nothing but a
+human rewrites the shell scripts and Markdown.
 
 The values live in `.editorconfig`, and `scripts/verify-ui-baseline.sh` `UIB-005` judges
 them; do not restate either here.

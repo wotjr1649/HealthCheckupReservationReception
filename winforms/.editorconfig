@@ -1,8 +1,13 @@
 # 킷 net461-dx20-mvp 의 editorconfig.example 을 이 저장소에 맞춰 들인다.
 #
-# 한 곳만 다르다: end_of_line 이 crlf 가 아니라 lf 다.
-# 이 저장소는 기준선 문서부터 database 계열 SQL·스크립트까지 전부 LF 이고(06 §4.2),
-# 킷 자신이 "Existing applicable project instructions take precedence over this kit" 이라 적었다.
+# .cs 는 킷 §1 그대로 UTF-8 BOM + CRLF 다. 한때 LF 로 두었으나 2026-09-09 사용자 결정으로
+# 킷 값으로 되돌렸다 — VS 와 DevExpress 디자이너가 저장할 때마다 CRLF 로 다시 쓰기 때문에
+# LF 를 유지하려면 사람이 매번 되돌려야 했다(실제로 csproj 두 개가 그렇게 바뀌었다).
+# 07 §14.2 X-06 이 그 경위를 갖는다.
+#
+# .cs 가 아닌 것은 이 저장소를 따라 LF 다 — 기준선 문서도 database 계열 SQL·스크립트도
+# 전부 LF 이고(06 §4.2), 그쪽은 VS 가 만지지 않는다.
+#
 # 판정은 scripts/verify-ui-baseline.sh 의 UIB-005 가 한다 — 여기 적힌 값을 사람이 지키는
 # 구조로 두지 않는다. VS 는 이 파일을 **새 줄과 새 파일**에만 적용하고 기존 파일을 저장할 때
 # 다시 쓰지 않는다(킷 editorconfig.example 의 같은 주석).
@@ -11,7 +16,7 @@ root = true
 
 [*.cs]
 charset = utf-8-bom
-end_of_line = lf
+end_of_line = crlf
 indent_style = space
 indent_size = 4
 insert_final_newline = true
