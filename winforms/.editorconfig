@@ -5,7 +5,11 @@
 # LF 를 유지하려면 사람이 매번 되돌려야 했다(실제로 csproj 두 개가 그렇게 바뀌었다).
 # 07 §14.2 X-06 이 그 경위를 갖는다.
 #
-# .cs 가 아닌 것은 이 저장소를 따라 LF 다 — 기준선 문서도 database 계열 SQL·스크립트도
+# csproj 도 같은 이유로 CRLF + BOM 이다. EditorConfig 는 **편집기** 규칙이라 프로젝트
+# 시스템이 쓰는 csproj 에는 애초에 힘이 없다 — LF 로 적어 두어도 VS 가 저장할 때마다
+# 되돌리고, 그때마다 사람이 다시 돌려야 했다. 도구가 쓰는 값을 그대로 적는다.
+#
+# 그 밖의 것은 이 저장소를 따라 LF 다 — 기준선 문서도 database 계열 SQL·스크립트도
 # 전부 LF 이고(06 §4.2), 그쪽은 VS 가 만지지 않는다.
 #
 # 판정은 scripts/verify-ui-baseline.sh 의 UIB-005 가 한다 — 여기 적힌 값을 사람이 지키는
@@ -21,7 +25,11 @@ indent_style = space
 indent_size = 4
 insert_final_newline = true
 
-[*.{csproj,resx,config,settings}]
+[*.csproj]
+charset = utf-8-bom
+end_of_line = crlf
+
+[*.{resx,config,settings}]
 end_of_line = lf
 
 [*.sh]

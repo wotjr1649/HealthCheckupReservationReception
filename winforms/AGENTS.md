@@ -56,12 +56,13 @@ same thing directly.
 file of a screen with `// 화면 ID: <ID>` at the top; that comment is how the gate pairs design
 with implementation.
 
-### C# follows the kit; everything else follows the repository
+### What the toolchain writes follows the kit; the rest follows the repository
 
-C# sources take the kit's line endings. Everything else here is LF, like the rest of the
-repository. The split is not a compromise — it is where the toolchain writes: Visual Studio
-and the DevExpress designer rewrite `.cs` (and the csproj) on every save, and nothing but a
-human rewrites the shell scripts and Markdown.
+C# sources and the csproj take the kit's line endings. Everything else here is LF, like the
+rest of the repository. The split is not a compromise — it is drawn where the toolchain
+writes: Visual Studio and the DevExpress designer rewrite those files on every save, and
+nothing but a human rewrites the shell scripts and Markdown. EditorConfig is an editor rule
+and has no authority over the csproj at all; the project system writes that one.
 
 The values live in `.editorconfig`, and `scripts/verify-ui-baseline.sh` `UIB-005` judges
 them; do not restate either here.
