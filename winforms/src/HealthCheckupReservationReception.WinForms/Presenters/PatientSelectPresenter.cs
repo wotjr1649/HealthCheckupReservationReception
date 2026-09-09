@@ -42,12 +42,9 @@ namespace HealthCheckupReservationReception.Presenters
                 MobilePhone = _view.MobilePhone,
             };
 
-            // 03 §7.2 는 조회계약을 §5.3 에 위임한다 — 최소 1개 조건이 있어야 부른다.
-            if (AllEmpty(request))
-            {
-                _view.ShowMessage("조회조건을 하나 이상 입력하십시오.");
-                return;
-            }
+            // [R16] 03 §7.2 는 조회계약을 §5.3 에 위임하고, §5.3 은 조건 없는 전체조회를 연다.
+            //       여는 화면(WF-RSV-01 · WF-WRK-01)이 아직 없어 이 창은 스스로 열리지 않으므로
+            //       **자동 조회는 걸지 않는다** — 사용자가 [조회] 를 누르면 전체가 나온다.
 
             OperationResult<IList<PatientListItemDto>> result;
             try
@@ -61,9 +58,9 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
-            if (!result.IsSuccess)
+            if (result == null || !result.IsSuccess)
             {
-                _view.ShowMessage(result.Message);
+                _view.ShowMessage(result == null ? "수검자를 조회하지 못했습니다." : result.Message);
                 return;
             }
 

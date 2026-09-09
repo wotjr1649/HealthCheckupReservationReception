@@ -30,6 +30,24 @@ namespace HealthCheckupReservationReception.Presenters
 
         private void OnSearchRequested(object sender, EventArgs e)
         {
+            Search(false);
+        }
+
+        /// <summary>
+        /// [R16] 03 §5.3 — 화면을 열 때 조건 없이 한 번 조회해 목록을 채운다.
+        ///
+        /// [X] **실패를 알리지 않는다.** 사용자가 부탁한 호출이 아니므로 창을 열자마자
+        ///     오류창이 뜨면 안 된다. 실제로 초판이 그렇게 해서 UI 시험이 모달에 걸려
+        ///     멈췄다(실측 2026-09-10). 빈 목록으로 두면 사용자가 `[조회]` 를 눌러
+        ///     같은 경로를 다시 타고, 그때는 이유를 본다.
+        /// </summary>
+        public void LoadInitial()
+        {
+            Search(true);
+        }
+
+        private void Search(bool silent)
+        {
             var request = new PatientSearchRequest
             {
                 ChartNo = _view.ChartNo,
@@ -39,13 +57,8 @@ namespace HealthCheckupReservationReception.Presenters
                 MobilePhone = _view.MobilePhone,
             };
 
-            // 03 §5.3 — 최소 1개 조건이 있어야 조회한다. 빈 문자열은 미입력으로 본다.
-            // DB 도 103 으로 막지만(05 §7.2) 화면에서 먼저 안내한다 (킷 §6).
-            if (AllEmpty(request))
-            {
-                _view.ShowMessage("조회조건을 하나 이상 입력하십시오.");
-                return;
-            }
+            // [R16] 03 §5.3 — 조건이 하나도 없으면 **전체 목록**이다. 막지 않는다.
+            //       SP 도 103 을 내지 않는다 (05 §7.2 · §13).
 
             OperationResult<IList<PatientListItemDto>> result;
             try
@@ -55,13 +68,13 @@ namespace HealthCheckupReservationReception.Presenters
             catch (Exception)
             {
                 // 예외 본문을 화면에 싣지 않는다 (킷 §6).
-                _view.ShowMessage("수검자를 조회하지 못했습니다.");
+                if (!silent) { _view.ShowMessage("수검자를 조회하지 못했습니다."); }
                 return;
             }
 
-            if (!result.IsSuccess)
+            if (result == null || !result.IsSuccess)
             {
-                _view.ShowMessage(result.Message);
+                if (!silent) { _view.ShowMessage(result == null ? "수검자를 조회하지 못했습니다." : result.Message); }
                 return;
             }
 

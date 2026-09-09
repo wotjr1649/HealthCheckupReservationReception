@@ -878,6 +878,25 @@ cd ../database && ./scripts/verify-schema-doc.sh   # 라이브 DB 의 테이블�
 `G17` 이 보는 것은 **모듈(SP·TVF) 24개**이고, 테이블·제약·Index 는 `G05` 가 같은 자리에서
 본다(`04` ↔ 라이브 DB 양방향). 둘을 함께 돌려야 스키마와 코드 양쪽이 덮인다.
 
+### 순서가 있다 — `Db` 시험은 **마지막**이다 `[X 2026-09-10]`
+
+`[X]` **`database/scripts/test.sh` 를 나중에 돌리면 `Db` 시험이 남긴 행이 사라진다.**
+그 회귀는 맨 앞에서 `rebuild.sh` 를 돌고, 맨 끝의 `clean-rebuild-verify.sh` 가 `RBD-003`·`RBD-005`
+때문에 **rebuild 를 두 번 더** 돈다. 끝나고 나면 DB 는 갓 배포된 상태이고 `수검자` 는 0행이다.
+
+```text
+1  cd database && ./scripts/test.sh        rebuild 로 시작해 rebuild 로 끝난다
+2  cd database && ./scripts/verify-live-sync.sh · verify-schema-doc.sh
+3  vstest … /TestCaseFilter:"TestCategory=Db"    ← 여기서 남긴 행이 살아남는다
+```
+
+`[!]` **이 순서는 취향이 아니라 사용자 결정(§12.9 `[D]`)을 지키는 조건이다** — *"시험 내역과
+데이터가 쌓이는 편이 낫다"*. 순서를 뒤집으면 그 결정이 조용히 무효가 된다.
+
+`[실측 2026-09-10]` 실제로 한 번 뒤집혔다. `Db` 시험 뒤에 `database` 회귀를 돌려 화면에
+데이터가 하나도 안 보였고, 사용자가 *"테스트를 안 했다는 증거"* 로 읽었다. `Db` 시험만 다시
+돌리자 `수검자` 3행 · `변경이력` 19행이 생겼다 — 시험은 돌고 있었고 순서가 문제였다.
+
 `[I]` `../database/scripts/verify-winforms-unchanged.sh` 는 여기 넣지 않는다. 그것은
 "database 계열이 winforms 를 안 건드렸는가" 를 보는 database 쪽 게이트라, winforms 를 정당하게
 고치는 커밋에서는 red 가 되는 것이 정상이다 (`winforms/AGENTS.md`).

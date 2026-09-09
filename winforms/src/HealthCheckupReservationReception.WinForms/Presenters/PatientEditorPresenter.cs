@@ -27,6 +27,9 @@ namespace HealthCheckupReservationReception.Presenters
         // 03 §16 · 05 §16.3 — Modal 진입 때 받은 원본 동시성값을 숨은 값으로 들고 있는다.
         private byte[] _rowVersion;
 
+        // 왜 파생이 실패했는지. 화면이 그 자리에 그대로 적는다. 성공했으면 null 이다.
+        private string _socialHint;
+
         // 주민번호에서 산출한 값. 실패하면 둘 다 null 이고 저장이 막힌다 (03 §6.2).
         private string _birthday;
         private string _gender;
@@ -102,6 +105,12 @@ namespace HealthCheckupReservationReception.Presenters
 
             // 03 §6.3 EP-04 · §6.2 — 이름이 비었거나 파생이 실패하면 저장할 수 없다.
             _view.SaveEnabled = !string.IsNullOrWhiteSpace(_view.Name) && _birthday != null;
+
+            // [!] **다 친 값이 틀렸을 때만 알린다.** 03 §6.2 는 Clear + 저장 차단까지만 요구하는데,
+            //     그러면 화면이 왜 비었는지 말해 주지 않는다 (사용자 지적 2026-09-10).
+            //     자리가 덜 찬 동안에는 아무 말도 하지 않는다 — 타이핑 중에 빨간 글씨를 띄우면
+            //     그것이 오히려 잘못 친 것처럼 읽힌다.
+            _view.ShowFieldHint(PatientErrorField.SocialNumber, _socialHint ?? string.Empty);
         }
 
         /// <summary>
@@ -115,12 +124,19 @@ namespace HealthCheckupReservationReception.Presenters
         {
             _birthday = null;
             _gender = null;
+            _socialHint = null;
 
             string digits = clsPatientText.Digits(_view.SocialNumber);
             if (digits != null && digits.Length == 13)
             {
                 Century century = CenturyOf(digits.Substring(6, 1));
-                if (century != null)
+                if (century == null)
+                {
+                    // 03 §6.2 표는 1~8 만 정의한다. 9·0(1800년대)과 그 밖의 값은 여기서 걸린다.
+                    _socialHint = "뒷자리 첫 숫자는 1~8 이어야 합니다"
+                        + " (1·2 = 1900년대, 3·4 = 2000년대, 5~8 = 외국인).";
+                }
+                else
                 {
                     string text = century.Year.ToString(CultureInfo.InvariantCulture).Substring(0, 2)
                         + digits.Substring(0, 6);
@@ -130,6 +146,10 @@ namespace HealthCheckupReservationReception.Presenters
                     {
                         _birthday = text;
                         _gender = century.Gender;
+                    }
+                    else
+                    {
+                        _socialHint = "앞 여섯 자리가 실제 날짜가 아닙니다.";
                     }
                 }
             }

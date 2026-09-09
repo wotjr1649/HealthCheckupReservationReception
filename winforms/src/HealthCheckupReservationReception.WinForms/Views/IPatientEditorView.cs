@@ -58,6 +58,13 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         void ShowFieldError(string parameterName, string message);
 
+        /// <summary>
+        /// 입력 중 알림. `ShowFieldError` 와 달리 **Focus 를 옮기지 않는다** — 타이핑 도중
+        /// 매 글자마다 커서를 끌어오면 다른 칸으로 넘어갈 수가 없다.
+        /// 빈 문자열이면 그 칸의 표시를 지운다.
+        /// </summary>
+        void ShowFieldHint(string parameterName, string message);
+
         void ShowMessage(string message);
 
         /// <summary>

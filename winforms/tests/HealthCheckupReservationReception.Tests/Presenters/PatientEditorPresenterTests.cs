@@ -69,6 +69,86 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsFalse(view.SaveEnabled);
         }
 
+        // [!] 03 §6.2 는 Clear + 저장 차단까지만 요구한다. 그래서 화면이 **왜** 비었는지
+        //     말해 주지 않았고 사용자가 "검증을 안 한다" 로 읽었다 (2026-09-10 실사용 지적).
+        //     사유를 그 칸에 적는다. 자리가 덜 찬 동안에는 아무 말도 하지 않는다.
+        [TestMethod]
+        public void 자리가_덜_차면_안내하지_않는다()
+        {
+            var view = NewView("001010-23");
+            var service = new FakePatientService();
+            new PatientEditorPresenter(view, service, "접수1번창구", null);
+
+            view.RaiseInputChanged();
+
+            Assert.AreEqual(string.Empty, view.Hint);
+            Assert.IsFalse(view.SaveEnabled);
+        }
+
+        [TestMethod]
+        public void 일곱째_자리가_표에_없으면_1_8_범위를_안내한다()
+        {
+            var view = NewView("990707-9000011");          // 9 = 1800년대. 03 §6.2 표에 없다
+            var service = new FakePatientService();
+            new PatientEditorPresenter(view, service, "접수1번창구", null);
+
+            view.RaiseInputChanged();
+
+            Assert.AreEqual(PatientErrorField.SocialNumber, view.HintField);
+            StringAssert.Contains(view.Hint, "1~8");
+        }
+
+        [TestMethod]
+        public void 앞_여섯자리가_없는_날짜면_그것을_안내한다()
+        {
+            var view = NewView("991307-2000018");          // 13월
+            var service = new FakePatientService();
+            new PatientEditorPresenter(view, service, "접수1번창구", null);
+
+            view.RaiseInputChanged();
+
+            StringAssert.Contains(view.Hint, "실제 날짜");
+        }
+
+        [TestMethod]
+        public void 값이_바로잡히면_안내가_사라진다()
+        {
+            var view = NewView("990707-9000011");
+            var service = new FakePatientService();
+            new PatientEditorPresenter(view, service, "접수1번창구", null);
+
+            view.RaiseInputChanged();
+            StringAssert.Contains(view.Hint, "1~8");
+
+            view.SocialNumber = Female1999;
+            view.RaiseInputChanged();
+
+            Assert.AreEqual(string.Empty, view.Hint);
+            Assert.IsTrue(view.SaveEnabled);
+        }
+
+        // 사용자가 실제로 넣은 값이다 (2026-09-10). 7번째 자리 2 는 1900년대 여자이므로
+        // 화면이 1900-10-10 을 낸 것이 맞다 — 2000년대는 3·4 다.
+        [TestMethod]
+        public void 사용자_입력값_001010_2304052_는_1900년대_여자다()
+        {
+            var view = NewView("001010-2304052");
+            var service = new FakePatientService();
+            new PatientEditorPresenter(view, service, "접수1번창구", null);
+
+            view.RaiseInputChanged();
+
+            Assert.AreEqual("1900-10-10", view.Birthday);
+            Assert.AreEqual("여", view.Gender);
+            Assert.AreEqual(string.Empty, view.Hint);
+
+            view.SocialNumber = "001010-3304052";          // 같은 날짜에 세기 자리만 3
+            view.RaiseInputChanged();
+
+            Assert.AreEqual("2000-10-10", view.Birthday);
+            Assert.AreEqual("남", view.Gender);
+        }
+
         [TestMethod]
         public void 이름과_주민번호가_모두_있으면_저장이_열린다()
         {
@@ -383,6 +463,17 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public string Birthday { get; set; }
         public string Gender { get; set; }
         public bool SaveEnabled { get; set; }
+
+        // 입력 중 안내. ShowFieldError 와 달리 Focus 를 옮기지 않는다.
+        public string HintField { get; private set; }
+
+        public string Hint { get; private set; }
+
+        public void ShowFieldHint(string parameterName, string message)
+        {
+            HintField = parameterName;
+            Hint = message;
+        }
 
         public bool EditModeShown { get; private set; }
 

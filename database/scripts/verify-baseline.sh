@@ -9,10 +9,10 @@ const exp={
  "00_Project_Policy.md":"b41f6c17370803401726e965982b639340ceffb60535c5a255a00647579cab19",
  "01_Process_Definition.md":"39d34063b495f28a2d870bf6322c4f557a43ec1fd80418a08aef6c65cdf0b29a",
  "02_Function_Definition.xlsx":"cd616207717d4cbb8c2ed3284061d728af4933af00dac75acf835650865798c0",
- "03_Wireframe_Definition.md":"32450f1a363a5ddf078dc8182919e4096b7ae35b11e4d266db576f2af6d580fc",
- "04_DB_Design.md":"f8cf11c7c08b256e22ae0cbeec027adc1b795f67362d7d076241d8e2a5e4da2d",
- "05_DB_Rule_SP_Contract.md":"d490bb461078fd63370b1dbb9f6279aa5911c936f31f761f3bfab44d87740077",
- "06_DB_Transaction_Security_Seed.md":"05f6a5f144f444ddf42a04df86a29d63078f9e23474647acfc94dc550d307d4c"};
+ "03_Wireframe_Definition.md":"d5014cea47577ea09ef85bc0257686dc2e847d0432f991d22bae577bb61b35b2",
+ "04_DB_Design.md":"80dde453feac5c87c4a135a12ed9d5582261ebd7116e07547749eb54179bdb7f",
+ "05_DB_Rule_SP_Contract.md":"ef4e60563f4650e2b7f1b9b945b8cfa140c4f1785bdb6260754e25b1cb0e7ae1",
+ "06_DB_Transaction_Security_Seed.md":"2a1e1722277a281070b24ee076dac1459c8c212669470443dc283e9876bd7b25"};
 const N=Object.keys(exp).length;
 let ok=0;
 for(const [n,e] of Object.entries(exp)){

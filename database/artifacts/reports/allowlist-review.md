@@ -15,7 +15,7 @@
 | `deploy/01_Schema.sql` | 375 |
 | `deploy/02_Seed.sql` | 101 |
 | `deploy/03_Functions.sql` | 258 |
-| `deploy/04_Procedures_Select.sql` | 1025 |
+| `deploy/04_Procedures_Select.sql` | 1020 |
 | `deploy/05_Procedures_Patient_Write.sql` | 719 |
 | `deploy/06_Procedures_Reservation_Write.sql` | 1029 |
 | `deploy/07_Procedures_Reception_Write.sql` | 759 |
@@ -38,7 +38,7 @@
 | `tests/14_Clean_Rebuild_Verify.sql` | 136 |
 | `tests/15_Holiday_Tests.sql` | 177 |
 | `tests/contract/01_공통업무상태.sql` | 4 |
-| `tests/contract/02_수검자목록_조건없음.sql` | 4 |
+| `tests/contract/02_수검자목록_전체조회.sql` | 5 |
 | `tests/contract/03_수검자목록_ChartNo.sql` | 4 |
 | `tests/contract/04_수검자목록_0건.sql` | 4 |
 | `tests/contract/05_수검자목록_주민번호형식.sql` | 4 |
@@ -153,7 +153,7 @@
 | `tests/contract/SEL-022_변경이력_기록0건.sql` | 6 |
 | `tests/contract/SEL-023_변경이력_TargetTable_허용밖.sql` | 5 |
 | `tests/contract/SEL-024_변경이력_TargetTable_NULL.sql` | 4 |
-| **합계 144개** | **9328** |
+| **합계 144개** | **9324** |
 
 ## 2. §9.2 허용목록 대조
 
@@ -218,6 +218,6 @@
 | 항목 | 값 |
 |---|---|
 | 검토자 | Claude Opus 5 (세션 실행) |
-| 시각 | 2026-09-10 02:40 KST |
+| 시각 | 2026-09-10 04:36 KST |
 | 생성 | `node tools/allowlist-review.js` |
 | 대상 커밋 | (커밋 직전 트리) |

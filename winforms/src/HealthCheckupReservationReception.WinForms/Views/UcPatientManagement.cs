@@ -49,6 +49,25 @@ namespace HealthCheckupReservationReception.Views
             _presenter = new PatientManagementPresenter(this, service);
         }
 
+        /// <summary>
+        /// [R16] 03 §5.3 — 화면을 열면 조건 없이 한 번 조회해 목록을 채운다.
+        ///
+        /// `Attach` 가 Presenter 를 먼저 만들고 MainForm 이 그 뒤에 Tab 에 얹으므로
+        /// `OnLoad` 시점에는 배선이 이미 끝나 있다.
+        ///
+        /// [X] **`SearchRequested` 를 올리지 않는다.** 그 경로는 실패를 모달로 알리는데,
+        ///     사용자가 부탁하지 않은 호출이 창을 열자마자 오류창을 띄우면 안 된다.
+        ///     `LoadInitial` 이 같은 조회를 조용히 한다 (Presenter 주석 참조).
+        /// </summary>
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            if (_presenter != null)
+            {
+                _presenter.LoadInitial();
+            }
+        }
+
         public event EventHandler SearchRequested;
         public event EventHandler<long?> SelectionChanged;
 

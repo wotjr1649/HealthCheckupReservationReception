@@ -15,29 +15,76 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         // 03 §5.3 — 최소 1개 조건이 있어야 조회한다. DB 도 103 으로 막지만(05 §7.2)
         // 화면에서 먼저 안내하고 SP 를 부르지 않는다.
         [TestMethod]
-        public void 조회조건이_하나도_없으면_SP_를_부르지_않는다()
+        public void 조회조건이_하나도_없으면_전체를_조회한다()
         {
             var view = new FakePatientManagementView();
             var service = new FakePatientService();
+            service.SearchResult = OperationResult<IList<PatientListItemDto>>.Success(
+                new List<PatientListItemDto>());
             new PatientManagementPresenter(view, service);
 
             view.RaiseSearchRequested();
 
-            Assert.IsNull(service.LastRequest, "조건이 없는데 SP 를 불렀다");
+            // [R16] 03 §5.3 — 막지 않는다. 다섯 조건이 전부 null 인 채로 SP 가 불린다.
+            Assert.IsNotNull(service.LastRequest, "조건이 없다고 SP 를 안 불렀다");
+            Assert.IsNull(service.LastRequest.ChartNo);
+            Assert.IsNull(service.LastRequest.Name);
+            Assert.IsNull(service.LastRequest.SocialNumber);
+            Assert.IsNull(service.LastRequest.Birthday);
+            Assert.IsNull(service.LastRequest.MobilePhone);
+            Assert.IsNull(view.LastMessage, "안내창이 떴다");
+        }
+
+        // [R16] 화면을 열면 조건 없이 한 번 조회한다. 실패는 알리지 않는다 —
+        // 사용자가 부탁하지 않은 호출이 창을 열자마자 오류창을 띄우면 안 된다.
+        [TestMethod]
+        public void 화면이_열리면_조건_없이_한_번_조회한다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService();
+            service.SearchResult = OperationResult<IList<PatientListItemDto>>.Success(
+                new List<PatientListItemDto>());
+            var presenter = new PatientManagementPresenter(view, service);
+
+            presenter.LoadInitial();
+
+            Assert.IsNotNull(service.LastRequest);
+            Assert.IsNull(view.LastMessage);
+        }
+
+        [TestMethod]
+        public void 초기_조회가_실패해도_오류창을_띄우지_않는다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService { Failure = new InvalidOperationException("DB") };
+            var presenter = new PatientManagementPresenter(view, service);
+
+            presenter.LoadInitial();
+
+            Assert.IsNull(view.LastMessage, "초기 조회 실패가 모달을 띄웠다");
+
+            // 사용자가 [조회] 를 누르면 그때는 이유를 본다.
+            view.RaiseSearchRequested();
             Assert.IsNotNull(view.LastMessage);
         }
 
         // 공백만 넣은 것도 미입력이다 (03 §5.3 "빈 문자열은 미입력으로 처리한다").
+        // [R16] 미입력이어도 이제 **막지 않는다**. 공백을 NULL 로 만드는 정규화는 Service 가
+        //       한다 (05 §2.2 · PatientService.Search 의 Trim) — Presenter 는 화면 값을 그대로
+        //       넘긴다. 여기서 보는 것은 "막지 않는다" 하나다.
         [TestMethod]
-        public void 공백만_넣은_조건은_미입력이다()
+        public void 공백만_넣은_조건도_막지_않는다()
         {
             var view = new FakePatientManagementView { Name = "   " };
             var service = new FakePatientService();
+            service.SearchResult = OperationResult<IList<PatientListItemDto>>.Success(
+                new List<PatientListItemDto>());
             new PatientManagementPresenter(view, service);
 
             view.RaiseSearchRequested();
 
-            Assert.IsNull(service.LastRequest);
+            Assert.IsNotNull(service.LastRequest, "공백뿐인 조건이라고 SP 를 안 불렀다");
+            Assert.IsNull(view.LastMessage);
         }
 
         [TestMethod]

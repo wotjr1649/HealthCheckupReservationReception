@@ -143,6 +143,8 @@ namespace HealthCheckupReservationReception.Views
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtSocialNumber.Location = new System.Drawing.Point(137, 112);
             this.txtSocialNumber.Name = "txtSocialNumber";
+            this.txtSocialNumber.Properties.Mask.EditMask = "000000-0000000";
+            this.txtSocialNumber.Properties.Mask.MaskType = DevExpress.XtraEditors.Mask.MaskType.Simple;
             this.txtSocialNumber.Properties.MaxLength = 14;
             this.txtSocialNumber.Size = new System.Drawing.Size(440, 20);
             this.txtSocialNumber.TabIndex = 8;

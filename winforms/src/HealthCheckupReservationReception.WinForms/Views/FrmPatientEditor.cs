@@ -130,6 +130,16 @@ namespace HealthCheckupReservationReception.Views
             editor.Focus();
         }
 
+        public void ShowFieldHint(string parameterName, string message)
+        {
+            BaseEdit editor = EditorOf(parameterName);
+            if (editor != null)
+            {
+                // Focus 를 옮기지 않는다 — 입력 중에 부르는 자리다.
+                editor.ErrorText = message;
+            }
+        }
+
         public void ShowMessage(string message)
         {
             XtraMessageBox.Show(this, message, Text);

@@ -1,9 +1,14 @@
-PASS RBD-002 대상 DB 컨텍스트의 Rebuild 가 Msg 50021 로 중단됐다 (exit=1)
+FAIL RBD-002 50021 이 관측되지 않았다 (exit=1)
 NOT RUN RBD-001 잘못된 서버명(50020) - 인스턴스가 1개뿐이라 음성 시험 불가
-PASS RBD-003 빈 DB 에서 Deploy 전체 실행 exit 0
+FAIL RBD-003 exit=1
+FAIL RBD-003 1회차 덤프 실패
+FAIL RBD-005 2회차 rebuild exit=1
+FAIL RBD-005 2회차 덤프 실패
 PASS RBD-005 연속 2회 Rebuild 의 정렬 덤프가 완전히 동일
-PASS RBD-007 Deploy 단독 재실행 exit 0 + 덤프 동일
-PASS RBD-008 Procedure 파일 단독 재실행 exit 0 + 덤프 동일 (GRANT 구획 포함)
+FAIL RBD-007 덤프 실패
+FAIL RBD-007 exit=1 또는 덤프 불일치
+FAIL RBD-008 덤프 실패
+FAIL RBD-008 exit=1 또는 덤프 불일치
 PASS RBD-009 타 DB 메타데이터가 rebuild 전후로 동일
-PASS RBD-011 재배포가 IDENTITY 시드를 감사기록 뒤로 이어받았다 (탐침 대상키 1000 → 시드 1000 · 탐침 정리 0건)
-clean-rebuild FAILED=0
+FAIL RBD-011 시드가 안 밀렸다 (deploy=1 · 탐침 대상키  · 시드  · 잔여 )
+clean-rebuild FAILED=1

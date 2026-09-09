@@ -1,6 +1,6 @@
 PASS SEL-025 조회 SP 의 Capacity = 20 (AM·PM 동일) — 저장 쪽은 CON-002·008 이 고정
 PASS 01_공통업무상태 Result Set 계약 일치 (2개 RS · RS0 Code=0)
-PASS 02_수검자목록_조건없음 Result Set 계약 일치 (1개 RS · RS0 Code=103)
+PASS 02_수검자목록_전체조회 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 03_수검자목록_ChartNo Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 04_수검자목록_0건 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 05_수검자목록_주민번호형식 Result Set 계약 일치 (1개 RS · RS0 Code=101)

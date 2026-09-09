@@ -17,16 +17,19 @@ namespace HealthCheckupReservationReception.Tests.Presenters
     {
         // 03 §7.2 는 조회계약을 §5.3 에 위임한다 — 최소 1개 조건이 있어야 SP 를 부른다.
         [TestMethod]
-        public void 조회조건이_하나도_없으면_SP_를_부르지_않는다()
+        // [R16] 03 §7.2 는 조회계약을 §5.3 에 위임하고, §5.3 이 조건 없는 전체조회를 열었다.
+        public void 조회조건이_하나도_없으면_전체를_조회한다()
         {
             var view = new FakePatientSelectView();
             var service = new FakePatientService();
+            service.SearchResult = OperationResult<IList<PatientListItemDto>>.Success(
+                new List<PatientListItemDto>());
             new PatientSelectPresenter(view, service);
 
             view.RaiseSearchRequested();
 
-            Assert.IsNull(service.LastRequest);
-            Assert.IsNotNull(view.LastMessage);
+            Assert.IsNotNull(service.LastRequest, "조건이 없다고 SP 를 안 불렀다");
+            Assert.IsNull(view.LastMessage);
         }
 
         [TestMethod]
