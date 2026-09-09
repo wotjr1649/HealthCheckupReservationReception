@@ -22,11 +22,13 @@ e0368116f3e52095b6f33963ac3ff4d9e14c61ff3b8bfd45e6a7b11e88e246ce *../winforms/.c
 97f61d6e5f725f35861dd94e7dd8a892aebb67e790afe6b01f39d44ef45e2d7d *../winforms/.claude/skills/winforms-devexpress-ui/references/performance.md
 b9c1f5c5bf130920c0457f576c902f7e43e23664790f40729e6094f51d08d65e *../winforms/.claude/skills/winforms-devexpress-ui/references/wireframe-layout.md
 9a21755e266d5b73690b221d5e80996b7932ed23a5e9003ef3954df6a30960a9 *../winforms/.editorconfig
-e1b00f5ace9aaf27d6f12b722eed1ab0f80f05cdac17b63601f891bd2d457ed5 *../winforms/AGENTS.md
+8b3a2d61d08253cf7d6b700901e89652ec3487670902a6b3e03e399bfc73be78 *../winforms/AGENTS.md
 7e346e6424c8b55410783d7fca243321f9da7ea21ebae71161c2c18ad3491646 *../winforms/CLAUDE.md
 94732445f4c922609e3e15c196b1abf3519f03972705c04d2bde07582e5a3f9b *../winforms/HealthCheckupReservationReception.sln
-8c9a39087589ef114f6cc2945047b189035cba815d42ac8ebefec2b0e35ceeac *../winforms/scripts/test.sh
+455a1cfc90180aa14b106dbb974231a2fc2b6b2106a9f8d1a351a792a3dc9e98 *../winforms/artifacts/db-frozen-manifest.txt
+c060bfac51df3d75292a58058b5f6785dd255c46848b88cfabb192eadf2b6b42 *../winforms/scripts/test.sh
 f8846954aab7c520622acdb25d40441f4febeea805553d5211f3271ad9b242fd *../winforms/scripts/verify-contract-names.sh
+2a41f96e6a49ca74b53af27a624dac47b21467e0189457ac43bd62ddc6ed299c *../winforms/scripts/verify-db-frozen.sh
 238bea461312c28627480f3d42978f74a3aadca841176207cdde9864c04c8989 *../winforms/scripts/verify-dbcode.sh
 b735273e9c0c998520836b792bdbecbc837237f471273e420a31edb90d91e83a *../winforms/scripts/verify-layering.sh
 a3f39ed64290a89495ad68c907c21d2e215cafd7bb762bb889dd1515a1d78fa1 *../winforms/scripts/verify-no-secret.sh

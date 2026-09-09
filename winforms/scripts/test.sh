@@ -38,6 +38,10 @@ run() {
   fi
 }
 
+# Phase 5 동결 (사용자 확정 2026-09-10) — 계약·DB 배포본을 더 고치지 않는다.
+# [!] 선언은 썩으므로 게이트로 둔다. red 는 "고치지 마라" 가 아니라 "회차를 붙여라" 다.
+run ./scripts/verify-db-frozen.sh selftest
+run ./scripts/verify-db-frozen.sh
 run ./scripts/verify-no-secret.sh selftest
 run ./scripts/verify-no-secret.sh
 run ./scripts/verify-contract-names.sh selftest

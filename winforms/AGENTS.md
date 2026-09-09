@@ -36,6 +36,21 @@ kit.** The kit body and `contract/repository.md` do contradict this repository i
 start-of-work handoff document records which parts and why. The kit itself prescribes this
 resolution (`PROJECT_INSTRUCTIONS.md`, opening note).
 
+### The contract and the DB deployment are frozen
+
+**2026-09-10, by the user: `docs/baseline/` and `database/deploy/` are not changed again.**
+Phase 5 finishes inside `winforms/`. R11 through R15 opened the chain five times; that is over.
+
+`scripts/verify-db-frozen.sh` judges it every round — a declaration alone rots (ROOT
+`AGENTS.md` §6). `DBF-001` delegates the sealed documents to `verify-baseline.sh` so the
+hashes stay in one place; `DBF-002` pins the twelve deployment files against
+`artifacts/db-frozen-manifest.txt`.
+
+**Red does not mean "do not change it" — it means "give the change a round name."** If the
+contract genuinely has to open, follow the reseal procedure (ROOT `AGENTS.md` §2.2), run
+`./scripts/verify-db-frozen.sh init`, and put the regenerated manifest in that same commit.
+That is the same rule the winforms manifest follows.
+
 ### Changing winforms means regenerating the manifest in the same commit
 
 `../database/scripts/verify-winforms-unchanged.sh` judges whether the database series left
