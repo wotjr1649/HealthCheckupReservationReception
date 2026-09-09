@@ -46,6 +46,12 @@ namespace HealthCheckupReservationReception.Presenters
             _view.OperatorText = OperatorPrefix +
                 (string.IsNullOrWhiteSpace(_operatorName) ? "(미지정)" : _operatorName.Trim());
             RefreshWorkStatus();
+
+            // [X] 기동 직후 Ribbon 은 첫 Page 가 선택된 채로 뜨는데 그것은 "변경"이 아니라
+            //     초기값이라 SelectedPageChanged 가 나지 않는다. 그래서 업무 Tab 이 하나도
+            //     열리지 않고, 이미 선택된 [수검자 관리] 를 눌러도 이벤트가 없어 영원히
+            //     열리지 않았다. 첫 Page 의 Tab 은 Shell 이 직접 연다. §14.3 A-06.
+            OpenBusinessTab(_lastBusinessPage);
         }
 
         /// <summary>
@@ -128,6 +134,11 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
+            OpenBusinessTab(target);
+        }
+
+        private void OpenBusinessTab(BusinessNavigation target)
+        {
             _lastBusinessPage = target;
             BusinessTab tab = TabOf(target);
 

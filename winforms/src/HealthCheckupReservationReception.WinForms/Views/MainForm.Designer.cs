@@ -112,126 +112,147 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientSearch.Caption = "조회";
             this.barBtnPatientSearch.Id = 2;
             this.barBtnPatientSearch.Name = "barBtnPatientSearch";
+            this.barBtnPatientSearch.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnPatientNew
             //
             this.barBtnPatientNew.Caption = "신규등록";
             this.barBtnPatientNew.Id = 3;
             this.barBtnPatientNew.Name = "barBtnPatientNew";
+            this.barBtnPatientNew.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnPatientEdit
             //
             this.barBtnPatientEdit.Caption = "정보수정";
             this.barBtnPatientEdit.Id = 4;
             this.barBtnPatientEdit.Name = "barBtnPatientEdit";
+            this.barBtnPatientEdit.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnPatientReserve
             //
             this.barBtnPatientReserve.Caption = "신규예약";
             this.barBtnPatientReserve.Id = 5;
             this.barBtnPatientReserve.Name = "barBtnPatientReserve";
+            this.barBtnPatientReserve.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnPatientLog
             //
             this.barBtnPatientLog.Caption = "변경이력";
             this.barBtnPatientLog.Id = 6;
             this.barBtnPatientLog.Name = "barBtnPatientLog";
+            this.barBtnPatientLog.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnPatientColumns
             //
             this.barBtnPatientColumns.Caption = "컬럼설정";
             this.barBtnPatientColumns.Id = 7;
             this.barBtnPatientColumns.Name = "barBtnPatientColumns";
+            this.barBtnPatientColumns.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnReservationSave
             //
             this.barBtnReservationSave.Caption = "예약저장";
             this.barBtnReservationSave.Id = 8;
             this.barBtnReservationSave.Name = "barBtnReservationSave";
+            this.barBtnReservationSave.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRsvSearch
             //
             this.barBtnRsvSearch.Caption = "조회";
             this.barBtnRsvSearch.Id = 9;
             this.barBtnRsvSearch.Name = "barBtnRsvSearch";
+            this.barBtnRsvSearch.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRsvEdit
             //
             this.barBtnRsvEdit.Caption = "예약변경";
             this.barBtnRsvEdit.Id = 10;
             this.barBtnRsvEdit.Name = "barBtnRsvEdit";
+            this.barBtnRsvEdit.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRsvCancel
             //
             this.barBtnRsvCancel.Caption = "예약취소";
             this.barBtnRsvCancel.Id = 11;
             this.barBtnRsvCancel.Name = "barBtnRsvCancel";
+            this.barBtnRsvCancel.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRsvReception
             //
             this.barBtnRsvReception.Caption = "접수";
             this.barBtnRsvReception.Id = 12;
             this.barBtnRsvReception.Name = "barBtnRsvReception";
+            this.barBtnRsvReception.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRsvLog
             //
             this.barBtnRsvLog.Caption = "변경이력";
             this.barBtnRsvLog.Id = 13;
             this.barBtnRsvLog.Name = "barBtnRsvLog";
+            this.barBtnRsvLog.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRsvColumns
             //
             this.barBtnRsvColumns.Caption = "컬럼설정";
             this.barBtnRsvColumns.Id = 14;
             this.barBtnRsvColumns.Name = "barBtnRsvColumns";
+            this.barBtnRsvColumns.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRcpSearch
             //
             this.barBtnRcpSearch.Caption = "조회";
             this.barBtnRcpSearch.Id = 15;
             this.barBtnRcpSearch.Name = "barBtnRcpSearch";
+            this.barBtnRcpSearch.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRcpWalkIn
             //
             this.barBtnRcpWalkIn.Caption = "현장 당일예약";
             this.barBtnRcpWalkIn.Id = 16;
             this.barBtnRcpWalkIn.Name = "barBtnRcpWalkIn";
+            this.barBtnRcpWalkIn.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRcpRsvEdit
             //
             this.barBtnRcpRsvEdit.Caption = "예약변경";
             this.barBtnRcpRsvEdit.Id = 17;
             this.barBtnRcpRsvEdit.Name = "barBtnRcpRsvEdit";
+            this.barBtnRcpRsvEdit.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRcpStart
             //
             this.barBtnRcpStart.Caption = "접수";
             this.barBtnRcpStart.Id = 18;
             this.barBtnRcpStart.Name = "barBtnRcpStart";
+            this.barBtnRcpStart.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRcpExtra
             //
             this.barBtnRcpExtra.Caption = "추가검사변경";
             this.barBtnRcpExtra.Id = 19;
             this.barBtnRcpExtra.Name = "barBtnRcpExtra";
+            this.barBtnRcpExtra.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRcpCancel
             //
             this.barBtnRcpCancel.Caption = "접수취소";
             this.barBtnRcpCancel.Id = 20;
             this.barBtnRcpCancel.Name = "barBtnRcpCancel";
+            this.barBtnRcpCancel.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRcpLog
             //
             this.barBtnRcpLog.Caption = "변경이력";
             this.barBtnRcpLog.Id = 21;
             this.barBtnRcpLog.Name = "barBtnRcpLog";
+            this.barBtnRcpLog.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barBtnRcpColumns
             //
             this.barBtnRcpColumns.Caption = "컬럼설정";
             this.barBtnRcpColumns.Id = 22;
             this.barBtnRcpColumns.Name = "barBtnRcpColumns";
+            this.barBtnRcpColumns.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             //
             // barStaticWorkStatus
             //

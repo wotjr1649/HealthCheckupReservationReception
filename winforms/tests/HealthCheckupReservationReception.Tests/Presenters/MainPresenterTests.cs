@@ -131,15 +131,16 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §4.3 Single Instance 업무 Tab
 
+        // 기동이 이미 수검자 관리 Tab 을 열어 두므로 아직 열리지 않은 화면으로 시험한다.
         [TestMethod]
         public void Navigation_은_업무_Tab_을_열고_활성화한다()
         {
             FakeMainView view = LoadedShell();
 
-            view.RaiseNavigationRequested(BusinessNavigation.PatientManagement);
+            view.RaiseNavigationRequested(BusinessNavigation.NewReservation);
 
             CollectionAssert.AreEqual(
-                new List<string> { "OpenTab:PatientManagement:수검자 관리", "ActivateTab:PatientManagement" },
+                new List<string> { "OpenTab:NewReservation:신규 예약", "ActivateTab:NewReservation" },
                 view.Calls);
         }
 
@@ -268,6 +269,32 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             view.RaiseNavigationRequested(BusinessNavigation.HolidayManagement);
 
             CollectionAssert.Contains(view.Calls, "ShowHolidayManagement");
+        }
+
+        // [X] 기동 직후 Ribbon 은 첫 Page 가 선택된 채 뜨지만 그것은 "변경"이 아니라 이벤트가
+        //     나지 않는다. Shell 이 첫 Tab 을 직접 열지 않으면, 이미 선택된 [수검자 관리] 를
+        //     눌러도 영원히 열리지 않는다. 실행 화면에서 실측한 결함이다.
+        [TestMethod]
+        public void 기동하면_첫_업무_Tab_이_열린다()
+        {
+            var view = new FakeMainView();
+            new MainPresenter(view, new FakeCommonStatusService { Result = Ok(Allowed()) }, "창구");
+
+            view.RaiseShellLoaded();
+
+            CollectionAssert.Contains(view.Calls, "OpenTab:PatientManagement:수검자 관리");
+            CollectionAssert.Contains(view.Calls, "ActivateTab:PatientManagement");
+        }
+
+        [TestMethod]
+        public void 기동으로_열린_Tab_은_다시_열리지_않는다()
+        {
+            FakeMainView view = LoadedShell();
+
+            view.RaiseNavigationRequested(BusinessNavigation.PatientManagement);
+
+            CollectionAssert.DoesNotContain(view.Calls, "OpenTab:PatientManagement:수검자 관리");
+            CollectionAssert.Contains(view.Calls, "ActivateTab:PatientManagement");
         }
 
         private static FakeMainView LoadedShell()

@@ -207,6 +207,8 @@ Navigation RibbonPage 다섯                   03 §1.1 · §4.1        ✅  SCR
 페이지별 Group 검색 → 업무 → 보기            03 §4.2 · §5.2 ·      ✅  SCR-003 이 설계와 대조
                                              §8.2 · §9.6 · §9.7        (예약 관리 Page 는 §2.1 참조)
 휴무일 Page → Modal · 직전 Page 복귀         03 §24.2              ✅
+기동 시 첫 업무 Tab 을 연다                  §14.3 A-06            ✅  실행 캡처로 잡은 결함
+리본 버튼 가로 한 줄 (RibbonItemStyles.Large) 03 §4.1 목업          ✅  실행 캡처로 확인
 XtraTabControl · 탭마다 × 닫기               03 §4.1               ✅
 Single Instance Tab · Workbench Caption 전환 03 §4.3 · §9.1        ✅  Presenter 가 상태를 갖는다
 Tab ↔ Ribbon Page 동기                       03 §4.2               ✅
@@ -699,7 +701,8 @@ cd winforms && ./scripts/test.sh          # P01~P07 · P10. DB 서버도 MSBuild
 |---|---|---|---|
 | `P5-1` | 2026-09-09 | 솔루션 빌드 (MSBuild 16.11.6 · Debug) | exit 0 · Warning 0 |
 | `P5-1` | 2026-09-09 | 단위시험 (vstest.console 16.11.0) | 실패 0 |
-| `P5-1` | 2026-09-09 11:41 (업무시간 안) | `SP-COM-01` 실물 실행 — RS0·RS1 컬럼 이름 대조 | 아래 |
+| `P5-1` | 2026-09-09 11:41 (업무시간 안) | `SP-COM-01` 실물 실행 — RS0·RS1 컬럼 이름 대조 | §12.1 |
+| `P5-2` | 2026-09-09 (업무시간 안) | **WF-00 실행 화면 캡처** — 창 2576x1408 | §12.3 |
 
 ## 12.1 `SP-COM-01` 결선 실측 `[I]`
 
@@ -713,11 +716,32 @@ cd winforms && ./scripts/test.sh          # P01~P07 · P10. DB 서버도 MSBuild
 `scripts/verify-rs-columns.sh` 가 매 회귀에서 낸다 — DB 에 붙지 않고 `05` 를 본다.
 `05` 와 실물 DB 가 맞는지는 database 계열의 `G09` 가 이미 판정하므로 사슬이 닫힌다.
 
+## 12.3 WF-00 실행 화면 `[I]`
+
+`winforms/tools/capture-shell.ps1` 로 실행본을 띄워 창을 PNG 로 떴다. **디자인 표면이 아니다** —
+`references/designer.md` 가 적은 대로 `Program.cs` 와 Presenter 는 디자인타임에 돌지 않으므로
+디자이너 화면으로는 배치를 판정할 수 없다.
+
+```text
+확인됨   Navigation Page 다섯 · 그룹 검색→업무→보기 · 버튼 가로 한 줄
+         업무 Tab 스트립 `수검자 관리 ×` · 상태바 `업무 상태 : 업무 가능  조작자 : 접수1번창구`
+         → 상태바가 채워졌다는 것은 SP-COM-01 이 C# 에서 실제로 돌았다는 뜻이다.
+           §12.1 은 sqlcmd 로 본 것이고 이것이 Repository 경유 첫 실행이다
+남은 차이 그룹 캡션이 버튼 아래   DevExpress RibbonControl 고정. 설정 항목이 아니다
+         버튼이 목업보다 크다     Large 는 아이콘 자리를 비워 둔다. 03 이 아이콘을 정하지
+                                 않았고, SmallWithText 로 낮추면 3행까지 쌓여 다시 세로가 된다
+```
+
+`[X]` **이 캡처가 결함 하나를 잡았다.** 기동 직후 업무 Tab 이 하나도 없었다 — DevExpress 가
+첫 Page 를 기본 선택하지만 그것은 "변경" 이 아니라 `SelectedPageChanged` 가 나지 않는다.
+이미 선택된 `[수검자 관리]` 를 눌러도 이벤트가 없어 **영원히 열리지 않았다.** 게이트도
+단위시험도 못 보던 자리이고, 실행해서 눈으로 봐야만 보이는 부류다. §14.3 `A-06`.
+
 ## 12.2 아직 실행하지 않은 것
 
 ```text
-앱을 띄워 본 적이 없다 — Visual Verified 를 주장하지 않는다
-Repository → 실제 SP 를 C# 에서 호출해 본 적이 없다 (위는 sqlcmd 로 본 것이다)
+배율 100% · 125% 두 벌을 보지 않았다 — P11 은 PLANNED 그대로다
+화면 13개는 아직 없다. 실행본에서 볼 것은 셸뿐이다
 Phase 5 계열이 빌드·시험까지 도는 회차를 언제 잡을지 정하지 않았다 (§11)
 ```
 
@@ -846,6 +870,7 @@ csproj 의 `<RootNamespace>` 와 `Program.cs`·`Views/*` 의 `namespace` 선언�
 | `A-01` | `SP-COM-01` 재호출 주기를 `03` 이 정하지 않았다 | 업무 Action 을 여는 시점마다 다시 읽는다. 별도 타이머를 두지 않는다 | 낮다 — 호출 지점 추가뿐 |
 | `A-02` | Targeted Navigation 의 SP 결선을 `03`·`05` 둘 다 명시하지 않았다 | `SP-WRK-02` 하나로 Grid 행과 Detail 을 함께 구성한다 (§3.6.2) | 낮다 — 계약 안에서 닫힌다 |
 | `A-03` | `DLG-RCP-02` 의 AEX 가용성을 다시 물을지 `03` 이 정하지 않았다 | 진입 시점의 `SP-WRK-02` RS3·RS4 로 충분하다고 본다. 선택할 때마다 다시 부르지 않는다 | 낮다 — 재호출 추가뿐 |
+| `A-06` | `03` 은 기동 직후 어느 업무 Tab 이 열려 있는지 정하지 않았다 | Shell 이 첫 Page(`수검자 관리`)의 Tab 을 직접 연다. 그러지 않으면 이미 선택된 첫 Page 를 눌러도 이벤트가 없어 Tab 이 영원히 열리지 않는다 (§12.3) | 낮다 — 여는 줄 하나 |
 | ~~`A-05`~~ | ~~`휴무일 관리` 를 `PageHeaderItemLinks` 버튼으로 둔다~~ | **철회 (2026-09-09).** 근거로 든 *"설계에 `navActive:4` 가 없다"* 가 성립하지 않는 근거였다 — 휴무일은 Modal 이라 셸을 그린 슬라이드가 애초에 없다. 다섯이 동등한 `RibbonPage` 다 (§3.1.1) | — |
 | `A-04` | `03` §1.3 은 조작자를 *"WinForms 설정 파일의 값"* 이라 적고 키 이름을 정하지 않았다 | `App.config` `appSettings` 의 `OperatorName`. `05` §16.5 의 C# 이름과 같다 | 낮다 — 키 한 줄 |
 
