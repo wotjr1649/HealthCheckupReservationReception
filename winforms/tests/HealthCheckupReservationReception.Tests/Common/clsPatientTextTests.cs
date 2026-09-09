@@ -53,6 +53,24 @@ namespace HealthCheckupReservationReception.Tests.Common
         {
             // 03 §5.6 No 7 — 과제는 임의 시험값만 쓰므로 가리지 않는다 (00 §2.1).
             Assert.AreEqual("990707-2000018", clsPatientText.FormatSocialNumber("9907072000018"));
+        }
+        // [2026-09-10 사용자 요청] 자릿수는 **하이픈을 빼고** 센다.
+        // 휴대전화 10~11 은 CK_수검자_CEL_DIGIT 이 정한 값 그대로다 (04 §8.1.3).
+        [DataTestMethod]
+        [DataRow("010-1234-5678", true, true, "휴대전화 11자리")]
+        [DataRow("011-123-4567", true, true, "휴대전화 10자리")]
+        [DataRow("010-123-456", true, false, "9자리는 짧다")]
+        [DataRow("010123456789", true, false, "12자리는 길다")]
+        [DataRow(null, true, true, "미입력은 선택이라 통과")]
+        [DataRow("   ", true, true, "공백도 미입력")]
+        [DataRow("02-123-4567", false, true, "전화번호 9자리")]
+        [DataRow("1588-1234", false, true, "대표번호 8자리")]
+        [DataRow("1234567", false, false, "7자리는 짧다")]
+        [DataRow("031-1234-56789", false, false, "12자리는 길다")]
+        public void 전화_자릿수는_하이픈을_빼고_센다(string input, bool mobile, bool expected, string why)
+        {
+            Assert.AreEqual(expected, clsPatientText.IsPhoneDigitCountValid(input, mobile), why);
         }
+
     }
 }

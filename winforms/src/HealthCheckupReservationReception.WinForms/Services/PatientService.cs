@@ -180,6 +180,19 @@ namespace HealthCheckupReservationReception.Services
             }
             if (Over(r.MobilePhone, MobilePhoneMax)) { return "휴대전화는 " + MobilePhoneMax + "자 이하로 입력하십시오."; }
             if (Over(r.Phone, PhoneMax)) { return "전화번호는 " + PhoneMax + "자 이하로 입력하십시오."; }
+
+            // 04 §8.1.3 CK_수검자_CEL_DIGIT 이 휴대전화를 숫자 10~11자리로 못박는다.
+            // 화면도 같은 것을 안내하지만(FrmPatientEditor.Phone_Leave) **판정은 여기서 한 번** 한다 —
+            // 킷 §6. 여기가 없으면 화면을 우회한 값이 DB 제약 위반으로 튕겨 이유가 안 보인다.
+            if (!clsPatientText.IsPhoneDigitCountValid(r.MobilePhone, true))
+            {
+                return "휴대전화는 숫자 10~11자리로 입력하십시오.";
+            }
+
+            if (!clsPatientText.IsPhoneDigitCountValid(r.Phone, false))
+            {
+                return "전화번호는 숫자 8~11자리로 입력하십시오.";
+            }
             if (Over(r.Email, EmailMax)) { return "E-mail 은 " + EmailMax + "자 이하로 입력하십시오."; }
             if (Over(r.Zipcode, ZipcodeMax)) { return "우편번호는 " + ZipcodeMax + "자 이하로 입력하십시오."; }
             if (Over(r.Address, AddressMax)) { return "주소는 " + AddressMax + "자 이하로 입력하십시오."; }

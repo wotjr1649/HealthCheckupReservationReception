@@ -148,8 +148,10 @@ namespace HealthCheckupReservationReception.Views
                 txtDetailBirthGender.Text = value == null
                     ? string.Empty
                     : Pair(clsPatientText.FormatBirthday(value.Birthday), clsPatientText.FormatGender(value.Gender));
-                txtDetailMobilePhone.Text = value == null ? string.Empty : value.MobilePhone;
-                txtDetailPhoneEmail.Text = value == null ? string.Empty : Pair(value.Phone, value.Email);
+                txtDetailMobilePhone.Text = value == null ? string.Empty
+                    : clsPatientText.FormatPhone(value.MobilePhone);
+                txtDetailPhoneEmail.Text = value == null ? string.Empty
+                    : Pair(clsPatientText.FormatPhone(value.Phone), value.Email);
                 txtDetailZipAddress.Text = value == null ? string.Empty : Pair(value.Zipcode, value.Address);
                 txtDetailAddressDetail.Text = value == null ? string.Empty : value.AddressDetail;
                 memoDetailMemo.Text = value == null ? string.Empty : value.Memo;
@@ -294,6 +296,11 @@ namespace HealthCheckupReservationReception.Views
             if (e.Column == colBirthday)
             {
                 e.DisplayText = clsPatientText.FormatBirthday(e.Value as string);
+            }
+            else if (e.Column == colMobilePhone)
+            {
+                // 저장 형식이 바뀌기 전 행은 숫자만 들어 있다. 표시에서 한 꼴로 맞춘다.
+                e.DisplayText = clsPatientText.FormatPhone(e.Value as string);
             }
             else if (e.Column == colGender)
             {

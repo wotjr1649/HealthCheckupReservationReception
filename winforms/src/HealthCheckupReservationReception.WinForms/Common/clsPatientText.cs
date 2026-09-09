@@ -67,6 +67,24 @@ namespace HealthCheckupReservationReception.Common
         private const int PhoneStoreMax = 13;
 
         /// <summary>
+        /// 전화 자릿수가 쓸 수 있는 범위인가. **하이픈은 세지 않는다** (2026-09-10 사용자 요청).
+        ///
+        /// 휴대전화 10~11 은 `CK_수검자_CEL_DIGIT` 이 정한 값 그대로다 (`04` §8.1.3) —
+        /// 화면이 먼저 잡지 않으면 DB 가 제약 위반으로 튕기고 사용자는 이유를 못 본다.
+        /// 전화번호에는 CHECK 이 없으므로(`04` §8.1.3) 실제로 쓰이는 8~11 을 쓴다 —
+        /// 대표번호 `1588-1234` 가 8, 지역번호가 9~11 이다.
+        ///
+        /// 미입력(`null`)은 선택 항목이라 참이다 (`03` §5.6 No 11·12).
+        /// </summary>
+        public static bool IsPhoneDigitCountValid(string value, bool mobile)
+        {
+            string d = Digits(value);
+            if (d == null) { return true; }
+            return mobile ? (d.Length >= 10 && d.Length <= 11)
+                          : (d.Length >= 8 && d.Length <= 11);
+        }
+
+        /// <summary>
         /// 번호대별 끊는 자리. 앞의 것이 먼저 걸린다.
         ///
         ///   02        서울           02-XXX-XXXX      / 02-XXXX-XXXX

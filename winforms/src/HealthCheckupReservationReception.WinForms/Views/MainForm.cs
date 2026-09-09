@@ -317,7 +317,8 @@ namespace HealthCheckupReservationReception.Views
             OpenPatientEditor(null);
         }
 
-        // 03 §5.2 — [정보수정] 은 행 선택 + 공통 업무가능일 때만 열려 있다. 그래도 대상을
+        // 03 §5.2 — [정보수정] 은 **행 선택**일 때만 열려 있다. [R12] 곱하던 두 번째 판정
+        // (공통 업무가능)은 사라졌다 — 화면은 업무 상태로 Action 을 막지 않는다. 그래도 대상을
         // 다시 확인한다: 버튼 상태와 Grid 상태가 어긋난 채로 0 을 저장 SP 에 보내지 않는다.
         private void barBtnPatientEdit_ItemClick(object sender, ItemClickEventArgs e)
         {

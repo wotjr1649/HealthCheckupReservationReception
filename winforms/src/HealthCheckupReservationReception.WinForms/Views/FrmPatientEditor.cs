@@ -274,6 +274,14 @@ namespace HealthCheckupReservationReception.Views
             {
                 editor.Text = formatted;
             }
+
+            // [!] 자릿수는 **하이픈을 빼고** 센다 (2026-09-10 사용자 요청).
+            //     휴대전화 10~11 은 CK_수검자_CEL_DIGIT 이 정한 값이다 — 화면이 먼저 잡지
+            //     않으면 DB 가 제약 위반으로 튕기고 사용자는 이유를 못 본다.
+            bool mobile = ReferenceEquals(editor, txtMobilePhone);
+            editor.ErrorText = clsPatientText.IsPhoneDigitCountValid(editor.Text, mobile)
+                ? string.Empty
+                : (mobile ? "휴대전화는 숫자 10~11자리입니다." : "전화번호는 숫자 8~11자리입니다.");
         }
 
         private void btnClose_Click(object sender, EventArgs e)
