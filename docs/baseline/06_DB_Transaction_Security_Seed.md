@@ -3,9 +3,10 @@
 - **문서명:** `06_DB_Transaction_Security_Seed.md`
 - **상태:** `FINAL / GO / READ-ONLY` — SQL 실행검증 완료. §42 Gate 판정은 전부 실측이다
 - **위치:** `docs/baseline/` — 2026-09-08 입주. 이제 이 문서를 고치는 것도 재봉인이다 (ROOT `AGENTS.md` §2)
-- **문서 버전:** v1.6  (v1.0 → R4 한글화 반영. v1.1 → R5 에서 §42 Gate 세 칸을 실측에 맞췄다. v1.2 → R6 에서 §42 의 미래 단정 한 줄을 걷었다. v1.3 → R7 계약 재설계. v1.4 → R8 리뷰 정정. v1.5 → R9 Seed 건수 사본 제거)
+- **문서 버전:** v1.7  (v1.0 → R4 한글화 반영. v1.1 → R5 에서 §42 Gate 세 칸을 실측에 맞췄다. v1.2 → R6 에서 §42 의 미래 단정 한 줄을 걷었다. v1.3 → R7 계약 재설계. v1.4 → R8 리뷰 정정. v1.5 → R9 Seed 건수 사본 제거. v1.6 → R10 §4.1 회차 갱신)
 - **기준일:** 2026-09-08  ·  **실행검증일:** 2026-09-07(R3 회귀) · 2026-09-08(R4 회귀 · R5 회귀 회차 `C`)
-- **기준선 ID:** `HC-RSV-RCP-20260909-R9`  (직전 `HC-RSV-RCP-20260908-R8`)
+- **기준선 ID:** `HC-RSV-RCP-20260909-R10`  (직전 `HC-RSV-RCP-20260909-R9`)
+- **R10 개정 범위:** `03` 재봉인에 딸린다. §4.1 의 `03`·`06` 두 행만 바꾼다 — 회차의 단일 출처가 여기이므로 `03` 이 R10 이 되면 이 표가 거짓이 된다(R5 가 겪은 연쇄다). **SQL·Seed·계약·시험을 한 줄도 바꾸지 않았으므로 회차 `R9` 의 증거가 그대로 유효하고, DB 를 재구축하는 전체 회귀는 돌리지 않았다.** 판정한 것은 문서 게이트 셋이다 — `verify-baseline.sh` · `verify-docs.js` · `verify_output.js`
 - **R9 개정 범위:** `06` 만 연다. 계약·SQL·Seed 를 한 줄도 바꾸지 않는다 — §33·§44 에 남아 있던 `휴무일 2건` 두 문장을 걷고 총계 판정을 `SED-008`·`VER-007` 로 넘긴다. 같은 수치의 세 번째 사본이던 `verify-contract-all.sh` 의 `0/41` 도 함께 뺐다. 회차 `R8` 의 증거가 그대로 유효하다
 - **R8 개정 범위:** R7 직후의 약식 리뷰가 찾은 결함을 정정한다. `2026-06-03` 지방선거일 Seed 누락, `07a` No-op 의 정렬 함정, `03` Grid 의 `행버전` 누락, 게이트 세 곳의 fail-open, `G09` 과다 주장이 그것이다
 - **R7 반영 범위:** 계약 재설계다. 휴무일이 `휴무구분`·감사·`행버전`을 얻고 자체휴무일 CRUD SP 4개가 생겨 SP 16 → 20 이 되었다. 동시성 토큰이 `행버전` 하나로 통일되며 §26 의 `+4ms` 단조증가가 **사라진다**. 공휴일 Seed 가 2년치로 늘고 만료 경고 게이트가 붙는다. §42 `G05` 는 수치 사본을 걷고 포인터가 된다
@@ -99,13 +100,14 @@ Extended Events / trace flag 세션 (서버 수준 객체)
 | `00_Project_Policy.md` | v2.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
 | `01_Process_Definition.md` | v2.0 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260904-R3` |
 | `02_Function_Definition.xlsx` | v2.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
-| `03_Wireframe_Definition.md` | v1.5 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R8` |
+| `03_Wireframe_Definition.md` | v1.6 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260909-R10` |
 | `04_DB_Design.md` | v3.3 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R8` |
 | `05_DB_Rule_SP_Contract.md` | v3.2 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R8` |
-| `06_DB_Transaction_Security_Seed.md` | v1.6 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260909-R9` |
+| `06_DB_Transaction_Security_Seed.md` | v1.7 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260909-R10` |
 
 `[!]` **기준선 ID 는 문서마다 "마지막 봉인 회차" 다** — 세트 하나에 ID 하나가 아니다.
-R9 는 `06` 하나만 열었다. `03`·`04`·`05` 는 R8, `00`·`02` 는 R7, `01` 은 R3 표기를 유지한다 — 열지 않은 문서는 회차가 올라가지 않는다 (ROOT `AGENTS.md` §2.2).
+R10 은 `03`·`06` 둘을 열었다 — `03` 의 §1.4 를 고치면 회차가 오르고, 회차의 단일 출처가 이 표이므로 `06` 도 따라 열린다.
+`04`·`05` 는 R8, `00`·`02` 는 R7, `01` 은 R3 표기를 유지한다 — 열지 않은 문서는 회차가 올라가지 않는다 (ROOT `AGENTS.md` §2.2).
 
 동일 디렉터리 및 `docs` 전체에서 `(1)`·`Candidate`·`후보`·`개선본`·`백업`·`old`·`copy` 사본 **0건**을 확인했다.
 
