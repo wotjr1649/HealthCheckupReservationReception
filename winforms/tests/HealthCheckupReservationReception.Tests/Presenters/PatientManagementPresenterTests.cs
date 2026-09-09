@@ -233,8 +233,23 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public OperationResult<PatientDetailDto> DetailResult { get; set; }
         public Exception Failure { get; set; }
 
+        // DLG-PAT-01 은 한 번의 저장이 두 번 부를 수 있다 — 203 을 받고 확인값을 실어 다시
+        // 부르는 길이다 (03 §6.5). 그래서 결과를 하나가 아니라 줄로 세워 둔다.
+        public Queue<OperationResult<PatientSaveReadDto>> RegisterResults { get; private set; }
+
+        public OperationResult<PatientSaveReadDto> UpdateResult { get; set; }
+
         public PatientSearchRequest LastRequest { get; private set; }
         public long? LastPatientId { get; private set; }
+        public PatientSaveRequest LastSaveRequest { get; private set; }
+        public IList<PatientSaveRequest> SaveRequests { get; private set; }
+        public int DetailCalls { get; private set; }
+
+        public FakePatientService()
+        {
+            RegisterResults = new Queue<OperationResult<PatientSaveReadDto>>();
+            SaveRequests = new List<PatientSaveRequest>();
+        }
 
         public OperationResult<IList<PatientListItemDto>> Search(PatientSearchRequest request)
         {
@@ -247,7 +262,28 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             if (Failure != null) { throw Failure; }
             LastPatientId = patientId;
+            DetailCalls++;
             return DetailResult;
+        }
+
+        public OperationResult<PatientSaveReadDto> Register(PatientSaveRequest request)
+        {
+            if (Failure != null) { throw Failure; }
+            Record(request);
+            return RegisterResults.Count > 0 ? RegisterResults.Dequeue() : null;
+        }
+
+        public OperationResult<PatientSaveReadDto> Update(PatientSaveRequest request)
+        {
+            if (Failure != null) { throw Failure; }
+            Record(request);
+            return UpdateResult;
+        }
+
+        private void Record(PatientSaveRequest request)
+        {
+            LastSaveRequest = request;
+            SaveRequests.Add(request);
         }
     }
 }

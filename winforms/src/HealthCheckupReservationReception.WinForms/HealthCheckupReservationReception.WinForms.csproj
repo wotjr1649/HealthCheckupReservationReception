@@ -54,6 +54,7 @@
   <ItemGroup>
     <Compile Include="Common\DbCode.cs" />
     <Compile Include="Common\OperationResult.cs" />
+    <Compile Include="Common\clsPatientText.cs" />
     <Compile Include="Models\CommonWorkStatusDto.cs" />
     <Compile Include="Models\CommonWorkStatusReadDto.cs" />
     <Compile Include="Models\DbResult.cs" />
@@ -62,8 +63,13 @@
     <Compile Include="Models\PatientListItemDto.cs" />
     <Compile Include="Models\PatientListReadDto.cs" />
     <Compile Include="Models\PatientSearchRequest.cs" />
+    <Compile Include="Models\PatientSaveReadDto.cs" />
+    <Compile Include="Models\PatientSaveRequest.cs" />
+    <Compile Include="Models\PatientSaveResultDto.cs" />
     <Compile Include="Presenters\MainPresenter.cs" />
     <Compile Include="Presenters\PatientManagementPresenter.cs" />
+    <Compile Include="Presenters\PatientEditorPresenter.cs" />
+    <Compile Include="Presenters\PatientSelectPresenter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Repositories\CommonStatusRepository.cs" />
     <Compile Include="Repositories\DbResultReader.cs" />
@@ -80,8 +86,41 @@
     <Compile Include="Views\FrmColumnChooser.Designer.cs">
       <DependentUpon>FrmColumnChooser.cs</DependentUpon>
     </Compile>
+    <Compile Include="Views\FrmPatientDuplicate.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\FrmPatientDuplicate.Designer.cs">
+      <DependentUpon>FrmPatientDuplicate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FrmPatientDuplicate.UI.cs">
+      <DependentUpon>FrmPatientDuplicate.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Views\FrmPatientEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\FrmPatientEditor.Designer.cs">
+      <DependentUpon>FrmPatientEditor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FrmPatientEditor.UI.cs">
+      <DependentUpon>FrmPatientEditor.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Views\FrmPatientSelect.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\FrmPatientSelect.Designer.cs">
+      <DependentUpon>FrmPatientSelect.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FrmPatientSelect.UI.cs">
+      <DependentUpon>FrmPatientSelect.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Views\IMainView.cs" />
     <Compile Include="Views\IPatientManagementView.cs" />
+    <Compile Include="Views\IPatientEditorView.cs" />
+    <Compile Include="Views\IPatientSelectView.cs" />
+    <Compile Include="Views\clsGridColumns.cs" />
     <Compile Include="Views\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

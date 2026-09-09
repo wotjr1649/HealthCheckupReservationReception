@@ -169,6 +169,108 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Console.WriteLine("캡처: " + path);
         }
 
+        /// <summary>
+        /// DLG-PAT-01 New Mode. 설계 `dlg_pat_01.js` 와 견주려면 구획 다섯이 한 화면에
+        /// 들어가는지가 먼저다 — 값이 비어 있어도 배치는 보인다.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void DLGPAT01_실행_화면을_PNG_로_뜬다()
+        {
+            string path = Capture("dlg_pat_01.png", () =>
+                new FrmPatientEditor(new FakePatientService(), "접수1번창구", null));
+
+            Assert.IsTrue(new FileInfo(path).Length > 2 * 1024, "PNG 가 비었다: " + path);
+            Console.WriteLine("캡처: " + path);
+        }
+
+        /// <summary>DLG-PAT-02. 조회 결과가 들어 있어야 컬럼 폭을 볼 수 있다.</summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void DLGPAT02_실행_화면을_PNG_로_뜬다()
+        {
+            string path = Capture("dlg_pat_02.png", () =>
+            {
+                var form = new FrmPatientSelect(new FakePatientService(), "접수1번창구");
+                ((IPatientSelectView)form).Rows = SampleRows();
+                return form;
+            });
+
+            Assert.IsTrue(new FileInfo(path).Length > 2 * 1024, "PNG 가 비었다: " + path);
+            Console.WriteLine("캡처: " + path);
+        }
+
+        /// <summary>
+        /// DLG-PAT-03. 설계 `dlg_pat_03.js` 는 후보 둘의 주민번호가 서로 달라야 한다고 적는다 —
+        /// 이 화면의 존재 이유가 `이름 + 생년월일 동일 / 주민번호 상이` 이기 때문이다.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void DLGPAT03_실행_화면을_PNG_로_뜬다()
+        {
+            string path = Capture("dlg_pat_03.png", () =>
+            {
+                var form = new FrmPatientDuplicate();
+                form.Bind(
+                    Candidate(0, "", "홍길동", "6603122000019", "010-0000-0003"),
+                    new List<PatientSaveResultDto>
+                    {
+                        Candidate(21, "2026-000098", "홍길동", "6603122000035", "010-0000-0098"),
+                        Candidate(22, "2026-000114", "홍길동", "6603122000043", "010-0000-0114"),
+                    });
+                return form;
+            });
+
+            Assert.IsTrue(new FileInfo(path).Length > 2 * 1024, "PNG 가 비었다: " + path);
+            Console.WriteLine("캡처: " + path);
+        }
+
+        private static PatientSaveResultDto Candidate(long id, string chartNo, string name, string social, string mobile)
+        {
+            return new PatientSaveResultDto
+            {
+                PatientId = id,
+                ChartNo = chartNo,
+                Name = name,
+                SocialNumber = social,
+                Birthday = "19660312",
+                Gender = "F",
+                MobilePhone = mobile,
+            };
+        }
+
+        /// <summary>
+        /// Modal 하나를 화면 밖에 띄워 PNG 로 뜬다. 보이지 않으면 DevExpress 가 스킨을 그리지
+        /// 않으므로 닫기 전에 그린다.
+        /// </summary>
+        private static string Capture(string name, Func<Form> create)
+        {
+            string path = null;
+            RunSta(() =>
+            {
+                WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
+                WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
+
+                using (Form form = create())
+                {
+                    form.StartPosition = FormStartPosition.Manual;
+                    form.Location = new Point(-32000, -32000);
+                    form.Show();
+                    Application.DoEvents();
+
+                    using (var bmp = new Bitmap(form.Width, form.Height))
+                    {
+                        form.DrawToBitmap(bmp, new Rectangle(Point.Empty, bmp.Size));
+                        path = Save(bmp, name);
+                    }
+
+                    form.Close();
+                }
+            });
+
+            return path;
+        }
+
         private static DevExpress.XtraGrid.Views.Grid.GridView GridOf(UcPatientManagement screen)
         {
             return (DevExpress.XtraGrid.Views.Grid.GridView)typeof(UcPatientManagement)

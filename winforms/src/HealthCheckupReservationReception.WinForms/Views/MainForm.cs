@@ -16,6 +16,7 @@ namespace HealthCheckupReservationReception.Views
     {
         private readonly MainPresenter _presenter;
         private readonly IPatientService _patientService;
+        private readonly string _operatorName;
         private readonly Dictionary<BusinessTab, XtraTabPage> _pages = new Dictionary<BusinessTab, XtraTabPage>();
 
         // Presenter 가 시킨 변경이 다시 event 로 돌아와 무한 왕복하는 것을 막는다.
@@ -33,6 +34,7 @@ namespace HealthCheckupReservationReception.Views
             InitializeComponent();
             ClampToWorkingArea();
             _patientService = patientService;
+            _operatorName = operatorName;
 
             // Designer 는 버튼을 켜진 채로 만든다. Presenter 가 붙기 전에 03 §5.2 의
             // 초기 상태(행 미선택)로 맞춘다.
@@ -335,9 +337,39 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
+        // 03 §5.2 — [신규등록] 은 대상 행이 필요 없다. Modal 만 열면 되므로 Tab 을 열지 않는다.
+        private void barBtnPatientNew_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            OpenPatientEditor(null);
+        }
+
+        // 03 §5.2 — [정보수정] 은 행 선택 + 공통 업무가능일 때만 열려 있다. 그래도 대상을
+        // 다시 확인한다: 버튼 상태와 Grid 상태가 어긋난 채로 0 을 저장 SP 에 보내지 않는다.
+        private void barBtnPatientEdit_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (_patientView == null || _patientView.SelectedPatientId == null)
+            {
+                return;
+            }
+
+            OpenPatientEditor(_patientView.SelectedPatientId);
+        }
+
+        /// <summary>
+        /// DLG-PAT-01 을 연다 (03 §6). 03 §5 는 저장 뒤 수검자 관리 화면이 할 일을 정하지
+        /// 않으므로 목록을 자동으로 다시 읽지 않는다 (07 §14.3 A-11).
+        /// </summary>
+        private void OpenPatientEditor(long? patientId)
+        {
+            using (var editor = new FrmPatientEditor(_patientService, _operatorName, patientId))
+            {
+                editor.ShowDialog(this);
+            }
+        }
+
         private void barBtnNotImplemented_ItemClick(object sender, ItemClickEventArgs e)
         {
-            // EXTENSION POINT: DLG-PAT-01 · DLG-PAT-02 · WF-RSV-01 · DLG-LOG-01.
+            // EXTENSION POINT: WF-RSV-01 · DLG-LOG-01.
             XtraMessageBox.Show(this, e.Item.Caption + " 화면은 아직 만들지 않았습니다.", Text);
         }
 

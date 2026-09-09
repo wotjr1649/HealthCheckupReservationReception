@@ -57,8 +57,12 @@
     <Compile Include="MainFormTests.cs" />
     <Compile Include="Presenters\MainPresenterTests.cs" />
     <Compile Include="Presenters\PatientManagementPresenterTests.cs" />
+    <Compile Include="Presenters\PatientEditorPresenterTests.cs" />
+    <Compile Include="Presenters\PatientSelectPresenterTests.cs" />
     <Compile Include="Services\CommonStatusServiceTests.cs" />
+    <Compile Include="Services\PatientServiceTests.cs" />
     <Compile Include="Views\UcPatientManagementTests.cs" />
+    <Compile Include="Views\FrmPatientEditorTests.cs" />
     <Compile Include="Visual\ShellCaptureTests.cs" />
   </ItemGroup>
   <ItemGroup>

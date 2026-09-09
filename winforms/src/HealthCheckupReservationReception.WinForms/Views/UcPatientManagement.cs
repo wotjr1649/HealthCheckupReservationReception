@@ -5,6 +5,7 @@ using System.IO;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Views.Base;
+using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
 using HealthCheckupReservationReception.Presenters;
 using HealthCheckupReservationReception.Services;
@@ -121,10 +122,10 @@ namespace HealthCheckupReservationReception.Views
             {
                 txtDetailChartNo.Text = value == null ? string.Empty : value.ChartNo;
                 txtDetailName.Text = value == null ? string.Empty : value.Name;
-                txtDetailSocialNumber.Text = value == null ? string.Empty : FormatSocialNumber(value.SocialNumber);
+                txtDetailSocialNumber.Text = value == null ? string.Empty : clsPatientText.FormatSocialNumber(value.SocialNumber);
                 txtDetailBirthGender.Text = value == null
                     ? string.Empty
-                    : Pair(FormatBirthday(value.Birthday), FormatGender(value.Gender));
+                    : Pair(clsPatientText.FormatBirthday(value.Birthday), clsPatientText.FormatGender(value.Gender));
                 txtDetailMobilePhone.Text = value == null ? string.Empty : value.MobilePhone;
                 txtDetailPhoneEmail.Text = value == null ? string.Empty : Pair(value.Phone, value.Email);
                 txtDetailZipAddress.Text = value == null ? string.Empty : Pair(value.Zipcode, value.Address);
@@ -142,6 +143,25 @@ namespace HealthCheckupReservationReception.Views
                 {
                     handler(this, value);
                 }
+            }
+        }
+
+        /// <summary>
+        /// 03 §5.2 — `[정보수정]`·`[변경이력]` 이 대상으로 삼는 행. 판정은 Presenter 가 하고
+        /// Ribbon 을 가진 MainForm 이 이 값을 읽는다. **선택으로 보이지 않는 동안은 대상이
+        /// 없다** — Grid 가 잡아 둔 행과 사용자가 고른 행은 다르다 (07 §14.3 A-10).
+        /// </summary>
+        public long? SelectedPatientId
+        {
+            get
+            {
+                if (!_rowPicked)
+                {
+                    return null;
+                }
+
+                var row = gvPatientList.GetFocusedRow() as PatientListItemDto;
+                return row == null ? (long?)null : row.PatientId;
             }
         }
 
@@ -234,40 +254,16 @@ namespace HealthCheckupReservationReception.Views
             // 03 §5.6 — DB 가 주는 값과 화면 표기가 다른 세 컬럼. 값 자체는 바꾸지 않는다.
             if (e.Column == colBirthday)
             {
-                e.DisplayText = FormatBirthday(e.Value as string);
+                e.DisplayText = clsPatientText.FormatBirthday(e.Value as string);
             }
             else if (e.Column == colGender)
             {
-                e.DisplayText = FormatGender(e.Value as string);
+                e.DisplayText = clsPatientText.FormatGender(e.Value as string);
             }
             else if (e.Column == colSocialNumber)
             {
-                e.DisplayText = FormatSocialNumber(e.Value as string);
+                e.DisplayText = clsPatientText.FormatSocialNumber(e.Value as string);
             }
-        }
-
-        /// <summary>03 §5.6 No 9 — DB 는 M/F 로 주고 화면은 남/여로 적는다 (05 §16.5).</summary>
-        private static string FormatGender(string value)
-        {
-            if (value == "M") { return "남"; }
-            if (value == "F") { return "여"; }
-            return value;
-        }
-
-        /// <summary>03 §5.6 No 8 — `yyyyMMdd` 계산열을 사람이 읽는 꼴로만 끊는다.</summary>
-        private static string FormatBirthday(string value)
-        {
-            return value != null && value.Length == 8
-                ? value.Substring(0, 4) + "-" + value.Substring(4, 2) + "-" + value.Substring(6, 2)
-                : value;
-        }
-
-        /// <summary>03 §5.6 No 7 — 마스킹하지 않는다. 13자리를 6-7 로 끊기만 한다.</summary>
-        private static string FormatSocialNumber(string value)
-        {
-            return value != null && value.Length == 13
-                ? value.Substring(0, 6) + "-" + value.Substring(6)
-                : value;
         }
 
         /// <summary>설계가 한 칸에 둘을 넣은 자리다 (`생년월일 / 성별` 등). 한쪽이 비면 남는 쪽만 적는다.</summary>
