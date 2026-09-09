@@ -25,11 +25,12 @@ b9c1f5c5bf130920c0457f576c902f7e43e23664790f40729e6094f51d08d65e *../winforms/.c
 4a5eaeff8b34ab21ffaab25169bdc8ab9741a8dee8403067c1b405c8724d589a *../winforms/AGENTS.md
 7e346e6424c8b55410783d7fca243321f9da7ea21ebae71161c2c18ad3491646 *../winforms/CLAUDE.md
 94732445f4c922609e3e15c196b1abf3519f03972705c04d2bde07582e5a3f9b *../winforms/HealthCheckupReservationReception.sln
-3fd7d8ef245ae2f5837fcb99ad0c6f953aa86ddf414195916149fdc925fc75f1 *../winforms/scripts/test.sh
+2bde869ab847a4066edda8b5c265771b488074d0c33e032a69283db5ed7359a1 *../winforms/scripts/test.sh
 f8846954aab7c520622acdb25d40441f4febeea805553d5211f3271ad9b242fd *../winforms/scripts/verify-contract-names.sh
 238bea461312c28627480f3d42978f74a3aadca841176207cdde9864c04c8989 *../winforms/scripts/verify-dbcode.sh
 b735273e9c0c998520836b792bdbecbc837237f471273e420a31edb90d91e83a *../winforms/scripts/verify-layering.sh
 a3f39ed64290a89495ad68c907c21d2e215cafd7bb762bb889dd1515a1d78fa1 *../winforms/scripts/verify-no-secret.sh
+f5b46b28cd6d9b44f2da33bddbdd3c47cad22108abbb16940f27176a146f01b1 *../winforms/scripts/verify-rs-columns.sh
 30cd0e127c1282e81ac4a3d00fe5c062b5a36684338990348d210360bdda2a4f *../winforms/scripts/verify-ui-baseline.sh
 d87d9c8da61680223271130e309a8ca42cab2a34073392bda38f6155b9e56788 *../winforms/scripts/verify-ui-db-matrix.sh
 749a2e348888a352323a625eb9cb286841c24d301a8799f7a6464bb5cda57c15 *../winforms/src/HealthCheckupReservationReception.WinForms/App.config

@@ -25,6 +25,8 @@ run ./scripts/verify-dbcode.sh selftest
 run ./scripts/verify-dbcode.sh
 run ./scripts/verify-layering.sh selftest
 run ./scripts/verify-layering.sh
+run ./scripts/verify-rs-columns.sh selftest
+run ./scripts/verify-rs-columns.sh
 run ./scripts/verify-ui-db-matrix.sh selftest
 run ./scripts/verify-ui-db-matrix.sh
 
