@@ -64,12 +64,16 @@ BEGIN
     -- 1. 정규화 — 공백 제거, 빈 문자열은 NULL, 전화·주민번호의 '-' 제거
     SET @차트번호      = NULLIF(LTRIM(RTRIM(@차트번호)), N'');
     SET @성명         = NULLIF(LTRIM(RTRIM(@성명)), N'');
-    -- [X] @성명 을 LIKE 에 그대로 이어 붙이면 접두검색이 아니다. '%' 한 글자면 조건이 '있는'
-    --     것으로 103 가드를 통과하고 수검자 전건이 주민번호와 함께 반환된다 (실측).
-    --     04 §11.3 과 이 파일 머리 주석이 '조건 없는 전체조회는 금지' 라고 못박은 그 상태다.
-    --     메타문자 세 개를 대괄호로 이스케이프한다. '[' 를 먼저 바꿔야 뒤 치환이 낳는 괄호를 안 건드린다.
-    --     변수로 올려 IX_수검자_NAME_BIRTHDAY seek 을 잃지 않게 한다.
-    DECLARE @성명패턴 NVARCHAR(200) = CASE WHEN @성명 IS NULL THEN NULL ELSE REPLACE(REPLACE(REPLACE(@성명, N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%' END;
+    -- [X] 값을 LIKE 에 그대로 이어 붙이면 사용자가 친 '%' 가 패턴이 된다. 예전에는 그것이
+    --     103 가드까지 우회해 수검자 전건이 주민번호와 함께 반환됐다 (실측).
+    --     그 가드는 R16 이 걷었지만 **이스케이프는 남긴다** — 사용자가 친 '%' 는 글자 '%' 다.
+    --     메타문자 세 개를 대괄호로 감싼다. '[' 를 먼저 바꿔야 뒤 치환이 낳는 괄호를 안 건드린다.
+    -- [R17] 앞뒤로 '%' 를 붙여 **포함검색**한다 (03 §5.3 · 04 §11.3 · 05 §7.2).
+    --     [!] 앞의 '%' 때문에 UQ_수검자_CHART_NO 도 IX_수검자_NAME_BIRTHDAY 도 seek 하지 못한다.
+    --         알고 여는 비용이며 06 §43-32 에 등재했다.
+    --     주민번호·생년월일·휴대전화는 신원값이라 정확검색 그대로다.
+    DECLARE @차트번호패턴 NVARCHAR(300) = CASE WHEN @차트번호 IS NULL THEN NULL ELSE N'%' + REPLACE(REPLACE(REPLACE(@차트번호, N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%' END;
+    DECLARE @성명패턴 NVARCHAR(300) = CASE WHEN @성명 IS NULL THEN NULL ELSE N'%' + REPLACE(REPLACE(REPLACE(@성명, N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%' END;
     SET @주민번호 = NULLIF(REPLACE(LTRIM(RTRIM(@주민번호)), '-', ''), '');
     SET @생년월일     = NULLIF(LTRIM(RTRIM(@생년월일)), '');
     SET @휴대전화  = NULLIF(REPLACE(LTRIM(RTRIM(@휴대전화)), '-', ''), '');
@@ -130,7 +134,7 @@ BEGIN
         , [우편번호]      = CAST(p.[우편번호]      AS VARCHAR(10))
         , [주소]      = CAST(p.[주소]      AS NVARCHAR(200))
     FROM [dbo].[수검자] p
-    WHERE (@차트번호      IS NULL OR p.[차트번호]      =  @차트번호)
+    WHERE (@차트번호      IS NULL OR p.[차트번호]      LIKE @차트번호패턴   )
       AND (@성명         IS NULL OR p.[성명]         LIKE @성명패턴       )
       AND (@주민번호 IS NULL OR p.[주민번호] =  @주민번호)
       AND (@생년월일     IS NULL OR p.[생년월일]     =  @생년월일)

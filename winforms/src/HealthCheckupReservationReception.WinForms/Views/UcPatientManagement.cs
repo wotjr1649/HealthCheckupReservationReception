@@ -28,6 +28,9 @@ namespace HealthCheckupReservationReception.Views
         // 지금 화면이 "행이 골라진" 꼴로 보이는가. ShowSelection 이 유일한 쓰기 지점이다.
         private bool _rowPicked;
 
+        // [R17] 조회 재진입 가드. Ribbon 과 화면 버튼이 같은 Action 을 부른다.
+        private bool _searching;
+
         // 03 §18 `기본값 복원` 이 되돌릴 자리. Designer 가 직렬화한 그 상태다.
         private readonly MemoryStream _defaultLayout = new MemoryStream();
 
@@ -226,12 +229,29 @@ namespace HealthCheckupReservationReception.Views
             RaiseSearchRequested();
         }
 
+        /// <summary>
+        /// [R17] 조회는 UI 스레드에서 동기로 SP 를 부르고, 그동안 쌓인 클릭은 끝난 뒤 발화한다.
+        ///
+        /// **가드가 둘 다 필요하다.** `[조회]` 는 화면 버튼과 Ribbon 버튼 둘이 같은 Action 을
+        /// 부르므로 버튼 하나만 잠그면 다른 쪽이 열려 있다 — `_searching` 이 그 구멍을 닫고,
+        /// `clsBusyScope` 는 사용자가 잠긴 것을 **보게** 한다 (2026-09-10 사용자 결정).
+        /// </summary>
         private void RaiseSearchRequested()
         {
             EventHandler handler = SearchRequested;
-            if (handler != null)
+            if (handler == null || _searching) { return; }
+
+            _searching = true;
+            try
             {
-                handler(this, EventArgs.Empty);
+                using (new clsBusyScope(this, btnSearch))
+                {
+                    handler(this, EventArgs.Empty);
+                }
+            }
+            finally
+            {
+                _searching = false;
             }
         }
 

@@ -75,6 +75,9 @@ namespace HealthCheckupReservationReception.Views
 
         public string Gender { set { txtGender.Text = value; } }
 
+        // [R17] 저장 재진입 가드. 동기 호출 중에 쌓인 클릭이 끝난 뒤 발화하는 것을 막는다.
+        private bool _saving;
+
         public bool SaveEnabled { set { btnSave.Enabled = value; } }
 
         /// <summary>
@@ -222,12 +225,32 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
+        /// <summary>
+        /// [R17] 저장은 UI 스레드에서 동기로 SP 를 부른다. 두 번 눌리면 `SP-PAT-03` 이 두 번 불린다.
+        ///
+        /// 행이 둘 생기지는 않는다 — 주민번호 고유성이 두 번째를 `2`(동일 주민번호·동일 이름)로
+        /// 막는다(`05` §10.1). 그래도 **확인창이 두 번 뜨거나 엉뚱한 안내가 나갈 수 있어** 여기서
+        /// 막는다. `_saving` 이 재진입을, `clsBusyScope` 가 보이는 잠금을 맡는다.
+        ///
+        /// [!] 저장 중에 `[닫기]` 도 함께 잠근다 — 진행 중인 저장을 두고 창이 닫히면
+        ///     결과를 받을 화면이 사라진다.
+        /// </summary>
         private void btnSave_Click(object sender, EventArgs e)
         {
             EventHandler handler = SaveRequested;
-            if (handler != null)
+            if (handler == null || _saving) { return; }
+
+            _saving = true;
+            try
             {
-                handler(this, EventArgs.Empty);
+                using (new clsBusyScope(this, btnSave, btnClose))
+                {
+                    handler(this, EventArgs.Empty);
+                }
+            }
+            finally
+            {
+                _saving = false;
             }
         }
 

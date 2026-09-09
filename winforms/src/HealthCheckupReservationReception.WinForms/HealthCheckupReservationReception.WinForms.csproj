@@ -120,6 +120,7 @@
     <Compile Include="Views\IPatientManagementView.cs" />
     <Compile Include="Views\IPatientEditorView.cs" />
     <Compile Include="Views\IPatientSelectView.cs" />
+    <Compile Include="Views\clsBusyScope.cs" />
     <Compile Include="Views\clsGridColumns.cs" />
     <Compile Include="Views\MainForm.cs">
       <SubType>Form</SubType>
