@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
 using HealthCheckupReservationReception.Services;
@@ -8,6 +9,8 @@ namespace HealthCheckupReservationReception.Presenters
 {
     /// <summary>
     /// WF-00 MainForm Shell 의 Presenter (03 §1.3 · §4).
+    /// 어느 Tab 이 열려 있는지와 Workbench 의 Context 는 여기가 들고 있는다 —
+    /// 화면은 그리기만 한다 (킷 §2).
     /// </summary>
     public sealed class MainPresenter
     {
@@ -17,6 +20,10 @@ namespace HealthCheckupReservationReception.Presenters
         private readonly IMainView _view;
         private readonly ICommonStatusService _service;
         private readonly string _operatorName;
+        private readonly HashSet<BusinessTab> _openTabs = new HashSet<BusinessTab>();
+
+        // 03 §9.1 — Workbench 는 Tab 하나를 Reservation / Reception 두 Context 가 나눠 쓴다.
+        private BusinessNavigation _workbenchContext = BusinessNavigation.ReservationDesk;
 
         public MainPresenter(IMainView view, ICommonStatusService service, string operatorName)
         {
@@ -26,6 +33,8 @@ namespace HealthCheckupReservationReception.Presenters
 
             _view.ShellLoaded += OnShellLoaded;
             _view.NavigationRequested += OnNavigationRequested;
+            _view.TabCloseRequested += OnTabCloseRequested;
+            _view.TabActivated += OnTabActivated;
         }
 
         private void OnShellLoaded(object sender, EventArgs e)
@@ -48,19 +57,27 @@ namespace HealthCheckupReservationReception.Presenters
             catch (Exception)
             {
                 // 예외 본문을 화면에 싣지 않는다 — provider 메시지가 DB·머신 정보를 드러낸다 (킷 §6).
-                _view.WorkStatusText = StatusPrefix + "확인 불가";
-                _view.ShowMessage("업무 상태를 확인하지 못했습니다.");
+                Block("확인 불가", "업무 상태를 확인하지 못했습니다.");
                 return;
             }
 
             if (!result.IsSuccess)
             {
-                _view.WorkStatusText = StatusPrefix + "확인 불가";
-                _view.ShowMessage(result.Message);
+                Block("확인 불가", result.Message);
                 return;
             }
 
             _view.WorkStatusText = FormatWorkStatus(result.Value);
+
+            // 03 §1.3 · §5.2 · §9.6 · §9.7 — 공통 업무불가면 업무 수행 Action 을 비활성한다.
+            _view.BusinessActionsEnabled = result.Value.IsWorkAllowed;
+        }
+
+        private void Block(string statusTail, string message)
+        {
+            _view.WorkStatusText = StatusPrefix + statusTail;
+            _view.BusinessActionsEnabled = false;
+            _view.ShowMessage(message);
         }
 
         /// <summary>
@@ -97,8 +114,87 @@ namespace HealthCheckupReservationReception.Presenters
 
         private void OnNavigationRequested(object sender, BusinessNavigation target)
         {
-            // EXTENSION POINT: 업무 Tab 을 연다 (03 §4.3 Single Instance).
-            // 대상 화면이 아직 하나도 없어 여기서 열 것이 없다. 첫 Tab 화면과 함께 붙인다.
+            // 03 §24.2 — 휴무일 관리는 업무 Tab 을 열지 않고 Modal 을 연다.
+            // 공통 업무조건도 이 화면에는 걸리지 않으므로 여기서 막지 않는다.
+            if (target == BusinessNavigation.HolidayManagement)
+            {
+                _view.ShowHolidayManagement();
+                return;
+            }
+
+            BusinessTab tab = TabOf(target);
+
+            if (tab == BusinessTab.Workbench)
+            {
+                _workbenchContext = target;
+            }
+
+            if (_openTabs.Add(tab))
+            {
+                _view.OpenTab(tab, CaptionOf(tab));
+            }
+            else
+            {
+                // 03 §4.3 — 같은 Tab 을 다시 부르면 새로 만들지 않고 기존 것을 살린다.
+                // Workbench 는 Context 가 바뀌었을 수 있으므로 Caption 을 다시 쓴다 (§9.1).
+                _view.SetTabCaption(tab, CaptionOf(tab));
+            }
+
+            _view.ActivateTab(tab);
+        }
+
+        private void OnTabCloseRequested(object sender, BusinessTab tab)
+        {
+            if (_openTabs.Remove(tab))
+            {
+                _view.CloseTab(tab);
+            }
+        }
+
+        private void OnTabActivated(object sender, BusinessTab tab)
+        {
+            // 03 §4.2 — Tab 전환 시 그 Tab 의 Ribbon Page 를 활성화한다.
+            _view.SelectNavigationPage(NavigationOf(tab));
+        }
+
+        private static BusinessTab TabOf(BusinessNavigation target)
+        {
+            switch (target)
+            {
+                case BusinessNavigation.PatientManagement:
+                    return BusinessTab.PatientManagement;
+                case BusinessNavigation.NewReservation:
+                    return BusinessTab.NewReservation;
+                default:
+                    return BusinessTab.Workbench;
+            }
+        }
+
+        private BusinessNavigation NavigationOf(BusinessTab tab)
+        {
+            switch (tab)
+            {
+                case BusinessTab.PatientManagement:
+                    return BusinessNavigation.PatientManagement;
+                case BusinessTab.NewReservation:
+                    return BusinessNavigation.NewReservation;
+                default:
+                    return _workbenchContext;
+            }
+        }
+
+        private string CaptionOf(BusinessTab tab)
+        {
+            switch (tab)
+            {
+                case BusinessTab.PatientManagement:
+                    return "수검자 관리";
+                case BusinessTab.NewReservation:
+                    return "신규 예약";
+                default:
+                    // 03 §9.1 — Context 에 따라 Caption 이 바뀐다.
+                    return _workbenchContext == BusinessNavigation.ReceptionDesk ? "접수 관리" : "예약 관리";
+            }
         }
     }
 }

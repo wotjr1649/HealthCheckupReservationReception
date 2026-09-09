@@ -109,6 +109,21 @@ Rule 의 업무적 옳음               00·01 이 확정했다
 C# 식별자는 영문을 유지하고, 두 이름이 만나는 곳은 **Result Set 컬럼명 문자열과 Parameter
 이름뿐이다** (`05` §16.2).
 
+## 2.1 `03` 은 두 벌로 읽는다 `[X]`
+
+```text
+docs/baseline/03_Wireframe_Definition.md            원본. 규칙·계약·필드가 여기 있다
+docs/baseline/output/03_검진_예약접수_화면설계서.pptx  공개본. 도형 좌표로 **밴드 구조**가 드러난다
+```
+
+**둘 다 봐야 한다.** `.md` 의 ASCII 스케치는 밴드를 구분해 주지 못한다 — 어느 줄이 Ribbon Page
+헤더이고 어느 줄이 그 페이지의 Group 인지 `.md` 만으로는 두 가지로 읽힌다. pptx 는 도형
+좌표를 갖고 있어 그 모호함이 없다.
+
+`[X]` **WF-00 을 처음 만들 때 pptx 를 열지 않았고 그래서 셸 구조를 틀렸다** (§3.1).
+`output/` 이 `.gitignore` 대상이라 커밋에 없다는 이유로 건너뛰었는데(ROOT `AGENTS.md` §3),
+없는 것은 **커밋 기록**이지 화면 근거가 아니었다. 재현은 `node tools/docgen/build_all.js` 다.
+
 ---
 
 # 3. M1 — 화면 Action ↔ Stored Procedure
@@ -127,16 +142,47 @@ C# 식별자는 영문을 유지하고, 두 이름이 만나는 곳은 **Result 
 `[I]` **`SP-COM-01` 을 언제 다시 부르는지는 `03` 이 정하지 않았다.** `308`·`309` 는 시각이
 바뀌면 뒤집히므로 한 번 읽고 세션 내내 쓰면 안 된다. §14 `A-01`.
 
-`[I]` **구현 현황 (2026-09-09).** Shell 이 열릴 때 `SP-COM-01` 을 한 번 부르고 업무상태·조작자를
-`RibbonStatusBar` 에 그린다. `MainPresenter.RefreshWorkStatus()` 가 그 재호출 지점이며,
-`A-01` 이 말한 *"업무 Action 을 여는 시점"* 은 그 Action 이 아직 하나도 없어 비어 있다.
+### 3.1.1 셸 밴드 구조 `[B]`
 
-`[I]` **`03` §1.3 의 *"공통 업무불가 상태에서는 업무 수행 Ribbon Action 을 비활성화한다"* 는
-아직 붙일 곳이 없다.** 비활성화 대상은 각 Tab 의 Context Ribbon Action 이고(`03` §5.2·§9.6·§9.7),
-상단 Navigation 은 데이터를 바꾸지 않으므로 그 대상이 아니다. 첫 Tab 화면과 함께 붙인다.
+pptx `slide4` 의 도형 좌표가 밴드를 확정한다.
 
-`[I]` **업무 Tab 을 여는 Single Instance 계약(`03` §4.3)도 아직 없다.** `XtraTabControl` 은
-자리만 잡았고 `MainPresenter` 의 Navigation 처리는 EXTENSION POINT 다 — 열 화면이 하나도 없다.
+```text
+y=101  x=55/184/312/441/570 (각 w=122)   수검자 관리·신규 예약·예약 관리·접수 관리·휴무일 관리
+y=130  검색   현재 업무 Action   보기     ← 선택된 페이지의 Group 캡션
+y=147  [조회] [예약변경][예약취소][접수] [컬럼설정]
+y=184  [수검자 관리 ×] [신규 예약 ×] [예약 관리 ×]   ← XtraTabControl
+```
+
+**y=101 줄이 `RibbonPage` 탭 헤더이고 그 아래가 그 페이지의 `RibbonPageGroup` 이다.**
+`03` §1.4 의 매핑(`Navigation / Context Action | RibbonPage, RibbonPageGroup, BarButtonItem`)과
+§4.2(*"Tab 전환 시 해당 Tab의 Ribbon Page/Group만 활성화한다"*)가 같은 말을 한다.
+`slide5`(수검자 관리)가 같은 자리에 `검색[조회] / 수검자[신규등록][정보수정][신규예약] /
+보기[변경이력][컬럼설정]` 을 그려 확증한다.
+
+`[X]` **초판은 두 밴드를 하나로 접었다** — `RibbonPage` 하나(`업무`)에 `RibbonPageGroup`
+하나(`업무 이동`)를 두고 Navigation 다섯을 `BarButtonItem` 으로 넣었다. `.md` 만 읽고
+만들었기 때문이다(§2.1). 지금은 위 구조로 다시 세웠다.
+
+`[A]` **`휴무일 관리`만 `RibbonPage` 가 아니다.** `03` §24.2 가 *"Tab 을 열지 않고 Modal 을
+연다"* 고 못박았으므로 Page 로 두면 선택했다가 되돌리는 UX 가 된다. `PageHeaderItemLinks` 에
+`BarButtonItem` 으로 두어 같은 밴드에 다섯이 서게 했다. §14 `A-05`.
+
+### 3.1.2 구현 현황 (2026-09-09)
+
+```text
+Ribbon Page 넷 + 휴무일 헤더 버튼           03 §1.1 · §4.1        ✅
+페이지별 Group 검색 → 업무 → 보기            03 §4.2 · §5.2 ·      ✅  버튼은 만들었고
+                                             §8.2 · §9.6 · §9.7        핸들러는 각 화면이 붙인다
+XtraTabControl · 탭마다 × 닫기               03 §4.1               ✅
+Single Instance Tab · Workbench Caption 전환 03 §4.3 · §9.1        ✅  Presenter 가 상태를 갖는다
+Tab ↔ Ribbon Page 동기                       03 §4.2               ✅
+업무 상태 · 조작자                           03 §1.3               ✅  SP-COM-01
+공통 업무불가 → 업무 Action 비활성           03 §1.3 · §5.2        ✅  변경이력·컬럼설정·휴무일만 남는다
+업무 Tab 의 내용(XtraUserControl)            03 §1.4               ✗  각 화면이 채운다
+```
+
+`[I]` **Tab 은 열리지만 비어 있다.** `03` §1.4 가 Tab 내용을 *"업무별 `XtraUserControl`"* 로
+두었고 그 UserControl 은 각 화면의 산출물이다. 셸은 컨테이너와 수명주기까지가 자기 몫이다.
 
 ## 3.2 WF-PAT-01 — 수검자 관리 Tab
 
@@ -686,6 +732,7 @@ cd winforms && ./scripts/verify-ui-db-matrix.sh
 
 | `X-05` | `05` §1.1 vs `MainForm.Designer.cs` | `05` 는 사용자 화면 표시명을 `검진 예약·접수 관리 프로그램` 이라 확정했는데 Designer 의 `Text` 는 `건강검진 예약·접수` 였다 |
 | `X-07` | 킷 §6 vs 킷 `references/mvp-wiring.md` | §6 은 *"show a Korean message without raw exception text"* 라 적는데 같은 킷의 참조 파일 예제는 `"조회 중 오류가 발생했습니다. " + ex.Message` 를 그대로 보여준다. 복사되기 쉬운 자리다 |
+| `X-08` | `03` §4.1 vs `05` §1.1 | 타이틀 밴드가 `검진 예약·접수 관리` 인데 `05` §1.1 「사용자 화면 표시명」은 `검진 예약·접수 관리 프로그램` 이다. `03` 본문 제목도 후자다 — ASCII 스케치의 줄임으로 보고 `05` 를 따랐다 (`CFG-007`) |
 | `X-06` | 킷 §1 vs 저장소 실물 | 킷은 C# 을 **UTF-8 BOM + CRLF** 로 정하는데 이 저장소의 `.cs` 는 전부 **BOM + LF** 다. `.editorconfig` 가 아직 없다 |
 
 `[D]` **사용자 결정 (2026-09-09): `X-04` 는 지금 맞췄다.** 소스가 넉 장뿐인 지금이 가장 싸다.
@@ -723,6 +770,7 @@ csproj 의 `<RootNamespace>` 와 `Program.cs`·`Views/*` 의 `namespace` 선언�
 | `A-01` | `SP-COM-01` 재호출 주기를 `03` 이 정하지 않았다 | 업무 Action 을 여는 시점마다 다시 읽는다. 별도 타이머를 두지 않는다 | 낮다 — 호출 지점 추가뿐 |
 | `A-02` | Targeted Navigation 의 SP 결선을 `03`·`05` 둘 다 명시하지 않았다 | `SP-WRK-02` 하나로 Grid 행과 Detail 을 함께 구성한다 (§3.6.2) | 낮다 — 계약 안에서 닫힌다 |
 | `A-03` | `DLG-RCP-02` 의 AEX 가용성을 다시 물을지 `03` 이 정하지 않았다 | 진입 시점의 `SP-WRK-02` RS3·RS4 로 충분하다고 본다. 선택할 때마다 다시 부르지 않는다 | 낮다 — 재호출 추가뿐 |
+| `A-05` | `03` §1.1 은 `휴무일 관리` 를 Navigation 다섯 중 하나로 두는데 §24.2 는 Tab 을 열지 않는 Modal 진입이라 한다 | `RibbonPage` 가 아니라 `PageHeaderItemLinks` 의 `BarButtonItem` 으로 둔다. 같은 밴드에 다섯이 서고 Page 선택 되돌림이 없다 | 낮다 — Page 로 옮기면 된다 |
 | `A-04` | `03` §1.3 은 조작자를 *"WinForms 설정 파일의 값"* 이라 적고 키 이름을 정하지 않았다 | `App.config` `appSettings` 의 `OperatorName`. `05` §16.5 의 C# 이름과 같다 | 낮다 — 키 한 줄 |
 
 `[I]` 셋 다 킷 §8 이 말하는 *"smallest reversible reading"* 이다. 요구사항 자체가 비어 있는
