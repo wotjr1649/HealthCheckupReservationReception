@@ -59,17 +59,49 @@ changes anything under `winforms/`, run
 `cd ../database && ./scripts/verify-winforms-unchanged.sh init` and include the regenerated
 manifest in that same commit — the same rule ROOT `AGENTS.md` §2.2 applies to reseals.
 
-### A screen is built from its design source, not from `03` alone
+**Suspended for the overhaul (ROOT `AGENTS.md` §1.1).** Nearly every commit now changes
+`winforms/`, so regenerating the manifest each time buys nothing. The manifest stays where it
+is and the rule stays written here; it resumes when the overhaul lands. Until then
+`verify-winforms-unchanged.sh` reads stale and is not evidence of anything — do not cite it
+either way.
 
-`03_Wireframe_Definition.md` states the rules and the fields; it does not state the layout.
-The layout lives in `../tools/docgen/wireframe/screens/<screen>.js`, one file per screen ID,
-with `kit.js` holding the shared parts and the `NAV` list. Read that file before building the
-screen, and do not reverse-engineer the generated `pptx` — running the generator hands you the
-same thing directly.
+### The screen is not matched to `03` or to the design source
 
-`tools/verify-screen-design.js` judges the result and runs in `scripts/test.sh`. Mark each C#
-file of a screen with `// 화면 ID: <ID>` at the top; that comment is how the gate pairs design
-with implementation.
+**2026-09-10, by the user (ROOT `AGENTS.md` §1.1): building screens to match
+`03_Wireframe_Definition.md` and `../tools/docgen/wireframe/screens/*.js` is stopped.** The UI
+and the code approach are being substantially revised. Build the screen from the UX judgement
+the task states; `03` supplies business rules and field meaning, not layout and not navigation.
+
+`../tools/docgen/wireframe/` keeps drawing the published `pptx` and is still the place to edit
+that deliverable — it is no longer a source for implementation.
+
+`// 화면 ID: <ID>` at the top of a screen's C# files is now **convention, not a gate**. The
+gate that read it does not run. Keep writing it: it is how a human finds every file of one
+screen. `grep -rl "화면 ID:" --include=*.cs` is the count; do not write the number here —
+nothing checks it any more, so it rots (ROOT `AGENTS.md` §6, and it already did).
+
+### The gates that do not run
+
+Document-conformance gates are stopped under ROOT `AGENTS.md` §1.1.
+
+```text
+stopped   verify-screen-design.js · verify-ui-db-matrix.sh · verify-social-century.sh
+          verify-contract-names.sh · verify-dbcode.sh · verify-layering.sh · verify-rs-columns.sh
+
+kept      verify-no-secret.sh    security control, unrelated to how screens are designed
+          verify-db-frozen.sh    catches a silent edit to the frozen contract — needed more,
+                                 not less, while the UI is being torn up
+          verify-ui-baseline.sh  kit §1 technique (DPI, 굴림 9pt, BOM+CRLF), not design match
+          MSBuild + vstest       a build and unit tests are not a gate
+```
+
+`scripts/test.sh` still runs all ten and is left intact so restarting is one command. Run the
+kept four individually instead. **Do not report `test.sh` red as a failure of the work** — the
+seven stopped gates are expected to be red while the overhaul is in flight.
+
+`verify-rs-columns.sh` is the one worth reconsidering: it reads as document conformance but
+what it actually catches is `reader.GetOrdinal("오늘날짜")` typos, which compile and pass the
+fake-repository tests and only blow up at runtime. Re-enable it once repository code settles.
 
 ### What the toolchain writes follows the kit; the rest follows the repository
 
