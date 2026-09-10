@@ -16,6 +16,7 @@ namespace HealthCheckupReservationReception.Views
     {
         private readonly MainPresenter _presenter;
         private readonly ICommonStatusService _statusService;
+        private readonly IHolidayService _holidayService;
         private readonly IPatientService _patientService;
         private readonly IWorkService _workService;
         private readonly IReservationService _reservationService;
@@ -33,6 +34,7 @@ namespace HealthCheckupReservationReception.Views
 
         private UcPatientManagement _patientView;
         private UcWorkbench _workView;
+        private UcHoliday _holidayView;
 
         /// <summary>
         /// [X] **VS 디자이너 전용이다.** 디자이너는 설계 대상 타입을 매개변수 없는 생성자로
@@ -52,11 +54,13 @@ namespace HealthCheckupReservationReception.Views
             IPatientService patientService,
             IWorkService workService,
             IReservationService reservationService,
+            IHolidayService holidayService,
             string operatorName)
         {
             InitializeComponent();
             ClampToWorkingArea();
             _statusService = statusService;
+            _holidayService = holidayService;
             _patientService = patientService;
             _workService = workService;
             _reservationService = reservationService;
@@ -66,6 +70,7 @@ namespace HealthCheckupReservationReception.Views
             // 초기 상태(행 미선택)로 맞춘다.
             ApplyPatientRowActions();
             ApplyWorkActions(WorkActionState.None());
+            ApplyHolidayRowActions(false);
 
             _presenter = new MainPresenter(this, statusService, operatorName);
         }
@@ -228,6 +233,15 @@ namespace HealthCheckupReservationReception.Views
                 return patient;
             }
 
+            if (tab == BusinessTab.Holiday)
+            {
+                var holiday = new UcHoliday();
+                holiday.RowActionsChanged += HolidayView_RowActionsChanged;
+                holiday.Attach(_holidayService, _statusService);
+                _holidayView = holiday;
+                return holiday;
+            }
+
             if (tab == BusinessTab.Workbench)
             {
                 var workbench = new UcWorkbench();
@@ -261,6 +275,36 @@ namespace HealthCheckupReservationReception.Views
         private void WorkView_WorkActionsChanged(object sender, WorkActionState state)
         {
             ApplyWorkActions(state);
+        }
+
+        private void HolidayView_RowActionsChanged(object sender, bool ownRowPicked)
+        {
+            ApplyHolidayRowActions(ownRowPicked);
+        }
+
+        /// <summary>
+        /// 03 §24.5 — `[휴무일수정]`·`[휴무일삭제]` 는 **자체휴무일 행이 잡혔을 때만** 열린다.
+        /// `[휴무일추가]` 는 선택행과 무관한 독립 Action 이라 늘 열려 있다.
+        /// </summary>
+        private void ApplyHolidayRowActions(bool ownRowPicked)
+        {
+            barBtnHolidayEdit.Enabled = ownRowPicked;
+            barBtnHolidayDelete.Enabled = ownRowPicked;
+        }
+
+        private void barBtnHolidayNew_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (_holidayView != null) { _holidayView.RequestRegister(); }
+        }
+
+        private void barBtnHolidayEdit_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (_holidayView != null) { _holidayView.RequestUpdate(); }
+        }
+
+        private void barBtnHolidayDelete_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (_holidayView != null) { _holidayView.RequestDelete(); }
         }
 
         public void SelectNavigationPage(BusinessNavigation page)
@@ -305,6 +349,7 @@ namespace HealthCheckupReservationReception.Views
                 case BusinessNavigation.PatientManagement: return barPagePatient;
                 case BusinessNavigation.ReservationDesk: return barPageRsvDesk;
                 case BusinessNavigation.ReceptionDesk: return barPageRcpDesk;
+                case BusinessNavigation.HolidayManagement: return barPageHoliday;
                 default: return null;
             }
         }
@@ -335,16 +380,10 @@ namespace HealthCheckupReservationReception.Views
             {
                 handler(this, BusinessNavigation.ReceptionDesk);
             }
-        }
-
-        /// <summary>
-        /// 03 §24.2 — 휴무일 관리는 DLG-HOL-01 Modal 하나다. Page 가 아니라 탭 줄 오른쪽의
-        /// 버튼이므로 Navigation 을 거치지 않는다: 눌러도 있던 화면 그대로다.
-        /// </summary>
-        private void barBtnHoliday_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            // EXTENSION POINT: DLG-HOL-01 을 연다 (03 §24).
-            XtraMessageBox.Show(this, "휴무일 관리 화면은 아직 만들지 않았습니다.", Text);
+            else if (selected == barPageHoliday)
+            {
+                handler(this, BusinessNavigation.HolidayManagement);
+            }
         }
 
         // 03 §5.2 — [신규등록] 은 대상 행이 필요 없다. Modal 만 열면 된다.

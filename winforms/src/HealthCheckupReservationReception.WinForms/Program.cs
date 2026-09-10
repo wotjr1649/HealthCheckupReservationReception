@@ -50,12 +50,15 @@ namespace HealthCheckupReservationReception
                 new WorkRepository(connection.ConnectionString));
             IReservationService reservationService = new ReservationService(
                 new ReservationRepository(connection.ConnectionString));
+            IHolidayService holidayService = new HolidayService(
+                new HolidayRepository(connection.ConnectionString));
 
             Application.Run(new MainForm(
                 statusService,
                 patientService,
                 workService,
                 reservationService,
+                holidayService,
                 ConfigurationManager.AppSettings[OperatorSettingName]));
         }
     }

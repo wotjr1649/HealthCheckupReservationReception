@@ -55,6 +55,9 @@ run ./scripts/verify-work-actions.sh
 
 run ./scripts/verify-work-status.sh selftest
 run ./scripts/verify-work-status.sh
+
+run ./scripts/verify-holiday-type.sh selftest
+run ./scripts/verify-holiday-type.sh
 run ./scripts/verify-social-century.sh selftest
 run ./scripts/verify-social-century.sh
 run ./scripts/verify-layering.sh selftest

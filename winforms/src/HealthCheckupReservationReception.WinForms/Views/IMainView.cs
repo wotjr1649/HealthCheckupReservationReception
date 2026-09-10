@@ -62,7 +62,8 @@ namespace HealthCheckupReservationReception.Views
     {
         PatientManagement,   // 수검자 관리   → WF-PAT-01
         ReservationDesk,     // 예약 관리     → WF-WRK-01 Reservation Context
-        ReceptionDesk        // 접수 관리     → WF-WRK-01 Reception Context
+        ReceptionDesk,       // 접수 관리     → WF-WRK-01 Reception Context
+        HolidayManagement    // 휴무일 관리   → DLG-HOL-01
     }
 
     /// <summary>
@@ -72,7 +73,8 @@ namespace HealthCheckupReservationReception.Views
     public enum BusinessTab
     {
         PatientManagement,
-        Workbench
+        Workbench,
+        Holiday
     }
 
     /// <summary>

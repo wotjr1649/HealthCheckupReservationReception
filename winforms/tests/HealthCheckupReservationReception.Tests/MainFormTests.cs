@@ -72,11 +72,8 @@ namespace HealthCheckupReservationReception.Tests
                             page.Text + " 는 그룹이 없다 — 장소가 아니라 명령이라는 뜻이므로 Page 가 아니어야 한다");
                     }
 
-                    // 휴무일 관리는 그 명령이다 — 가끔 손보는 관리 항목이라 Application 메뉴에 산다.
-                    Assert.AreEqual(DevExpress.Utils.DefaultBoolean.True, form.Ribbon.ShowApplicationButton,
-                        "Modal 만 여는 관리 명령이 갈 곳이 없다");
-                    Assert.IsNotNull(form.Ribbon.ApplicationButtonDropDownControl,
-                        "Application 버튼에 아무것도 달려 있지 않다");
+                    // 휴무일 관리도 Page 다 (2026-09-11 사용자 지시로 업무 화면이 되었다).
+                    // Application 버튼은 그래서 다시 꺼졌다 — 거기 둘 것이 없다.
                 }
             });
         }
@@ -84,13 +81,13 @@ namespace HealthCheckupReservationReception.Tests
         // 03 §4.2 는 Ribbon Group 순서를 [검색] → [현재 업무 Action] → [보기] 로 적었다.
         // 2026-09-10 사용자 결정으로 **[검색] 그룹이 Ribbon 에서 사라졌다** — [조회] 는 화면
         // 안에 있고 같은 버튼이 두 곳에 있을 이유가 없다. [컬럼설정] 도 같은 이유로 Grid 옆
-        // 드롭다운이 되었다. 남은 규칙은 "업무 Action 다음이 [보기]" 뿐이다.
+        // 드롭다운이 되었다. 남은 규칙은 "[보기] 가 있으면 그것이 마지막" 이다.
         //
-        // [X] 옛 시험은 `Groups.Count` 가 모자라면 건너뛰었는데, 건너뛰는 조건은 곧
-        //     아무것도 재지 않는 green 으로 자란다. 이제 Page 는 전부 명령 그룹을 가지므로
-        //     (`Ribbon_Page_는_전부_명령_그룹을_갖는다`) 건너뛸 것이 없다 — 전부 잰다.
+        // 휴무일 관리에는 [보기] 가 없다 — 03 §24.7 이 그 화면에 변경이력을 두지 않는다.
+        // 그래서 "있으면" 이고, **있어야 하는 셋은 아래에서 이름으로 확인한다** — 건너뛰는
+        // 조건은 곧 아무것도 재지 않는 green 으로 자란다.
         [TestMethod]
-        public void Ribbon_의_마지막_그룹은_보기이고_검색_그룹은_없다()
+        public void 보기_그룹이_있으면_마지막이고_검색_그룹은_없다()
         {
             RunSta(() =>
             {
@@ -103,6 +100,17 @@ namespace HealthCheckupReservationReception.Tests
                         {
                             Assert.AreNotEqual("검색", group.Text,
                                 page.Text + " 에 [검색] 그룹이 남아 있다 — 조회는 화면 안이다");
+                        }
+
+                        bool hasView = false;
+                        foreach (RibbonPageGroup group in page.Groups)
+                        {
+                            if (group.Text == "보기") { hasView = true; }
+                        }
+
+                        if (!hasView)
+                        {
+                            continue;
                         }
 
                         inspected.Add(page.Text);
@@ -145,7 +153,7 @@ namespace HealthCheckupReservationReception.Tests
                     Result = OperationResult<CommonWorkStatusDto>.Success(blocked),
                 };
 
-                using (var form = new MainForm(service, new FakePatientService(), new FakeWorkService(), new FakeReservationService(), "접수1번창구"))
+                using (var form = new MainForm(service, new FakePatientService(), new FakeWorkService(), new FakeReservationService(), new FakeHolidayService(), "접수1번창구"))
                 {
                     form.StartPosition = FormStartPosition.Manual;
                     form.Location = new Point(-32000, -32000);
@@ -386,7 +394,7 @@ namespace HealthCheckupReservationReception.Tests
         {
             return new MainForm(
                 new FakeCommonStatusService(), new FakePatientService(),
-                new FakeWorkService(), new FakeReservationService(), "접수1번창구");
+                new FakeWorkService(), new FakeReservationService(), new FakeHolidayService(), "접수1번창구");
         }
 
         private static Control BusinessPanel(MainForm form)
