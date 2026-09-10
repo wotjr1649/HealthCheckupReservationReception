@@ -130,30 +130,32 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 2026-09-10 사용자 결정: 업무 화면은 한 번에 하나만 뜬다 (Tab 스트립 제거)
 
-        // 기동이 이미 수검자 관리 화면을 세우므로 아직 세우지 않은 화면으로 시험한다.
+        // 03 §3 — 상단 Navigation 에는 전달키가 없다. Context 는 Normal 이고, 어디서 왔는지는
+        // Source 로 남는다 — §8.10 의 폐기 확인 트리거가 그것으로 갈린다.
         [TestMethod]
-        public void Navigation_은_그_업무_화면을_세운다()
+        public void 신규예약_Navigation_은_전달키_없이_Normal_로_연다()
         {
             FakeMainView view = LoadedShell();
 
             view.RaiseNavigationRequested(BusinessNavigation.NewReservation);
 
             CollectionAssert.AreEqual(
-                new List<string> { "ShowBusinessScreen:NewReservation" }, view.Calls);
+                new List<string> { "BeginNewReservation:Normal,-,Navigation" }, view.Calls);
         }
 
-        // 03 §1.1 · §9.1 — 예약 관리와 접수 관리는 화면 하나를 나눠 쓴다.
+        // 03 §1.1 · §9.1 — 예약 관리와 접수 관리는 화면 하나를 나눠 쓰고 Context 만 갈린다.
+        // §9.6·§9.7 이 그 Context 마다 다른 Ribbon Action 을 요구하므로 값이 화면까지 가야 한다.
         [TestMethod]
-        public void 예약관리와_접수관리는_같은_Workbench_화면을_쓴다()
+        public void 예약관리와_접수관리는_같은_Workbench_를_Context_만_달리해_연다()
         {
             FakeMainView view = LoadedShell();
 
             view.RaiseNavigationRequested(BusinessNavigation.ReservationDesk);
-            view.Calls.Clear();
             view.RaiseNavigationRequested(BusinessNavigation.ReceptionDesk);
 
             CollectionAssert.AreEqual(
-                new List<string> { "ShowBusinessScreen:Workbench" }, view.Calls);
+                new List<string> { "OpenWorkbench:Reservation,-", "OpenWorkbench:Reception,-" },
+                view.Calls);
         }
 
         // 03 §24.2 — 휴무일 관리는 업무 화면을 세우지 않고, 고른 뒤에는 직전 Page 로 돌아간다.
@@ -266,6 +268,23 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public string LastMessage { get; private set; }
 
         public void ShowBusinessScreen(BusinessTab screen) { Calls.Add("ShowBusinessScreen:" + screen); }
+
+        public void BeginNewReservation(ReservationContext context, long? patientId, NavigationSource source)
+        {
+            Calls.Add("BeginNewReservation:" + context + "," + Key(patientId) + "," + source);
+        }
+
+        public void OpenWorkbench(WorkContext context, long? workId)
+        {
+            Calls.Add("OpenWorkbench:" + context + "," + Key(workId));
+        }
+
+        // 03 §3 의 전달키는 없을 수 있다. 없는 것과 0 이 같은 글자가 되지 않게 한다.
+        private static string Key(long? value)
+        {
+            return value == null ? "-" : value.Value.ToString();
+        }
+
         public void SelectNavigationPage(BusinessNavigation page) { Calls.Add("SelectNavigationPage:" + page); }
         public void ShowHolidayManagement() { Calls.Add("ShowHolidayManagement"); }
 

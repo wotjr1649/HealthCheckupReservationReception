@@ -135,23 +135,29 @@ namespace HealthCheckupReservationReception.Presenters
         /// <summary>
         /// 03 §4.3 — 같은 화면을 다시 부르면 새로 만들지 않고 세워 둔 것을 앞에 낸다.
         /// 그 판정은 화면을 들고 있는 Shell 이 한다.
+        ///
+        /// 상단 Navigation 은 03 §3 의 호출계약 둘 중 어느 쪽인지만 고른다. 전달키는 없다 —
+        /// PatientId·WorkId 를 들고 오는 진입점은 화면 쪽 Action 이다 (§3 Navigation 전달키).
         /// </summary>
         private void ShowBusinessScreen(BusinessNavigation target)
         {
             _lastBusinessPage = target;
-            _view.ShowBusinessScreen(TabOf(target));
-        }
 
-        private static BusinessTab TabOf(BusinessNavigation target)
-        {
             switch (target)
             {
-                case BusinessNavigation.PatientManagement:
-                    return BusinessTab.PatientManagement;
                 case BusinessNavigation.NewReservation:
-                    return BusinessTab.NewReservation;
+                    _view.BeginNewReservation(ReservationContext.Normal, null, NavigationSource.Navigation);
+                    break;
+                case BusinessNavigation.ReservationDesk:
+                    _view.OpenWorkbench(WorkContext.Reservation, null);
+                    break;
+                case BusinessNavigation.ReceptionDesk:
+                    // 03 §9.1 — 화면은 예약 관리와 같은 하나다. 가르는 것은 이 Context 뿐이다.
+                    _view.OpenWorkbench(WorkContext.Reception, null);
+                    break;
                 default:
-                    return BusinessTab.Workbench;
+                    _view.ShowBusinessScreen(BusinessTab.PatientManagement);
+                    break;
             }
         }
     }

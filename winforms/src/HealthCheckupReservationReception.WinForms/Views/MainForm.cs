@@ -142,6 +142,29 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
+        /// 03 §3 호출계약. 세 값은 전부 화면이 받아야 할 것이라 여기서 버리지 않는다 —
+        /// Context 는 예약일 ReadOnly 여부를(§9.8), PatientId 는 수검자 확정 상태를,
+        /// Source 는 §8.10 의 폐기 확인 트리거를 가른다.
+        /// </summary>
+        public void BeginNewReservation(ReservationContext context, long? patientId, NavigationSource source)
+        {
+            // EXTENSION POINT: WF-RSV-01 이 서면 셋을 그 화면에 넘긴다 (03 §8.10).
+            ShowBusinessScreen(BusinessTab.NewReservation);
+        }
+
+        /// <summary>
+        /// 03 §3 호출계약. 예약 관리와 접수 관리는 화면 하나를 나눠 쓰고 (§9.1),
+        /// 어느 쪽인지는 <paramref name="context"/> 만이 나른다 — 탭 Caption 이 나르던
+        /// 그 값이다. §9.6·§9.7 이 같은 화면에 다른 Ribbon Action 을 요구한다.
+        /// </summary>
+        public void OpenWorkbench(WorkContext context, long? workId)
+        {
+            // EXTENSION POINT: WF-WRK-01 이 서면 context 와 workId 를 그 화면에 넘긴다.
+            //                  workId 는 조회조건과 무관한 직접조회·자동선택이다 (03 §9.1).
+            ShowBusinessScreen(BusinessTab.Workbench);
+        }
+
+        /// <summary>
         /// 업무 화면 하나는 XtraUserControl 하나다. 아직 만들지 않은 화면은 빈 자리로 둔다.
         /// </summary>
         private Control CreateScreen(BusinessTab tab)
