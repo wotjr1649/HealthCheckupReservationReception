@@ -49,7 +49,7 @@ Shell       XtraTabControl(tabBusiness) 제거 → PanelControl 하나. 다중 �
 Grid        컬럼마다 MinWidth. 가로 스크롤이 서는 유일한 지렛대다
 ```
 
-### 2.1 실측으로만 알 수 있었던 것 넷
+### 2.1 실측으로만 알 수 있었던 것
 
 이것들은 문서에 없고 재 봐야 나온다. 같은 자리를 다시 밟지 마라.
 
@@ -68,6 +68,14 @@ SimpleButton.PerformClick() 은 안 뜬 폼의 버튼에서 아무 일도 안 �
   OptionsView.ColumnAutoWidth 기본값이 true 라 컬럼을 뷰 폭에 욱여넣는다
   (실측: 컬럼폭합 3000 · 뷰폭 1140 인데 가로 스크롤 숨김)
   → auto 를 끄면 컬럼이 적을 때 빈 공간이 남는다. 켠 채로 컬럼마다 MinWidth 를 준다
+
+서비스를 생성자로 받는 화면은 VS 디자이너가 못 연다
+  「디자이너에 대한 문서를 로드하지 않았으므로 디자이너를 표시할 수 없습니다」
+  → 디자이너가 설계 대상을 매개변수 없는 생성자로 만들기 때문이다. 셋이 그랬다
+    (MainForm · FrmPatientEditor · FrmPatientSelect). 컴파일도 시험도 통과하므로
+    디자이너를 여는 사람만 만난다
+  → **새 화면(WF-RSV-01 · WF-WRK-01)에도 반드시 단다.** MainFormTests 의
+    `모든_화면이_디자이너용_생성자를_갖는다` 가 이제 이것을 잰다
 ```
 
 ### 2.2 LayoutControl 은 "어떤 배율이든 같은 x,y" 가 아니다
@@ -91,7 +99,7 @@ cd winforms
 ./scripts/test.sh            red 는 verify-screen-design.js 하나여야 한다
                              SCR-003 · SCR-004 가 §1.1 이 놓아 준 그 두 가지다
                              다른 게 red 면 진짜 결함이다 (winforms/AGENTS.md)
-MSBuild + vstest             108/108 · warning 0
+MSBuild + vstest             109/109 · warning 0
 ```
 
 **SP 21개가 전부 배포돼 있다.** `SP-LOG-01` 포함. 남은 것은 전부 C# 이다 — DB 의존 0.
@@ -168,10 +176,11 @@ Caption 은 탭이 없어졌으니 정말 필요 없다. 그러나 그 값이 �
 ## 6. 다음에 할 일 — 이 순서대로
 
 ```text
-0. (사용자만 가능) VS 디자이너로 UcPatientManagement · MainForm 을 열어 저장한다
-   → 손으로 쓴 Designer.cs 가 전면 재직렬화된다. 기계적이고 피할 수 없다
-   → 그 재직렬화만 따로 커밋한다. 나중에 열면 diff 가 네 배가 되고 기능 변경이 묻힌다
-   → 이때 생기는 licenses.licx · FrmXxx.resx 의 csproj 등록을 확인한다
+0. 끝났다 (2026-09-10). 다시 하지 마라 — 아래는 그때 실제로 일어난 일이다
+   → UcPatientManagement.Designer.cs 는 저장 뒤에도 바뀌지 않았다. 우려하던 전면
+     재직렬화가 일어나지 않았고 따로 끊을 커밋도 없었다
+   → licenses.licx 에 세 줄이 들어왔다 (LayoutControl · GridControl · TextEdit)
+   → MainForm 이 안 열려서 화면 셋에 디자이너용 생성자를 달았다 (커밋 c86e320)
 
 1. IMainView 에 BeginNewReservation / OpenWorkbench 두 메서드
    + Workbench Context 복구 (§4.2)
