@@ -20,9 +20,6 @@ namespace HealthCheckupReservationReception.Presenters
         private readonly ICommonStatusService _service;
         private readonly string _operatorName;
 
-        // 휴무일 관리 Page 에서 돌아올 자리. Shell 은 첫 Page 가 선택된 채 열린다 (03 §1.1 순서).
-        private BusinessNavigation _lastBusinessPage = BusinessNavigation.PatientManagement;
-
         public MainPresenter(IMainView view, ICommonStatusService service, string operatorName)
         {
             _view = view;
@@ -44,7 +41,7 @@ namespace HealthCheckupReservationReception.Presenters
             //     초기값이라 SelectedPageChanged 가 나지 않는다. 그래서 업무 Tab 이 하나도
             //     서지 않고, 이미 선택된 [수검자 관리] 를 눌러도 이벤트가 없어 영원히
             //     서지 않았다. 첫 Page 의 화면은 Shell 이 직접 세운다. §14.3 A-06.
-            ShowBusinessScreen(_lastBusinessPage);
+            OnNavigationRequested(this, BusinessNavigation.PatientManagement);
         }
 
         /// <summary>
@@ -118,42 +115,20 @@ namespace HealthCheckupReservationReception.Presenters
             return time.ToString(@"hh\:mm");
         }
 
-        private void OnNavigationRequested(object sender, BusinessNavigation target)
-        {
-            // 03 §24.2 — 휴무일 관리는 업무 화면을 세우지 않고 Modal 을 연다.
-            // 공통 업무조건도 이 화면에는 걸리지 않으므로 여기서 막지 않는다.
-            if (target == BusinessNavigation.HolidayManagement)
-            {
-                // 먼저 직전 Page 로 돌려놓고 연다. 반대로 하면 빈 Ribbon 이 Modal 뒤에 남는다.
-                _view.SelectNavigationPage(_lastBusinessPage);
-                _view.ShowHolidayManagement();
-                return;
-            }
-
-            // 신규 예약도 같은 부류가 되었다 (2026-09-10 grilling 2회차) — WF-RSV-01 이 모달이라
-            // 이 Page 는 **여는 자리**일 뿐 세워 둘 업무 화면이 없다. `_lastBusinessPage` 를
-            // 건드리지 않는 것이 핵심이다: 닫고 나면 있던 자리로 돌아와야 한다.
-            if (target == BusinessNavigation.NewReservation)
-            {
-                _view.SelectNavigationPage(_lastBusinessPage);
-                _view.BeginNewReservation(ReservationContext.Normal, null, NavigationSource.Navigation);
-                return;
-            }
-
-            ShowBusinessScreen(target);
-        }
-
         /// <summary>
         /// 03 §4.3 — 같은 화면을 다시 부르면 새로 만들지 않고 세워 둔 것을 앞에 낸다.
         /// 그 판정은 화면을 들고 있는 Shell 이 한다.
         ///
-        /// 상단 Navigation 은 03 §3 의 호출계약 둘 중 어느 쪽인지만 고른다. 전달키는 없다 —
-        /// PatientId·WorkId 를 들고 오는 진입점은 화면 쪽 Action 이다 (§3 Navigation 전달키).
+        /// **Page 는 전부 장소다** (2026-09-11 사용자 결정). 예전에는 `신규 예약` 과
+        /// `휴무일 관리` 가 눌러도 아무 데도 가지 않는 Page 였다 — 같은 띠에서 어떤 것은
+        /// 가고 어떤 것은 떠서 어디를 눌러야 무엇이 나오는지 예측할 수 없었다. 둘 다
+        /// 명령이므로 명령 자리로 내렸고, 그래서 이 갈래가 특례 없이 셋으로 남는다.
+        ///
+        /// 상단 Navigation 에 전달키는 없다 — PatientId·WorkId 를 들고 오는 진입점은
+        /// 화면 쪽 Action 이다 (03 §3 Navigation 전달키).
         /// </summary>
-        private void ShowBusinessScreen(BusinessNavigation target)
+        private void OnNavigationRequested(object sender, BusinessNavigation target)
         {
-            _lastBusinessPage = target;
-
             switch (target)
             {
                 case BusinessNavigation.ReservationDesk:
@@ -173,8 +148,7 @@ namespace HealthCheckupReservationReception.Presenters
         /// 03 §8.5 기존 유효예약 · §8.11 저장 성공 — 업무 화면이 Workbench 로 넘겨 달라고 한다.
         ///
         /// Ribbon Page 도 함께 옮긴다. 화면만 바꾸고 Page 를 두면 열려 있는 Action 이 그 화면의
-        /// 것이 아니게 되고, `_lastBusinessPage` 가 어긋나 휴무일에서 엉뚱한 곳으로 돌아온다 —
-        /// Navigation 상태를 한 곳에 두는 이유가 이것이다.
+        /// 것이 아니게 된다 — Navigation 상태를 한 곳에 두는 이유가 이것이다.
         /// </summary>
         private void OnWorkbenchRequested(object sender, WorkbenchTarget target)
         {
@@ -182,7 +156,6 @@ namespace HealthCheckupReservationReception.Presenters
                 ? BusinessNavigation.ReceptionDesk
                 : BusinessNavigation.ReservationDesk;
 
-            _lastBusinessPage = page;
             _view.SelectNavigationPage(page);
             _view.OpenWorkbench(target.Context, target.WorkId);
         }

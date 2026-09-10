@@ -305,12 +305,6 @@ namespace HealthCheckupReservationReception.Views
             XtraMessageBox.Show(this, message, Text);
         }
 
-        public void ShowHolidayManagement()
-        {
-            // EXTENSION POINT: DLG-HOL-01 을 연다 (03 §24).
-            XtraMessageBox.Show(this, "휴무일 관리 화면은 아직 만들지 않았습니다.", Text);
-        }
-
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
@@ -327,10 +321,8 @@ namespace HealthCheckupReservationReception.Views
             switch (page)
             {
                 case BusinessNavigation.PatientManagement: return barPagePatient;
-                case BusinessNavigation.NewReservation: return barPageNewReservation;
                 case BusinessNavigation.ReservationDesk: return barPageRsvDesk;
                 case BusinessNavigation.ReceptionDesk: return barPageRcpDesk;
-                case BusinessNavigation.HolidayManagement: return barPageHoliday;
                 default: return null;
             }
         }
@@ -353,10 +345,6 @@ namespace HealthCheckupReservationReception.Views
             {
                 handler(this, BusinessNavigation.PatientManagement);
             }
-            else if (selected == barPageNewReservation)
-            {
-                handler(this, BusinessNavigation.NewReservation);
-            }
             else if (selected == barPageRsvDesk)
             {
                 handler(this, BusinessNavigation.ReservationDesk);
@@ -365,10 +353,16 @@ namespace HealthCheckupReservationReception.Views
             {
                 handler(this, BusinessNavigation.ReceptionDesk);
             }
-            else if (selected == barPageHoliday)
-            {
-                handler(this, BusinessNavigation.HolidayManagement);
-            }
+        }
+
+        /// <summary>
+        /// 03 §24.2 — 휴무일 관리는 DLG-HOL-01 Modal 하나다. Page 가 아니라 탭 줄 오른쪽의
+        /// 버튼이므로 Navigation 을 거치지 않는다: 눌러도 있던 화면 그대로다.
+        /// </summary>
+        private void barBtnHoliday_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            // EXTENSION POINT: DLG-HOL-01 을 연다 (03 §24).
+            XtraMessageBox.Show(this, "휴무일 관리 화면은 아직 만들지 않았습니다.", Text);
         }
 
         // 03 §5.2 — [신규등록] 은 대상 행이 필요 없다. Modal 만 열면 된다.

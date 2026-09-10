@@ -48,23 +48,35 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // 03 §1.1 · §4.1 — 상단 업무 Navigation 다섯이 같은 밴드에 동등하게 선다.
-        // 화면설계서 slide4 는 y=101 한 줄에 같은 크기(w=122)로 다섯을 그린다.
-        // 목록·순서의 단일 출처는 kit.js 의 NAV 이고 verify-screen-design.js SCR-002 가 지킨다 —
-        // 여기서는 다섯이라는 것과 휴무일이 마지막이라는 것만 본다.
+        /// <summary>
+        /// **Page 는 「가는 곳」만 갖는다** (2026-09-11 사용자 결정 · 문서 §4.7).
+        ///
+        /// [X] 그룹이 없는 Page 가 곧 「눌러도 아무 데도 안 가는 Page」다. 예전에는 그런 것이
+        ///     둘(`신규 예약` · `휴무일 관리`) 있었고, 같은 띠에서 어떤 것은 가고 어떤 것은
+        ///     떠서 예측이 되지 않았다 — 사용자가 「기능 배치가 중구난방」이라 보고한 자리다.
+        ///     여기서는 **그 모양 자체**를 막는다: Page 는 반드시 명령 그룹을 갖는다.
+        ///
+        /// Page 의 개수·이름은 적지 않는다 — `MainPresenterTests` 가 `BusinessNavigation`
+        /// 전체를 돌며 「가지 않는 Page」를 잡고, 그것이 단일 출처다 (ROOT AGENTS.md §6).
+        /// </summary>
         [TestMethod]
-        public void 상단_Navigation_은_동등한_Page_다섯이다()
+        public void Ribbon_Page_는_전부_명령_그룹을_갖는다()
         {
             RunSta(() =>
             {
                 using (MainForm form = NewShell())
                 {
-                    Assert.AreEqual(5, form.Ribbon.Pages.Count);
-                    Assert.AreEqual("휴무일 관리", form.Ribbon.Pages[4].Text);
-                    Assert.AreEqual(0, form.Ribbon.PageHeaderItemLinks.Count,
-                        "다섯째만 Page 헤더 버튼으로 빼지 않는다");
-                    Assert.AreEqual(0, form.Ribbon.Pages[4].Groups.Count,
-                        "휴무일 Page 는 선택 즉시 Modal 을 열고 돌아가므로 그룹이 없다");
+                    foreach (RibbonPage page in form.Ribbon.Pages)
+                    {
+                        Assert.AreNotEqual(0, page.Groups.Count,
+                            page.Text + " 는 그룹이 없다 — 장소가 아니라 명령이라는 뜻이므로 Page 가 아니어야 한다");
+                    }
+
+                    // 휴무일 관리는 그 명령이다 — 가끔 손보는 관리 항목이라 Application 메뉴에 산다.
+                    Assert.AreEqual(DevExpress.Utils.DefaultBoolean.True, form.Ribbon.ShowApplicationButton,
+                        "Modal 만 여는 관리 명령이 갈 곳이 없다");
+                    Assert.IsNotNull(form.Ribbon.ApplicationButtonDropDownControl,
+                        "Application 버튼에 아무것도 달려 있지 않다");
                 }
             });
         }
@@ -74,8 +86,9 @@ namespace HealthCheckupReservationReception.Tests
         // 안에 있고 같은 버튼이 두 곳에 있을 이유가 없다. [컬럼설정] 도 같은 이유로 Grid 옆
         // 드롭다운이 되었다. 남은 규칙은 "업무 Action 다음이 [보기]" 뿐이다.
         //
-        // [X] 옛 시험은 `Groups.Count < 3` 이면 건너뛰었는데, 그 조건이 이제 모든 Page 에
-        //     걸려 아무것도 재지 않는 green 이 된다. 재는 것을 남은 규칙으로 옮긴다.
+        // [X] 옛 시험은 `Groups.Count` 가 모자라면 건너뛰었는데, 건너뛰는 조건은 곧
+        //     아무것도 재지 않는 green 으로 자란다. 이제 Page 는 전부 명령 그룹을 가지므로
+        //     (`Ribbon_Page_는_전부_명령_그룹을_갖는다`) 건너뛸 것이 없다 — 전부 잰다.
         [TestMethod]
         public void Ribbon_의_마지막_그룹은_보기이고_검색_그룹은_없다()
         {
@@ -92,17 +105,13 @@ namespace HealthCheckupReservationReception.Tests
                                 page.Text + " 에 [검색] 그룹이 남아 있다 — 조회는 화면 안이다");
                         }
 
-                        if (page.Groups.Count < 2)
-                        {
-                            continue;   // 신규 예약은 [예약] 그룹 하나뿐이다 (03 §8.2)
-                        }
-
                         inspected.Add(page.Text);
                         Assert.AreEqual("보기", page.Groups[page.Groups.Count - 1].Text,
                             page.Text + " 마지막 그룹");
                     }
 
                     // 아무 Page 도 집지 못하면 위 단언이 한 번도 돌지 않는다.
+                    CollectionAssert.Contains(inspected, "수검자 관리", "수검자 관리 Page 를 못 집었다");
                     CollectionAssert.Contains(inspected, "예약 관리", "예약 관리 Page 를 못 집었다");
                     CollectionAssert.Contains(inspected, "접수 관리", "접수 관리 Page 를 못 집었다");
                 }
@@ -344,19 +353,20 @@ namespace HealthCheckupReservationReception.Tests
             throw new AssertFailedException("수검자 Page 에 변경이력이 없다");
         }
 
-        // [X] 03 에 없는 리본 크롬은 RibbonControl 을 만들면 자동으로 켜진다 — 내가 넣은 것이
+        // [X] 쓰지 않는 리본 크롬은 RibbonControl 을 만들면 자동으로 켜진다 — 내가 넣은 것이
         //     아니라 끄지 않았던 것이다. 배치 게이트(SCR-*)는 설계 소스에 **있는** 것만 보므로
         //     "설계에 없는데 켜진 것" 은 잡지 못한다. 그 자리를 이 시험이 맡는다.
+        //
+        // Application Button 은 2026-09-11 에 이 목록에서 빠졌다 — 휴무일 관리가 거기 산다.
+        // 「끄지 않았던 것」이 아니라 **쓰려고 켠 것**이라 성질이 다르다 (§4.7).
         [TestMethod]
-        public void 설계에_없는_리본_크롬은_꺼져_있다()
+        public void 쓰지_않는_리본_크롬은_꺼져_있다()
         {
             RunSta(() =>
             {
                 using (MainForm form = NewShell())
                 {
                     RibbonControl ribbon = form.Ribbon;
-                    Assert.AreEqual(DefaultBoolean.False, ribbon.ShowApplicationButton,
-                        "Application Button — Office 의 [파일] 탭 자리");
                     Assert.AreEqual(DefaultBoolean.False, ribbon.ShowDisplayOptionsMenuButton,
                         "제목표시줄의 리본 표시 옵션");
                     Assert.AreEqual(DefaultBoolean.False, ribbon.ShowExpandCollapseButton,

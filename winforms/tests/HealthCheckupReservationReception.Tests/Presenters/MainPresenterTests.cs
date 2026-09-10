@@ -130,43 +130,33 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 2026-09-10 사용자 결정: 업무 화면은 한 번에 하나만 뜬다 (Tab 스트립 제거)
 
-        // 03 §3 — 상단 Navigation 에는 전달키가 없다. Context 는 Normal 이고, 어디서 왔는지는
-        // Source 로 남는다 — §8.10 의 폐기 확인 트리거가 그것으로 갈린다.
-        //
-        // WF-RSV-01 이 모달이 된 뒤로는 **먼저 Page 를 되돌리고** 연다 — 휴무일과 같은 부류다.
-        // 그러지 않으면 빈 Ribbon 이 Modal 뒤에 남는다.
+        /// <summary>
+        /// **상단 Navigation 은 전부 「가는 곳」이다** (2026-09-11 사용자 결정).
+        ///
+        /// [X] 예전에는 `신규 예약` 과 `휴무일 관리` 가 눌러도 아무 데도 가지 않고 Modal 만
+        ///     띄운 뒤 탭이 제자리로 돌아오는 Page 였다. 같은 띠에서 어떤 것은 가고 어떤 것은
+        ///     뜨니 어디를 눌러야 무엇이 나오는지 예측할 수 없었다 — 사용자가 「기능 배치가
+        ///     중구난방」이라 보고한 자리다.
+        ///
+        ///     그래서 문장으로 두지 않고 **열거형 전체를 돌며** 잰다. 다시 그런 Page 를
+        ///     끼워 넣으면 그 자리에서 red 다.
+        /// </summary>
         [TestMethod]
-        public void 신규예약_Navigation_은_Page_를_되돌리고_전달키_없이_Normal_로_연다()
+        public void 상단_Navigation_은_하나도_빠짐없이_업무_화면을_세운다()
         {
-            FakeMainView view = LoadedShell();
+            foreach (BusinessNavigation page in Enum.GetValues(typeof(BusinessNavigation)))
+            {
+                FakeMainView view = LoadedShell();
 
-            view.RaiseNavigationRequested(BusinessNavigation.NewReservation);
+                view.RaiseNavigationRequested(page);
 
-            CollectionAssert.AreEqual(
-                new List<string>
-                {
-                    "SelectNavigationPage:PatientManagement",
-                    "BeginNewReservation:Normal,-,Navigation",
-                },
-                view.Calls);
-        }
+                Assert.AreEqual(1, view.Calls.Count,
+                    page + " 를 골랐는데 한 일이 하나가 아니다: " + string.Join(" · ", view.Calls.ToArray()));
 
-        // 신규 예약은 업무 화면을 세우지 않으므로 **돌아올 자리를 옮기지도 않는다.**
-        // 여기서 `_lastBusinessPage` 가 신규예약으로 밀리면 휴무일을 닫을 때 아무 화면도
-        // 없는 Page 로 돌아온다.
-        [TestMethod]
-        public void 신규예약을_거쳐도_돌아올_자리는_그대로다()
-        {
-            FakeMainView view = LoadedShell();
-            view.RaiseWorkbenchRequested(WorkContext.Reception, 92);
-            view.RaiseNavigationRequested(BusinessNavigation.NewReservation);
-            view.Calls.Clear();
-
-            view.RaiseNavigationRequested(BusinessNavigation.HolidayManagement);
-
-            CollectionAssert.AreEqual(
-                new List<string> { "SelectNavigationPage:ReceptionDesk", "ShowHolidayManagement" },
-                view.Calls);
+                string call = view.Calls[0];
+                Assert.IsTrue(call.StartsWith("ShowBusinessScreen:") || call.StartsWith("OpenWorkbench:"),
+                    page + " 는 업무 화면을 세우지 않는다 (" + call + ")");
+            }
         }
 
         // 03 §1.1 · §9.1 — 예약 관리와 접수 관리는 화면 하나를 나눠 쓰고 Context 만 갈린다.
@@ -182,53 +172,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             CollectionAssert.AreEqual(
                 new List<string> { "OpenWorkbench:Reservation,-", "OpenWorkbench:Reception,-" },
                 view.Calls);
-        }
-
-        // 03 §24.2 — 휴무일 관리는 업무 화면을 세우지 않고, 고른 뒤에는 직전 Page 로 돌아간다.
-        [TestMethod]
-        public void 휴무일_관리는_업무_화면을_세우지_않고_직전_Page_로_돌아간다()
-        {
-            FakeMainView view = LoadedShell();
-            view.RaiseNavigationRequested(BusinessNavigation.ReceptionDesk);
-            view.Calls.Clear();
-
-            view.RaiseNavigationRequested(BusinessNavigation.HolidayManagement);
-
-            // 되돌린 뒤에 연다 — 반대면 빈 Ribbon 이 Modal 뒤에 남는다.
-            CollectionAssert.AreEqual(
-                new List<string> { "SelectNavigationPage:ReceptionDesk", "ShowHolidayManagement" },
-                view.Calls);
-        }
-
-        [TestMethod]
-        public void 아무_업무_Page_도_고르기_전에_휴무일을_열면_첫_Page_로_돌아간다()
-        {
-            FakeMainView view = LoadedShell();
-
-            view.RaiseNavigationRequested(BusinessNavigation.HolidayManagement);
-
-            CollectionAssert.AreEqual(
-                new List<string> { "SelectNavigationPage:PatientManagement", "ShowHolidayManagement" },
-                view.Calls);
-        }
-
-        // 03 §24.2 — 공통 업무조건이 이 화면에는 적용되지 않는다.
-        [TestMethod]
-        public void 공통_업무불가여도_휴무일_관리는_열린다()
-        {
-            CommonWorkStatusDto status = Allowed();
-            status.IsWorkAllowed = false;
-            status.BlockCode = (int)DbCode.CenterClosed;
-            status.BlockMessage = "오늘은 업무일이 아닙니다.";
-
-            var view = new FakeMainView();
-            new MainPresenter(view, new FakeCommonStatusService { Result = Ok(status) }, "창구");
-            view.RaiseShellLoaded();
-            view.Calls.Clear();
-
-            view.RaiseNavigationRequested(BusinessNavigation.HolidayManagement);
-
-            CollectionAssert.Contains(view.Calls, "ShowHolidayManagement");
         }
 
         // [X] 기동 직후 Ribbon 은 첫 Page 가 선택된 채 뜨지만 그것은 "변경"이 아니라 이벤트가
@@ -269,21 +212,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
             CollectionAssert.AreEqual(
                 new List<string> { "SelectNavigationPage:ReceptionDesk", "OpenWorkbench:Reception,92" },
-                view.Calls);
-        }
-
-        // 그 뒤에 휴무일을 열면 돌아올 자리도 Workbench 여야 한다 — `_lastBusinessPage` 가 한 곳이다.
-        [TestMethod]
-        public void Workbench_로_옮긴_뒤_휴무일에서_돌아올_자리도_그곳이다()
-        {
-            FakeMainView view = LoadedShell();
-            view.RaiseWorkbenchRequested(WorkContext.Reception, 92);
-            view.Calls.Clear();
-
-            view.RaiseNavigationRequested(BusinessNavigation.HolidayManagement);
-
-            CollectionAssert.AreEqual(
-                new List<string> { "SelectNavigationPage:ReceptionDesk", "ShowHolidayManagement" },
                 view.Calls);
         }
 
@@ -355,7 +283,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         }
 
         public void SelectNavigationPage(BusinessNavigation page) { Calls.Add("SelectNavigationPage:" + page); }
-        public void ShowHolidayManagement() { Calls.Add("ShowHolidayManagement"); }
 
         public void ShowMessage(string message) { LastMessage = message; }
 

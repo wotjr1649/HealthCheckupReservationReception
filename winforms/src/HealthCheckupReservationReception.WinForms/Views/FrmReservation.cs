@@ -33,6 +33,11 @@ namespace HealthCheckupReservationReception.Views
         // 저장이 끝난 뒤에는 폐기 확인을 묻지 않는다 (03 §8.10).
         private bool _saved;
 
+        // OnLoad 까지 들고 있는 진입 인자다 (03 §3 BeginNewReservation).
+        private ReservationContext _context;
+        private long _patientId;
+        private NavigationSource _source;
+
         partial void ConfigureUI();
 
         /// <summary>
@@ -54,15 +59,37 @@ namespace HealthCheckupReservationReception.Views
             : this()
         {
             _presenter = new ReservationPresenter(this, service, patientService, operatorName);
+            _context = context;
+            _patientId = patientId;
+            _source = source;
 
             if (context == ReservationContext.WalkIn)
             {
                 Text = "당일 접수";
             }
+        }
+
+        /// <summary>
+        /// [X] **진입 조회를 생성자에서 돌리면 안 된다.** 03 §8.5 는 기존 유효예약이 있으면
+        ///     신규예약을 중단하라고 한다 — 그 길은 <see cref="GoToWorkbench"/> 이고 창을
+        ///     닫는다. 아직 뜨지도 않은 폼을 닫으면 그대로 Dispose 되어, 부른 쪽의
+        ///     `ShowDialog` 가 `ObjectDisposedException` 으로 터진다(실측 2026-09-11).
+        ///
+        ///     OnLoad 는 창이 그려지기 **전**이면서 `ShowDialog` 안이다. 여기서 닫으면
+        ///     창이 깜빡이지도 않고 `DialogResult` 가 부른 쪽으로 그대로 돌아간다.
+        /// </summary>
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+
+            if (_presenter == null)
+            {
+                return;
+            }
 
             using (new clsBusyScope(this))
             {
-                _presenter.Begin(context, patientId, source);
+                _presenter.Begin(_context, _patientId, _source);
             }
         }
 

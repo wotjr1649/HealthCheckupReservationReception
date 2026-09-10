@@ -45,21 +45,21 @@ namespace HealthCheckupReservationReception.Views
         void SelectNavigationPage(BusinessNavigation page);
 
         void ShowMessage(string message);
-        void ShowHolidayManagement();
     }
 
     /// <summary>
-    /// 03 §1.1 상단 업무 Navigation 다섯.
-    /// 앞 넷은 `RibbonPage` 이고 <see cref="HolidayManagement"/> 만 Page 가 아니다 —
-    /// 03 §24.2 가 Tab 을 열지 않고 Modal 을 여는 버튼으로 규정한다.
+    /// 상단 업무 Navigation. **여기 있는 것은 전부 「가는 곳」이다** (2026-09-11 사용자 결정).
+    ///
+    /// 예전에는 `신규 예약` 과 `휴무일 관리` 도 Page 였는데, 둘 다 눌러도 아무 데도 가지 않고
+    /// Modal 만 띄운 뒤 탭이 제자리로 돌아왔다. 같은 띠에서 어떤 것은 가고 어떤 것은 뜨니
+    /// 어디를 눌러야 무엇이 나오는지 예측할 수 없었다 — 리본을 명령이 아니라 내비게이션으로
+    /// 쓴 결과다. 둘은 명령이므로 명령 자리(화면 Action · 리본 우측 버튼)로 내렸다.
     /// </summary>
     public enum BusinessNavigation
     {
         PatientManagement,   // 수검자 관리   → WF-PAT-01
-        NewReservation,      // 신규 예약     → WF-RSV-01
         ReservationDesk,     // 예약 관리     → WF-WRK-01 Reservation Context
-        ReceptionDesk,       // 접수 관리     → WF-WRK-01 Reception Context
-        HolidayManagement    // 휴무일 관리   → DLG-HOL-01 Modal
+        ReceptionDesk        // 접수 관리     → WF-WRK-01 Reception Context
     }
 
     /// <summary>

@@ -18,6 +18,7 @@ namespace HealthCheckupReservationReception.Views
 
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.barRibbonMain = new DevExpress.XtraBars.Ribbon.RibbonControl();
             this.barBtnPatientNew = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnPatientEdit = new DevExpress.XtraBars.BarButtonItem();
@@ -38,17 +39,18 @@ namespace HealthCheckupReservationReception.Views
             this.barPagePatient = new DevExpress.XtraBars.Ribbon.RibbonPage();
             this.barGroupPatientWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupPatientView = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
-            this.barPageNewReservation = new DevExpress.XtraBars.Ribbon.RibbonPage();
             this.barPageRsvDesk = new DevExpress.XtraBars.Ribbon.RibbonPage();
             this.barGroupRsvWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupRsvView = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barPageRcpDesk = new DevExpress.XtraBars.Ribbon.RibbonPage();
-            this.barPageHoliday = new DevExpress.XtraBars.Ribbon.RibbonPage();
+            this.barBtnHoliday = new DevExpress.XtraBars.BarButtonItem();
+            this.barMenuApplication = new DevExpress.XtraBars.PopupMenu(this.components);
             this.barGroupRcpWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupRcpView = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barStatusMain = new DevExpress.XtraBars.Ribbon.RibbonStatusBar();
             this.pnlBusiness = new DevExpress.XtraEditors.PanelControl();
             ((System.ComponentModel.ISupportInitialize)(this.barRibbonMain)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.barMenuApplication)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pnlBusiness)).BeginInit();
             this.SuspendLayout();
             //
@@ -71,30 +73,38 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnRcpExtra,
             this.barBtnRcpCancel,
             this.barBtnRcpLog,
+            this.barBtnHoliday,
             this.barStaticWorkStatus,
             this.barStaticOperator});
             this.barRibbonMain.Location = new System.Drawing.Point(0, 0);
-            this.barRibbonMain.MaxItemId = 25;
+            this.barRibbonMain.MaxItemId = 26;
             this.barRibbonMain.Name = "barRibbonMain";
-            // 03 §1.1 상단 업무 Navigation 다섯. 화면설계서 slide4 가 y=101 한 줄에
-            // 같은 크기(w=122)로 다섯을 그린다 — 휴무일 관리도 동등한 Page 다.
-            // 열리는 것이 Tab 이 아니라 Modal 이라는 것은 선택 시 동작이 정한다 (03 §24.2).
+            // **Page 는 「가는 곳」만 갖는다** (2026-09-11 사용자 결정). 업무 화면 셋이 그
+            // 전부이고, Page 를 누르면 반드시 그 화면이 선다 — Page ↔ 화면 1:1 이다.
+            // 예전에는 `신규 예약` 과 `휴무일 관리` 도 Page 였는데 둘 다 눌러도 아무 데도
+            // 가지 않고 Modal 만 띄운 뒤 탭이 제자리로 돌아왔다. 같은 띠에서 어떤 것은 가고
+            // 어떤 것은 뜨니 예측이 되지 않았다.
             this.barRibbonMain.Pages.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPage[] {
             this.barPagePatient,
-            this.barPageNewReservation,
             this.barPageRsvDesk,
-            this.barPageRcpDesk,
-            this.barPageHoliday});
+            this.barPageRcpDesk});
+            // 휴무일 관리는 명령이고, 매일 쓰는 것이 아니라 가끔 손보는 관리 항목이다.
+            // 리본 UX 가이드가 그 부류에 정한 자리가 Application 메뉴다.
+            //
+            // [X] 처음에는 PageHeaderItemLinks(탭 줄 오른쪽 끝)에 두었는데 그 자리는 **글리프
+            //     자리**라 아이콘 없는 항목이 빈 네모로만 떴다. `PaintStyle = Caption` 으로도
+            //     글자가 나오지 않는다(실측 2026-09-11). 이 프로그램은 아이콘을 쓰지 않는다.
+            this.barRibbonMain.ApplicationButtonDropDownControl = this.barMenuApplication;
+            this.barRibbonMain.ApplicationButtonText = "관리";
             // 03 에 없는 리본 크롬을 끈다. RibbonControl 을 만들면 자동으로 켜지는 것들이라
             // 능동적으로 넣은 것이 아니라 끄지 않았던 것이다 (07 §14.3 A-07).
-            //   ShowApplicationButton         Office 의 [파일] 탭 자리. 03 에 없다
             //   ShowDisplayOptionsMenuButton  제목표시줄의 리본 표시 옵션 드롭다운
             //   ShowExpandCollapseButton      리본 우측 하단의 접기 버튼
             //   AllowMinimizeRibbon           [X] 버튼만 숨기면 페이지 헤더 더블클릭으로 여전히 접힌다
             //   Minimized                     펼친 상태로 고정
             this.barRibbonMain.AllowMinimizeRibbon = false;
             this.barRibbonMain.Minimized = false;
-            this.barRibbonMain.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
+            this.barRibbonMain.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
             this.barRibbonMain.ShowDisplayOptionsMenuButton = DevExpress.Utils.DefaultBoolean.False;
             this.barRibbonMain.ShowExpandCollapseButton = DevExpress.Utils.DefaultBoolean.False;
             this.barRibbonMain.ShowToolbarCustomizeItem = false;
@@ -248,13 +258,6 @@ namespace HealthCheckupReservationReception.Views
             this.barGroupPatientView.Name = "barGroupPatientView";
             this.barGroupPatientView.Text = "보기";
             //
-            // barPageNewReservation
-            //
-            // 그룹이 없다 — WF-RSV-01 이 모달이 되면서 [예약저장] 이 그 창의 하단으로 내려갔고
-            // (2026-09-10 grilling 2회차), 이 Page 는 휴무일 관리와 같은 **여는 자리**가 되었다.
-            this.barPageNewReservation.Name = "barPageNewReservation";
-            this.barPageNewReservation.Text = "신규 예약";
-            //
             // barPageRsvDesk
             //
             // [검색] 그룹과 [보기] 의 [컬럼설정] 이 없다. 2026-09-10 사용자 결정으로 둘 다
@@ -304,12 +307,19 @@ namespace HealthCheckupReservationReception.Views
             this.barGroupRcpView.Name = "barGroupRcpView";
             this.barGroupRcpView.Text = "보기";
             //
-            // barPageHoliday
+            // barBtnHoliday
             //
-            // 그룹이 없다. 이 Page 는 선택되는 즉시 DLG-HOL-01 을 열고 직전 Page 로 돌아간다
-            // — 03 §24.2 가 업무 Tab 을 열지 않는다고 확정했다.
-            this.barPageHoliday.Name = "barPageHoliday";
-            this.barPageHoliday.Text = "휴무일 관리";
+            // 03 §24.2 — 업무 Tab 을 열지 않고 DLG-HOL-01 Modal 을 연다. 그래서 Page 가 아니다.
+            this.barBtnHoliday.Caption = "휴무일 관리";
+            this.barBtnHoliday.Id = 25;
+            this.barBtnHoliday.Name = "barBtnHoliday";
+            this.barBtnHoliday.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnHoliday_ItemClick);
+            //
+            // barMenuApplication
+            //
+            this.barMenuApplication.ItemLinks.Add(this.barBtnHoliday);
+            this.barMenuApplication.Name = "barMenuApplication";
+            this.barMenuApplication.Ribbon = this.barRibbonMain;
             //
             // barStatusMain
             //
@@ -347,6 +357,7 @@ namespace HealthCheckupReservationReception.Views
             this.StatusBar = this.barStatusMain;
             this.Text = "검진 예약·접수 관리 프로그램";
             ((System.ComponentModel.ISupportInitialize)(this.barRibbonMain)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.barMenuApplication)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pnlBusiness)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -357,10 +368,10 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraBars.Ribbon.RibbonControl barRibbonMain;
         private DevExpress.XtraBars.Ribbon.RibbonStatusBar barStatusMain;
         private DevExpress.XtraBars.Ribbon.RibbonPage barPagePatient;
-        private DevExpress.XtraBars.Ribbon.RibbonPage barPageNewReservation;
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageRsvDesk;
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageRcpDesk;
-        private DevExpress.XtraBars.Ribbon.RibbonPage barPageHoliday;
+        private DevExpress.XtraBars.BarButtonItem barBtnHoliday;
+        private DevExpress.XtraBars.PopupMenu barMenuApplication;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientWork;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientView;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRsvWork;

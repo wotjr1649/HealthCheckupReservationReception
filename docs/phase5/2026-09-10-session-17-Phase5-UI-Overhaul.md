@@ -250,6 +250,76 @@ Caption 은 탭이 없어졌으니 정말 필요 없다. 그러나 그 값이 �
 
 ---
 
+### 4.7 리본은 명령이지 내비게이션이 아니다 — 2026-09-11 사용자 지적
+
+사용자가 「기능 배치가 다 이곳 저곳 중구난방」이라 보고했다. 뿌리는 하나였다:
+**탭 다섯 중 셋은 「가는 곳」이고 둘은 「하는 일」이었다.**
+
+```text
+수검자 관리 · 예약 관리 · 접수 관리   눌렀다 → 화면이 바뀐다     장소
+신규 예약   · 휴무일 관리             눌렀다 → 모달만 뜨고 되돌아온다  명령
+```
+
+같은 띠에서 어떤 것은 가고 어떤 것은 뜨니 예측이 되지 않는다. MSDN 이 이 실패를 이름
+붙여 놨다 — *"The Ribbon seems to magnify bad navigation design … you should not adapt it
+blindly for your application as a navigation mechanism."*
+(<https://learn.microsoft.com/en-us/archive/msdn-magazine/2009/march/usability-in-practice-strategies-for-designing-application-navigation>)
+
+그 아래 증상 셋이 전부 이 하나에서 나왔다:
+
+```text
+(a) [신규예약] 이 두 곳에 있었다 — 수검자 관리 Action 과 리본 Page
+    리본 UX 가이드가 명시적으로 금지한다: "Present each command on only one tab.
+    Avoid multiple paths to the same command … when users find what they are looking
+    for, they stop looking."
+    (https://learn.microsoft.com/en-us/windows/win32/uxguide/cmd-ribbons)
+    게다가 둘의 동작이 달랐다 — 하나는 대상이 이미 있고, 하나는 고르는 창을 더 띄웠다
+
+(b) DLG-PAT-02 가 WF-PAT-01 의 복제였다 — 같은 조회조건 다섯, 같은 Grid, 같은 컬럼
+
+(c) 업무 순서가 거꾸로였다. 01 P01 은 「수검자를 찾는다 → 그 사람을 예약한다」인데
+    리본 [신규 예약] 은 「예약을 시작한다 → 사람을 찾는다」로 들어갔다
+    **거꾸로 들어갔기 때문에 사람 찾는 화면이 하나 더 필요했던 것이다** — (b)는 (c)의 결과다
+```
+
+**결정 (A안).** 리본을 명령 전용으로 되돌린다.
+
+```text
+Page 는 「가는 곳」만 갖는다        수검자 관리 · 예약 관리 · 접수 관리 — Page ↔ 화면 1:1
+[신규 예약] Page 삭제              진입점은 수검자 관리 > [신규예약] 하나
+[휴무일 관리] Page → 버튼          RibbonControl.PageHeaderItemLinks (탭 줄 오른쪽 끝)
+DLG-PAT-02 는 WalkIn 전용          접수 관리 > [현장 당일예약] 만 이것을 연다
+```
+
+`MainPresenterTests.상단_Navigation_은_하나도_빠짐없이_업무_화면을_세운다` 가 이것을
+문장이 아니라 게이트로 잡는다 — `BusinessNavigation` 전체를 돌며 「가지 않는 Page」를
+찾는다 (ROOT AGENTS.md §6).
+
+곁가지로 `MainPresenter._lastBusinessPage` 가 사라졌다. 휴무일 Page 에서 돌아올 자리를
+기억하던 값인데 휴무일이 Page 가 아니게 되면서 읽는 곳이 없어졌다 — 쓰기만 하는 상태다.
+
+### 4.8 개발 중에는 업무시간을 열어 둔다 — 2026-09-11
+
+업무 가능 판정(`308`·`309`)과 마감시각은 전부 DB `운영기준` 한 행이 갖는다(R13). 코드로
+우회할 자리가 없으므로 **데이터를 연다.** 시험용 예약을 SP 로 넣어 둔 것과 같은 부류다.
+
+```sql
+-- 열기 (지금 상태)
+UPDATE dbo.운영기준 SET 운영시작시각='00:00:00', 운영종료시각='23:59:59',
+  일반예약AM마감='23:59:00', 일반예약PM마감='23:59:00',
+  접수AM마감='23:59:00', 접수PM마감='23:59:00' WHERE 기준ID=1;
+
+-- 되돌리기 (배포 원본값)
+UPDATE dbo.운영기준 SET 운영시작시각='09:00:00', 운영종료시각='18:00:00',
+  일반예약AM마감='10:00:00', 일반예약PM마감='15:00:00',
+  접수AM마감='11:00:00', 접수PM마감='16:00:00' WHERE 기준ID=1;
+```
+
+`[!]` **인수 전에 반드시 되돌린다.** 열어 둔 채로는 마감시각 규칙(03 §8.6)을 한 번도
+실측하지 못한다 — 지금 그 길은 시험되지 않은 상태다.
+
+---
+
 ## 5. 무엇을 기록하지 않기로 했나
 
 **조회조건에서 생년월일·휴대전화를 뺀 것은 `01` P01-01 · `02` F-PAT-001 과 어긋난 상태다.**
@@ -343,6 +413,13 @@ Caption 은 탭이 없어졌으니 정말 필요 없다. 그러나 그 값이 �
      온다. 근거는 `ReservationPresenter.HasUnsavedInput`(수검자 확정 여부) 하나뿐이다
    → 03 §5.2 `[신규예약]` 이 미구현에서 풀렸다. 고른 행을 그대로 넘긴다
      (`Source = PatientManagement`) — 대상이 이미 있으니 DLG-PAT-02 를 거치지 않는다
+
+5-1. 끝났다. 리본을 명령 전용으로 되돌렸다 (§4.7) — 사용자가 눌러 보고 지적한 자리다
+   → 크래시 하나를 같이 잡았다. `FrmReservation` 이 **생성자에서** 진입 조회를 돌렸고,
+     기존 유효예약이면 아직 뜨지도 않은 폼을 닫아 Dispose 시킨 뒤 `ShowDialog` 를 불러
+     `ObjectDisposedException` 이 났다. 진입 조회는 `OnLoad` 로 옮겼다 — `ShowDialog`
+     안이면서 창이 그려지기 전이라, 거기서 닫으면 깜빡이지 않고 결과만 돌아간다
+   → 개발 중 업무시간을 열어 두었다 (§4.8). **인수 전에 되돌린다**
 
 6. 사람이 눌러 확인 (§8)
 
