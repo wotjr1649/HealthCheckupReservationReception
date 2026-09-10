@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
 using DevExpress.XtraEditors;
+using HealthCheckupReservationReception.Models;
 using HealthCheckupReservationReception.Presenters;
 using HealthCheckupReservationReception.Services;
 
@@ -15,6 +16,7 @@ namespace HealthCheckupReservationReception.Views
     {
         private readonly MainPresenter _presenter;
         private readonly IPatientService _patientService;
+        private readonly IWorkService _workService;
         private readonly string _operatorName;
         // 한 번 만든 업무 화면은 들고 있는다. Tab 스트립이 사라졌어도 화면을 오갈 때마다
         // 새로 세우면 사용자가 조회해 둔 목록이 매번 날아간다.
@@ -28,6 +30,7 @@ namespace HealthCheckupReservationReception.Views
         private bool _patientRowSelected;
 
         private UcPatientManagement _patientView;
+        private UcWorkbench _workView;
 
         /// <summary>
         /// [X] **VS 디자이너 전용이다.** 디자이너는 설계 대상 타입을 매개변수 없는 생성자로
@@ -42,16 +45,22 @@ namespace HealthCheckupReservationReception.Views
             InitializeComponent();
         }
 
-        public MainForm(ICommonStatusService statusService, IPatientService patientService, string operatorName)
+        public MainForm(
+            ICommonStatusService statusService,
+            IPatientService patientService,
+            IWorkService workService,
+            string operatorName)
         {
             InitializeComponent();
             ClampToWorkingArea();
             _patientService = patientService;
+            _workService = workService;
             _operatorName = operatorName;
 
-            // Designer 는 버튼을 켜진 채로 만든다. Presenter 가 붙기 전에 03 §5.2 의
+            // Designer 는 버튼을 켜진 채로 만든다. Presenter 가 붙기 전에 03 §5.2 · §9.6 · §9.7 의
             // 초기 상태(행 미선택)로 맞춘다.
             ApplyPatientRowActions();
+            ApplyWorkActions(WorkActionState.None());
 
             _presenter = new MainPresenter(this, statusService, operatorName);
         }
@@ -159,9 +168,34 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         public void OpenWorkbench(WorkContext context, long? workId)
         {
-            // EXTENSION POINT: WF-WRK-01 이 서면 context 와 workId 를 그 화면에 넘긴다.
-            //                  workId 는 조회조건과 무관한 직접조회·자동선택이다 (03 §9.1).
+            // 세우는 것이 먼저다 — 화면이 붙어야 Presenter 가 서고, 그 뒤에 Context 를 준다.
             ShowBusinessScreen(BusinessTab.Workbench);
+            if (_workView != null)
+            {
+                _workView.OpenContext(context, workId);
+            }
+        }
+
+        /// <summary>
+        /// 03 §9.6 · §9.7 — 같은 화면 하나에 Context 마다 다른 Ribbon Action 이 걸린다.
+        /// 다섯 동작의 허용여부는 DB 가 준 것이고 (05 §8.2 RS4) 두 Page 는 그중 각자 쓸 것만
+        /// 보인다. 그래서 상태 하나를 두 Page 에 그대로 바른다 — Page 마다 다시 판정하면
+        /// 같은 규칙이 두 곳에 생긴다 (ROOT AGENTS.md §6).
+        ///
+        /// `[현장 당일예약]` 은 여기 없다. 선택행과 무관한 독립 Action 이라 늘 열려 있다 (§9.7).
+        /// </summary>
+        private void ApplyWorkActions(WorkActionState state)
+        {
+            barBtnRsvEdit.Enabled = state.EditReservation;
+            barBtnRsvCancel.Enabled = state.CancelReservation;
+            barBtnRsvReception.Enabled = state.StartReception;
+            barBtnRsvLog.Enabled = state.ChangeLog;
+
+            barBtnRcpRsvEdit.Enabled = state.EditReservation;
+            barBtnRcpStart.Enabled = state.StartReception;
+            barBtnRcpExtra.Enabled = state.EditExtra;
+            barBtnRcpCancel.Enabled = state.CancelReception;
+            barBtnRcpLog.Enabled = state.ChangeLog;
         }
 
         /// <summary>
@@ -169,22 +203,36 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         private Control CreateScreen(BusinessTab tab)
         {
-            if (tab != BusinessTab.PatientManagement)
+            if (tab == BusinessTab.PatientManagement)
             {
-                // EXTENSION POINT: WF-RSV-01 · WF-WRK-01.
-                return null;
+                var patient = new UcPatientManagement();
+                patient.RowActionsChanged += PatientView_RowActionsChanged;
+                patient.Attach(_patientService);
+                _patientView = patient;
+                return patient;
             }
 
-            var view = new UcPatientManagement();
-            view.RowActionsChanged += PatientView_RowActionsChanged;
-            view.Attach(_patientService);
-            _patientView = view;
-            return view;
+            if (tab == BusinessTab.Workbench)
+            {
+                var workbench = new UcWorkbench();
+                workbench.WorkActionsChanged += WorkView_WorkActionsChanged;
+                workbench.Attach(_workService);
+                _workView = workbench;
+                return workbench;
+            }
+
+            // EXTENSION POINT: WF-RSV-01.
+            return null;
         }
 
         private void PatientView_RowActionsChanged(object sender, bool rowSelected)
         {
             PatientRowSelected = rowSelected;
+        }
+
+        private void WorkView_WorkActionsChanged(object sender, WorkActionState state)
+        {
+            ApplyWorkActions(state);
         }
 
         public void SelectNavigationPage(BusinessNavigation page)

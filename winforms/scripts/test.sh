@@ -50,6 +50,8 @@ run ./scripts/verify-ui-baseline.sh selftest
 run ./scripts/verify-ui-baseline.sh
 run ./scripts/verify-dbcode.sh selftest
 run ./scripts/verify-dbcode.sh
+run ./scripts/verify-work-actions.sh selftest
+run ./scripts/verify-work-actions.sh
 run ./scripts/verify-social-century.sh selftest
 run ./scripts/verify-social-century.sh
 run ./scripts/verify-layering.sh selftest

@@ -69,24 +69,42 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // 03 §4.2 — Ribbon Group 순서는 [검색] → [현재 업무 Action] → [보기] 다.
+        // 03 §4.2 는 Ribbon Group 순서를 [검색] → [현재 업무 Action] → [보기] 로 적었다.
+        // 2026-09-10 사용자 결정으로 **[검색] 그룹이 Ribbon 에서 사라졌다** — [조회] 는 화면
+        // 안에 있고 같은 버튼이 두 곳에 있을 이유가 없다. [컬럼설정] 도 같은 이유로 Grid 옆
+        // 드롭다운이 되었다. 남은 규칙은 "업무 Action 다음이 [보기]" 뿐이다.
+        //
+        // [X] 옛 시험은 `Groups.Count < 3` 이면 건너뛰었는데, 그 조건이 이제 모든 Page 에
+        //     걸려 아무것도 재지 않는 green 이 된다. 재는 것을 남은 규칙으로 옮긴다.
         [TestMethod]
-        public void Ribbon_Group_순서는_검색_업무_보기_다()
+        public void Ribbon_의_마지막_그룹은_보기이고_검색_그룹은_없다()
         {
             RunSta(() =>
             {
                 using (MainForm form = NewShell())
                 {
+                    var inspected = new List<string>();
                     foreach (RibbonPage page in form.Ribbon.Pages)
                     {
-                        if (page.Groups.Count < 3)
+                        foreach (RibbonPageGroup group in page.Groups)
+                        {
+                            Assert.AreNotEqual("검색", group.Text,
+                                page.Text + " 에 [검색] 그룹이 남아 있다 — 조회는 화면 안이다");
+                        }
+
+                        if (page.Groups.Count < 2)
                         {
                             continue;   // 신규 예약은 [예약] 그룹 하나뿐이다 (03 §8.2)
                         }
 
-                        Assert.AreEqual("검색", page.Groups[0].Text, page.Text + " 첫 그룹");
-                        Assert.AreEqual("보기", page.Groups[page.Groups.Count - 1].Text, page.Text + " 마지막 그룹");
+                        inspected.Add(page.Text);
+                        Assert.AreEqual("보기", page.Groups[page.Groups.Count - 1].Text,
+                            page.Text + " 마지막 그룹");
                     }
+
+                    // 아무 Page 도 집지 못하면 위 단언이 한 번도 돌지 않는다.
+                    CollectionAssert.Contains(inspected, "예약 관리", "예약 관리 Page 를 못 집었다");
+                    CollectionAssert.Contains(inspected, "접수 관리", "접수 관리 Page 를 못 집었다");
                 }
             });
         }
@@ -118,7 +136,7 @@ namespace HealthCheckupReservationReception.Tests
                     Result = OperationResult<CommonWorkStatusDto>.Success(blocked),
                 };
 
-                using (var form = new MainForm(service, new FakePatientService(), "접수1번창구"))
+                using (var form = new MainForm(service, new FakePatientService(), new FakeWorkService(), "접수1번창구"))
                 {
                     form.StartPosition = FormStartPosition.Manual;
                     form.Location = new Point(-32000, -32000);
@@ -189,6 +207,56 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
+        // 03 §9.1 — 예약 관리와 접수 관리는 화면 하나를 나눠 쓴다. Context 를 바꿔 다시 열어도
+        // 판에는 하나뿐이고, 갈리는 것은 넘겨준 WorkContext 뿐이다.
+        [TestMethod]
+        public void Workbench_는_두_Context_가_화면_하나를_나눠_쓴다()
+        {
+            RunSta(() =>
+            {
+                using (MainForm form = NewShell())
+                {
+                    IMainView view = form;
+                    view.OpenWorkbench(WorkContext.Reservation, null);
+                    view.OpenWorkbench(WorkContext.Reception, null);
+
+                    Control panel = BusinessPanel(form);
+                    Assert.AreEqual(1, panel.Controls.Count, "Context 마다 화면이 새로 섰다");
+                    Assert.IsInstanceOfType(panel.Controls[0], typeof(UcWorkbench));
+                    Assert.AreEqual(DockStyle.Fill, panel.Controls[0].Dock);
+                }
+            });
+        }
+
+        // 03 §9.6 · §9.7 미선택 행 — 다섯 업무 Action 과 [변경이력] 이 전부 닫혀 있다.
+        // `[현장 당일예약]` 만 선택행과 무관한 독립 Action 이라 열린 채로 남는다 (§9.7).
+        [TestMethod]
+        public void 행_미선택이면_Workbench_업무_Action_이_닫히고_현장_당일예약만_열린다()
+        {
+            RunSta(() =>
+            {
+                using (MainForm form = NewShell())
+                {
+                    string[] rsvClosed = { "예약변경", "예약취소", "접수", "변경이력" };
+                    foreach (string caption in rsvClosed)
+                    {
+                        Assert.IsFalse(PageItemEnabled(form, "예약 관리", caption),
+                            "예약 관리 / " + caption);
+                    }
+
+                    string[] rcpClosed = { "예약변경", "접수", "추가검사변경", "접수취소", "변경이력" };
+                    foreach (string caption in rcpClosed)
+                    {
+                        Assert.IsFalse(PageItemEnabled(form, "접수 관리", caption),
+                            "접수 관리 / " + caption);
+                    }
+
+                    Assert.IsTrue(PageItemEnabled(form, "접수 관리", "현장 당일예약"),
+                        "선택행과 무관한 독립 Action 이 닫혔다");
+                }
+            });
+        }
+
         // [X] VS 디자이너는 설계 대상 타입을 **매개변수 없는 생성자**로 만든다. 그것이 없으면
         //     「디자이너에 대한 문서를 로드하지 않았으므로 디자이너를 표시할 수 없습니다」로
         //     화면이 아예 열리지 않는다 — 컴파일도 시험도 통과하므로 디자이너를 열기 전까지
@@ -229,6 +297,34 @@ namespace HealthCheckupReservationReception.Tests
             }
 
             throw new AssertFailedException("Ribbon 에 " + caption + " 이 없다");
+        }
+
+        /// <summary>
+        /// 같은 Caption 이 Page 마다 있다 (`예약변경`·`접수`·`변경이력`). Ribbon 전체를 훑는
+        /// <see cref="Enabled"/> 는 첫 번째만 집으므로, Page 를 짚어야 하는 자리는 이것을 쓴다.
+        /// </summary>
+        private static bool PageItemEnabled(MainForm form, string pageText, string caption)
+        {
+            foreach (RibbonPage page in form.Ribbon.Pages)
+            {
+                if (page.Text != pageText)
+                {
+                    continue;
+                }
+
+                foreach (RibbonPageGroup group in page.Groups)
+                {
+                    foreach (DevExpress.XtraBars.BarItemLink link in group.ItemLinks)
+                    {
+                        if (link.Item.Caption == caption)
+                        {
+                            return link.Item.Enabled;
+                        }
+                    }
+                }
+            }
+
+            throw new AssertFailedException(pageText + " Page 에 " + caption + " 이 없다");
         }
 
         // `변경이력`은 세 Page 에 하나씩 있다. 수검자 Page 의 것만 본다.
@@ -278,7 +374,8 @@ namespace HealthCheckupReservationReception.Tests
 
         private static MainForm NewShell()
         {
-            return new MainForm(new FakeCommonStatusService(), new FakePatientService(), "접수1번창구");
+            return new MainForm(
+                new FakeCommonStatusService(), new FakePatientService(), new FakeWorkService(), "접수1번창구");
         }
 
         private static Control BusinessPanel(MainForm form)

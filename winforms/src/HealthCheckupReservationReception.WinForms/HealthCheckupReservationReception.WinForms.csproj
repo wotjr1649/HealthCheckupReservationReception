@@ -54,8 +54,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common\DbCode.cs" />
+    <Compile Include="Common\DbWorkAction.cs" />
     <Compile Include="Common\OperationResult.cs" />
     <Compile Include="Common\clsPatientText.cs" />
+    <Compile Include="Common\clsWorkText.cs" />
     <Compile Include="Models\CommonWorkStatusDto.cs" />
     <Compile Include="Models\CommonWorkStatusReadDto.cs" />
     <Compile Include="Models\DbResult.cs" />
@@ -67,20 +69,33 @@
     <Compile Include="Models\PatientSaveReadDto.cs" />
     <Compile Include="Models\PatientSaveRequest.cs" />
     <Compile Include="Models\PatientSaveResultDto.cs" />
+    <Compile Include="Models\WorkActionDto.cs" />
+    <Compile Include="Models\WorkActionState.cs" />
+    <Compile Include="Models\WorkDetailDto.cs" />
+    <Compile Include="Models\WorkDetailReadDto.cs" />
+    <Compile Include="Models\WorkExamItemDto.cs" />
+    <Compile Include="Models\WorkListItemDto.cs" />
+    <Compile Include="Models\WorkListReadDto.cs" />
+    <Compile Include="Models\WorkSearchRequest.cs" />
     <Compile Include="Presenters\MainPresenter.cs" />
     <Compile Include="Presenters\PatientManagementPresenter.cs" />
     <Compile Include="Presenters\PatientEditorPresenter.cs" />
     <Compile Include="Presenters\PatientSelectPresenter.cs" />
+    <Compile Include="Presenters\WorkbenchPresenter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Repositories\CommonStatusRepository.cs" />
     <Compile Include="Repositories\DbResultReader.cs" />
     <Compile Include="Repositories\IPatientRepository.cs" />
     <Compile Include="Repositories\PatientRepository.cs" />
     <Compile Include="Repositories\ICommonStatusRepository.cs" />
+    <Compile Include="Repositories\IWorkRepository.cs" />
+    <Compile Include="Repositories\WorkRepository.cs" />
     <Compile Include="Services\CommonStatusService.cs" />
     <Compile Include="Services\ICommonStatusService.cs" />
     <Compile Include="Services\IPatientService.cs" />
     <Compile Include="Services\PatientService.cs" />
+    <Compile Include="Services\IWorkService.cs" />
+    <Compile Include="Services\WorkService.cs" />
     <Compile Include="Views\FrmPatientDuplicate.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -115,6 +130,7 @@
     <Compile Include="Views\IPatientManagementView.cs" />
     <Compile Include="Views\IPatientEditorView.cs" />
     <Compile Include="Views\IPatientSelectView.cs" />
+    <Compile Include="Views\IWorkbenchView.cs" />
     <Compile Include="Views\clsBusyScope.cs" />
     <Compile Include="Views\clsGridColumns.cs" />
     <Compile Include="Views\MainForm.cs">
@@ -131,6 +147,16 @@
     </Compile>
     <Compile Include="Views\UcPatientManagement.UI.cs">
       <DependentUpon>UcPatientManagement.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Views\UcWorkbench.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\UcWorkbench.Designer.cs">
+      <DependentUpon>UcWorkbench.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UcWorkbench.UI.cs">
+      <DependentUpon>UcWorkbench.cs</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
