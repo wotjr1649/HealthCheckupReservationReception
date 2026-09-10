@@ -189,6 +189,35 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
+        // [X] VS 디자이너는 설계 대상 타입을 **매개변수 없는 생성자**로 만든다. 그것이 없으면
+        //     「디자이너에 대한 문서를 로드하지 않았으므로 디자이너를 표시할 수 없습니다」로
+        //     화면이 아예 열리지 않는다 — 컴파일도 시험도 통과하므로 디자이너를 열기 전까지
+        //     아무도 모른다(실측 2026-09-10: MainForm · FrmPatientEditor · FrmPatientSelect
+        //     셋이 그랬다). 서비스를 생성자로 받는 화면을 새로 만들 때마다 되풀이된다.
+        [TestMethod]
+        public void 모든_화면이_디자이너용_생성자를_갖는다()
+        {
+            var inspected = new List<string>();
+            foreach (Type type in typeof(MainForm).Assembly.GetTypes())
+            {
+                bool isScreen = typeof(Form).IsAssignableFrom(type) || typeof(UserControl).IsAssignableFrom(type);
+                if (type.IsAbstract || !isScreen)
+                {
+                    continue;
+                }
+
+                inspected.Add(type.Name);
+                Assert.IsNotNull(type.GetConstructor(Type.EmptyTypes),
+                    type.Name + " 에 매개변수 없는 생성자가 없다 — VS 디자이너가 이 화면을 못 연다");
+            }
+
+            // [X] 타입 필터가 틀리면 이 시험은 아무것도 안 보고 green 이 된다. Form 쪽과
+            //     UserControl 쪽을 하나씩 실제로 집었는지 확인해 공허한 통과를 막는다.
+            //     개수로 재지 않는다 — 화면이 늘 때마다 거짓이 되는 수치다 (ROOT AGENTS.md §6).
+            CollectionAssert.Contains(inspected, "MainForm", "Form 을 하나도 못 집었다");
+            CollectionAssert.Contains(inspected, "UcPatientManagement", "UserControl 을 하나도 못 집었다");
+        }
+
         private static bool Enabled(MainForm form, string caption)
         {
             foreach (DevExpress.XtraBars.BarItem item in form.Ribbon.Items)

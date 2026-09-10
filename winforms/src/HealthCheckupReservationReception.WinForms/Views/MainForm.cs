@@ -29,6 +29,19 @@ namespace HealthCheckupReservationReception.Views
 
         private UcPatientManagement _patientView;
 
+        /// <summary>
+        /// [X] **VS 디자이너 전용이다.** 디자이너는 설계 대상 타입을 매개변수 없는 생성자로
+        ///     만든다 — 그것이 없으면 「디자이너에 대한 문서를 로드하지 않았으므로 디자이너를
+        ///     표시할 수 없습니다」로 화면이 아예 열리지 않는다(실측 2026-09-10).
+        ///
+        ///     서비스도 Presenter 도 만들지 않는다. 디자인 표면에서 DB 에 닿으면 안 된다
+        ///     (`references/designer.md` 함정 2). 실행 경로는 아래 생성자다.
+        /// </summary>
+        public MainForm()
+        {
+            InitializeComponent();
+        }
+
         public MainForm(ICommonStatusService statusService, IPatientService patientService, string operatorName)
         {
             InitializeComponent();

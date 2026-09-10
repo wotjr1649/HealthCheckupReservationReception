@@ -29,6 +29,15 @@ namespace HealthCheckupReservationReception.Views
         private bool _suppressSelection;
         private bool _rowPicked;
 
+        /// <summary>
+        /// VS 디자이너 전용. 매개변수 없는 생성자가 없으면 디자이너가 화면을 못 연다
+        /// (<see cref="MainForm"/> 의 같은 생성자 주석 참조). Presenter 를 만들지 않는다.
+        /// </summary>
+        public FrmPatientSelect()
+        {
+            InitializeComponent();
+        }
+
         public FrmPatientSelect(IPatientService service, string operatorName)
         {
             InitializeComponent();

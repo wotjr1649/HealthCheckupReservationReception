@@ -24,6 +24,15 @@ namespace HealthCheckupReservationReception.Views
         partial void ConfigureUI();
 
         /// <summary>
+        /// VS 디자이너 전용. 매개변수 없는 생성자가 없으면 디자이너가 화면을 못 연다
+        /// (<see cref="MainForm"/> 의 같은 생성자 주석 참조). Presenter 를 만들지 않는다.
+        /// </summary>
+        public FrmPatientEditor()
+        {
+            InitializeComponent();
+        }
+
+        /// <summary>
         /// <paramref name="patientId"/> 가 null 이면 New, 값이 있으면 Edit 다 (03 §6.3 · §6.4).
         /// </summary>
         public FrmPatientEditor(IPatientService service, string operatorName, long? patientId)
