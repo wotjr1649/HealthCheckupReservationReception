@@ -92,7 +92,6 @@
     <Compile Include="Presenters\MainPresenter.cs" />
     <Compile Include="Presenters\PatientManagementPresenter.cs" />
     <Compile Include="Presenters\PatientEditorPresenter.cs" />
-    <Compile Include="Presenters\PatientSelectPresenter.cs" />
     <Compile Include="Presenters\WorkbenchPresenter.cs" />
     <Compile Include="Presenters\ReservationPresenter.cs" />
     <Compile Include="Program.cs" />
@@ -133,20 +132,9 @@
       <DependentUpon>FrmPatientEditor.cs</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Views\FrmPatientSelect.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Views\FrmPatientSelect.Designer.cs">
-      <DependentUpon>FrmPatientSelect.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Views\FrmPatientSelect.UI.cs">
-      <DependentUpon>FrmPatientSelect.cs</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="Views\IMainView.cs" />
     <Compile Include="Views\IPatientManagementView.cs" />
     <Compile Include="Views\IPatientEditorView.cs" />
-    <Compile Include="Views\IPatientSelectView.cs" />
     <Compile Include="Views\IWorkbenchView.cs" />
     <Compile Include="Views\IReservationView.cs" />
     <Compile Include="Views\clsBusyScope.cs" />

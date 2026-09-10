@@ -266,9 +266,9 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         public void ShowBusinessScreen(BusinessTab screen) { Calls.Add("ShowBusinessScreen:" + screen); }
 
-        public void BeginNewReservation(ReservationContext context, long? patientId, NavigationSource source)
+        public void BeginNewReservation(long patientId)
         {
-            Calls.Add("BeginNewReservation:" + context + "," + Key(patientId) + "," + source);
+            Calls.Add("BeginNewReservation:" + patientId);
         }
 
         public void OpenWorkbench(WorkContext context, long? workId)

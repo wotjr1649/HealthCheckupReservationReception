@@ -50,6 +50,17 @@ namespace HealthCheckupReservationReception.Common
                 + " (잔여 " + remaining.ToString(CultureInfo.InvariantCulture) + ")";
         }
 
+        /// <summary>
+        /// 05 §9.6 RS1 `예약구분`. 조작자가 고른 값이 아니라 DB 가 시각으로 가른 값이므로
+        /// (00 RP-05) 화면은 그것을 읽어 주기만 한다.
+        /// </summary>
+        public static string FormatReserveType(string value)
+        {
+            if (DbReserveType.WalkIn.Equals(value, StringComparison.Ordinal)) { return "현장 당일예약"; }
+            if (DbReserveType.Normal.Equals(value, StringComparison.Ordinal)) { return "일반 예약"; }
+            return value ?? string.Empty;
+        }
+
         public static string FormatDate(DateTime value)
         {
             return value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

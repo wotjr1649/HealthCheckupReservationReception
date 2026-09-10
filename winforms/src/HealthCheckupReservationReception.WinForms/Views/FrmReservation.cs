@@ -34,9 +34,7 @@ namespace HealthCheckupReservationReception.Views
         private bool _saved;
 
         // OnLoad 까지 들고 있는 진입 인자다 (03 §3 BeginNewReservation).
-        private ReservationContext _context;
         private long _patientId;
-        private NavigationSource _source;
 
         partial void ConfigureUI();
 
@@ -51,22 +49,17 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// 03 §3 `BeginNewReservation(Context, PatientId, Source)`. **모달은 대상을 받고 열린다** —
+        /// 03 §3 `BeginNewReservation(PatientId)`. **모달은 대상을 받고 열린다** —
         /// 수검자가 정해지지 않은 채로는 이 화면이 아예 서지 않는다.
+        ///
+        /// 일반/현장을 가르는 인자가 없다. 그것은 조작자가 아니라 시각이 정한다 (00 RP-05).
         /// </summary>
         public FrmReservation(IReservationService service, IPatientService patientService,
-            string operatorName, ReservationContext context, long patientId, NavigationSource source)
+            string operatorName, long patientId)
             : this()
         {
             _presenter = new ReservationPresenter(this, service, patientService, operatorName);
-            _context = context;
             _patientId = patientId;
-            _source = source;
-
-            if (context == ReservationContext.WalkIn)
-            {
-                Text = "당일 접수";
-            }
         }
 
         /// <summary>
@@ -89,7 +82,7 @@ namespace HealthCheckupReservationReception.Views
 
             using (new clsBusyScope(this))
             {
-                _presenter.Begin(_context, _patientId, _source);
+                _presenter.Begin(_patientId);
             }
         }
 
@@ -139,9 +132,9 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
-        public bool ReserveDateReadOnly
+        public string ReserveTypeText
         {
-            set { deReserveDate.Properties.ReadOnly = value; }
+            set { lblReserveType.Text = value ?? string.Empty; }
         }
 
         /// <summary>

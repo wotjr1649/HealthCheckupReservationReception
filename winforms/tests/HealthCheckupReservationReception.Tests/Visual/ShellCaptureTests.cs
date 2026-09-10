@@ -262,8 +262,7 @@ namespace HealthCheckupReservationReception.Tests.Visual
                 // 모달이다 — 생성자가 곧 03 §3 의 `BeginNewReservation` 이다.
                 using (var screen = new FrmReservation(
                     new FakeReservationService { Availability = SampleAvailability() },
-                    patients, "접수1번창구",
-                    ReservationContext.Normal, 1000, NavigationSource.PatientManagement))
+                    patients, "접수1번창구", 1000))
                 {
                     screen.StartPosition = FormStartPosition.Manual;
                     screen.Location = new Point(-32000, -32000);
@@ -340,22 +339,6 @@ namespace HealthCheckupReservationReception.Tests.Visual
         {
             string path = Capture("dlg_pat_01.png", () =>
                 new FrmPatientEditor(new FakePatientService(), "접수1번창구", null));
-
-            Assert.IsTrue(new FileInfo(path).Length > 2 * 1024, "PNG 가 비었다: " + path);
-            Console.WriteLine("캡처: " + path);
-        }
-
-        /// <summary>DLG-PAT-02. 조회 결과가 들어 있어야 컬럼 폭을 볼 수 있다.</summary>
-        [TestMethod]
-        [TestCategory("Visual")]
-        public void DLGPAT02_실행_화면을_PNG_로_뜬다()
-        {
-            string path = Capture("dlg_pat_02.png", () =>
-            {
-                var form = new FrmPatientSelect(new FakePatientService(), "접수1번창구");
-                ((IPatientSelectView)form).Rows = SampleRows();
-                return form;
-            });
 
             Assert.IsTrue(new FileInfo(path).Length > 2 * 1024, "PNG 가 비었다: " + path);
             Console.WriteLine("캡처: " + path);

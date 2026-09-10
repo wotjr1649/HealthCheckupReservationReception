@@ -28,8 +28,13 @@ namespace HealthCheckupReservationReception.Presenters
         private readonly IPatientService _patientService;
         private readonly string _operatorName;
 
-        private ReservationContext _context = ReservationContext.Normal;
+        // 05 §9.2 `@예약구분`. **조작자가 고르지 않는다** — 00 RP-05 가 시각으로 가르고,
+        // 그 판정은 Ask 가 DB 의 답을 보고 내린다.
+        private string _reserveType = DbReserveType.Normal;
         private long? _patientId;
+
+        // 마지막 조회의 시간대정보. 저장 뒤 어디로 갈지가 여기서 나온다 (IsToday).
+        private IList<SlotInfoDto> _slots;
 
         // 조회 한 번을 아끼는 자리. DateEdit 은 글자를 칠 때마다 값이 바뀌므로 같은
         // 일정으로 SP 를 되풀이해 부르게 된다 — 같은 (예약일, 시간대) 면 건너뛴다.
@@ -60,15 +65,9 @@ namespace HealthCheckupReservationReception.Presenters
         /// 고른 값을 들고 온다 (2026-09-10 grilling 2회차). 화면 안에서 수검자를 바꾸지 않으므로
         /// 03 §8.10 의 「다른 PatientId 로 재호출」 트리거는 `모달을 닫고 다시 여는 것` 이 된다.
         /// </summary>
-        public void Begin(ReservationContext context, long patientId, NavigationSource source)
+        public void Begin(long patientId)
         {
-            _context = context;
             Reset();
-
-            // 03 §8.6 — WalkIn 은 예약일이 DB 오늘날짜이고 ReadOnly 다. 화면 시계와 DB 시계가
-            // 어긋나면 SP 가 `102` 로 막는다 (05 §9.3) — 여기서 우기지 않는다.
-            _view.ReserveDateReadOnly = context == ReservationContext.WalkIn;
-
             ConfirmPatient(patientId);
         }
 
@@ -89,6 +88,8 @@ namespace HealthCheckupReservationReception.Presenters
             _patientId = null;
             _askedDate = null;
             _askedSlot = null;
+            _reserveType = DbReserveType.Normal;
+            _slots = null;
 
             _view.Patient = null;
             _view.ScheduleEnabled = false;
@@ -96,6 +97,7 @@ namespace HealthCheckupReservationReception.Presenters
             _view.Slots = new List<SlotInfoDto>();
             _view.SlotCode = null;
             _view.TargetText = TargetPrefix + "미판정";
+            _view.ReserveTypeText = string.Empty;
             _view.NexItems = new List<WorkExamItemDto>();
             _view.AexItems = new List<ReservationAexItemDto>();
             _view.AexEnabled = false;
@@ -186,12 +188,45 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
+            // 00 RP-05 — 현장 내원자는 **당일예약 마감 전이면 일반, 그 뒤 접수 마감 전까지는
+            // 현장 당일예약**이다. 같은 사람·같은 행동이고 시각만 다르다. 조작자에게 시계를
+            // 읽히지 않는다: 일반으로 묻고, 마감이 지나 막혔으면 현장으로 한 번 더 묻는다.
+            _reserveType = DbReserveType.Normal;
+            ReservationAvailabilityReadDto read = Query(date, slot, DbReserveType.Normal);
+            if (read == null)
+            {
+                return;
+            }
+
+            if (CutoffBlocked(read.Slots))
+            {
+                ReservationAvailabilityReadDto walkIn = Query(date, slot, DbReserveType.WalkIn);
+                if (walkIn != null)
+                {
+                    _reserveType = DbReserveType.WalkIn;
+                    read = walkIn;
+                }
+            }
+
+            Render(read);
+
+            // [X] 가드의 열쇠는 **조회 뒤 화면이 실제로 든 값**이다. 시간대를 아직 고르지 않고
+            //     물으면 DB 가 고를 수 있는 하나를 정해 돌려주고 Render 가 그것을 화면에
+            //     세우는데(05 §9.6), 보낸 값(NULL)으로 열쇠를 잡아 두면 다음 번에 "바뀌었다"
+            //     로 보여 같은 일정을 한 번 더 묻는다.
+            _askedDate = date;
+            _askedSlot = _view.SlotCode;
+        }
+
+        /// <summary>
+        /// SP-RSV-01 한 번. 실패는 화면에 적고 null 을 돌려준다 — 부른 쪽이 이어 가지 않는다.
+        /// </summary>
+        private ReservationAvailabilityReadDto Query(DateTime date, string slot, string reserveType)
+        {
             var request = new ReservationAvailabilityRequest
             {
                 PatientId = _patientId.Value,
-                ReserveType = _context == ReservationContext.WalkIn
-                    ? DbReserveType.WalkIn
-                    : DbReserveType.Normal,
+                ReserveType = reserveType,
                 ReserveDate = date,
                 SlotCode = slot,
                 AexSelected = _view.AexSelection,
@@ -205,24 +240,69 @@ namespace HealthCheckupReservationReception.Presenters
             catch (Exception)
             {
                 _view.BlockMessage = "예약 가능정보를 조회하지 못했습니다.";
-                return;
+                return null;
             }
 
             if (result == null || !result.IsSuccess)
             {
                 _view.BlockMessage = result == null ? "예약 가능정보를 조회하지 못했습니다." : result.Message;
                 _view.SaveEnabled = false;
-                return;
+                return null;
             }
 
-            Render(result.Value);
+            return result.Value;
+        }
 
-            // [X] 가드의 열쇠는 **조회 뒤 화면이 실제로 든 값**이다. 시간대를 아직 고르지 않고
-            //     물으면 DB 가 고를 수 있는 하나를 정해 돌려주고 Render 가 그것을 화면에
-            //     세우는데(05 §9.6), 보낸 값(NULL)으로 열쇠를 잡아 두면 다음 번에 "바뀌었다"
-            //     로 보여 같은 일정을 한 번 더 묻는다.
-            _askedDate = date;
-            _askedSlot = _view.SlotCode;
+        /// <summary>
+        /// 막힌 이유가 **마감** 인 시간대가 있는가 (05 §4.2 `304 CutoffPassed`).
+        ///
+        /// [X] 여기서 "오늘인가" 를 화면이 재지 않는다. `03_Functions.sql` 이
+        ///     `적용마감시각 = CASE WHEN @예약일 = 오늘날짜 THEN 기본마감시각 ELSE NULL END`
+        ///     이므로 **마감이 걸렸다는 것 자체가 그 날이 DB 오늘날짜라는 뜻**이다.
+        ///     PC 시계도, 오늘날짜를 얻으려는 추가 조회도 필요 없다.
+        /// </summary>
+        private static bool CutoffBlocked(IList<SlotInfoDto> slots)
+        {
+            if (slots == null)
+            {
+                return false;
+            }
+
+            foreach (SlotInfoDto slot in slots)
+            {
+                if (!slot.Selectable && slot.BlockCode == (int)DbCode.CutoffPassed)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 저장한 시간대의 예약일이 DB 오늘날짜인가.
+        ///
+        /// [X] `DateTime.Today` 와 비교하지 않는다 — PC 시계는 DB 시계가 아니다. 마감시각은
+        ///     `@예약일 = 오늘날짜` 일 때만 채워지므로(위와 같은 자리), **마감시각이 있다는
+        ///     것이 곧 오늘이라는 뜻**이다. 운영하지 않는 시간대는 오늘이어도 NULL 인데,
+        ///     그런 시간대는 애초에 저장되지 않으므로 이 판정에 닿지 않는다.
+        /// </summary>
+        private bool IsToday(string slotCode)
+        {
+            if (_slots == null || slotCode == null)
+            {
+                return false;
+            }
+
+            foreach (SlotInfoDto slot in _slots)
+            {
+                if (slotCode.Equals(slot.SlotCode, StringComparison.Ordinal))
+                {
+                    return slot.CutoffTime != null;
+                }
+            }
+
+            return false;
         }
 
         private void Render(ReservationAvailabilityReadDto read)
@@ -239,8 +319,13 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
+            _slots = read.Slots;
             _view.Slots = read.Slots;
             _view.SlotCode = summary.SlotCode;
+
+            // 05 §9.6 RS1 `예약구분` — DB 가 되돌려 준 값을 그대로 적는다. 화면이 든 값이 아니라
+            // DB 의 답을 적는 이유는, 둘이 갈리면 사용자가 보는 쪽이 참이어야 해서다.
+            _view.ReserveTypeText = clsWorkText.FormatReserveType(summary.ReserveType);
             _view.TargetText = TargetTextOf(read.Target);
             _view.NexItems = read.NexItems;
 
@@ -301,9 +386,7 @@ namespace HealthCheckupReservationReception.Presenters
             var request = new ReservationSaveRequest
             {
                 PatientId = _patientId.Value,
-                ReserveType = _context == ReservationContext.WalkIn
-                    ? DbReserveType.WalkIn
-                    : DbReserveType.Normal,
+                ReserveType = _reserveType,
                 ReserveDate = _view.ReserveDate.Date,
                 SlotCode = _view.SlotCode,
                 AexSelected = _view.AexSelection,
@@ -349,9 +432,13 @@ namespace HealthCheckupReservationReception.Presenters
             }
 
             // 03 §8.11 성공 — 생성건을 Workbench 에서 자동선택한다.
-            // WalkIn 은 Reservation 이 아니라 Reception 이다 (03 §9.8).
+            //
+            // **가르는 것은 예약구분이 아니라 날짜다** (2026-09-11 grilling). 오늘이면 그 사람은
+            // 지금 창구에 서 있고 다음에 할 일이 접수다 — 09:30 에 온 현장 내원자는 예약구분이
+            // 일반이라 예전 규칙으로는 예약 관리로 떨어졌다.
             long workId = result.Value.Row.WorkId;
-            WorkContext target = _context == ReservationContext.WalkIn
+            string savedSlot = _view.SlotCode;
+            WorkContext target = IsToday(savedSlot)
                 ? WorkContext.Reception
                 : WorkContext.Reservation;
 

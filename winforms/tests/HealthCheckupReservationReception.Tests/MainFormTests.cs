@@ -159,7 +159,7 @@ namespace HealthCheckupReservationReception.Tests
                     //     순간 과잉 단언이 red 가 된다. 03 §5.2 가 실제로 다루는 Action 만 센다.
                     // [조회]·[컬럼설정] 은 2026-09-10 결정으로 수검자 Page 에서 화면 안으로
                     // 옮겨 갔다. 여기 남기면 예약·접수 Page 의 동명 버튼을 재게 된다.
-                    string[] shouldStayOpen = { "신규등록", "정보수정", "신규예약" };
+                    string[] shouldStayOpen = { "신규등록", "정보수정", "예약" };
                     foreach (string caption in shouldStayOpen)
                     {
                         Assert.IsTrue(Enabled(form, caption),
@@ -172,10 +172,10 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // 03 §5.2 표 — 행 미선택이면 [정보수정]·[신규예약]·[변경이력]이 닫히고
+        // 03 §5.2 표 — 행 미선택이면 [정보수정]·[예약]·[변경이력]이 닫히고
         // 행을 고르면 셋이 함께 열린다. [R12] 이제 이 표에 다른 축은 없다.
         [TestMethod]
-        public void 행_미선택이면_정보수정_신규예약_변경이력이_닫힌다()
+        public void 행_미선택이면_정보수정_예약_변경이력이_닫힌다()
         {
             RunSta(() =>
             {
@@ -183,13 +183,13 @@ namespace HealthCheckupReservationReception.Tests
                 {
                     form.PatientRowSelected = false;
                     Assert.IsFalse(Enabled(form, "정보수정"));
-                    Assert.IsFalse(Enabled(form, "신규예약"));
+                    Assert.IsFalse(Enabled(form, "예약"));
                     Assert.IsFalse(PatientLogEnabled(form));
                     Assert.IsTrue(Enabled(form, "신규등록"), "신규등록은 행과 무관하다");
 
                     form.PatientRowSelected = true;
                     Assert.IsTrue(Enabled(form, "정보수정"));
-                    Assert.IsTrue(Enabled(form, "신규예약"));
+                    Assert.IsTrue(Enabled(form, "예약"));
                     Assert.IsTrue(PatientLogEnabled(form));
                 }
             });
@@ -238,9 +238,12 @@ namespace HealthCheckupReservationReception.Tests
         }
 
         // 03 §9.6 · §9.7 미선택 행 — 다섯 업무 Action 과 [변경이력] 이 전부 닫혀 있다.
-        // `[현장 당일예약]` 만 선택행과 무관한 독립 Action 이라 열린 채로 남는다 (§9.7).
+        //
+        // 예전에는 `[현장 당일예약]` 만 선택행과 무관한 독립 Action 이라 열린 채였다. 2026-09-11
+        // grilling 으로 그 버튼이 사라졌다 — 예약으로 들어가는 자리는 수검자 관리의 [예약]
+        // 하나이고, 일반/현장은 조작자가 아니라 시각이 가른다 (00 RP-05).
         [TestMethod]
-        public void 행_미선택이면_Workbench_업무_Action_이_닫히고_현장_당일예약만_열린다()
+        public void 행_미선택이면_Workbench_업무_Action_이_전부_닫힌다()
         {
             RunSta(() =>
             {
@@ -259,9 +262,6 @@ namespace HealthCheckupReservationReception.Tests
                         Assert.IsFalse(PageItemEnabled(form, "접수 관리", caption),
                             "접수 관리 / " + caption);
                     }
-
-                    Assert.IsTrue(PageItemEnabled(form, "접수 관리", "현장 당일예약"),
-                        "선택행과 무관한 독립 Action 이 닫혔다");
                 }
             });
         }
@@ -269,7 +269,7 @@ namespace HealthCheckupReservationReception.Tests
         // [X] VS 디자이너는 설계 대상 타입을 **매개변수 없는 생성자**로 만든다. 그것이 없으면
         //     「디자이너에 대한 문서를 로드하지 않았으므로 디자이너를 표시할 수 없습니다」로
         //     화면이 아예 열리지 않는다 — 컴파일도 시험도 통과하므로 디자이너를 열기 전까지
-        //     아무도 모른다(실측 2026-09-10: MainForm · FrmPatientEditor · FrmPatientSelect
+        //     아무도 모른다(실측 2026-09-10: MainForm · FrmPatientEditor · FrmPatientSelect(당시)
         //     셋이 그랬다). 서비스를 생성자로 받는 화면을 새로 만들 때마다 되풀이된다.
         [TestMethod]
         public void 모든_화면이_디자이너용_생성자를_갖는다()

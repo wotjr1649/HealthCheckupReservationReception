@@ -156,35 +156,15 @@ namespace HealthCheckupReservationReception.Views
 
         /// <summary>
         /// 03 §3 호출계약. WF-RSV-01 은 업무 판이 아니라 **모달**이다 (2026-09-10 grilling 2회차).
-        /// Context 는 예약일 ReadOnly 여부를(§9.8), Source 는 §8.10 의 폐기 확인 맥락을 나른다.
         ///
-        /// `patientId` 가 없으면 DLG-PAT-02 로 먼저 고른다. **고르는 창을 닫고 나서** 예약 창을
-        /// 연다 — 모달을 겹쳐 쌓으면 뒤에 깔린 창이 아무 일도 못 하면서 화면만 가린다.
-        /// 취소하면 아무 창도 열리지 않는다: "고르지 않았다" 는 곧 "예약하지 않는다" 이다.
+        /// **대상 없이 부르지 않는다** (2026-09-11 grilling). 예전에는 대상이 없으면 DLG-PAT-02
+        /// 로 먼저 골랐는데, 그 모달은 수검자 관리 화면을 그대로 복제한 것이었다. 진입점이
+        /// `수검자 관리 [예약]` 하나가 되면서 대상은 늘 정해져 있고, 그래서 그 화면이 사라졌다.
         /// </summary>
-        public void BeginNewReservation(ReservationContext context, long? patientId, NavigationSource source)
+        public void BeginNewReservation(long patientId)
         {
-            long? target = patientId;
-            if (target == null)
-            {
-                using (var select = new FrmPatientSelect(_patientService, _operatorName))
-                {
-                    if (select.ShowDialog(this) != DialogResult.OK)
-                    {
-                        return;
-                    }
-
-                    target = select.SelectedPatientId;
-                }
-            }
-
-            if (target == null)
-            {
-                return;
-            }
-
             using (var reservation = new FrmReservation(
-                _reservationService, _patientService, _operatorName, context, target.Value, source))
+                _reservationService, _patientService, _operatorName, patientId))
             {
                 if (reservation.ShowDialog(this) == DialogResult.OK && reservation.Result != null)
                 {
@@ -397,8 +377,8 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// 03 §5.2 `[신규예약]` — 수검자 관리에서 고른 행 그대로 예약 모달을 연다 (03 §3 의
-        /// `Source = PatientManagement`). 대상이 이미 정해져 있으므로 DLG-PAT-02 를 거치지 않는다.
+        /// 03 §5.2 `[예약]` — 수검자 관리에서 고른 행 그대로 예약 모달을 연다.
+        /// **예약으로 들어가는 유일한 자리다** (2026-09-11 grilling).
         /// </summary>
         private void barBtnPatientReserve_ItemClick(object sender, ItemClickEventArgs e)
         {
@@ -407,8 +387,7 @@ namespace HealthCheckupReservationReception.Views
                 return;
             }
 
-            BeginNewReservation(ReservationContext.Normal,
-                _patientView.SelectedPatientId, NavigationSource.PatientManagement);
+            BeginNewReservation(_patientView.SelectedPatientId.Value);
         }
 
         private void barBtnNotImplemented_ItemClick(object sender, ItemClickEventArgs e)

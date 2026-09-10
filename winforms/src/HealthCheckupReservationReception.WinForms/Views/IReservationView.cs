@@ -33,8 +33,12 @@ namespace HealthCheckupReservationReception.Views
         bool ScheduleEnabled { set; }
         DateTime ReserveDate { get; set; }
 
-        /// <summary>WalkIn 은 예약일=DB 오늘날짜 ReadOnly 다 (03 §8.6).</summary>
-        bool ReserveDateReadOnly { set; }
+        /// <summary>
+        /// 05 §9.6 `예약구분` — `일반 예약` / `현장 당일예약`. **조작자가 고르는 칸이 아니다**
+        /// (2026-09-11 grilling). 00 RP-05 가 시각으로 가르고 DB 가 답을 돌려주므로 화면은
+        /// 읽어 주기만 한다 — 그래서 편집기가 아니라 글자다.
+        /// </summary>
+        string ReserveTypeText { set; }
 
         /// <summary>
         /// AM/PM 두 줄을 다시 세운다. 정원이 찼거나 운영하지 않는 시간대는 고를 수 없다 —
