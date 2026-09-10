@@ -54,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common\DbCode.cs" />
+    <Compile Include="Common\DbReserveType.cs" />
     <Compile Include="Common\DbWorkAction.cs" />
     <Compile Include="Common\OperationResult.cs" />
     <Compile Include="Common\clsPatientText.cs" />
@@ -69,6 +70,15 @@
     <Compile Include="Models\PatientSaveReadDto.cs" />
     <Compile Include="Models\PatientSaveRequest.cs" />
     <Compile Include="Models\PatientSaveResultDto.cs" />
+    <Compile Include="Models\ExamTargetDto.cs" />
+    <Compile Include="Models\ReservationAexItemDto.cs" />
+    <Compile Include="Models\ReservationAvailabilityReadDto.cs" />
+    <Compile Include="Models\ReservationAvailabilityRequest.cs" />
+    <Compile Include="Models\ReservationSaveRequest.cs" />
+    <Compile Include="Models\ReservationSummaryDto.cs" />
+    <Compile Include="Models\SlotInfoDto.cs" />
+    <Compile Include="Models\WorkSaveReadDto.cs" />
+    <Compile Include="Models\WorkSaveResultDto.cs" />
     <Compile Include="Models\WorkActionDto.cs" />
     <Compile Include="Models\WorkActionState.cs" />
     <Compile Include="Models\WorkDetailDto.cs" />
@@ -89,12 +99,16 @@
     <Compile Include="Repositories\PatientRepository.cs" />
     <Compile Include="Repositories\ICommonStatusRepository.cs" />
     <Compile Include="Repositories\IWorkRepository.cs" />
+    <Compile Include="Repositories\IReservationRepository.cs" />
+    <Compile Include="Repositories\ReservationRepository.cs" />
     <Compile Include="Repositories\WorkRepository.cs" />
     <Compile Include="Services\CommonStatusService.cs" />
     <Compile Include="Services\ICommonStatusService.cs" />
     <Compile Include="Services\IPatientService.cs" />
     <Compile Include="Services\PatientService.cs" />
     <Compile Include="Services\IWorkService.cs" />
+    <Compile Include="Services\IReservationService.cs" />
+    <Compile Include="Services\ReservationService.cs" />
     <Compile Include="Services\WorkService.cs" />
     <Compile Include="Views\FrmPatientDuplicate.cs">
       <SubType>Form</SubType>

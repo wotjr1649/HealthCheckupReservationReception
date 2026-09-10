@@ -64,6 +64,7 @@
     <Compile Include="Presenters\WorkbenchPresenterTests.cs" />
     <Compile Include="Services\CommonStatusServiceTests.cs" />
     <Compile Include="Services\PatientServiceTests.cs" />
+    <Compile Include="Services\ReservationServiceTests.cs" />
     <Compile Include="Views\UcPatientManagementTests.cs" />
     <Compile Include="Views\UcWorkbenchTests.cs" />
     <Compile Include="Views\FrmPatientEditorTests.cs" />
