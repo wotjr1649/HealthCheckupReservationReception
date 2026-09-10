@@ -133,6 +133,107 @@ namespace HealthCheckupReservationReception.Tests.Visual
         }
 
         /// <summary>
+        /// WF-WRK-01 을 목록·상세가 찬 상태로 뜬다. 빈 화면으로는 조회 한 줄의 칸 폭도
+        /// 좌우 비율도 볼 수 없다 — 종료일 DateEdit 이 잘린 것이 실제로 그렇게 드러났다.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void WFWRK01_실행_화면을_PNG_로_뜬다()
+        {
+            string path = null;
+            RunSta(() =>
+            {
+                WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
+                WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
+
+                var screen = new UcWorkbench();
+                screen.Attach(new FakeWorkService());
+
+                using (var host = new Form())
+                {
+                    host.StartPosition = FormStartPosition.Manual;
+                    host.Location = new Point(-32000, -32000);
+                    host.ClientSize = new Size(1916, 887);
+                    screen.Dock = DockStyle.Fill;
+                    host.Controls.Add(screen);
+                    host.Show();
+                    Application.DoEvents();
+
+                    IWorkbenchView view = screen;
+                    view.Rows = SampleWorkRows();
+                    view.Detail = SampleWorkDetail();
+                    view.NexItems = SampleNex();
+                    view.AexItems = SampleAex();
+                    Application.DoEvents();
+
+                    using (var bmp = new Bitmap(host.ClientSize.Width, host.ClientSize.Height))
+                    {
+                        host.DrawToBitmap(bmp, new Rectangle(Point.Empty, bmp.Size));
+                        path = Save(bmp, "wf_wrk_01.png");
+                    }
+
+                    host.Close();
+                }
+            });
+
+            var info = new FileInfo(path);
+            Assert.IsTrue(info.Exists && info.Length > 10 * 1024,
+                "PNG 가 비었거나 너무 작다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
+            Console.WriteLine("캡처: " + path);
+        }
+
+        private static IList<WorkListItemDto> SampleWorkRows()
+        {
+            return new List<WorkListItemDto>
+            {
+                new WorkListItemDto { WorkId = 1, PatientId = 1000, ReserveDate = new DateTime(2026, 9, 11), SlotCode = "AM", StatusCode = "RSV", StatusName = "예약", Name = "홍길동", ChartNo = "C000001", Gender = "M", Birthday = "19800101", MobilePhone = "01012345678" },
+                new WorkListItemDto { WorkId = 2, PatientId = 1003, ReserveDate = new DateTime(2026, 9, 11), SlotCode = "PM", StatusCode = "RCP", StatusName = "접수완료", Name = "테스트01", ChartNo = "C000006", Gender = "F", Birthday = "19560819", MobilePhone = "01098765432" },
+                new WorkListItemDto { WorkId = 3, PatientId = 1004, ReserveDate = new DateTime(2026, 9, 14), SlotCode = "PM", StatusCode = "CNR", StatusName = "예약취소", Name = "시험수검자960553", ChartNo = "C000008", Gender = "F", Birthday = "19990707", MobilePhone = null },
+            };
+        }
+
+        private static WorkDetailDto SampleWorkDetail()
+        {
+            return new WorkDetailDto
+            {
+                WorkId = 1,
+                PatientId = 1000,
+                ChartNo = "C000001",
+                Name = "홍길동",
+                Birthday = "19800101",
+                Gender = "M",
+                MobilePhone = "01012345678",
+                ReserveDate = new DateTime(2026, 9, 11),
+                SlotCode = "AM",
+                StatusCode = "RSV",
+                StatusName = "예약",
+                Capacity = 20,
+                CurrentCount = 12,
+                RemainingSeats = 8,
+                RowVersion = new byte[8],
+            };
+        }
+
+        private static IList<WorkExamItemDto> SampleNex()
+        {
+            return new List<WorkExamItemDto>
+            {
+                new WorkExamItemDto { ExamItemCode = "E01", ExamItemName = "문진/진찰", NexType = "기본" },
+                new WorkExamItemDto { ExamItemCode = "E02", ExamItemName = "신체계측", NexType = "기본" },
+                new WorkExamItemDto { ExamItemCode = "E03", ExamItemName = "혈압측정", NexType = "기본" },
+                new WorkExamItemDto { ExamItemCode = "E09", ExamItemName = "골밀도검사", NexType = "조건부" },
+            };
+        }
+
+        private static IList<WorkExamItemDto> SampleAex()
+        {
+            return new List<WorkExamItemDto>
+            {
+                new WorkExamItemDto { AexCode = "OPT01", ExamItemCode = "E11", ExamItemName = "복부초음파" },
+            };
+        }
+
+        /// <summary>
         /// DLG-PAT-01 New Mode. 설계 `dlg_pat_01.js` 와 견주려면 구획 다섯이 한 화면에
         /// 들어가는지가 먼저다 — 값이 비어 있어도 배치는 보인다.
         /// </summary>

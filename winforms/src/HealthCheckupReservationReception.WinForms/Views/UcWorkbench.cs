@@ -1,11 +1,9 @@
 ﻿// 화면 ID: WF-WRK-01 — 예약/접수 공통 Workbench (03 §9)
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
-using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Base;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
@@ -18,6 +16,10 @@ namespace HealthCheckupReservationReception.Views
     /// WF-WRK-01 예약/접수 공통 Workbench (03 §9). 판정은 하지 않는다: 그리고 이벤트만 올린다 (킷 §2).
     ///
     /// 배치는 `lcMain` LayoutControl 하나가 갖고, 좌 목록 · 우 상세는 `splitWork` 로 나뉜다.
+    /// 조회 한 줄은 WF-PAT-01 과 같은 꼴이다 — 입력칸들 · `[조회]` · `[조회 조건]` · `[컬럼 설정]`.
+    /// 그 셋의 동작은 같은 부품을 쓴다 (`clsSearchConditions` · `clsColumnChooser` ·
+    /// `clsGridRowPicker`, 킷 §2 — 같은 모양이 구체 화면 둘에 생겼다).
+    ///
     /// 03 과 와이어프레임은 배치를 구속하지 않는다 (ROOT AGENTS.md §1.1, 2026-09-10 사용자 결정) —
     /// 필드의 뜻과 업무 규칙만 거기서 온다.
     /// </summary>
@@ -25,21 +27,12 @@ namespace HealthCheckupReservationReception.Views
     {
         private WorkbenchPresenter _presenter;
 
-        // 목록을 다시 실으면 Grid 가 0행을 자동으로 잡는다. 그 잠깐의 선택이 Presenter 까지
-        // 올라가면 곧바로 지울 상세를 한 번 조회하게 된다 (03 §9.4 재조회 시 선택 Clear).
-        private bool _suppressSelection;
-
-        // 지금 화면이 "행이 골라진" 꼴로 보이는가. ShowSelection 이 유일한 쓰기 지점이다.
-        private bool _rowPicked;
+        private clsGridRowPicker _picker;
+        private clsSearchConditions _conditions;
+        private clsColumnChooser _columns;
 
         // 조회 재진입 가드. 동기 SP 호출 동안 쌓인 클릭이 되돌아오는 것을 막는다.
         private bool _searching;
-
-        // 체크 목록을 코드가 고쳐 쓰는 동안 ItemCheck 이 되돌아오는 것을 막는다.
-        private bool _syncingChecks;
-
-        // 03 §18 `기본값 복원` 이 되돌릴 자리. Designer 가 직렬화한 그 상태다.
-        private readonly MemoryStream _defaultLayout = new MemoryStream();
 
         partial void ConfigureUI();
 
@@ -47,7 +40,6 @@ namespace HealthCheckupReservationReception.Views
         {
             InitializeComponent();
             ConfigureUI();
-            gvWorkList.SaveLayoutToStream(_defaultLayout);
         }
 
         /// <summary>
@@ -72,8 +64,8 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// 화면을 열면 한 번 조회한다. `[조회]` 이벤트를 올리지 않는다 — 그 경로는 실패를
-        /// 모달로 알리는데, 사용자가 부탁하지 않은 호출이 창을 열자마자 오류창을 띄우면 안 된다.
+        /// 화면을 열면 한 번 조회한다. `[조회]` 이벤트를 올리지 않는다 — 그 경로는 눌린 버튼을
+        /// 잠그는 자리라 사용자가 부탁하지 않은 호출에는 맞지 않는다. 실패는 Inline 으로 보인다.
         /// </summary>
         protected override void OnLoad(EventArgs e)
         {
@@ -114,34 +106,7 @@ namespace HealthCheckupReservationReception.Views
 
         public IList<WorkListItemDto> Rows
         {
-            set
-            {
-                _suppressSelection = true;
-                try
-                {
-                    gcWorkList.DataSource = value;
-                }
-                finally
-                {
-                    _suppressSelection = false;
-                }
-
-                ShowSelection(false);
-            }
-        }
-
-        /// <summary>
-        /// 03 §9.4 — 재조회하면 선택행이 없다.
-        ///
-        /// [X] GridView 는 행이 있으면 반드시 하나를 focus 한다.
-        ///     `FocusedRowHandle = InvalidRowHandle` 은 대입 직후 다시 0 이 된다(WF-PAT-01 실측).
-        ///     그래서 focus 를 없애는 대신 **선택으로 보이는 것**을 끈다.
-        /// </summary>
-        private void ShowSelection(bool on)
-        {
-            _rowPicked = on;
-            gvWorkList.OptionsSelection.EnableAppearanceFocusedRow = on;
-            gvWorkList.OptionsSelection.EnableAppearanceFocusedCell = on;
+            set { _picker.Rebind(gcWorkList, value); }
         }
 
         public WorkDetailDto Detail
@@ -187,19 +152,14 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// 03 §9.1 · §23.2 — Ribbon 의 업무 Action 이 대상으로 삼는 행. **선택으로 보이지
-        /// 않는 동안은 대상이 없다** — Grid 가 잡아 둔 행과 사용자가 고른 행은 다르다.
+        /// 03 §9.1 · §23.2 — Ribbon 의 업무 Action 이 대상으로 삼는 행. Grid 가 잡아 둔 행과
+        /// 사용자가 고른 행은 다르다 — 가르는 것은 `clsGridRowPicker` 다.
         /// </summary>
         public long? SelectedWorkId
         {
             get
             {
-                if (!_rowPicked)
-                {
-                    return null;
-                }
-
-                var row = gvWorkList.GetFocusedRow() as WorkListItemDto;
+                var row = _picker.Row as WorkListItemDto;
                 return row == null ? (long?)null : row.WorkId;
             }
         }
@@ -208,17 +168,6 @@ namespace HealthCheckupReservationReception.Views
         {
             Form owner = FindForm();
             XtraMessageBox.Show(owner, message, owner == null ? string.Empty : owner.Text);
-        }
-
-        /// <summary>
-        /// 03 §18 `기본값 복원`. 무엇이 기본인지는 Designer 가 직렬화한 그 상태이므로
-        /// 화면이 서는 순간 한 벌 떠 둔다 — 어느 컬럼이 기본인지를 코드에 다시 적으면
-        /// Designer 와 두 곳이 된다 (ROOT AGENTS.md §6).
-        /// </summary>
-        private void RestoreDefaultColumns()
-        {
-            _defaultLayout.Position = 0;
-            gvWorkList.RestoreLayoutFromStream(_defaultLayout);
         }
 
         private void btnSearch_Click(object sender, EventArgs e)
@@ -245,57 +194,31 @@ namespace HealthCheckupReservationReception.Views
             RaiseSearchRequested();
         }
 
-        // 무엇이 골라졌는지를 적지 않고 늘 제 이름을 적는다 (WF-PAT-01 과 같다) —
+        // 두 드롭다운은 무엇이 골라졌는지를 적지 않고 늘 제 이름을 적는다 (WF-PAT-01 과 같다) —
         // 안에 든 것은 체크 목록이지 값이 아니다.
-        private void cboColumns_QueryDisplayText(object sender, QueryDisplayTextEventArgs e)
+        private void cboConditions_QueryDisplayText(object sender, QueryDisplayTextEventArgs e)
         {
-            e.DisplayText = "컬럼 설정";
+            e.DisplayText = clsSearchConditions.Caption;
         }
 
-        /// <summary>
-        /// 03 §18 컬럼설정. 확인/취소를 두지 않는다 — 되돌리는 길이 `[기본값 복원]` 하나로 충분하다.
-        /// </summary>
+        private void cboColumns_QueryDisplayText(object sender, QueryDisplayTextEventArgs e)
+        {
+            e.DisplayText = clsColumnChooser.Caption;
+        }
+
+        private void clbConditions_ItemCheck(object sender, DevExpress.XtraEditors.Controls.ItemCheckEventArgs e)
+        {
+            if (_conditions != null) { _conditions.Toggle(e); }
+        }
+
         private void clbColumns_ItemCheck(object sender, DevExpress.XtraEditors.Controls.ItemCheckEventArgs e)
         {
-            if (_syncingChecks) { return; }
-
-            _syncingChecks = true;
-            try
-            {
-                clbColumns.Items[e.Index].CheckState = e.State;
-                var column = clbColumns.Items[e.Index].Value as GridColumn;
-                if (column != null)
-                {
-                    column.Visible = e.State == CheckState.Checked;
-                }
-            }
-            finally { _syncingChecks = false; }
+            if (_columns != null) { _columns.Toggle(e); }
         }
 
         private void btnColumnsDefault_Click(object sender, EventArgs e)
         {
-            RestoreDefaultColumns();
-            SyncColumnChecks();
-        }
-
-        /// <summary>
-        /// 체크 상태를 Grid 에서 받아 적는다. **Grid 가 단일 출처다** (ROOT AGENTS.md §6) —
-        /// `기본값 복원` 은 Grid 를 되돌리므로 목록도 거기서 다시 읽어야 어긋나지 않는다.
-        /// </summary>
-        private void SyncColumnChecks()
-        {
-            _syncingChecks = true;
-            try
-            {
-                for (int i = 0; i < clbColumns.Items.Count; i++)
-                {
-                    var column = clbColumns.Items[i].Value as GridColumn;
-                    clbColumns.Items[i].CheckState = column != null && column.Visible
-                        ? CheckState.Checked
-                        : CheckState.Unchecked;
-                }
-            }
-            finally { _syncingChecks = false; }
+            if (_columns != null) { _columns.RestoreDefault(); }
         }
 
         /// <summary>
@@ -322,32 +245,20 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
-        // 키보드 이동. 이미 focus 된 행을 다시 눌렀을 때는 나지 않으므로 RowClick 이 짝을 이룬다.
         private void gvWorkList_FocusedRowChanged(object sender, FocusedRowChangedEventArgs e)
         {
-            Pick(e.FocusedRowHandle);
+            if (_picker != null) { _picker.FocusedRowChanged(e.FocusedRowHandle); }
         }
 
-        // 조회 직후 이미 focus 되어 있는 첫 행을 사용자가 처음 누르는 경우는
-        // FocusedRowChanged 가 나지 않아 여기서만 잡힌다.
         private void gvWorkList_RowClick(object sender, DevExpress.XtraGrid.Views.Grid.RowClickEventArgs e)
         {
-            if (!_rowPicked)
-            {
-                Pick(e.RowHandle);
-            }
+            if (_picker != null) { _picker.RowClick(e.RowHandle); }
         }
 
-        private void Pick(int rowHandle)
+        /// <summary>03 §9.5 — 행 선택 즉시 우측 상세를 갱신한다. 판정은 Presenter 가 한다.</summary>
+        private void Picker_PickChanged(object sender, EventArgs e)
         {
-            if (_suppressSelection)
-            {
-                return;
-            }
-
-            var row = gvWorkList.GetRow(rowHandle) as WorkListItemDto;
-            ShowSelection(row != null);
-
+            var row = _picker.Row as WorkListItemDto;
             EventHandler<long?> handler = SelectionChanged;
             if (handler != null)
             {
@@ -357,7 +268,7 @@ namespace HealthCheckupReservationReception.Views
 
         private void gvWorkList_CustomColumnDisplayText(object sender, CustomColumnDisplayTextEventArgs e)
         {
-            // DB 가 주는 값과 화면 표기가 다른 셋. 값 자체는 바꾸지 않는다.
+            // DB 가 주는 값과 화면 표기가 다른 넷. 값 자체는 바꾸지 않는다.
             if (e.Column == colSlot)
             {
                 e.DisplayText = clsWorkText.FormatSlot(e.Value as string);

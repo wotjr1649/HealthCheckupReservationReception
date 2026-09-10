@@ -1,8 +1,5 @@
 ﻿// 화면 ID: WF-PAT-01 — 수검자 관리 (03 §5)
-using System.Windows.Forms;
 using DevExpress.Utils;
-using DevExpress.XtraEditors.Controls;
-using DevExpress.XtraGrid.Columns;
 
 namespace HealthCheckupReservationReception.Views
 {
@@ -24,31 +21,19 @@ namespace HealthCheckupReservationReception.Views
             // 숨기는 경로를 열어 두면 실수로 사라진 컬럼을 되돌릴 방법을 사용자가 모른다.
             gvPatientList.OptionsCustomization.AllowQuickHideColumns = false;
 
-            LoadColumnChecks();
-            ApplyConditionVisibility();
-        }
+            clsGridColumns.ShowEmptyText(gvPatientList, "조회 결과가 없습니다.");
 
-        /// <summary>
-        /// 03 §18 — 컬럼 목록은 **Grid 가 가진 것**에서 만든다. 컬럼 이름을 여기 적으면
-        /// Designer 와 두 곳이 된다 (ROOT AGENTS.md §6).
-        ///
-        /// 내부키·정규화 컬럼·동시성값은 애초에 Grid 의 컬럼이 아니므로 여기에도 없다.
-        /// </summary>
-        private void LoadColumnChecks()
-        {
-            foreach (GridColumn column in gvPatientList.Columns)
-            {
-                if (!column.OptionsColumn.ShowInCustomizationForm)
-                {
-                    continue;
-                }
+            // 부품 셋은 Grid·조회조건 칸이 다 선 **뒤에** 만든다 — 그 시점의 Grid 가
+            // `[기본값 복원]` 이 되돌릴 기준이다.
+            _picker = new clsGridRowPicker(gvPatientList);
+            _picker.PickChanged += Picker_PickChanged;
 
-                clbColumns.Items.Add(new CheckedListBoxItem(
-                    column,
-                    column.Caption,
-                    column.Visible ? CheckState.Checked : CheckState.Unchecked,
-                    true));
-            }
+            _conditions = new clsSearchConditions(clbConditions);
+            _conditions.Add("차트번호", true, lciChartNo, txtChartNo);
+            _conditions.Add("이름", true, lciName, txtName);
+            _conditions.Add("주민번호", true, lciSocialNumber, txtSocialNumber);
+
+            _columns = new clsColumnChooser(clbColumns, gvPatientList);
         }
     }
 }

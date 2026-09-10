@@ -24,8 +24,9 @@ namespace HealthCheckupReservationReception.Views
             this.cboStatus = new DevExpress.XtraEditors.ImageComboBoxEdit();
             this.txtChartNo = new DevExpress.XtraEditors.TextEdit();
             this.txtName = new DevExpress.XtraEditors.TextEdit();
-            this.cboColumns = new DevExpress.XtraEditors.PopupContainerEdit();
             this.btnSearch = new DevExpress.XtraEditors.SimpleButton();
+            this.cboConditions = new DevExpress.XtraEditors.PopupContainerEdit();
+            this.cboColumns = new DevExpress.XtraEditors.PopupContainerEdit();
             this.lblValidation = new DevExpress.XtraEditors.LabelControl();
             this.gcWorkList = new DevExpress.XtraGrid.GridControl();
             this.gvWorkList = new DevExpress.XtraGrid.Views.Grid.GridView();
@@ -51,6 +52,8 @@ namespace HealthCheckupReservationReception.Views
             this.gcAexList = new DevExpress.XtraGrid.GridControl();
             this.gvAexList = new DevExpress.XtraGrid.Views.Grid.GridView();
             this.colAexName = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.pccConditions = new DevExpress.XtraEditors.PopupContainerControl();
+            this.clbConditions = new DevExpress.XtraEditors.CheckedListBoxControl();
             this.pccColumns = new DevExpress.XtraEditors.PopupContainerControl();
             this.clbColumns = new DevExpress.XtraEditors.CheckedListBoxControl();
             this.btnColumnsDefault = new DevExpress.XtraEditors.SimpleButton();
@@ -63,8 +66,9 @@ namespace HealthCheckupReservationReception.Views
             this.lciChartNo = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciName = new DevExpress.XtraLayout.LayoutControlItem();
             this.emptySpaceSearch = new DevExpress.XtraLayout.EmptySpaceItem();
-            this.lciColumns = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciSearch = new DevExpress.XtraLayout.LayoutControlItem();
+            this.lciConditions = new DevExpress.XtraLayout.LayoutControlItem();
+            this.lciColumns = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciValidation = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciWorkList = new DevExpress.XtraLayout.LayoutControlItem();
             this.splitWork = new DevExpress.XtraLayout.SplitterItem();
@@ -91,6 +95,7 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.cboStatus.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtChartNo.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtName.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.cboConditions.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.cboColumns.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gcWorkList)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gvWorkList)).BeginInit();
@@ -105,6 +110,9 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.gvNexList)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gcAexList)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gvAexList)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pccConditions)).BeginInit();
+            this.pccConditions.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.clbConditions)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pccColumns)).BeginInit();
             this.pccColumns.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.clbColumns)).BeginInit();
@@ -117,8 +125,9 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lciChartNo)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciName)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.emptySpaceSearch)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.lciColumns)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciSearch)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciConditions)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciColumns)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciValidation)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciWorkList)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.splitWork)).BeginInit();
@@ -145,8 +154,9 @@ namespace HealthCheckupReservationReception.Views
             this.lcMain.Controls.Add(this.cboStatus);
             this.lcMain.Controls.Add(this.txtChartNo);
             this.lcMain.Controls.Add(this.txtName);
-            this.lcMain.Controls.Add(this.cboColumns);
             this.lcMain.Controls.Add(this.btnSearch);
+            this.lcMain.Controls.Add(this.cboConditions);
+            this.lcMain.Controls.Add(this.cboColumns);
             this.lcMain.Controls.Add(this.lblValidation);
             this.lcMain.Controls.Add(this.gcWorkList);
             this.lcMain.Controls.Add(this.txtDetailChartNo);
@@ -171,14 +181,14 @@ namespace HealthCheckupReservationReception.Views
             // deFrom
             //
             this.deFrom.EditValue = null;
-            this.deFrom.Location = new System.Drawing.Point(84, 31);
+            this.deFrom.Location = new System.Drawing.Point(89, 31);
             this.deFrom.Name = "deFrom";
             this.deFrom.Properties.AllowNullInput = DevExpress.Utils.DefaultBoolean.True;
             this.deFrom.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
             new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
             this.deFrom.Properties.CalendarTimeProperties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
             new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.deFrom.Size = new System.Drawing.Size(114, 20);
+            this.deFrom.Size = new System.Drawing.Size(121, 20);
             this.deFrom.StyleController = this.lcMain;
             this.deFrom.TabIndex = 0;
             this.deFrom.KeyDown += new System.Windows.Forms.KeyEventHandler(this.SearchInput_KeyDown);
@@ -186,14 +196,14 @@ namespace HealthCheckupReservationReception.Views
             // deTo
             //
             this.deTo.EditValue = null;
-            this.deTo.Location = new System.Drawing.Point(222, 31);
+            this.deTo.Location = new System.Drawing.Point(251, 31);
             this.deTo.Name = "deTo";
             this.deTo.Properties.AllowNullInput = DevExpress.Utils.DefaultBoolean.True;
             this.deTo.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
             new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
             this.deTo.Properties.CalendarTimeProperties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
             new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.deTo.Size = new System.Drawing.Size(114, 20);
+            this.deTo.Size = new System.Drawing.Size(121, 20);
             this.deTo.StyleController = this.lcMain;
             this.deTo.TabIndex = 1;
             this.deTo.KeyDown += new System.Windows.Forms.KeyEventHandler(this.SearchInput_KeyDown);
@@ -202,60 +212,75 @@ namespace HealthCheckupReservationReception.Views
             //
             // 항목은 ConfigureUI 가 만든다 — ImageComboBoxItem 은 인자 둘짜리 생성자로만
             // 직렬화되는 자리다 (킷 §5).
-            this.cboStatus.Location = new System.Drawing.Point(388, 31);
+            this.cboStatus.Location = new System.Drawing.Point(408, 31);
             this.cboStatus.Name = "cboStatus";
             this.cboStatus.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
             new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
             this.cboStatus.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
-            this.cboStatus.Size = new System.Drawing.Size(112, 20);
+            this.cboStatus.Size = new System.Drawing.Size(92, 20);
             this.cboStatus.StyleController = this.lcMain;
             this.cboStatus.TabIndex = 2;
             //
             // txtChartNo
             //
-            this.txtChartNo.Location = new System.Drawing.Point(572, 31);
+            this.txtChartNo.Location = new System.Drawing.Point(577, 31);
             this.txtChartNo.Name = "txtChartNo";
             this.txtChartNo.Properties.MaxLength = 100;
-            this.txtChartNo.Size = new System.Drawing.Size(108, 20);
+            this.txtChartNo.Size = new System.Drawing.Size(88, 20);
             this.txtChartNo.StyleController = this.lcMain;
             this.txtChartNo.TabIndex = 3;
             this.txtChartNo.KeyDown += new System.Windows.Forms.KeyEventHandler(this.SearchInput_KeyDown);
             //
             // txtName
             //
-            this.txtName.Location = new System.Drawing.Point(740, 31);
+            this.txtName.Location = new System.Drawing.Point(718, 31);
             this.txtName.Name = "txtName";
             this.txtName.Properties.MaxLength = 100;
-            this.txtName.Size = new System.Drawing.Size(110, 20);
+            this.txtName.Size = new System.Drawing.Size(114, 20);
             this.txtName.StyleController = this.lcMain;
             this.txtName.TabIndex = 4;
             this.txtName.KeyDown += new System.Windows.Forms.KeyEventHandler(this.SearchInput_KeyDown);
             //
+            // btnSearch
+            //
+            this.btnSearch.Location = new System.Drawing.Point(866, 29);
+            this.btnSearch.Name = "btnSearch";
+            this.btnSearch.Size = new System.Drawing.Size(88, 22);
+            this.btnSearch.StyleController = this.lcMain;
+            this.btnSearch.TabIndex = 5;
+            this.btnSearch.Text = "조회";
+            this.btnSearch.Click += new System.EventHandler(this.btnSearch_Click);
+            //
+            // cboConditions
+            //
+            // 어느 조회조건 칸을 낼지 정한다. 표시글은 무엇이 켜졌는지가 아니라 늘 `조회 조건` 이다
+            // (2026-09-10 사용자 결정). CheckedComboBoxEdit 은 QueryDisplayText 를 지원하지 않아 못 쓴다.
+            this.cboConditions.Location = new System.Drawing.Point(962, 31);
+            this.cboConditions.Name = "cboConditions";
+            this.cboConditions.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.cboConditions.Properties.PopupControl = this.pccConditions;
+            // 글자를 고르지도 캐럿을 두지도 않는다 — 값이 아니라 이름을 적는 자리다.
+            this.cboConditions.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
+            this.cboConditions.Size = new System.Drawing.Size(110, 20);
+            this.cboConditions.StyleController = this.lcMain;
+            this.cboConditions.TabIndex = 6;
+            this.cboConditions.QueryDisplayText += new DevExpress.XtraEditors.Controls.QueryDisplayTextEventHandler(this.cboConditions_QueryDisplayText);
+            //
             // cboColumns
             //
             // 03 §18 컬럼설정. Ribbon [보기] 가 아니라 Grid 옆이다 — 목록을 보면서 켜고 끄는
-            // 편이 낫다 (2026-09-10 사용자 결정, WF-PAT-01 과 같은 자리).
-            this.cboColumns.Location = new System.Drawing.Point(981, 31);
+            // 편이 낫다 (2026-09-10 사용자 결정, WF-PAT-01 과 같은 자리·같은 순서).
+            this.cboColumns.Location = new System.Drawing.Point(1077, 31);
             this.cboColumns.Name = "cboColumns";
             this.cboColumns.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
             new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
             this.cboColumns.Properties.PopupControl = this.pccColumns;
-            // 글자를 고르지도 캐럿을 두지도 않는다 — 값이 아니라 이름을 적는 자리다.
             this.cboColumns.Properties.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
             this.cboColumns.Size = new System.Drawing.Size(110, 20);
             this.cboColumns.StyleController = this.lcMain;
-            this.cboColumns.TabIndex = 5;
+            this.cboColumns.TabIndex = 7;
             this.cboColumns.QueryDisplayText += new DevExpress.XtraEditors.Controls.QueryDisplayTextEventHandler(this.cboColumns_QueryDisplayText);
-            //
-            // btnSearch
-            //
-            this.btnSearch.Location = new System.Drawing.Point(1096, 29);
-            this.btnSearch.Name = "btnSearch";
-            this.btnSearch.Size = new System.Drawing.Size(88, 22);
-            this.btnSearch.StyleController = this.lcMain;
-            this.btnSearch.TabIndex = 6;
-            this.btnSearch.Text = "조회";
-            this.btnSearch.Click += new System.EventHandler(this.btnSearch_Click);
             //
             // lblValidation
             //
@@ -264,7 +289,7 @@ namespace HealthCheckupReservationReception.Views
             this.lblValidation.Name = "lblValidation";
             this.lblValidation.Size = new System.Drawing.Size(0, 14);
             this.lblValidation.StyleController = this.lcMain;
-            this.lblValidation.TabIndex = 7;
+            this.lblValidation.TabIndex = 8;
             //
             // gcWorkList
             //
@@ -272,7 +297,7 @@ namespace HealthCheckupReservationReception.Views
             this.gcWorkList.MainView = this.gvWorkList;
             this.gcWorkList.Name = "gcWorkList";
             this.gcWorkList.Size = new System.Drawing.Size(1176, 796);
-            this.gcWorkList.TabIndex = 8;
+            this.gcWorkList.TabIndex = 9;
             this.gcWorkList.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
             this.gvWorkList});
             //
@@ -380,7 +405,7 @@ namespace HealthCheckupReservationReception.Views
             this.txtDetailChartNo.Properties.ReadOnly = true;
             this.txtDetailChartNo.Size = new System.Drawing.Size(582, 20);
             this.txtDetailChartNo.StyleController = this.lcMain;
-            this.txtDetailChartNo.TabIndex = 9;
+            this.txtDetailChartNo.TabIndex = 10;
             //
             // txtDetailName
             //
@@ -389,7 +414,7 @@ namespace HealthCheckupReservationReception.Views
             this.txtDetailName.Properties.ReadOnly = true;
             this.txtDetailName.Size = new System.Drawing.Size(582, 20);
             this.txtDetailName.StyleController = this.lcMain;
-            this.txtDetailName.TabIndex = 10;
+            this.txtDetailName.TabIndex = 11;
             //
             // txtDetailBirthGender
             //
@@ -398,7 +423,7 @@ namespace HealthCheckupReservationReception.Views
             this.txtDetailBirthGender.Properties.ReadOnly = true;
             this.txtDetailBirthGender.Size = new System.Drawing.Size(582, 20);
             this.txtDetailBirthGender.StyleController = this.lcMain;
-            this.txtDetailBirthGender.TabIndex = 11;
+            this.txtDetailBirthGender.TabIndex = 12;
             //
             // txtDetailReserveDate
             //
@@ -407,7 +432,7 @@ namespace HealthCheckupReservationReception.Views
             this.txtDetailReserveDate.Properties.ReadOnly = true;
             this.txtDetailReserveDate.Size = new System.Drawing.Size(582, 20);
             this.txtDetailReserveDate.StyleController = this.lcMain;
-            this.txtDetailReserveDate.TabIndex = 12;
+            this.txtDetailReserveDate.TabIndex = 13;
             //
             // txtDetailSlot
             //
@@ -416,7 +441,7 @@ namespace HealthCheckupReservationReception.Views
             this.txtDetailSlot.Properties.ReadOnly = true;
             this.txtDetailSlot.Size = new System.Drawing.Size(582, 20);
             this.txtDetailSlot.StyleController = this.lcMain;
-            this.txtDetailSlot.TabIndex = 13;
+            this.txtDetailSlot.TabIndex = 14;
             //
             // txtDetailCapacity
             //
@@ -425,7 +450,7 @@ namespace HealthCheckupReservationReception.Views
             this.txtDetailCapacity.Properties.ReadOnly = true;
             this.txtDetailCapacity.Size = new System.Drawing.Size(582, 20);
             this.txtDetailCapacity.StyleController = this.lcMain;
-            this.txtDetailCapacity.TabIndex = 14;
+            this.txtDetailCapacity.TabIndex = 15;
             //
             // txtDetailStatus
             //
@@ -434,7 +459,7 @@ namespace HealthCheckupReservationReception.Views
             this.txtDetailStatus.Properties.ReadOnly = true;
             this.txtDetailStatus.Size = new System.Drawing.Size(582, 20);
             this.txtDetailStatus.StyleController = this.lcMain;
-            this.txtDetailStatus.TabIndex = 15;
+            this.txtDetailStatus.TabIndex = 16;
             //
             // gcNexList
             //
@@ -442,7 +467,7 @@ namespace HealthCheckupReservationReception.Views
             this.gcNexList.MainView = this.gvNexList;
             this.gcNexList.Name = "gcNexList";
             this.gcNexList.Size = new System.Drawing.Size(678, 302);
-            this.gcNexList.TabIndex = 16;
+            this.gcNexList.TabIndex = 17;
             this.gcNexList.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
             this.gvNexList});
             //
@@ -487,7 +512,7 @@ namespace HealthCheckupReservationReception.Views
             this.gcAexList.MainView = this.gvAexList;
             this.gcAexList.Name = "gcAexList";
             this.gcAexList.Size = new System.Drawing.Size(678, 278);
-            this.gcAexList.TabIndex = 17;
+            this.gcAexList.TabIndex = 18;
             this.gcAexList.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
             this.gvAexList});
             //
@@ -513,19 +538,39 @@ namespace HealthCheckupReservationReception.Views
             this.colAexName.Visible = true;
             this.colAexName.VisibleIndex = 0;
             //
+            // pccConditions
+            //
+            this.pccConditions.Controls.Add(this.clbConditions);
+            this.pccConditions.Location = new System.Drawing.Point(0, 0);
+            this.pccConditions.Name = "pccConditions";
+            this.pccConditions.Size = new System.Drawing.Size(150, 96);
+            this.pccConditions.TabIndex = 1;
+            //
+            // clbConditions
+            //
+            // 항목은 ConfigureUI 의 clsSearchConditions 가 만든다 — 캡션과 그 캡션이 여닫는
+            // 입력칸이 한 줄에 함께 있어야 둘이 어긋나지 않는다 (ROOT AGENTS.md §6).
+            this.clbConditions.CheckOnClick = true;
+            this.clbConditions.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.clbConditions.Location = new System.Drawing.Point(2, 2);
+            this.clbConditions.Name = "clbConditions";
+            this.clbConditions.Size = new System.Drawing.Size(146, 92);
+            this.clbConditions.TabIndex = 0;
+            this.clbConditions.ItemCheck += new DevExpress.XtraEditors.Controls.ItemCheckEventHandler(this.clbConditions_ItemCheck);
+            //
             // pccColumns
             //
             this.pccColumns.Controls.Add(this.clbColumns);
             this.pccColumns.Controls.Add(this.btnColumnsDefault);
-            this.pccColumns.Location = new System.Drawing.Point(0, 0);
+            this.pccColumns.Location = new System.Drawing.Point(160, 0);
             this.pccColumns.Name = "pccColumns";
             this.pccColumns.Size = new System.Drawing.Size(180, 230);
-            this.pccColumns.TabIndex = 1;
+            this.pccColumns.TabIndex = 2;
             //
             // clbColumns
             //
-            // 목록은 Grid 가 가진 컬럼에서 만든다 (ConfigureUI). 여기에 컬럼 이름을 적으면
-            // Designer 와 두 곳이 된다 (ROOT AGENTS.md §6).
+            // 목록은 Grid 가 가진 컬럼에서 만든다 (ConfigureUI 의 clsColumnChooser). 여기에
+            // 컬럼 이름을 적으면 Designer 와 두 곳이 된다 (ROOT AGENTS.md §6).
             this.clbColumns.CheckOnClick = true;
             this.clbColumns.Dock = System.Windows.Forms.DockStyle.Fill;
             this.clbColumns.Location = new System.Drawing.Point(2, 2);
@@ -559,7 +604,7 @@ namespace HealthCheckupReservationReception.Views
             // lcgList
             //
             // 그룹 Caption 은 Context 를 적는다 — 예약 관리 / 접수 관리 (03 §9.1).
-            // 초기값은 Presenter 가 생성자에서 다시 쓰므로 여기 값은 디자인 표면용이다.
+            // 여기 값은 디자인 표면용이고 실행 때는 Presenter 가 생성자에서 다시 쓴다.
             this.lcgList.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
             this.lcgSearch,
             this.lciValidation,
@@ -571,6 +616,11 @@ namespace HealthCheckupReservationReception.Views
             //
             // lcgSearch
             //
+            // [X] 항목마다 `TextAlignMode = AutoSize` 를 준다. 그러지 않으면 LayoutControl 이
+            //     **한 줄 안의 라벨 폭을 가장 긴 것에 맞춰 통일**해서, `~` 한 글자짜리 라벨까지
+            //     `예약/접수일` 만큼의 자리를 떠안고 그만큼 입력칸이 눌린다 — 실제로 종료일
+            //     DateEdit 이 잘린 채로 보고됐다(2026-09-10). WF-PAT-01 은 라벨 셋이 전부
+            //     같은 폭이라 이 함정을 밟지 않았다.
             this.lcgSearch.GroupBordersVisible = false;
             this.lcgSearch.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
             this.lciDateFrom,
@@ -579,8 +629,9 @@ namespace HealthCheckupReservationReception.Views
             this.lciChartNo,
             this.lciName,
             this.emptySpaceSearch,
-            this.lciColumns,
-            this.lciSearch});
+            this.lciSearch,
+            this.lciConditions,
+            this.lciColumns});
             this.lcgSearch.Location = new System.Drawing.Point(0, 0);
             this.lcgSearch.Name = "lcgSearch";
             this.lcgSearch.Size = new System.Drawing.Size(1180, 26);
@@ -596,85 +647,97 @@ namespace HealthCheckupReservationReception.Views
             this.lciDateFrom.Size = new System.Drawing.Size(210, 26);
             this.lciDateFrom.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciDateFrom.Text = "예약/접수일";
-            this.lciDateFrom.TextSize = new System.Drawing.Size(72, 14);
+            this.lciDateFrom.TextAlignMode = DevExpress.XtraLayout.TextAlignModeItem.AutoSize;
             //
             // lciDateTo
             //
             this.lciDateTo.Control = this.deTo;
             this.lciDateTo.Location = new System.Drawing.Point(210, 0);
-            this.lciDateTo.MaxSize = new System.Drawing.Size(138, 26);
-            this.lciDateTo.MinSize = new System.Drawing.Size(138, 26);
+            this.lciDateTo.MaxSize = new System.Drawing.Size(150, 26);
+            this.lciDateTo.MinSize = new System.Drawing.Size(150, 26);
             this.lciDateTo.Name = "lciDateTo";
-            this.lciDateTo.Size = new System.Drawing.Size(138, 26);
+            this.lciDateTo.Size = new System.Drawing.Size(150, 26);
             this.lciDateTo.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciDateTo.Text = "~";
-            this.lciDateTo.TextSize = new System.Drawing.Size(12, 14);
+            this.lciDateTo.TextAlignMode = DevExpress.XtraLayout.TextAlignModeItem.AutoSize;
             //
             // lciStatus
             //
             this.lciStatus.Control = this.cboStatus;
-            this.lciStatus.Location = new System.Drawing.Point(348, 0);
-            this.lciStatus.MaxSize = new System.Drawing.Size(160, 26);
-            this.lciStatus.MinSize = new System.Drawing.Size(160, 26);
+            this.lciStatus.Location = new System.Drawing.Point(360, 0);
+            this.lciStatus.MaxSize = new System.Drawing.Size(130, 26);
+            this.lciStatus.MinSize = new System.Drawing.Size(130, 26);
             this.lciStatus.Name = "lciStatus";
-            this.lciStatus.Size = new System.Drawing.Size(160, 26);
+            this.lciStatus.Size = new System.Drawing.Size(130, 26);
             this.lciStatus.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciStatus.Text = "상태";
-            this.lciStatus.TextSize = new System.Drawing.Size(36, 14);
+            this.lciStatus.TextAlignMode = DevExpress.XtraLayout.TextAlignModeItem.AutoSize;
             //
             // lciChartNo
             //
             this.lciChartNo.Control = this.txtChartNo;
-            this.lciChartNo.Location = new System.Drawing.Point(508, 0);
-            this.lciChartNo.MaxSize = new System.Drawing.Size(180, 26);
-            this.lciChartNo.MinSize = new System.Drawing.Size(180, 26);
+            this.lciChartNo.Location = new System.Drawing.Point(490, 0);
+            this.lciChartNo.MaxSize = new System.Drawing.Size(155, 26);
+            this.lciChartNo.MinSize = new System.Drawing.Size(155, 26);
             this.lciChartNo.Name = "lciChartNo";
-            this.lciChartNo.Size = new System.Drawing.Size(180, 26);
+            this.lciChartNo.Size = new System.Drawing.Size(155, 26);
             this.lciChartNo.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciChartNo.Text = "차트번호";
-            this.lciChartNo.TextSize = new System.Drawing.Size(60, 14);
+            this.lciChartNo.TextAlignMode = DevExpress.XtraLayout.TextAlignModeItem.AutoSize;
             //
             // lciName
             //
             this.lciName.Control = this.txtName;
-            this.lciName.Location = new System.Drawing.Point(688, 0);
-            this.lciName.MaxSize = new System.Drawing.Size(170, 26);
-            this.lciName.MinSize = new System.Drawing.Size(170, 26);
+            this.lciName.Location = new System.Drawing.Point(645, 0);
+            this.lciName.MaxSize = new System.Drawing.Size(145, 26);
+            this.lciName.MinSize = new System.Drawing.Size(145, 26);
             this.lciName.Name = "lciName";
-            this.lciName.Size = new System.Drawing.Size(170, 26);
+            this.lciName.Size = new System.Drawing.Size(145, 26);
             this.lciName.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciName.Text = "이름";
-            this.lciName.TextSize = new System.Drawing.Size(48, 14);
+            this.lciName.TextAlignMode = DevExpress.XtraLayout.TextAlignModeItem.AutoSize;
             //
             // emptySpaceSearch
             //
             this.emptySpaceSearch.AllowHotTrack = false;
-            this.emptySpaceSearch.Location = new System.Drawing.Point(858, 0);
+            this.emptySpaceSearch.Location = new System.Drawing.Point(790, 0);
             this.emptySpaceSearch.Name = "emptySpaceSearch";
-            this.emptySpaceSearch.Size = new System.Drawing.Size(111, 26);
+            this.emptySpaceSearch.Size = new System.Drawing.Size(64, 26);
             this.emptySpaceSearch.TextSize = new System.Drawing.Size(0, 0);
-            //
-            // lciColumns
-            //
-            this.lciColumns.Control = this.cboColumns;
-            this.lciColumns.Location = new System.Drawing.Point(969, 0);
-            this.lciColumns.MaxSize = new System.Drawing.Size(115, 26);
-            this.lciColumns.MinSize = new System.Drawing.Size(115, 26);
-            this.lciColumns.Name = "lciColumns";
-            this.lciColumns.Size = new System.Drawing.Size(115, 26);
-            this.lciColumns.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
-            this.lciColumns.TextVisible = false;
             //
             // lciSearch
             //
+            // 오른쪽 끝 셋의 순서는 WF-PAT-01 과 같다: [조회] [조회 조건] [컬럼 설정].
             this.lciSearch.Control = this.btnSearch;
-            this.lciSearch.Location = new System.Drawing.Point(1084, 0);
+            this.lciSearch.Location = new System.Drawing.Point(854, 0);
             this.lciSearch.MaxSize = new System.Drawing.Size(96, 26);
             this.lciSearch.MinSize = new System.Drawing.Size(96, 26);
             this.lciSearch.Name = "lciSearch";
             this.lciSearch.Size = new System.Drawing.Size(96, 26);
             this.lciSearch.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciSearch.TextVisible = false;
+            //
+            // lciConditions
+            //
+            this.lciConditions.Control = this.cboConditions;
+            this.lciConditions.Location = new System.Drawing.Point(950, 0);
+            this.lciConditions.MaxSize = new System.Drawing.Size(115, 26);
+            this.lciConditions.MinSize = new System.Drawing.Size(115, 26);
+            this.lciConditions.Name = "lciConditions";
+            this.lciConditions.Size = new System.Drawing.Size(115, 26);
+            this.lciConditions.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            this.lciConditions.TextVisible = false;
+            //
+            // lciColumns
+            //
+            this.lciColumns.Control = this.cboColumns;
+            this.lciColumns.Location = new System.Drawing.Point(1065, 0);
+            this.lciColumns.MaxSize = new System.Drawing.Size(115, 26);
+            this.lciColumns.MinSize = new System.Drawing.Size(115, 26);
+            this.lciColumns.Name = "lciColumns";
+            this.lciColumns.Size = new System.Drawing.Size(115, 26);
+            this.lciColumns.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            this.lciColumns.TextVisible = false;
             //
             // lciValidation
             //
@@ -714,7 +777,8 @@ namespace HealthCheckupReservationReception.Views
             this.lcgDetailAex});
             this.lcgDetail.Location = new System.Drawing.Point(1190, 0);
             this.lcgDetail.Name = "lcgDetail";
-            // 두 소그룹의 라벨 폭을 한 벌로 맞춘다 — 손으로 x 좌표를 맞추던 자리다.
+            // 여기서는 반대로 두 소그룹의 라벨 폭을 한 벌로 맞춘다 — 세로로 쌓인 항목들이라
+            // 폭이 같아야 입력칸의 왼쪽 끝이 한 줄로 선다.
             this.lcgDetail.OptionsItemText.TextAlignMode = DevExpress.XtraLayout.TextAlignModeGroup.AlignWithChildren;
             this.lcgDetail.Size = new System.Drawing.Size(726, 887);
             this.lcgDetail.Text = "업무 상세 · ReadOnly";
@@ -868,8 +932,9 @@ namespace HealthCheckupReservationReception.Views
             this.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             // Dock=Fill 인 lcMain 을 먼저 넣는다 (references/designer.md 함정 3).
-            // 팝업은 PopupContainerEdit 이 뜰 때 팝업 창으로 옮겨 간다.
+            // 팝업 둘은 PopupContainerEdit 이 뜰 때 팝업 창으로 옮겨 간다.
             this.Controls.Add(this.lcMain);
+            this.Controls.Add(this.pccConditions);
             this.Controls.Add(this.pccColumns);
             this.Name = "UcWorkbench";
             this.Size = new System.Drawing.Size(1916, 887);
@@ -882,6 +947,7 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.cboStatus.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtChartNo.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtName.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.cboConditions.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.cboColumns.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.gcWorkList)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.gvWorkList)).EndInit();
@@ -896,6 +962,9 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.gvNexList)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.gcAexList)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.gvAexList)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.clbConditions)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pccConditions)).EndInit();
+            this.pccConditions.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.clbColumns)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pccColumns)).EndInit();
             this.pccColumns.ResumeLayout(false);
@@ -908,8 +977,9 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lciChartNo)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciName)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.emptySpaceSearch)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.lciColumns)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciSearch)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciConditions)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciColumns)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciValidation)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciWorkList)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.splitWork)).EndInit();
@@ -941,11 +1011,14 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraEditors.ImageComboBoxEdit cboStatus;
         private DevExpress.XtraEditors.TextEdit txtChartNo;
         private DevExpress.XtraEditors.TextEdit txtName;
+        private DevExpress.XtraEditors.SimpleButton btnSearch;
+        private DevExpress.XtraEditors.PopupContainerEdit cboConditions;
+        private DevExpress.XtraEditors.PopupContainerControl pccConditions;
+        private DevExpress.XtraEditors.CheckedListBoxControl clbConditions;
         private DevExpress.XtraEditors.PopupContainerEdit cboColumns;
         private DevExpress.XtraEditors.PopupContainerControl pccColumns;
         private DevExpress.XtraEditors.CheckedListBoxControl clbColumns;
         private DevExpress.XtraEditors.SimpleButton btnColumnsDefault;
-        private DevExpress.XtraEditors.SimpleButton btnSearch;
         private DevExpress.XtraEditors.LabelControl lblValidation;
         private DevExpress.XtraLayout.LayoutControlItem lciDateFrom;
         private DevExpress.XtraLayout.LayoutControlItem lciDateTo;
@@ -953,8 +1026,9 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraLayout.LayoutControlItem lciChartNo;
         private DevExpress.XtraLayout.LayoutControlItem lciName;
         private DevExpress.XtraLayout.EmptySpaceItem emptySpaceSearch;
-        private DevExpress.XtraLayout.LayoutControlItem lciColumns;
         private DevExpress.XtraLayout.LayoutControlItem lciSearch;
+        private DevExpress.XtraLayout.LayoutControlItem lciConditions;
+        private DevExpress.XtraLayout.LayoutControlItem lciColumns;
         private DevExpress.XtraLayout.LayoutControlItem lciValidation;
         private DevExpress.XtraGrid.GridControl gcWorkList;
         private DevExpress.XtraGrid.Views.Grid.GridView gvWorkList;

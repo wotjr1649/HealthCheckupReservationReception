@@ -207,14 +207,15 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
             view.RaiseSearchRequested();
 
-            Assert.AreEqual("예약·접수 목록을 조회하지 못했습니다.", view.LastMessage);
-            StringAssert.DoesNotMatch(view.LastMessage, new System.Text.RegularExpressions.Regex("DESKTOP"));
+            Assert.AreEqual("예약·접수 목록을 조회하지 못했습니다.", view.ValidationMessage);
+            StringAssert.DoesNotMatch(view.ValidationMessage, new System.Text.RegularExpressions.Regex("DESKTOP"));
         }
 
-        // [X] 사용자가 부탁하지 않은 호출이 창을 열자마자 오류창을 띄우면 안 된다 —
-        //     WF-PAT-01 이 초판에서 그렇게 해서 UI 시험이 모달에 걸려 멈췄다.
+        // [X] **조회 실패는 모달이 아니라 Inline 이다.** 모달이면 창을 열자마자 뜨는 것을
+        //     막느라 조용히 삼켜야 하고, 그러면 실패가 아예 보이지 않는다 — 2026-09-10 에
+        //     성공한 0건과 구별이 안 돼 "조회가 안 된다" 로 보고됐다.
         [TestMethod]
-        public void 기동_조회의_실패는_조용하다()
+        public void 조회_실패는_모달이_아니라_Inline_이다()
         {
             var view = new FakeWorkbenchView { FromDate = Today };
             var service = new FakeWorkService
@@ -225,7 +226,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
             presenter.LoadInitial();
 
-            Assert.IsNull(view.LastMessage);
+            Assert.AreEqual("읽지 못했습니다.", view.ValidationMessage, "실패가 보이지 않는다");
+            Assert.IsNull(view.LastMessage, "창을 열자마자 모달이 떴다");
         }
 
         // ── 03 §9.1 Context

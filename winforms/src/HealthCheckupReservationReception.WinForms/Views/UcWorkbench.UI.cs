@@ -1,10 +1,8 @@
 ﻿// 화면 ID: WF-WRK-01 — 예약/접수 공통 Workbench (03 §9)
 using System;
 using System.Drawing;
-using System.Windows.Forms;
 using DevExpress.Utils;
 using DevExpress.XtraEditors.Controls;
-using DevExpress.XtraGrid.Columns;
 
 namespace HealthCheckupReservationReception.Views
 {
@@ -18,11 +16,15 @@ namespace HealthCheckupReservationReception.Views
         {
             LoadStatusItems();
 
-            // 03 §9.3 은 기본 기간을 정하지 않는다. 접수 창구가 여는 순간 보고 싶은 것은
-            // 오늘이므로 양끝을 오늘로 세운다 — 그러면 §9.3 의 `최소 하나의 실질 조건` 도
-            // 이미 만족해 화면이 빈 채로 뜨지 않는다. 사용자는 지우거나 늘릴 수 있다.
+            // 03 §9.3 은 기본 기간을 정하지 않는다. 시작일만 오늘로 세우고 종료일은 비운다 —
+            // §9.3 의 `From만 있으면 이후` 라서 오늘과 앞으로의 예약이 한꺼번에 보이고,
+            // `최소 하나의 실질 조건` 도 이미 만족해 화면이 빈 채로 뜨지 않는다.
+            //
+            // [X] 양끝을 오늘로 두면 오늘 예약이 없는 날 화면이 통째로 비어 고장처럼 보인다.
+            //     당일 마감이 지난 뒤에는 오늘 예약을 새로 만들 수도 없다(304) — 창구가
+            //     실제로 보는 것은 앞으로의 예약이다. 사용자는 종료일을 채워 좁힐 수 있다.
             deFrom.EditValue = DateTime.Today;
-            deTo.EditValue = DateTime.Today;
+            deTo.EditValue = null;
 
             colReserveDate.DisplayFormat.FormatType = FormatType.DateTime;
             colReserveDate.DisplayFormat.FormatString = "yyyy-MM-dd";
@@ -44,11 +46,27 @@ namespace HealthCheckupReservationReception.Views
             // 숨기는 경로를 열어 두면 실수로 사라진 컬럼을 되돌릴 방법을 사용자가 모른다.
             gvWorkList.OptionsCustomization.AllowQuickHideColumns = false;
 
-            // 03 §9.3 Inline 오류. 붉은 글씨는 이 자리가 오류라는 유일한 단서다.
+            // [X] 성공한 0건과 실패가 사용자에게 같은 그림이면 안 된다 — 2026-09-10 실측.
+            clsGridColumns.ShowEmptyText(gvWorkList, "조회 결과가 없습니다.");
+            clsGridColumns.ShowEmptyText(gvNexList, "선택한 업무가 없습니다.");
+            clsGridColumns.ShowEmptyText(gvAexList, "선택한 업무가 없습니다.");
+
+            // 03 §9.3 Inline 오류. 붉은 글씨가 이 자리가 오류라는 유일한 단서다.
             lblValidation.Appearance.ForeColor = Color.Firebrick;
             lblValidation.Appearance.Options.UseForeColor = true;
 
-            LoadColumnChecks();
+            // 부품 셋은 Grid·조회조건 칸이 다 선 **뒤에** 만든다 — 그 시점의 Grid 가
+            // `[기본값 복원]` 이 되돌릴 기준이다.
+            _picker = new clsGridRowPicker(gvWorkList);
+            _picker.PickChanged += Picker_PickChanged;
+
+            _conditions = new clsSearchConditions(clbConditions);
+            _conditions.Add("예약/접수일", true, lciDateFrom, deFrom).Also(lciDateTo, deTo);
+            _conditions.Add("상태", true, lciStatus, cboStatus);
+            _conditions.Add("차트번호", true, lciChartNo, txtChartNo);
+            _conditions.Add("이름", true, lciName, txtName);
+
+            _columns = new clsColumnChooser(clbColumns, gvWorkList);
         }
 
         /// <summary>
@@ -69,29 +87,6 @@ namespace HealthCheckupReservationReception.Views
             });
 
             cboStatus.EditValue = null;
-        }
-
-        /// <summary>
-        /// 03 §18 — 컬럼 목록은 **Grid 가 가진 것**에서 만든다. 컬럼 이름을 여기 적으면
-        /// Designer 와 두 곳이 된다 (ROOT AGENTS.md §6).
-        ///
-        /// 내부키(업무ID·수검자ID)는 애초에 Grid 의 컬럼이 아니므로 여기에도 없다 (03 §9.4).
-        /// </summary>
-        private void LoadColumnChecks()
-        {
-            foreach (GridColumn column in gvWorkList.Columns)
-            {
-                if (!column.OptionsColumn.ShowInCustomizationForm)
-                {
-                    continue;
-                }
-
-                clbColumns.Items.Add(new CheckedListBoxItem(
-                    column,
-                    column.Caption,
-                    column.Visible ? CheckState.Checked : CheckState.Unchecked,
-                    true));
-            }
         }
     }
 }

@@ -55,20 +55,27 @@ namespace HealthCheckupReservationReception.Presenters
         /// 화면을 열면 한 번 조회한다. 조회조건의 기간이 오늘로 서 있으므로 03 §9.3 의
         /// `최소 하나의 실질 조건` 을 이미 만족한다.
         ///
-        /// [X] **실패를 모달로 알리지 않는다.** 사용자가 부탁한 호출이 아니다 —
-        ///     WF-PAT-01 이 초판에서 그렇게 해서 UI 시험이 모달에 걸려 멈췄다.
         /// </summary>
         public void LoadInitial()
         {
-            Search(true);
+            Search();
         }
 
         private void OnSearchRequested(object sender, EventArgs e)
         {
-            Search(false);
+            Search();
         }
 
-        private void Search(bool silent)
+        /// <summary>
+        /// [X] **조회 실패를 모달로 알리지 않는다.** 셋 다 같은 자리에 적는다 — 조건 오류도,
+        ///     조건 없음도, SP 실패도 사용자가 보는 것은 `왜 목록이 비었는가` 하나이고 그
+        ///     답이 Grid 바로 위에 있어야 한다. 03 §9.3 이 Inline 을 규정한 것도 같은 이유다.
+        ///
+        ///     모달로 두면 창을 열자마자 뜨는 것을 막느라 조용히 삼켜야 하고, 그러면 실패가
+        ///     아예 보이지 않는다 — 2026-09-10 에 실제로 "조회가 안 된다" 로 보고됐다.
+        ///     그때는 성공한 0건이었는데 화면이 아무 말도 하지 않아 구별할 길이 없었다.
+        /// </summary>
+        private void Search()
         {
             _view.ValidationMessage = null;
 
@@ -107,17 +114,15 @@ namespace HealthCheckupReservationReception.Presenters
             catch (Exception)
             {
                 // 예외 본문을 화면에 싣지 않는다 (킷 §6).
-                if (!silent) { _view.ShowMessage("예약·접수 목록을 조회하지 못했습니다."); }
+                _view.ValidationMessage = "예약·접수 목록을 조회하지 못했습니다.";
                 return;
             }
 
             if (result == null || !result.IsSuccess)
             {
-                if (!silent)
-                {
-                    _view.ShowMessage(result == null ? "예약·접수 목록을 조회하지 못했습니다." : result.Message);
-                }
-
+                _view.ValidationMessage = result == null
+                    ? "예약·접수 목록을 조회하지 못했습니다."
+                    : result.Message;
                 return;
             }
 

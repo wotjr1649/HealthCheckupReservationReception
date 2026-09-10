@@ -65,6 +65,7 @@
     <Compile Include="Services\CommonStatusServiceTests.cs" />
     <Compile Include="Services\PatientServiceTests.cs" />
     <Compile Include="Views\UcPatientManagementTests.cs" />
+    <Compile Include="Views\UcWorkbenchTests.cs" />
     <Compile Include="Views\FrmPatientEditorTests.cs" />
     <Compile Include="Visual\ShellCaptureTests.cs" />
   </ItemGroup>

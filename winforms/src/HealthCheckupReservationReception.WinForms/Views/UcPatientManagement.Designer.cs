@@ -447,11 +447,9 @@ namespace HealthCheckupReservationReception.Views
             //
             this.clbConditions.CheckOnClick = true;
             this.clbConditions.Dock = System.Windows.Forms.DockStyle.Fill;
-            // Value 는 조회조건 이름이다. 화면 코드가 이 값으로 입력칸을 찾는다.
-            this.clbConditions.Items.AddRange(new DevExpress.XtraEditors.Controls.CheckedListBoxItem[] {
-            new DevExpress.XtraEditors.Controls.CheckedListBoxItem("ChartNo", "차트번호", System.Windows.Forms.CheckState.Checked, true),
-            new DevExpress.XtraEditors.Controls.CheckedListBoxItem("Name", "이름", System.Windows.Forms.CheckState.Checked, true),
-            new DevExpress.XtraEditors.Controls.CheckedListBoxItem("SocialNumber", "주민번호", System.Windows.Forms.CheckState.Checked, true)});
+            // 항목은 ConfigureUI 의 clsSearchConditions 가 만든다. 캡션과 그 캡션이 여닫는
+            // 입력칸이 한 줄에 함께 있어야 둘이 어긋나지 않는다 (ROOT AGENTS.md §6) —
+            // 여기 적어 두었을 때는 "ChartNo" 같은 문자열 키로 칸을 되찾아야 했다.
             this.clbConditions.Location = new System.Drawing.Point(2, 2);
             this.clbConditions.Name = "clbConditions";
             this.clbConditions.Size = new System.Drawing.Size(146, 72);

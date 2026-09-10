@@ -241,12 +241,13 @@ namespace HealthCheckupReservationReception.Tests.Views
             throw new AssertFailedException("Grid 에 " + caption + " 컬럼이 없다");
         }
 
+        /// <summary>
+        /// `[기본값 복원]` 이 실제로 도는 경로. 되돌리는 일은 `clsColumnChooser` 가 하고
+        /// 화면은 Designer 가 이름으로 잇는 이 핸들러 한 줄만 갖는다.
+        /// </summary>
         private static void Restore(UcPatientManagement screen)
         {
-            MethodInfo method = typeof(UcPatientManagement).GetMethod(
-                "RestoreDefaultColumns", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.IsNotNull(method, "RestoreDefaultColumns 가 사라졌다");
-            method.Invoke(screen, null);
+            Invoke(screen, "btnColumnsDefault_Click");
         }
 
         // Grid 는 화면 내부 부품이라 View 계약에 나오지 않는다. 화면이 실제로 어떻게
