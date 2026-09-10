@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Windows.Forms;
+using DevExpress.Utils;
 using DevExpress.XtraEditors;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraLayout;
@@ -46,6 +49,39 @@ namespace HealthCheckupReservationReception.Views
                 condition, caption, on ? CheckState.Checked : CheckState.Unchecked, true));
             condition.Show(on);
             return condition;
+        }
+
+        /// <summary>
+        /// 조회조건의 생년월일 칸. 달력으로 고르고 `yyyy-MM-dd` 로 보인다.
+        ///
+        /// WF-PAT-01 과 DLG-PAT-02 가 같은 조회계약을 쓰므로 (03 §7.2 → §5.3) 칸의 규칙도
+        /// 한 벌이어야 한다 — 두 곳에 적어 두면 한쪽만 고쳐진다 (ROOT AGENTS.md §6).
+        /// </summary>
+        public static void SetupBirthday(DateEdit editor)
+        {
+            editor.Properties.DisplayFormat.FormatType = FormatType.DateTime;
+            editor.Properties.DisplayFormat.FormatString = "yyyy-MM-dd";
+            editor.Properties.EditFormat.FormatType = FormatType.DateTime;
+            editor.Properties.EditFormat.FormatString = "yyyy-MM-dd";
+            editor.Properties.Mask.UseMaskAsDisplayFormat = true;
+        }
+
+        /// <summary>
+        /// 그 칸의 값을 조회조건이 쓰는 `yyyyMMdd` 로 바꾼다 (05 §7.2 `@생년월일` VARCHAR(8)).
+        /// 비었으면 null 이고 그것이 미입력이다.
+        /// </summary>
+        public static string BirthdayOf(DateEdit editor)
+        {
+            object value = editor.EditValue;
+            if (value == null || value == DBNull.Value)
+            {
+                return null;
+            }
+
+            DateTime picked = editor.DateTime;
+            return picked == DateTime.MinValue
+                ? null
+                : picked.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
         }
 
         /// <summary>

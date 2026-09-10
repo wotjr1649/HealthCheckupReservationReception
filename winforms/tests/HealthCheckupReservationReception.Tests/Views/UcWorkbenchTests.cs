@@ -64,6 +64,34 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
+        // [X] **넷을 다 켜면 한 줄이 넘칠 수 있다.** 항목마다 Min=Max 로 못 박혀 있어 좁아지지
+        //     않고, 넘치면 LayoutControl 안에 가로 스크롤이 서서 [조회] 무리가 화면 밖으로
+        //     밀린다. WF-PAT-01 에서 실제로 넘친 자리다 (조건 다섯 · 실측 1176 > 1144).
+        [TestMethod]
+        public void 조회조건을_다_켜도_한_줄에_들어간다()
+        {
+            RunSta(() =>
+            {
+                var screen = new UcWorkbench();
+                var group = Field<LayoutControlGroup>(screen, "lcgSearch");
+
+                int need = 0;
+                foreach (BaseLayoutItem item in group.Items)
+                {
+                    // EmptySpaceItem 은 남는 자리를 빨아들이는 쪽이라 세지 않는다.
+                    if (item is EmptySpaceItem)
+                    {
+                        continue;
+                    }
+
+                    need += item.MaxSize.Width > 0 ? item.MaxSize.Width : item.Size.Width;
+                }
+
+                Assert.IsTrue(need <= group.Size.Width,
+                    "조회 한 줄이 " + need + "px 인데 자리는 " + group.Size.Width + "px 다");
+            });
+        }
+
         // 03 §9.3 — 조회조건 넷. 무엇을 낼지는 [조회 조건] 드롭다운이 정한다 (WF-PAT-01 과 같다).
         [TestMethod]
         public void 조회조건은_넷이고_기본은_전부_켜져_있다()

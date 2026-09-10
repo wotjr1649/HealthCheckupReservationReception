@@ -249,6 +249,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public string ChartNo { get; set; }
         public string Name { get; set; }
         public string SocialNumber { get; set; }
+        public string Birthday { get; set; }
+        public string MobilePhone { get; set; }
 
         public IList<PatientListItemDto> Rows { get; set; }
         public PatientDetailDto Detail { get; set; }

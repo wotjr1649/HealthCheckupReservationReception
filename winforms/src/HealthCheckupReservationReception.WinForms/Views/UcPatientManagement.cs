@@ -86,6 +86,12 @@ namespace HealthCheckupReservationReception.Views
 
         public string SocialNumber { get { return txtSocialNumber.Text; } }
 
+        // 03 §5.3 · §7.2 — 달력 칸의 값을 조회조건이 쓰는 yyyyMMdd 로 바꾼다.
+        // 그 규칙은 DLG-PAT-02 와 한 벌이다 (clsSearchConditions).
+        public string Birthday { get { return clsSearchConditions.BirthdayOf(deBirthday); } }
+
+        public string MobilePhone { get { return txtMobilePhone.Text; } }
+
         public IList<PatientListItemDto> Rows
         {
             set { _picker.Rebind(gcPatientList, value); }

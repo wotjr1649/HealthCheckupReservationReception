@@ -23,6 +23,8 @@ namespace HealthCheckupReservationReception.Views
             this.txtChartNo = new DevExpress.XtraEditors.TextEdit();
             this.txtName = new DevExpress.XtraEditors.TextEdit();
             this.txtSocialNumber = new DevExpress.XtraEditors.TextEdit();
+            this.deBirthday = new DevExpress.XtraEditors.DateEdit();
+            this.txtMobilePhone = new DevExpress.XtraEditors.TextEdit();
             this.cboColumns = new DevExpress.XtraEditors.PopupContainerEdit();
             this.btnSearch = new DevExpress.XtraEditors.SimpleButton();
             this.gcPatientList = new DevExpress.XtraGrid.GridControl();
@@ -58,6 +60,8 @@ namespace HealthCheckupReservationReception.Views
             this.lciChartNo = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciName = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciSocialNumber = new DevExpress.XtraLayout.LayoutControlItem();
+            this.lciBirthday = new DevExpress.XtraLayout.LayoutControlItem();
+            this.lciMobilePhone = new DevExpress.XtraLayout.LayoutControlItem();
             this.emptySpaceSearch = new DevExpress.XtraLayout.EmptySpaceItem();
             this.lciColumns = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciSearch = new DevExpress.XtraLayout.LayoutControlItem();
@@ -83,6 +87,9 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.txtChartNo.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtName.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSocialNumber.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.deBirthday.Properties.CalendarTimeProperties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.deBirthday.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.txtMobilePhone.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.cboColumns.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gcPatientList)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gvPatientList)).BeginInit();
@@ -108,6 +115,8 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lciChartNo)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciName)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciSocialNumber)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciBirthday)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciMobilePhone)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.emptySpaceSearch)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciColumns)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciSearch)).BeginInit();
@@ -135,6 +144,8 @@ namespace HealthCheckupReservationReception.Views
             this.lcMain.Controls.Add(this.txtChartNo);
             this.lcMain.Controls.Add(this.txtName);
             this.lcMain.Controls.Add(this.txtSocialNumber);
+            this.lcMain.Controls.Add(this.deBirthday);
+            this.lcMain.Controls.Add(this.txtMobilePhone);
             this.lcMain.Controls.Add(this.cboColumns);
             this.lcMain.Controls.Add(this.btnSearch);
             this.lcMain.Controls.Add(this.gcPatientList);
@@ -204,6 +215,32 @@ namespace HealthCheckupReservationReception.Views
             this.txtSocialNumber.StyleController = this.lcMain;
             this.txtSocialNumber.KeyDown += new System.Windows.Forms.KeyEventHandler(this.SearchInput_KeyDown);
             this.txtSocialNumber.TabIndex = 2;
+            //
+            // deBirthday
+            //
+            // 03 §5.3 · §7.2 — 달력으로 고르고 조회에는 yyyyMMdd 로 간다. 그 규칙은
+            // ConfigureUI 의 clsSearchConditions.SetupBirthday 가 한 벌로 갖는다.
+            this.deBirthday.EditValue = null;
+            this.deBirthday.Location = new System.Drawing.Point(565, 31);
+            this.deBirthday.Name = "deBirthday";
+            this.deBirthday.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.deBirthday.Properties.CalendarTimeProperties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.deBirthday.Size = new System.Drawing.Size(110, 20);
+            this.deBirthday.StyleController = this.lcMain;
+            this.deBirthday.TabIndex = 3;
+            this.deBirthday.KeyDown += new System.Windows.Forms.KeyEventHandler(this.SearchInput_KeyDown);
+            //
+            // txtMobilePhone
+            //
+            this.txtMobilePhone.Location = new System.Drawing.Point(740, 31);
+            this.txtMobilePhone.Name = "txtMobilePhone";
+            this.txtMobilePhone.Properties.MaxLength = 13;
+            this.txtMobilePhone.Size = new System.Drawing.Size(110, 20);
+            this.txtMobilePhone.StyleController = this.lcMain;
+            this.txtMobilePhone.TabIndex = 4;
+            this.txtMobilePhone.KeyDown += new System.Windows.Forms.KeyEventHandler(this.SearchInput_KeyDown);
             //
             // cboColumns
             //
@@ -516,6 +553,8 @@ namespace HealthCheckupReservationReception.Views
             this.lciChartNo,
             this.lciName,
             this.lciSocialNumber,
+            this.lciBirthday,
+            this.lciMobilePhone,
             this.emptySpaceSearch,
             this.lciSearch,
             this.lciConditions,
@@ -540,10 +579,10 @@ namespace HealthCheckupReservationReception.Views
             //
             this.lciChartNo.Control = this.txtChartNo;
             this.lciChartNo.Location = new System.Drawing.Point(0, 0);
-            this.lciChartNo.MaxSize = new System.Drawing.Size(203, 26);
-            this.lciChartNo.MinSize = new System.Drawing.Size(203, 26);
+            this.lciChartNo.MaxSize = new System.Drawing.Size(157, 26);
+            this.lciChartNo.MinSize = new System.Drawing.Size(157, 26);
             this.lciChartNo.Name = "lciChartNo";
-            this.lciChartNo.Size = new System.Drawing.Size(203, 26);
+            this.lciChartNo.Size = new System.Drawing.Size(157, 26);
             this.lciChartNo.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciChartNo.Text = "차트번호";
             this.lciChartNo.TextSize = new System.Drawing.Size(48, 14);
@@ -551,11 +590,11 @@ namespace HealthCheckupReservationReception.Views
             // lciName
             //
             this.lciName.Control = this.txtName;
-            this.lciName.Location = new System.Drawing.Point(203, 0);
-            this.lciName.MaxSize = new System.Drawing.Size(203, 26);
-            this.lciName.MinSize = new System.Drawing.Size(203, 26);
+            this.lciName.Location = new System.Drawing.Point(157, 0);
+            this.lciName.MaxSize = new System.Drawing.Size(137, 26);
+            this.lciName.MinSize = new System.Drawing.Size(137, 26);
             this.lciName.Name = "lciName";
-            this.lciName.Size = new System.Drawing.Size(203, 26);
+            this.lciName.Size = new System.Drawing.Size(137, 26);
             this.lciName.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciName.Text = "이름";
             this.lciName.TextSize = new System.Drawing.Size(48, 14);
@@ -563,21 +602,45 @@ namespace HealthCheckupReservationReception.Views
             // lciSocialNumber
             //
             this.lciSocialNumber.Control = this.txtSocialNumber;
-            this.lciSocialNumber.Location = new System.Drawing.Point(406, 0);
-            this.lciSocialNumber.MaxSize = new System.Drawing.Size(203, 26);
-            this.lciSocialNumber.MinSize = new System.Drawing.Size(203, 26);
+            this.lciSocialNumber.Location = new System.Drawing.Point(294, 0);
+            this.lciSocialNumber.MaxSize = new System.Drawing.Size(182, 26);
+            this.lciSocialNumber.MinSize = new System.Drawing.Size(182, 26);
             this.lciSocialNumber.Name = "lciSocialNumber";
-            this.lciSocialNumber.Size = new System.Drawing.Size(203, 26);
+            this.lciSocialNumber.Size = new System.Drawing.Size(182, 26);
             this.lciSocialNumber.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciSocialNumber.Text = "주민번호";
             this.lciSocialNumber.TextSize = new System.Drawing.Size(48, 14);
             //
+            // lciBirthday
+            //
+            this.lciBirthday.Control = this.deBirthday;
+            this.lciBirthday.Location = new System.Drawing.Point(476, 0);
+            this.lciBirthday.MaxSize = new System.Drawing.Size(167, 26);
+            this.lciBirthday.MinSize = new System.Drawing.Size(167, 26);
+            this.lciBirthday.Name = "lciBirthday";
+            this.lciBirthday.Size = new System.Drawing.Size(167, 26);
+            this.lciBirthday.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            this.lciBirthday.Text = "생년월일";
+            this.lciBirthday.TextSize = new System.Drawing.Size(48, 14);
+            //
+            // lciMobilePhone
+            //
+            this.lciMobilePhone.Control = this.txtMobilePhone;
+            this.lciMobilePhone.Location = new System.Drawing.Point(643, 0);
+            this.lciMobilePhone.MaxSize = new System.Drawing.Size(167, 26);
+            this.lciMobilePhone.MinSize = new System.Drawing.Size(167, 26);
+            this.lciMobilePhone.Name = "lciMobilePhone";
+            this.lciMobilePhone.Size = new System.Drawing.Size(167, 26);
+            this.lciMobilePhone.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            this.lciMobilePhone.Text = "휴대전화";
+            this.lciMobilePhone.TextSize = new System.Drawing.Size(48, 14);
+            //
             // emptySpaceSearch
             //
             this.emptySpaceSearch.AllowHotTrack = false;
-            this.emptySpaceSearch.Location = new System.Drawing.Point(609, 0);
+            this.emptySpaceSearch.Location = new System.Drawing.Point(810, 0);
             this.emptySpaceSearch.Name = "emptySpaceSearch";
-            this.emptySpaceSearch.Size = new System.Drawing.Size(245, 26);
+            this.emptySpaceSearch.Size = new System.Drawing.Size(44, 26);
             this.emptySpaceSearch.TextSize = new System.Drawing.Size(0, 0);
             //
             // lciColumns
@@ -798,6 +861,9 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.txtChartNo.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtName.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtSocialNumber.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.deBirthday.Properties.CalendarTimeProperties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.deBirthday.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.txtMobilePhone.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.cboColumns.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.gcPatientList)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.gvPatientList)).EndInit();
@@ -823,6 +889,8 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lciChartNo)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciName)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciSocialNumber)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciBirthday)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciMobilePhone)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.emptySpaceSearch)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciColumns)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciSearch)).EndInit();
@@ -866,6 +934,10 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraLayout.LayoutControlItem lciChartNo;
         private DevExpress.XtraLayout.LayoutControlItem lciName;
         private DevExpress.XtraLayout.LayoutControlItem lciSocialNumber;
+        private DevExpress.XtraEditors.DateEdit deBirthday;
+        private DevExpress.XtraEditors.TextEdit txtMobilePhone;
+        private DevExpress.XtraLayout.LayoutControlItem lciBirthday;
+        private DevExpress.XtraLayout.LayoutControlItem lciMobilePhone;
         private DevExpress.XtraLayout.EmptySpaceItem emptySpaceSearch;
         private DevExpress.XtraLayout.LayoutControlItem lciColumns;
         private DevExpress.XtraLayout.LayoutControlItem lciSearch;

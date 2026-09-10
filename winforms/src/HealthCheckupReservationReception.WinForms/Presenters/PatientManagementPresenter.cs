@@ -53,10 +53,12 @@ namespace HealthCheckupReservationReception.Presenters
                 ChartNo = _view.ChartNo,
                 Name = _view.Name,
                 SocialNumber = _view.SocialNumber,
+                Birthday = _view.Birthday,
+                MobilePhone = _view.MobilePhone,
             };
 
-            // 2026-09-10 사용자 결정 — 화면 조회조건이 셋으로 줄었다. SP-PAT-01 은 생년월일·
-            // 휴대전화도 받지만 (05 §7.2) 아무도 채우지 않으므로 미입력으로 간다.
+            // 다섯 다 보낸다. 꺼 둔 조건은 화면이 값을 비우므로 (clsSearchConditions) 여기서는
+            // 무엇이 켜졌는지 따지지 않는다 — 끈 칸에 남은 글자가 조회에 섞이지 않는 이유다.
 
             // [R16] 03 §5.3 — 조건이 하나도 없으면 **전체 목록**이다. 막지 않는다.
             //       SP 도 103 을 내지 않는다 (05 §7.2 · §13).

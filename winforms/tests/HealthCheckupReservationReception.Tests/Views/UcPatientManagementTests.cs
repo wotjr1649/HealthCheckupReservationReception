@@ -69,6 +69,36 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
+        // [X] **다섯을 다 켜면 한 줄이 넘칠 수 있다.** 항목마다 Min=Max 로 못 박혀 있어
+        //     좁아지지 않고, 넘치면 LayoutControl 안에 가로 스크롤이 서서 [조회] 무리가
+        //     화면 밖으로 밀린다. 조건을 더하거나 폭을 늘릴 때 여기서 걸린다.
+        [TestMethod]
+        public void 조회조건_다섯을_다_켜도_한_줄에_들어간다()
+        {
+            RunSta(() =>
+            {
+                var screen = new UcPatientManagement();
+                var group = Field<LayoutControlGroup>(screen, "lcgSearch");
+
+                // [X] 숨어 있어도 켜면 자리를 차지하므로 보이는 것만 세면 아무것도 못 잡는다.
+                //     반대로 EmptySpaceItem 은 남는 자리를 빨아들이는 쪽이라 세면 안 된다 —
+                //     조건 둘이 꺼져 있는 동안 그만큼 부풀어 있어 합이 늘 넘치게 나온다.
+                int need = 0;
+                foreach (BaseLayoutItem item in group.Items)
+                {
+                    if (item is EmptySpaceItem)
+                    {
+                        continue;
+                    }
+
+                    need += item.MaxSize.Width > 0 ? item.MaxSize.Width : item.Size.Width;
+                }
+
+                Assert.IsTrue(need <= group.Size.Width,
+                    "조회 한 줄이 " + need + "px 인데 자리는 " + group.Size.Width + "px 다");
+            });
+        }
+
         // 03 §18 — Column Chooser 가 제공하는 것은 표시/숨김과 기본값 복원 둘뿐이다.
         // 여기서는 그 둘이 실제로 Grid 를 움직이는지만 본다. 폼을 띄우지 않고 화면이
         // 노출한 복원 경로를 직접 부른다.
@@ -107,20 +137,48 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // 2026-09-10 사용자 결정 — 조회조건은 차트번호·이름·주민번호 셋이고, 무엇을 낼지는
-        // [조회 조건] 드롭다운의 체크 목록이 정한다. 생년월일·휴대전화는 걷었다.
+        // 03 §5.3 조회조건 다섯. 2026-09-10 에 생년월일·휴대전화를 걷었다가 grilling 2회차에서
+        // **끌 수 있는 조건**으로 되돌렸다 — 사라진 것이 아니라 기본이 꺼진 것이고, 그래서
+        // 01 P01-01 · 02 F-PAT-001 과의 이탈이 닫힌다. DLG-PAT-02 도 같은 다섯이다 (03 §7.2).
         [TestMethod]
-        public void 조회조건은_세_칸이고_기본은_전부_켜져_있다()
+        public void 조회조건은_다섯이고_기본은_앞_셋만_켜져_있다()
         {
             RunSta(() =>
             {
                 var screen = new UcPatientManagement();
                 CheckedListBoxControl list = Field<CheckedListBoxControl>(screen, "clbConditions");
 
-                Assert.AreEqual(3, list.Items.Count, "조회조건이 셋이 아니다");
+                Assert.AreEqual(5, list.Items.Count, "조회조건이 다섯이 아니다");
                 Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciChartNo").Visibility);
                 Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciName").Visibility);
                 Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciSocialNumber").Visibility);
+                Assert.AreEqual(LayoutVisibility.Never, Item(screen, "lciBirthday").Visibility, "생년월일은 기본이 꺼짐이다");
+                Assert.AreEqual(LayoutVisibility.Never, Item(screen, "lciMobilePhone").Visibility, "휴대전화는 기본이 꺼짐이다");
+            });
+        }
+
+        // [X] 걷어 둔 두 조건은 **켜면 실제로 조회에 실려야** 한다. SP-PAT-01 은 처음부터
+        //     받고 있었으므로(05 §7.2) 화면이 값을 내주는지가 유일한 고리다.
+        [TestMethod]
+        public void 생년월일_휴대전화를_켜면_조회조건으로_실린다()
+        {
+            RunSta(() =>
+            {
+                var screen = new UcPatientManagement();
+                var view = (IPatientManagementView)screen;
+                CheckedListBoxControl list = Field<CheckedListBoxControl>(screen, "clbConditions");
+
+                list.ToggleItem(3);   // 생년월일
+                list.ToggleItem(4);   // 휴대전화
+
+                Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciBirthday").Visibility);
+                Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciMobilePhone").Visibility);
+
+                Field<DateEdit>(screen, "deBirthday").EditValue = new DateTime(1980, 1, 1);
+                Field<TextEdit>(screen, "txtMobilePhone").Text = "010-1234-5678";
+
+                Assert.AreEqual("19800101", view.Birthday, "달력 값이 yyyyMMdd 로 가지 않는다");
+                Assert.AreEqual("010-1234-5678", view.MobilePhone);
             });
         }
 

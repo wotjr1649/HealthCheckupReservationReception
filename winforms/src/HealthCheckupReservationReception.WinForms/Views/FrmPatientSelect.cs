@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
+using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraGrid.Views.Base;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
@@ -12,9 +13,12 @@ using HealthCheckupReservationReception.Services;
 namespace HealthCheckupReservationReception.Views
 {
     /// <summary>
-    /// DLG-PAT-02 수검자 선택 Modal (03 §7). 배치의 출처는
-    /// `tools/docgen/wireframe/screens/dlg_pat_02.js` 다 — 조회조건 2행과 우측 `[조회] [신규등록]`,
-    /// 그 아래 `조회 결과` 목록, 하단 `[선택] [닫기]` 다.
+    /// DLG-PAT-02 수검자 선택 Modal (03 §7).
+    ///
+    /// **조회부는 WF-PAT-01 과 같은 것이다.** `03` §7.2 가 조회계약을 §5.3 에 위임했는데
+    /// 코드는 오래 각자 가지고 있었다 — 2026-09-10 grilling 2회차에서 같은 부품 위로 옮겼다
+    /// (`clsSearchConditions` · `clsColumnChooser` · `clsGridRowPicker` · `clsGridColumns`).
+    /// 조회 한 줄의 꼴과 순서도 같다: 입력칸 다섯 · `[조회]` · `[조회 조건]` · `[컬럼 설정]`.
     ///
     /// 이 창은 상세를 읽지 않는다 — `PatientId` 하나만 호출 화면에 돌려준다 (03 §7.2).
     /// </summary>
@@ -24,10 +28,12 @@ namespace HealthCheckupReservationReception.Views
         private readonly IPatientService _service;
         private readonly string _operatorName;
 
-        // 목록을 다시 실으면 Grid 가 0행을 자동으로 잡는다. 그 선택이 그대로 올라오면
-        // 고르지도 않은 행으로 [선택] 이 열린다 (07 §14.3 A-10 과 같은 사정이다).
-        private bool _suppressSelection;
-        private bool _rowPicked;
+        private clsGridRowPicker _picker;
+        private clsSearchConditions _conditions;
+        private clsColumnChooser _columns;
+
+        // 조회 재진입 가드. 동기 SP 호출 동안 쌓인 클릭이 되돌아오는 것을 막는다.
+        private bool _searching;
 
         /// <summary>
         /// VS 디자이너 전용. 매개변수 없는 생성자가 없으면 디자이너가 화면을 못 연다
@@ -36,6 +42,7 @@ namespace HealthCheckupReservationReception.Views
         public FrmPatientSelect()
         {
             InitializeComponent();
+            ConfigureUI();
         }
 
         public FrmPatientSelect(IPatientService service, string operatorName)
@@ -63,39 +70,14 @@ namespace HealthCheckupReservationReception.Views
 
         public string SocialNumber { get { return txtSocialNumber.Text; } }
 
-        public string Birthday
-        {
-            get
-            {
-                object value = deBirthday.EditValue;
-                if (value == null || value == DBNull.Value)
-                {
-                    return null;
-                }
-
-                DateTime picked = deBirthday.DateTime;
-                return picked == DateTime.MinValue ? null : picked.ToString("yyyyMMdd");
-            }
-        }
+        // 달력 칸 → yyyyMMdd. 그 규칙은 WF-PAT-01 과 한 벌이다 (clsSearchConditions).
+        public string Birthday { get { return clsSearchConditions.BirthdayOf(deBirthday); } }
 
         public string MobilePhone { get { return txtMobilePhone.Text; } }
 
         public IList<PatientListItemDto> Rows
         {
-            set
-            {
-                _suppressSelection = true;
-                try
-                {
-                    gcPatientList.DataSource = value;
-                }
-                finally
-                {
-                    _suppressSelection = false;
-                }
-
-                ShowSelection(false);
-            }
+            set { _picker.Rebind(gcPatientList, value); }
         }
 
         public bool SelectEnabled { set { btnSelect.Enabled = value; } }
@@ -105,24 +87,72 @@ namespace HealthCheckupReservationReception.Views
             XtraMessageBox.Show(this, message, Text);
         }
 
-        /// <summary>
-        /// 07 §14.3 A-10 과 같은 처리다 — `GridView` 는 행이 있으면 반드시 하나를 focus 하므로
-        /// focus 를 없애는 대신 **선택으로 보이는 것**을 끈다.
-        /// </summary>
-        private void ShowSelection(bool on)
-        {
-            _rowPicked = on;
-            gvPatientList.OptionsSelection.EnableAppearanceFocusedRow = on;
-            gvPatientList.OptionsSelection.EnableAppearanceFocusedCell = on;
-        }
-
         private void btnSearch_Click(object sender, EventArgs e)
         {
-            EventHandler handler = SearchRequested;
-            if (handler != null)
+            RaiseSearchRequested();
+        }
+
+        /// <summary>
+        /// 조회조건 칸에서 Enter 를 치면 `[조회]` 와 같은 일이 난다 — 세 화면이 같다.
+        ///
+        /// [X] `Form.AcceptButton` 을 쓰지 않는다. 그것을 걸면 Enter 가 `[선택]` 으로 가서
+        ///     조회조건을 치다 말고 창이 닫힌다.
+        /// </summary>
+        private void SearchInput_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Enter)
             {
-                handler(this, EventArgs.Empty);
+                return;
             }
+
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+            RaiseSearchRequested();
+        }
+
+        private void RaiseSearchRequested()
+        {
+            EventHandler handler = SearchRequested;
+            if (handler == null || _searching) { return; }
+
+            _searching = true;
+            try
+            {
+                using (new clsBusyScope(this, btnSearch))
+                {
+                    handler(this, EventArgs.Empty);
+                }
+            }
+            finally
+            {
+                _searching = false;
+            }
+        }
+
+        // 두 드롭다운은 무엇이 골라졌는지를 적지 않고 늘 제 이름을 적는다 — 세 화면이 같다.
+        private void cboConditions_QueryDisplayText(object sender, QueryDisplayTextEventArgs e)
+        {
+            e.DisplayText = clsSearchConditions.Caption;
+        }
+
+        private void cboColumns_QueryDisplayText(object sender, QueryDisplayTextEventArgs e)
+        {
+            e.DisplayText = clsColumnChooser.Caption;
+        }
+
+        private void clbConditions_ItemCheck(object sender, DevExpress.XtraEditors.Controls.ItemCheckEventArgs e)
+        {
+            if (_conditions != null) { _conditions.Toggle(e); }
+        }
+
+        private void clbColumns_ItemCheck(object sender, DevExpress.XtraEditors.Controls.ItemCheckEventArgs e)
+        {
+            if (_columns != null) { _columns.Toggle(e); }
+        }
+
+        private void btnColumnsDefault_Click(object sender, EventArgs e)
+        {
+            if (_columns != null) { _columns.RestoreDefault(); }
         }
 
         /// <summary>
@@ -144,7 +174,7 @@ namespace HealthCheckupReservationReception.Views
 
         private void btnSelect_Click(object sender, EventArgs e)
         {
-            var row = gvPatientList.GetFocusedRow() as PatientListItemDto;
+            var row = _picker.Row as PatientListItemDto;
             if (row == null)
             {
                 return;
@@ -167,30 +197,20 @@ namespace HealthCheckupReservationReception.Views
             Close();
         }
 
-        // 키보드 이동. 이미 focus 된 행을 다시 눌렀을 때는 나지 않으므로 RowClick 이 짝을 이룬다.
         private void gvPatientList_FocusedRowChanged(object sender, FocusedRowChangedEventArgs e)
         {
-            Pick(e.FocusedRowHandle);
+            if (_picker != null) { _picker.FocusedRowChanged(e.FocusedRowHandle); }
         }
 
         private void gvPatientList_RowClick(object sender, DevExpress.XtraGrid.Views.Grid.RowClickEventArgs e)
         {
-            if (!_rowPicked)
-            {
-                Pick(e.RowHandle);
-            }
+            if (_picker != null) { _picker.RowClick(e.RowHandle); }
         }
 
-        private void Pick(int rowHandle)
+        /// <summary>03 §7.2 — 행이 잡혀 있어야 `[선택]` 이 열린다. 판정은 Presenter 가 한다.</summary>
+        private void Picker_PickChanged(object sender, EventArgs e)
         {
-            if (_suppressSelection)
-            {
-                return;
-            }
-
-            var row = gvPatientList.GetRow(rowHandle) as PatientListItemDto;
-            ShowSelection(row != null);
-
+            var row = _picker.Row as PatientListItemDto;
             EventHandler<long?> handler = SelectionChanged;
             if (handler != null)
             {
@@ -212,6 +232,10 @@ namespace HealthCheckupReservationReception.Views
             else if (e.Column == colSocialNumber)
             {
                 e.DisplayText = clsPatientText.FormatSocialNumber(e.Value as string);
+            }
+            else if (e.Column == colMobilePhone)
+            {
+                e.DisplayText = clsPatientText.FormatPhone(e.Value as string);
             }
         }
     }
