@@ -45,9 +45,9 @@ namespace HealthCheckupReservationReception.Views
         /// Presenter 를 붙인다. UserControl 은 디자이너가 만들어야 하므로 생성자로 받지 않는다
         /// (킷 `references/mvp-wiring.md`).
         /// </summary>
-        public void Attach(IPatientService service)
+        public void Attach(IPatientService service, IWorkService workService, ICommonStatusService statusService)
         {
-            _presenter = new PatientManagementPresenter(this, service);
+            _presenter = new PatientManagementPresenter(this, service, workService, statusService);
         }
 
         /// <summary>
@@ -115,6 +115,20 @@ namespace HealthCheckupReservationReception.Views
                 txtDetailAddressDetail.Text = value == null ? string.Empty : value.AddressDetail;
                 memoDetailMemo.Text = value == null ? string.Empty : value.Memo;
             }
+        }
+
+        /// <summary>
+        /// 여섯째 조회조건 `예약 없는 수검자만`. 앞 다섯과 달리 **SP 로 가지 않는다** —
+        /// SP-PAT-01 은 예약을 모르므로 Presenter 가 이어 붙인 뒤 거른다.
+        /// </summary>
+        public bool ReservableOnly
+        {
+            get { return _conditions != null && _conditions.IsOn("예약 없는 수검자만"); }
+        }
+
+        public string ReserveStatusText
+        {
+            set { lblDetailReserve.Text = value ?? string.Empty; }
         }
 
         public bool RowSelected

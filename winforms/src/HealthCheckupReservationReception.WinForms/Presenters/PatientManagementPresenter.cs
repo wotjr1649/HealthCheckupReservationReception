@@ -14,13 +14,30 @@ namespace HealthCheckupReservationReception.Presenters
     /// </summary>
     public sealed class PatientManagementPresenter
     {
+        // 목록 컬럼은 두 값뿐이다 — 훑는 자리라 좁고 색으로 읽힌다.
+        private const string Open = "가능";
+        private const string Blocked = "불가";
+
+        private DateTime _today;
+
         private readonly IPatientManagementView _view;
         private readonly IPatientService _service;
+        private readonly IWorkService _workService;
+        private readonly ICommonStatusService _statusService;
 
-        public PatientManagementPresenter(IPatientManagementView view, IPatientService service)
+        // 마지막 조회의 예약 상태. 행을 고를 때 상세 한 줄이 여기서 나온다.
+        private readonly Dictionary<long, string> _reserveDetail = new Dictionary<long, string>();
+
+        public PatientManagementPresenter(
+            IPatientManagementView view,
+            IPatientService service,
+            IWorkService workService,
+            ICommonStatusService statusService)
         {
             _view = view;
             _service = service;
+            _workService = workService;
+            _statusService = statusService;
 
             _view.SearchRequested += OnSearchRequested;
             _view.SelectionChanged += OnSelectionChanged;
@@ -81,10 +98,166 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
+            IList<PatientListItemDto> rows = Annotate(result.Value);
+
+            // 여섯째 조회조건은 SP 가 모르므로 화면이 거른다 (IPatientManagementView.ReservableOnly).
+            if (_view.ReservableOnly)
+            {
+                var open = new List<PatientListItemDto>();
+                foreach (PatientListItemDto row in rows)
+                {
+                    if (!Blocked.Equals(row.ReserveStatus, StringComparison.Ordinal))
+                    {
+                        open.Add(row);
+                    }
+                }
+
+                rows = open;
+            }
+
             // 03 §5.3 · §5.5 — 재조회 시 선택행과 우측 상세를 초기화한다.
-            _view.Rows = result.Value;
+            _view.Rows = rows;
             _view.Detail = null;
+            _view.ReserveStatusText = string.Empty;
             _view.RowSelected = false;
+        }
+
+        /// <summary>
+        /// 목록에 `예약 가능/불가` 를 이어 붙인다 (2026-09-11 grilling).
+        ///
+        /// `SP-PAT-01` 은 예약을 모르고 계약이 동결이라 컬럼을 붙일 수 없다. 대신 `SP-WRK-01`
+        /// 의 RS1 이 `수검자ID` 를 싣고 있으므로 화면에서 이어 붙인다.
+        ///
+        /// [X] **가르는 규칙은 `00` RP-06 하나다** — *"중복판단 유효예약은 `예약일 >= DB 현재일`
+        ///     이고 상태가 `RSV` 또는 `RCP` 인 업무다. 과거 업무는 중복판단에서 제외한다."*
+        ///     그 문장이 화면에 한 번 더 적히므로 상태코드는 `DbWorkStatus` 로 모으고
+        ///     `scripts/verify-work-status.sh` 가 05 §2.2 와 대조한다 (ROOT AGENTS.md §6).
+        ///
+        /// [X] 오늘날짜를 PC 시계에서 얻지 않는다. 그러면 창구 PC 가 하루 어긋났을 때 예약
+        ///     가능한 사람이 불가로 보인다 — `SP-CMN-01` 이 DB 오늘날짜를 준다.
+        ///
+        /// 이어 붙이지 못하면 **칸을 비운다.** 모르는 것을 `가능` 이라 적으면 거짓이 된다.
+        /// </summary>
+        private IList<PatientListItemDto> Annotate(IList<PatientListItemDto> rows)
+        {
+            _reserveDetail.Clear();
+            if (rows == null)
+            {
+                return new List<PatientListItemDto>();
+            }
+
+            IList<WorkListItemDto> works = LoadWorks();
+            if (works == null)
+            {
+                return rows;
+            }
+
+            DateTime today = _today;
+            var latestValid = new Dictionary<long, WorkListItemDto>();
+            var latestMissed = new Dictionary<long, WorkListItemDto>();
+
+            foreach (WorkListItemDto work in works)
+            {
+                if (work.ReserveDate.Date >= today)
+                {
+                    latestValid[work.PatientId] = work;
+                }
+                else if (DbWorkStatus.Reserved.Equals(work.StatusCode, StringComparison.Ordinal))
+                {
+                    // 지난 예약인데 접수가 없다 — 새 상태코드 없이 두 값의 조합으로 읽는다.
+                    latestMissed[work.PatientId] = work;
+                }
+            }
+
+            foreach (PatientListItemDto row in rows)
+            {
+                WorkListItemDto valid;
+                if (latestValid.TryGetValue(row.PatientId, out valid))
+                {
+                    row.ReserveStatus = Blocked;
+                    row.ReserveStatusDetail = "예약 불가 — " + Schedule(valid) + " " + valid.StatusName;
+                }
+                else
+                {
+                    row.ReserveStatus = Open;
+                    WorkListItemDto missed;
+                    row.ReserveStatusDetail = latestMissed.TryGetValue(row.PatientId, out missed)
+                        ? "예약 가능 (지난 예약 " + Schedule(missed) + " 미접수)"
+                        : "예약 가능";
+                }
+
+                _reserveDetail[row.PatientId] = row.ReserveStatusDetail;
+            }
+
+            return rows;
+        }
+
+        /// <summary>
+        /// RP-06 이 보는 두 상태를 한 번씩 읽는다.
+        ///
+        /// `RSV` 는 날짜를 걸지 않는다 — 과거의 미접수 건까지 봐야 상세에 그것을 적을 수 있고,
+        /// 남는 양도 작다(예약 대기 + 노쇼). `RCP` 는 오늘 것만 본다: 접수는 당일 업무이므로
+        /// (05 §8.2 `START_RECEPTION` 이 `예약일=오늘`) 유효한 `RCP` 는 오늘뿐이고, 날짜를
+        /// 걸지 않으면 완료된 접수가 세월과 함께 쌓인다.
+        /// </summary>
+        private IList<WorkListItemDto> LoadWorks()
+        {
+            OperationResult<CommonWorkStatusDto> status;
+            try
+            {
+                status = _statusService.GetCurrent();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+
+            if (status == null || !status.IsSuccess || status.Value == null)
+            {
+                return null;
+            }
+
+            _today = status.Value.Today.Date;
+
+            IList<WorkListItemDto> reserved = Works(DbWorkStatus.Reserved, null);
+            if (reserved == null)
+            {
+                return null;
+            }
+
+            IList<WorkListItemDto> received = Works(DbWorkStatus.Received, _today);
+            if (received == null)
+            {
+                return null;
+            }
+
+            var all = new List<WorkListItemDto>(reserved);
+            all.AddRange(received);
+            return all;
+        }
+
+        private IList<WorkListItemDto> Works(string statusCode, DateTime? from)
+        {
+            OperationResult<IList<WorkListItemDto>> result;
+            try
+            {
+                result = _workService.Search(new WorkSearchRequest
+                {
+                    FromDate = from,
+                    StatusCode = statusCode,
+                });
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+
+            return result != null && result.IsSuccess ? result.Value : null;
+        }
+
+        private static string Schedule(WorkListItemDto work)
+        {
+            return clsWorkText.FormatDate(work.ReserveDate) + " " + clsWorkText.FormatSlot(work.SlotCode);
         }
 
         private void OnSelectionChanged(object sender, long? patientId)
@@ -92,11 +265,17 @@ namespace HealthCheckupReservationReception.Presenters
             if (patientId == null)
             {
                 _view.Detail = null;
+                _view.ReserveStatusText = string.Empty;
                 _view.RowSelected = false;
                 return;
             }
 
             _view.RowSelected = true;
+
+            string detail;
+            _view.ReserveStatusText = _reserveDetail.TryGetValue(patientId.Value, out detail)
+                ? detail
+                : string.Empty;
 
             OperationResult<PatientDetailDto> result;
             try

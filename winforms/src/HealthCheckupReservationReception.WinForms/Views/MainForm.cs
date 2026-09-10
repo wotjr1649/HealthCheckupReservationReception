@@ -15,6 +15,7 @@ namespace HealthCheckupReservationReception.Views
     public partial class MainForm : RibbonForm, IMainView
     {
         private readonly MainPresenter _presenter;
+        private readonly ICommonStatusService _statusService;
         private readonly IPatientService _patientService;
         private readonly IWorkService _workService;
         private readonly IReservationService _reservationService;
@@ -55,6 +56,7 @@ namespace HealthCheckupReservationReception.Views
         {
             InitializeComponent();
             ClampToWorkingArea();
+            _statusService = statusService;
             _patientService = patientService;
             _workService = workService;
             _reservationService = reservationService;
@@ -221,7 +223,7 @@ namespace HealthCheckupReservationReception.Views
             {
                 var patient = new UcPatientManagement();
                 patient.RowActionsChanged += PatientView_RowActionsChanged;
-                patient.Attach(_patientService);
+                patient.Attach(_patientService, _workService, _statusService);
                 _patientView = patient;
                 return patient;
             }

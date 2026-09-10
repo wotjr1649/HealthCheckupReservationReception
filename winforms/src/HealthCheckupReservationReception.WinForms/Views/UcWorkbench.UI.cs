@@ -84,10 +84,10 @@ namespace HealthCheckupReservationReception.Views
             cboStatus.Properties.Items.AddRange(new[]
             {
                 new ImageComboBoxItem("전체", null),
-                new ImageComboBoxItem("예약", "RSV"),
-                new ImageComboBoxItem("접수완료", "RCP"),
-                new ImageComboBoxItem("예약취소", "CNR"),
-                new ImageComboBoxItem("접수취소", "CNC"),
+                new ImageComboBoxItem("예약", DbWorkStatus.Reserved),
+                new ImageComboBoxItem("접수완료", DbWorkStatus.Received),
+                new ImageComboBoxItem("예약취소", DbWorkStatus.CancelledReservation),
+                new ImageComboBoxItem("접수취소", DbWorkStatus.CancelledReception),
             });
 
             cboStatus.EditValue = null;

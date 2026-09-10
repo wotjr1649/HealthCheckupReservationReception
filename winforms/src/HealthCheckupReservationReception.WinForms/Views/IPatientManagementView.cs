@@ -31,10 +31,24 @@ namespace HealthCheckupReservationReception.Views
 
         string MobilePhone { get; }
 
+        /// <summary>
+        /// 여섯째 조회조건 `예약 없는 수검자만` (2026-09-11 grilling).
+        ///
+        /// [X] **SP 조건이 아니다.** `SP-PAT-01` 은 예약을 모르므로 이것만 화면이 거른다 —
+        ///     나머지 다섯과 성질이 달라 `PatientSearchRequest` 에 넣지 않는다.
+        /// </summary>
+        bool ReservableOnly { get; }
+
         IList<PatientListItemDto> Rows { set; }
 
         /// <summary>우측 상세. null 이면 비운다 (03 §5.5 재조회 시 상세 Clear).</summary>
         PatientDetailDto Detail { set; }
+
+        /// <summary>
+        /// 우측 상세의 `예약 상태` 한 줄. 목록 컬럼은 `가능`/`불가` 두 값뿐이라 훑기에는 좋지만
+        /// 일정을 말해 주지 못한다 — 고른 사람에 대해서만 날짜까지 적는다.
+        /// </summary>
+        string ReserveStatusText { set; }
 
         /// <summary>행 선택 여부에 따르는 Ribbon Action (03 §5.2).</summary>
         bool RowSelected { set; }

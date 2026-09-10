@@ -21,7 +21,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var service = new FakePatientService();
             service.SearchResult = OperationResult<IList<PatientListItemDto>>.Success(
                 new List<PatientListItemDto>());
-            new PatientManagementPresenter(view, service);
+            Presenter(view, service);
 
             view.RaiseSearchRequested();
 
@@ -42,7 +42,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var service = new FakePatientService();
             service.SearchResult = OperationResult<IList<PatientListItemDto>>.Success(
                 new List<PatientListItemDto>());
-            var presenter = new PatientManagementPresenter(view, service);
+            var presenter = Presenter(view, service);
 
             presenter.LoadInitial();
 
@@ -55,7 +55,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakePatientManagementView();
             var service = new FakePatientService { Failure = new InvalidOperationException("DB") };
-            var presenter = new PatientManagementPresenter(view, service);
+            var presenter = Presenter(view, service);
 
             presenter.LoadInitial();
 
@@ -77,7 +77,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var service = new FakePatientService();
             service.SearchResult = OperationResult<IList<PatientListItemDto>>.Success(
                 new List<PatientListItemDto>());
-            new PatientManagementPresenter(view, service);
+            Presenter(view, service);
 
             view.RaiseSearchRequested();
 
@@ -95,7 +95,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 SocialNumber = "660312-2000019",
             };
             var service = new FakePatientService { SearchResult = Rows() };
-            new PatientManagementPresenter(view, service);
+            Presenter(view, service);
 
             view.RaiseSearchRequested();
 
@@ -115,7 +115,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakePatientManagementView { ChartNo = "2026-000123" };
             var service = new FakePatientService { SearchResult = Rows(), DetailResult = Detail() };
-            new PatientManagementPresenter(view, service);
+            Presenter(view, service);
 
             view.RaiseSelectionChanged(11);
             Assert.IsNotNull(view.Detail, "행을 골랐는데 상세가 비어 있다");
@@ -136,7 +136,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             {
                 SearchResult = OperationResult<IList<PatientListItemDto>>.Success(new List<PatientListItemDto>()),
             };
-            new PatientManagementPresenter(view, service);
+            Presenter(view, service);
 
             view.RaiseSearchRequested();
 
@@ -152,7 +152,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             {
                 SearchResult = OperationResult<IList<PatientListItemDto>>.Failure("차트번호는 100자 이하로 입력하십시오."),
             };
-            new PatientManagementPresenter(view, service);
+            Presenter(view, service);
 
             view.RaiseSearchRequested();
 
@@ -166,7 +166,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakePatientManagementView { ChartNo = "2026-000123" };
             var service = new FakePatientService { Failure = new InvalidOperationException("서버 SQLDEV01 에 붙지 못했습니다") };
-            new PatientManagementPresenter(view, service);
+            Presenter(view, service);
 
             view.RaiseSearchRequested();
 
@@ -179,7 +179,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakePatientManagementView();
             var service = new FakePatientService { DetailResult = Detail() };
-            new PatientManagementPresenter(view, service);
+            Presenter(view, service);
 
             view.RaiseSelectionChanged(11);
 
@@ -193,7 +193,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakePatientManagementView();
             var service = new FakePatientService { DetailResult = Detail() };
-            new PatientManagementPresenter(view, service);
+            Presenter(view, service);
 
             view.RaiseSelectionChanged(11);
             view.RaiseSelectionChanged(null);
@@ -210,7 +210,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             {
                 DetailResult = OperationResult<PatientDetailDto>.Failure("수검자 상세 결과가 비어 있습니다."),
             };
-            new PatientManagementPresenter(view, service);
+            Presenter(view, service);
 
             view.RaiseSelectionChanged(11);
 
@@ -225,6 +225,161 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 new PatientListItemDto { PatientId = 11, ChartNo = "2026-000123", Name = "홍길동" },
             };
             return OperationResult<IList<PatientListItemDto>>.Success(rows);
+        }
+
+        /// <summary>
+        /// 예약 조인을 재지 않는 시험용. 업무 목록이 비어 있으면 전원 `가능` 이고, 그것이
+        /// 예약접수 0행인 DB 에서 실제로 참인 값이다.
+        /// </summary>
+        private static PatientManagementPresenter Presenter(
+            FakePatientManagementView view, FakePatientService service)
+        {
+            return new PatientManagementPresenter(view, service, new FakeWorkService(), Status(Today));
+        }
+
+        private static readonly DateTime Today = new DateTime(2026, 9, 11);
+
+        private static FakeCommonStatusService Status(DateTime today)
+        {
+            return new FakeCommonStatusService
+            {
+                Result = OperationResult<CommonWorkStatusDto>.Success(new CommonWorkStatusDto
+                {
+                    Today = today,
+                    DayName = "금요일",
+                    IsBusinessDay = true,
+                    IsWithinHours = true,
+                    IsWorkAllowed = true,
+                    BlockMessage = string.Empty,
+                }),
+            };
+        }
+
+        // ── 2026-09-11 grilling: 목록에 「예약 가능/불가」 를 이어 붙인다
+
+        /// <summary>
+        /// `00` RP-06 — 유효업무는 `예약일 >= DB 오늘날짜` 이고 상태가 `RSV`/`RCP` 인 것이다.
+        /// 그 사람이 `불가` 이고, 없으면 `가능` 이다.
+        /// </summary>
+        [TestMethod]
+        public void 오늘_이후_예약이_있으면_불가로_적는다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService { SearchResult = Rows() };
+            var works = new FakeWorkService
+            {
+                SearchResult = OperationResult<IList<WorkListItemDto>>.Success(new List<WorkListItemDto>
+                {
+                    new WorkListItemDto
+                    {
+                        WorkId = 91, PatientId = 11, ReserveDate = Today.AddDays(3),
+                        SlotCode = "AM", StatusCode = DbWorkStatus.Reserved, StatusName = "예약",
+                    },
+                }),
+            };
+            new PatientManagementPresenter(view, service, works, Status(Today));
+
+            view.RaiseSearchRequested();
+
+            Assert.AreEqual("불가", view.Rows[0].ReserveStatus);
+            StringAssert.Contains(view.Rows[0].ReserveStatusDetail, "2026-09-14");
+        }
+
+        /// <summary>
+        /// `00` RP-06 — *"과거 업무는 중복판단에서 제외한다."* 지난 예약을 접수하지 않은 채
+        /// 두었어도 새 예약은 **가능**하다. 다만 그 사실은 적어 준다 — 상태코드를 새로 만들지
+        /// 않고 `RSV` + `예약일<오늘` 두 값의 조합으로 읽는다 (2026-09-11 grilling).
+        /// </summary>
+        [TestMethod]
+        public void 지난_예약을_미접수로_두었어도_예약은_가능하다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService { SearchResult = Rows() };
+            var works = new FakeWorkService
+            {
+                SearchResult = OperationResult<IList<WorkListItemDto>>.Success(new List<WorkListItemDto>
+                {
+                    new WorkListItemDto
+                    {
+                        WorkId = 91, PatientId = 11, ReserveDate = Today.AddDays(-6),
+                        SlotCode = "AM", StatusCode = DbWorkStatus.Reserved, StatusName = "예약",
+                    },
+                }),
+            };
+            new PatientManagementPresenter(view, service, works, Status(Today));
+
+            view.RaiseSearchRequested();
+
+            Assert.AreEqual("가능", view.Rows[0].ReserveStatus);
+            StringAssert.Contains(view.Rows[0].ReserveStatusDetail, "미접수");
+        }
+
+        // 여섯째 조회조건 — SP 가 모르므로 화면이 거른다.
+        [TestMethod]
+        public void 예약_없는_수검자만_을_켜면_불가인_행이_빠진다()
+        {
+            var view = new FakePatientManagementView { ReservableOnly = true };
+            var service = new FakePatientService { SearchResult = Rows() };
+            var works = new FakeWorkService
+            {
+                SearchResult = OperationResult<IList<WorkListItemDto>>.Success(new List<WorkListItemDto>
+                {
+                    new WorkListItemDto
+                    {
+                        WorkId = 91, PatientId = 11, ReserveDate = Today,
+                        SlotCode = "AM", StatusCode = DbWorkStatus.Received, StatusName = "접수완료",
+                    },
+                }),
+            };
+            new PatientManagementPresenter(view, service, works, Status(Today));
+
+            view.RaiseSearchRequested();
+
+            Assert.AreEqual(0, view.Rows.Count, "불가인 행이 남았다");
+        }
+
+        /// <summary>
+        /// [X] 이어 붙이지 못하면 **칸을 비운다.** 모르는 것을 `가능` 이라 적으면 거짓이 되고,
+        ///     사용자는 예약을 걸었다가 모달에서 막힌다.
+        /// </summary>
+        [TestMethod]
+        public void 업무_조회가_실패하면_예약칸을_비운다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService { SearchResult = Rows() };
+            var works = new FakeWorkService { SearchFailure = new InvalidOperationException("끊겼다") };
+            new PatientManagementPresenter(view, service, works, Status(Today));
+
+            view.RaiseSearchRequested();
+
+            Assert.AreEqual(1, view.Rows.Count, "목록 자체는 그대로 보인다");
+            Assert.IsNull(view.Rows[0].ReserveStatus);
+        }
+
+        // 행을 고르면 상세가 날짜까지 말해 준다 — 목록의 두 값이 못 하는 일이다.
+        [TestMethod]
+        public void 행을_고르면_상세에_예약_일정이_선다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService { SearchResult = Rows(), DetailResult = Detail() };
+            var works = new FakeWorkService
+            {
+                SearchResult = OperationResult<IList<WorkListItemDto>>.Success(new List<WorkListItemDto>
+                {
+                    new WorkListItemDto
+                    {
+                        WorkId = 91, PatientId = 11, ReserveDate = Today.AddDays(3),
+                        SlotCode = "PM", StatusCode = DbWorkStatus.Reserved, StatusName = "예약",
+                    },
+                }),
+            };
+            new PatientManagementPresenter(view, service, works, Status(Today));
+            view.RaiseSearchRequested();
+
+            view.RaiseSelectionChanged(11);
+
+            StringAssert.Contains(view.ReserveStatusText, "오후");
+            StringAssert.StartsWith(view.ReserveStatusText, "예약 불가");
         }
 
         private static OperationResult<PatientDetailDto> Detail()
@@ -252,8 +407,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public string Birthday { get; set; }
         public string MobilePhone { get; set; }
 
+        public bool ReservableOnly { get; set; }
+
         public IList<PatientListItemDto> Rows { get; set; }
         public PatientDetailDto Detail { get; set; }
+        public string ReserveStatusText { get; set; }
         public bool RowSelected { get; set; }
         public string LastMessage { get; private set; }
 

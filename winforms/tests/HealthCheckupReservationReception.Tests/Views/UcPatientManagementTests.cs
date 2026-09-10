@@ -139,21 +139,25 @@ namespace HealthCheckupReservationReception.Tests.Views
 
         // 03 §5.3 조회조건 다섯. 2026-09-10 에 생년월일·휴대전화를 걷었다가 grilling 2회차에서
         // **끌 수 있는 조건**으로 되돌렸다 — 사라진 것이 아니라 기본이 꺼진 것이고, 그래서
-        // 01 P01-01 · 02 F-PAT-001 과의 이탈이 닫힌다. DLG-PAT-02 도 같은 다섯이다 (03 §7.2).
+        // 01 P01-01 · 02 F-PAT-001 과의 이탈이 닫힌다.
+        //
+        // 여섯째 `예약 없는 수검자만` 은 2026-09-11 grilling 이 더한 것이다. SP 로 가지 않고
+        // 화면이 거르므로 여닫을 칸이 없다 — 앞 다섯과 성질이 다르다.
         [TestMethod]
-        public void 조회조건은_다섯이고_기본은_앞_셋만_켜져_있다()
+        public void 조회조건은_여섯이고_기본은_앞_셋만_켜져_있다()
         {
             RunSta(() =>
             {
                 var screen = new UcPatientManagement();
                 CheckedListBoxControl list = Field<CheckedListBoxControl>(screen, "clbConditions");
 
-                Assert.AreEqual(5, list.Items.Count, "조회조건이 다섯이 아니다");
+                Assert.AreEqual(6, list.Items.Count, "조회조건이 여섯이 아니다");
                 Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciChartNo").Visibility);
                 Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciName").Visibility);
                 Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciSocialNumber").Visibility);
                 Assert.AreEqual(LayoutVisibility.Never, Item(screen, "lciBirthday").Visibility, "생년월일은 기본이 꺼짐이다");
                 Assert.AreEqual(LayoutVisibility.Never, Item(screen, "lciMobilePhone").Visibility, "휴대전화는 기본이 꺼짐이다");
+                Assert.IsFalse(((IPatientManagementView)screen).ReservableOnly, "여섯째도 기본은 꺼짐이다");
             });
         }
 

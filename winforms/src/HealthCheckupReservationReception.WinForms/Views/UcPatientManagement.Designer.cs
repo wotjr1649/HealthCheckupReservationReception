@@ -34,6 +34,7 @@ namespace HealthCheckupReservationReception.Views
             this.colBirthday = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colGender = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colMobilePhone = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.colReserveStatus = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colSocialNumber = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colPhone = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colEmail = new DevExpress.XtraGrid.Columns.GridColumn();
@@ -68,6 +69,9 @@ namespace HealthCheckupReservationReception.Views
             this.lciPatientList = new DevExpress.XtraLayout.LayoutControlItem();
             this.splitPatient = new DevExpress.XtraLayout.SplitterItem();
             this.lcgDetail = new DevExpress.XtraLayout.LayoutControlGroup();
+            this.lblDetailReserve = new DevExpress.XtraEditors.LabelControl();
+            this.lcgDetailReserve = new DevExpress.XtraLayout.LayoutControlGroup();
+            this.lciDetailReserve = new DevExpress.XtraLayout.LayoutControlItem();
             this.lcgDetailBasic = new DevExpress.XtraLayout.LayoutControlGroup();
             this.lciDetailChartNo = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciDetailName = new DevExpress.XtraLayout.LayoutControlItem();
@@ -123,6 +127,8 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lciPatientList)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.splitPatient)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgDetail)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lcgDetailReserve)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciDetailReserve)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgDetailBasic)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailChartNo)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailName)).BeginInit();
@@ -149,6 +155,7 @@ namespace HealthCheckupReservationReception.Views
             this.lcMain.Controls.Add(this.cboColumns);
             this.lcMain.Controls.Add(this.btnSearch);
             this.lcMain.Controls.Add(this.gcPatientList);
+            this.lcMain.Controls.Add(this.lblDetailReserve);
             this.lcMain.Controls.Add(this.txtDetailChartNo);
             this.lcMain.Controls.Add(this.txtDetailName);
             this.lcMain.Controls.Add(this.txtDetailSocialNumber);
@@ -286,6 +293,7 @@ namespace HealthCheckupReservationReception.Views
             this.colBirthday,
             this.colGender,
             this.colMobilePhone,
+            this.colReserveStatus,
             this.colSocialNumber,
             this.colPhone,
             this.colEmail,
@@ -355,6 +363,19 @@ namespace HealthCheckupReservationReception.Views
             this.colMobilePhone.Visible = true;
             this.colMobilePhone.VisibleIndex = 4;
             this.colMobilePhone.Width = 181;
+            //
+            // colReserveStatus
+            //
+            // SP 컬럼이 아니다 — 화면이 SP-WRK-01 결과를 수검자ID 로 이어 붙인 값이다
+            // (2026-09-11 grilling · PatientListItemDto 주석).
+            this.colReserveStatus.Caption = "예약";
+            this.colReserveStatus.FieldName = "ReserveStatus";
+            this.colReserveStatus.Name = "colReserveStatus";
+            this.colReserveStatus.MinWidth = 60;
+            this.colReserveStatus.OptionsColumn.AllowEdit = false;
+            this.colReserveStatus.Visible = true;
+            this.colReserveStatus.VisibleIndex = 5;
+            this.colReserveStatus.Width = 70;
             //
             // colSocialNumber
             //
@@ -686,6 +707,7 @@ namespace HealthCheckupReservationReception.Views
             // lcgDetail
             //
             this.lcgDetail.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
+            this.lcgDetailReserve,
             this.lcgDetailBasic,
             this.lcgDetailContact,
             this.lcgDetailAddress,
@@ -697,6 +719,37 @@ namespace HealthCheckupReservationReception.Views
             this.lcgDetail.Size = new System.Drawing.Size(726, 887);
             this.lcgDetail.Text = "수검자 상세 · ReadOnly";
             //
+            // lblDetailReserve
+            //
+            this.lblDetailReserve.Location = new System.Drawing.Point(24, 40);
+            this.lblDetailReserve.Name = "lblDetailReserve";
+            this.lblDetailReserve.Size = new System.Drawing.Size(0, 14);
+            this.lblDetailReserve.StyleController = this.lcMain;
+            this.lblDetailReserve.TabIndex = 30;
+            //
+            // lcgDetailReserve
+            //
+            // 03 §5.5 상세의 맨 위다. 「이 사람 언제 오기로 했지」가 창구에서 가장 먼저 나오는
+            // 질문이고, 목록의 `가능/불가` 두 값이 말해 주지 못하는 것이 그 일정이다.
+            this.lcgDetailReserve.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
+            this.lciDetailReserve});
+            this.lcgDetailReserve.Location = new System.Drawing.Point(0, 0);
+            this.lcgDetailReserve.Name = "lcgDetailReserve";
+            this.lcgDetailReserve.Size = new System.Drawing.Size(726, 48);
+            this.lcgDetailReserve.Text = "예약 상태";
+            //
+            // lciDetailReserve
+            //
+            this.lciDetailReserve.Control = this.lblDetailReserve;
+            this.lciDetailReserve.Location = new System.Drawing.Point(0, 0);
+            this.lciDetailReserve.MaxSize = new System.Drawing.Size(0, 24);
+            this.lciDetailReserve.MinSize = new System.Drawing.Size(104, 24);
+            this.lciDetailReserve.Name = "lciDetailReserve";
+            this.lciDetailReserve.Size = new System.Drawing.Size(726, 24);
+            this.lciDetailReserve.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            this.lciDetailReserve.TextSize = new System.Drawing.Size(0, 0);
+            this.lciDetailReserve.TextVisible = false;
+            //
             // lcgDetailBasic
             //
             this.lcgDetailBasic.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
@@ -704,7 +757,7 @@ namespace HealthCheckupReservationReception.Views
             this.lciDetailName,
             this.lciDetailSocialNumber,
             this.lciDetailBirthGender});
-            this.lcgDetailBasic.Location = new System.Drawing.Point(0, 0);
+            this.lcgDetailBasic.Location = new System.Drawing.Point(0, 48);
             this.lcgDetailBasic.Name = "lcgDetailBasic";
             this.lcgDetailBasic.Size = new System.Drawing.Size(726, 120);
             this.lcgDetailBasic.Text = "기본정보";
@@ -762,7 +815,7 @@ namespace HealthCheckupReservationReception.Views
             this.lcgDetailContact.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
             this.lciDetailMobilePhone,
             this.lciDetailPhoneEmail});
-            this.lcgDetailContact.Location = new System.Drawing.Point(0, 120);
+            this.lcgDetailContact.Location = new System.Drawing.Point(0, 168);
             this.lcgDetailContact.Name = "lcgDetailContact";
             this.lcgDetailContact.Size = new System.Drawing.Size(726, 72);
             this.lcgDetailContact.Text = "연락처";
@@ -796,7 +849,7 @@ namespace HealthCheckupReservationReception.Views
             this.lcgDetailAddress.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
             this.lciDetailZipAddress,
             this.lciDetailAddressDetail});
-            this.lcgDetailAddress.Location = new System.Drawing.Point(0, 192);
+            this.lcgDetailAddress.Location = new System.Drawing.Point(0, 240);
             this.lcgDetailAddress.Name = "lcgDetailAddress";
             this.lcgDetailAddress.Size = new System.Drawing.Size(726, 72);
             this.lcgDetailAddress.Text = "주소";
@@ -829,9 +882,9 @@ namespace HealthCheckupReservationReception.Views
             //
             this.lcgDetailMemo.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
             this.lciDetailMemo});
-            this.lcgDetailMemo.Location = new System.Drawing.Point(0, 264);
+            this.lcgDetailMemo.Location = new System.Drawing.Point(0, 312);
             this.lcgDetailMemo.Name = "lcgDetailMemo";
-            this.lcgDetailMemo.Size = new System.Drawing.Size(726, 623);
+            this.lcgDetailMemo.Size = new System.Drawing.Size(726, 575);
             this.lcgDetailMemo.Text = "메모";
             //
             // lciDetailMemo
@@ -897,6 +950,8 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lciPatientList)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.splitPatient)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgDetail)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lcgDetailReserve)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciDetailReserve)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgDetailBasic)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailChartNo)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailName)).EndInit();
@@ -948,6 +1003,7 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraGrid.Columns.GridColumn colBirthday;
         private DevExpress.XtraGrid.Columns.GridColumn colGender;
         private DevExpress.XtraGrid.Columns.GridColumn colMobilePhone;
+        private DevExpress.XtraGrid.Columns.GridColumn colReserveStatus;
         private DevExpress.XtraGrid.Columns.GridColumn colSocialNumber;
         private DevExpress.XtraGrid.Columns.GridColumn colPhone;
         private DevExpress.XtraGrid.Columns.GridColumn colEmail;
@@ -956,6 +1012,9 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraLayout.LayoutControlItem lciPatientList;
         private DevExpress.XtraLayout.SplitterItem splitPatient;
         private DevExpress.XtraLayout.LayoutControlGroup lcgDetail;
+        private DevExpress.XtraEditors.LabelControl lblDetailReserve;
+        private DevExpress.XtraLayout.LayoutControlGroup lcgDetailReserve;
+        private DevExpress.XtraLayout.LayoutControlItem lciDetailReserve;
         private DevExpress.XtraLayout.LayoutControlGroup lcgDetailBasic;
         private DevExpress.XtraEditors.TextEdit txtDetailChartNo;
         private DevExpress.XtraEditors.TextEdit txtDetailName;

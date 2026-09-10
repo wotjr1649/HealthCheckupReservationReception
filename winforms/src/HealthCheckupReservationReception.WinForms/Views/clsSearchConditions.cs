@@ -40,6 +40,9 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>
         /// 조회조건 하나를 목록에 더하고 처음 상태를 화면에 바른다.
         /// 칸이 둘 이상인 조건(기간 From~To)은 돌려받은 것에 <see cref="clsSearchCondition.Also"/> 로 잇는다.
+        ///
+        /// **칸이 없는 조건도 있다** — `예약 없는 수검자만` 은 켜고 끄는 것 자체가 값이라
+        /// 여닫을 것이 없다. 그때는 <paramref name="item"/> 과 <paramref name="editor"/> 가 null 이다.
         /// </summary>
         public clsSearchCondition Add(string caption, bool on, LayoutControlItem item, BaseEdit editor)
         {
@@ -85,6 +88,22 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
+        /// 그 조건이 켜져 있는가. 칸이 없는 조건은 이것으로만 읽는다.
+        /// </summary>
+        public bool IsOn(string caption)
+        {
+            foreach (CheckedListBoxItem item in _list.Items)
+            {
+                if (string.Equals(item.Description, caption, StringComparison.Ordinal))
+                {
+                    return item.CheckState == CheckState.Checked;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// 화면의 `clbConditions_ItemCheck` 이 그대로 넘겨준다.
         ///
         /// [X] `ItemCheck` 이 항목에 반영되기 **전**에 오는지 뒤에 오는지는 재지 않는다 —
@@ -117,6 +136,12 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>같은 조건이 여닫는 칸을 하나 더 잇는다 (`예약/접수일 [From] ~ [To]`).</summary>
         public clsSearchCondition Also(LayoutControlItem item, BaseEdit editor)
         {
+            // 칸이 없는 조건이면 여닫을 것도 없다.
+            if (item == null)
+            {
+                return this;
+            }
+
             _items.Add(item);
             _editors.Add(editor);
             return this;

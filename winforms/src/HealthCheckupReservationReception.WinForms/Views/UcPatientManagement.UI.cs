@@ -16,6 +16,7 @@ namespace HealthCheckupReservationReception.Views
             clsGridColumns.Align(colBirthday, HorzAlignment.Center);
             clsGridColumns.Align(colGender, HorzAlignment.Center);
             clsGridColumns.Align(colMobilePhone, HorzAlignment.Center);
+            clsGridColumns.Align(colReserveStatus, HorzAlignment.Center);
 
             // 03 §18 — 컬럼을 숨기는 길은 [컬럼 설정] 드롭다운 하나뿐이다. 헤더를 밖으로 끌어
             // 숨기는 경로를 열어 두면 실수로 사라진 컬럼을 되돌릴 방법을 사용자가 모른다.
@@ -39,6 +40,9 @@ namespace HealthCheckupReservationReception.Views
             _conditions.Add("주민번호", true, lciSocialNumber, txtSocialNumber);
             _conditions.Add("생년월일", false, lciBirthday, deBirthday);
             _conditions.Add("휴대전화", false, lciMobilePhone, txtMobilePhone);
+
+            // 여섯째. 칸이 없는 조건이다 — 켜고 끄는 것 자체가 값이라 편집기를 붙이지 않는다.
+            _conditions.Add("예약 없는 수검자만", false, null, null);
 
             _columns = new clsColumnChooser(clbColumns, gvPatientList);
         }
