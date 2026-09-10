@@ -29,8 +29,9 @@ namespace HealthCheckupReservationReception.Views
         void ShowBusinessScreen(BusinessTab screen);
 
         /// <summary>
-        /// 03 §3 호출계약 `BeginNewReservation(Context, PatientId?, Source)` — 신규예약 화면을
-        /// 그 Context 와 전달키로 세운다. 화면 하나를 Normal 과 WalkIn 이 나눠 쓴다 (§8.10 · §9.8).
+        /// 03 §3 호출계약 `BeginNewReservation(Context, PatientId?, Source)` — 신규예약 **모달**을
+        /// 그 Context 와 전달키로 연다 (2026-09-10 grilling 2회차). 창 하나를 Normal 과 WalkIn 이
+        /// 나눠 쓴다 (§8.10 · §9.8). `patientId` 가 없으면 여는 쪽이 DLG-PAT-02 로 먼저 고른다.
         /// </summary>
         void BeginNewReservation(ReservationContext context, long? patientId, NavigationSource source);
 
@@ -62,12 +63,12 @@ namespace HealthCheckupReservationReception.Views
     }
 
     /// <summary>
-    /// 업무 화면 셋. 예약 관리와 접수 관리는 같은 화면 하나를 나눠 쓴다 (03 §1.1 · §4.3).
+    /// 업무 판에 세워 두는 화면 둘. 예약 관리와 접수 관리는 같은 화면 하나를 나눠 쓴다
+    /// (03 §1.1 · §4.3). 신규 예약은 여기 없다 — 모달이라 세워 두지 않는다.
     /// </summary>
     public enum BusinessTab
     {
         PatientManagement,
-        NewReservation,
         Workbench
     }
 

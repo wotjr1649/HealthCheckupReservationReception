@@ -5,7 +5,7 @@ using HealthCheckupReservationReception.Common;
 
 namespace HealthCheckupReservationReception.Views
 {
-    public partial class UcReservation
+    public partial class FrmReservation
     {
         /// <summary>
         /// Designer 가 직렬화하지 않는 것만 여기 있다 — Appearance 뿐이다 (킷 §5).

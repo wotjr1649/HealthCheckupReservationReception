@@ -23,7 +23,6 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientEdit = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnPatientReserve = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnPatientLog = new DevExpress.XtraBars.BarButtonItem();
-            this.barBtnReservationSave = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnRsvEdit = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnRsvCancel = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnRsvReception = new DevExpress.XtraBars.BarButtonItem();
@@ -40,7 +39,6 @@ namespace HealthCheckupReservationReception.Views
             this.barGroupPatientWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupPatientView = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barPageNewReservation = new DevExpress.XtraBars.Ribbon.RibbonPage();
-            this.barGroupReservationWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barPageRsvDesk = new DevExpress.XtraBars.Ribbon.RibbonPage();
             this.barGroupRsvWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupRsvView = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
@@ -63,7 +61,6 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientEdit,
             this.barBtnPatientReserve,
             this.barBtnPatientLog,
-            this.barBtnReservationSave,
             this.barBtnRsvEdit,
             this.barBtnRsvCancel,
             this.barBtnRsvReception,
@@ -128,7 +125,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientReserve.Id = 5;
             this.barBtnPatientReserve.Name = "barBtnPatientReserve";
             this.barBtnPatientReserve.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnPatientReserve.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
+            this.barBtnPatientReserve.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnPatientReserve_ItemClick);
             //
             // barBtnPatientLog
             //
@@ -137,14 +134,6 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientLog.Name = "barBtnPatientLog";
             this.barBtnPatientLog.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             this.barBtnPatientLog.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
-            //
-            // barBtnReservationSave
-            //
-            this.barBtnReservationSave.Caption = "예약저장";
-            this.barBtnReservationSave.Id = 8;
-            this.barBtnReservationSave.Name = "barBtnReservationSave";
-            this.barBtnReservationSave.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnReservationSave.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnReservationSave_ItemClick);
             //
             // barBtnRsvEdit
             //
@@ -261,16 +250,10 @@ namespace HealthCheckupReservationReception.Views
             //
             // barPageNewReservation
             //
-            this.barPageNewReservation.Groups.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPageGroup[] {
-            this.barGroupReservationWork});
+            // 그룹이 없다 — WF-RSV-01 이 모달이 되면서 [예약저장] 이 그 창의 하단으로 내려갔고
+            // (2026-09-10 grilling 2회차), 이 Page 는 휴무일 관리와 같은 **여는 자리**가 되었다.
             this.barPageNewReservation.Name = "barPageNewReservation";
             this.barPageNewReservation.Text = "신규 예약";
-            //
-            // barGroupReservationWork
-            //
-            this.barGroupReservationWork.ItemLinks.Add(this.barBtnReservationSave);
-            this.barGroupReservationWork.Name = "barGroupReservationWork";
-            this.barGroupReservationWork.Text = "예약";
             //
             // barPageRsvDesk
             //
@@ -380,7 +363,6 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageHoliday;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientWork;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientView;
-        private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupReservationWork;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRsvWork;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRsvView;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRcpWork;
@@ -389,7 +371,6 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraBars.BarButtonItem barBtnPatientEdit;
         private DevExpress.XtraBars.BarButtonItem barBtnPatientReserve;
         private DevExpress.XtraBars.BarButtonItem barBtnPatientLog;
-        private DevExpress.XtraBars.BarButtonItem barBtnReservationSave;
         private DevExpress.XtraBars.BarButtonItem barBtnRsvEdit;
         private DevExpress.XtraBars.BarButtonItem barBtnRsvCancel;
         private DevExpress.XtraBars.BarButtonItem barBtnRsvReception;

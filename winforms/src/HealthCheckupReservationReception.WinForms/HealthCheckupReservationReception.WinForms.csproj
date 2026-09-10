@@ -180,14 +180,14 @@
       <DependentUpon>UcWorkbench.cs</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Views\UcReservation.cs">
-      <SubType>UserControl</SubType>
+    <Compile Include="Views\FrmReservation.cs">
+      <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Views\UcReservation.Designer.cs">
-      <DependentUpon>UcReservation.cs</DependentUpon>
+    <Compile Include="Views\FrmReservation.Designer.cs">
+      <DependentUpon>FrmReservation.cs</DependentUpon>
     </Compile>
-    <Compile Include="Views\UcReservation.UI.cs">
-      <DependentUpon>UcReservation.cs</DependentUpon>
+    <Compile Include="Views\FrmReservation.UI.cs">
+      <DependentUpon>FrmReservation.cs</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

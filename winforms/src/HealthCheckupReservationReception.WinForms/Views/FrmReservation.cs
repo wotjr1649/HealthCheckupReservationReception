@@ -14,73 +14,66 @@ namespace HealthCheckupReservationReception.Views
     /// <summary>
     /// WF-RSV-01 신규 예약 (03 §8). 판정은 하지 않는다: 그리고 이벤트만 올린다 (킷 §2).
     ///
+    /// **모달이다** (2026-09-10 grilling 2회차). 예전에는 업무 탭 하나를 차지했는데,
+    /// 탭 띠를 걷은 뒤로는 "떠나 있다가 돌아온다" 는 탭의 유일한 이점이 사라졌고 —
+    /// 미저장 신규예약이 아무 데서도 보이지 않는 자리가 되었다. 05 §9.3 은 신규·WalkIn·
+    /// 예약변경을 `변경범위` 하나로 가르는 **한 SP** 로 설계했으므로, 화면도 하나여야 한다.
+    ///
     /// 배치는 `lcMain` LayoutControl 하나가 갖는다 — 상단 수검자|일정, 가운데 대상판정 한 줄,
-    /// 하단 NEX|AEX (03 §8.4 비율). 03 과 와이어프레임은 배치를 구속하지 않는다
+    /// 하단 NEX|AEX, 맨 아래 `[저장] [닫기]`. 03 과 와이어프레임은 배치를 구속하지 않는다
     /// (ROOT AGENTS.md §1.1) — 필드의 뜻과 업무 규칙만 거기서 온다.
     /// </summary>
-    public partial class UcReservation : XtraUserControl, IReservationView
+    public partial class FrmReservation : XtraForm, IReservationView
     {
-        private ReservationPresenter _presenter;
-        private IPatientService _patientService;
-        private string _operatorName;
+        private readonly ReservationPresenter _presenter;
 
         // Presenter 가 시킨 값 쓰기가 다시 ScheduleChanged 로 돌아와 무한 왕복하는 것을 막는다.
         private bool _suppress;
 
+        // 저장이 끝난 뒤에는 폐기 확인을 묻지 않는다 (03 §8.10).
+        private bool _saved;
+
         partial void ConfigureUI();
 
-        public UcReservation()
+        /// <summary>
+        /// 디자이너용 생성자다. VS 디자이너와 배치 게이트(LayoutBaselineTests)가 이것으로 만든다 —
+        /// 서비스도 Presenter 도 없이 껍데기만 선다.
+        /// </summary>
+        public FrmReservation()
         {
             InitializeComponent();
             ConfigureUI();
         }
 
         /// <summary>
-        /// Presenter 를 붙인다. UserControl 은 디자이너가 만들어야 하므로 생성자로 받지 않는다
-        /// (킷 `references/mvp-wiring.md`).
-        ///
-        /// `IPatientService` 는 DLG-PAT-02 를 여는 데 쓴다 — Modal 을 여는 것은 View 의 일이다.
+        /// 03 §3 `BeginNewReservation(Context, PatientId, Source)`. **모달은 대상을 받고 열린다** —
+        /// 수검자가 정해지지 않은 채로는 이 화면이 아예 서지 않는다.
         /// </summary>
-        public void Attach(IReservationService service, IPatientService patientService, string operatorName)
+        public FrmReservation(IReservationService service, IPatientService patientService,
+            string operatorName, ReservationContext context, long patientId, NavigationSource source)
+            : this()
         {
-            _patientService = patientService;
-            _operatorName = operatorName;
             _presenter = new ReservationPresenter(this, service, patientService, operatorName);
-        }
 
-        /// <summary>03 §3 `BeginNewReservation(Context, PatientId?, Source)`. MainForm 이 부른다.</summary>
-        public void Begin(ReservationContext context, long? patientId, NavigationSource source)
-        {
-            if (_presenter != null)
+            if (context == ReservationContext.WalkIn)
+            {
+                Text = "당일 접수";
+            }
+
+            using (new clsBusyScope(this))
             {
                 _presenter.Begin(context, patientId, source);
             }
         }
 
-        /// <summary>Ribbon `[예약저장]` 이 눌렸다. Ribbon 은 MainForm 이 갖는다 (03 §8.2).</summary>
-        public void RequestSave()
-        {
-            EventHandler handler = SaveRequested;
-            if (handler == null)
-            {
-                return;
-            }
+        /// <summary>
+        /// 03 §8.11 저장 성공·§8.5 기존 유효예약 — 둘 다 여기로 넘어간다. 모달이 `OK` 로 닫히면
+        /// 부른 쪽(MainForm)이 이 값을 읽어 Workbench 를 연다.
+        /// </summary>
+        public WorkbenchTarget Result { get; private set; }
 
-            using (new clsBusyScope(this))
-            {
-                handler(this, EventArgs.Empty);
-            }
-        }
-
-        public event EventHandler<long> PatientPicked;
         public event EventHandler ScheduleChanged;
         public event EventHandler SaveRequested;
-
-        /// <summary>`[예약저장]` 의 Enabled 를 Ribbon 을 가진 쪽으로 넘긴다 (03 §8.2).</summary>
-        public event EventHandler<bool> SaveEnabledChanged;
-
-        /// <summary>03 §8.5 기존 유효예약 · §8.11 저장 성공 — 둘 다 Workbench 로 넘긴다.</summary>
-        public event EventHandler<WorkbenchTarget> WorkbenchRequested;
 
         public PatientDetailDto Patient
         {
@@ -190,7 +183,7 @@ namespace HealthCheckupReservationReception.Views
         /// 받은 순서를 그대로 되돌리면 맞는다.
         ///
         /// [X] 체크를 켠 직후에는 편집기가 아직 열려 있어 값이 DTO 로 내려가지 않았을 수 있다.
-        ///     Ribbon 의 `[예약저장]` 은 Grid 밖이라 그대로 읽으면 방금 켠 것을 놓친다.
+        ///     `[저장]` 은 Grid 밖이라 그대로 읽으면 방금 켠 것을 놓친다.
         /// </summary>
         public bool[] AexSelection
         {
@@ -214,16 +207,13 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
+        /// <summary>
+        /// 03 §8.2 — 저장 단추는 조건이 갖춰졌을 때만 열린다. Ribbon 으로 넘기던 것을 모달
+        /// 하단으로 내렸으므로 이제 자기 단추를 자기가 연다.
+        /// </summary>
         public bool SaveEnabled
         {
-            set
-            {
-                EventHandler<bool> handler = SaveEnabledChanged;
-                if (handler != null)
-                {
-                    handler(this, value);
-                }
-            }
+            set { btnSave.Enabled = value; }
         }
 
         public string BlockMessage
@@ -231,42 +221,62 @@ namespace HealthCheckupReservationReception.Views
             set { lblBlock.Text = value ?? string.Empty; }
         }
 
+        /// <summary>
+        /// 03 §8.11 — 저장이 끝나면 이 화면은 할 일이 없다. 결과만 남기고 닫는다.
+        /// Workbench 를 여는 것은 Shell 의 일이다 (03 §3 `OpenWorkbench`).
+        /// </summary>
         public void GoToWorkbench(WorkContext context, long workId)
         {
-            EventHandler<WorkbenchTarget> handler = WorkbenchRequested;
-            if (handler != null)
-            {
-                handler(this, new WorkbenchTarget { Context = context, WorkId = workId });
-            }
+            Result = new WorkbenchTarget { Context = context, WorkId = workId };
+            _saved = true;
+            DialogResult = DialogResult.OK;
+            Close();
         }
 
         public void ShowMessage(string message)
         {
-            Form owner = FindForm();
-            XtraMessageBox.Show(owner, message, owner == null ? string.Empty : owner.Text);
+            XtraMessageBox.Show(this, message, Text);
         }
 
-        /// <summary>03 §8.5 — DLG-PAT-02 로 수검자를 확정한다. Modal 을 여는 것은 View 의 일이다.</summary>
-        private void btnPickPatient_Click(object sender, EventArgs e)
+        /// <summary>
+        /// 03 §8.10 폐기 확인. **닫는 길이 하나뿐이라 트리거도 하나다** — `[닫기]`·`Esc`·창 X 가
+        /// 전부 여기로 온다.
+        /// </summary>
+        protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            if (_patientService == null)
+            if (!_saved && _presenter != null && _presenter.HasUnsavedInput)
+            {
+                DialogResult answer = XtraMessageBox.Show(this,
+                    "입력한 내용이 저장되지 않았습니다. 닫으시겠습니까?", Text,
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (answer != DialogResult.Yes)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+            }
+
+            base.OnFormClosing(e);
+        }
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            EventHandler handler = SaveRequested;
+            if (handler == null)
             {
                 return;
             }
 
-            using (var select = new FrmPatientSelect(_patientService, _operatorName))
+            using (new clsBusyScope(this))
             {
-                if (select.ShowDialog(FindForm()) != DialogResult.OK || select.SelectedPatientId == null)
-                {
-                    return;
-                }
-
-                EventHandler<long> handler = PatientPicked;
-                if (handler != null)
-                {
-                    handler(this, select.SelectedPatientId.Value);
-                }
+                handler(this, EventArgs.Empty);
             }
+        }
+
+        private void btnClose_Click(object sender, EventArgs e)
+        {
+            Close();
         }
 
         /// <summary>

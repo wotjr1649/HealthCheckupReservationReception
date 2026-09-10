@@ -10,16 +10,17 @@ namespace HealthCheckupReservationReception.Views
     ///
     /// Normal 과 WalkIn 이 이 화면 하나를 나눠 쓴다 (03 §8.1 · §9.8). 정원·TGT·NEX·AEX·
     /// 저장가능은 전부 DB 가 낸 값이고 화면은 그리기만 한다 (05 §9.12).
+    ///
+    /// **모달은 대상을 받고 열린다** (2026-09-10 grilling 2회차). 그래서 화면 안에
+    /// `[수검자 선택]` 이 없다 — 수검자를 바꾸려면 닫고 다시 연다. 그러면 03 §8.10 의
+    /// Reset 이 저절로 일어나고, 폐기 확인의 트리거도 `모달 닫기` 하나로 준다.
     /// </summary>
     public interface IReservationView
     {
-        /// <summary>수검자가 확정됐다 — 진입 전달키이거나 DLG-PAT-02 에서 고른 결과다.</summary>
-        event EventHandler<long> PatientPicked;
-
         /// <summary>예약일 또는 시간대가 바뀌었다 (03 §8.5 일정 확정).</summary>
         event EventHandler ScheduleChanged;
 
-        /// <summary>Ribbon `[예약저장]` 을 눌렀다 (03 §8.2).</summary>
+        /// <summary>`[저장]` 을 눌렀다 (03 §8.2 의 `예약저장`).</summary>
         event EventHandler SaveRequested;
 
         // ── 수검자 (03 §8.3)
@@ -60,7 +61,7 @@ namespace HealthCheckupReservationReception.Views
 
         // ── 저장
 
-        /// <summary>`[예약저장]` 은 05 §9.12 의 `저장가능` 그대로다 — 화면이 다시 세지 않는다.</summary>
+        /// <summary>`[저장]` 은 05 §9.12 의 `저장가능` 그대로다 — 화면이 다시 세지 않는다.</summary>
         bool SaveEnabled { set; }
 
         /// <summary>차단 사유 한 줄. null 이면 지운다 (05 §9.6 차단메시지).</summary>

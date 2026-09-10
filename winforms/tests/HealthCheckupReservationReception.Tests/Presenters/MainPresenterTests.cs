@@ -132,15 +132,41 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // 03 §3 — 상단 Navigation 에는 전달키가 없다. Context 는 Normal 이고, 어디서 왔는지는
         // Source 로 남는다 — §8.10 의 폐기 확인 트리거가 그것으로 갈린다.
+        //
+        // WF-RSV-01 이 모달이 된 뒤로는 **먼저 Page 를 되돌리고** 연다 — 휴무일과 같은 부류다.
+        // 그러지 않으면 빈 Ribbon 이 Modal 뒤에 남는다.
         [TestMethod]
-        public void 신규예약_Navigation_은_전달키_없이_Normal_로_연다()
+        public void 신규예약_Navigation_은_Page_를_되돌리고_전달키_없이_Normal_로_연다()
         {
             FakeMainView view = LoadedShell();
 
             view.RaiseNavigationRequested(BusinessNavigation.NewReservation);
 
             CollectionAssert.AreEqual(
-                new List<string> { "BeginNewReservation:Normal,-,Navigation" }, view.Calls);
+                new List<string>
+                {
+                    "SelectNavigationPage:PatientManagement",
+                    "BeginNewReservation:Normal,-,Navigation",
+                },
+                view.Calls);
+        }
+
+        // 신규 예약은 업무 화면을 세우지 않으므로 **돌아올 자리를 옮기지도 않는다.**
+        // 여기서 `_lastBusinessPage` 가 신규예약으로 밀리면 휴무일을 닫을 때 아무 화면도
+        // 없는 Page 로 돌아온다.
+        [TestMethod]
+        public void 신규예약을_거쳐도_돌아올_자리는_그대로다()
+        {
+            FakeMainView view = LoadedShell();
+            view.RaiseWorkbenchRequested(WorkContext.Reception, 92);
+            view.RaiseNavigationRequested(BusinessNavigation.NewReservation);
+            view.Calls.Clear();
+
+            view.RaiseNavigationRequested(BusinessNavigation.HolidayManagement);
+
+            CollectionAssert.AreEqual(
+                new List<string> { "SelectNavigationPage:ReceptionDesk", "ShowHolidayManagement" },
+                view.Calls);
         }
 
         // 03 §1.1 · §9.1 — 예약 관리와 접수 관리는 화면 하나를 나눠 쓰고 Context 만 갈린다.

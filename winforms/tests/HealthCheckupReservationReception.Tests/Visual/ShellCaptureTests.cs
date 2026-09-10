@@ -247,41 +247,36 @@ namespace HealthCheckupReservationReception.Tests.Visual
                 WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
                 WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
 
-                var screen = new UcReservation();
-                screen.Attach(new FakeReservationService { Availability = SampleAvailability() },
-                    new FakePatientService
-                    {
-                        DetailResult = OperationResult<PatientDetailDto>.Success(new PatientDetailDto
-                        {
-                            PatientId = 1000,
-                            ChartNo = "C000001",
-                            Name = "홍길동",
-                            Birthday = "19800101",
-                            Gender = "M",
-                        }),
-                    },
-                    "접수1번창구");
-
-                using (var host = new Form())
+                var patients = new FakePatientService
                 {
-                    host.StartPosition = FormStartPosition.Manual;
-                    host.Location = new Point(-32000, -32000);
-                    host.ClientSize = new Size(1916, 887);
-                    screen.Dock = DockStyle.Fill;
-                    host.Controls.Add(screen);
-                    host.Show();
-                    Application.DoEvents();
-
-                    screen.Begin(ReservationContext.Normal, 1000, NavigationSource.PatientManagement);
-                    Application.DoEvents();
-
-                    using (var bmp = new Bitmap(host.ClientSize.Width, host.ClientSize.Height))
+                    DetailResult = OperationResult<PatientDetailDto>.Success(new PatientDetailDto
                     {
-                        host.DrawToBitmap(bmp, new Rectangle(Point.Empty, bmp.Size));
+                        PatientId = 1000,
+                        ChartNo = "C000001",
+                        Name = "홍길동",
+                        Birthday = "19800101",
+                        Gender = "M",
+                    }),
+                };
+
+                // 모달이다 — 생성자가 곧 03 §3 의 `BeginNewReservation` 이다.
+                using (var screen = new FrmReservation(
+                    new FakeReservationService { Availability = SampleAvailability() },
+                    patients, "접수1번창구",
+                    ReservationContext.Normal, 1000, NavigationSource.PatientManagement))
+                {
+                    screen.StartPosition = FormStartPosition.Manual;
+                    screen.Location = new Point(-32000, -32000);
+                    screen.Show();
+                    Application.DoEvents();
+
+                    using (var bmp = new Bitmap(screen.Width, screen.Height))
+                    {
+                        screen.DrawToBitmap(bmp, new Rectangle(Point.Empty, bmp.Size));
                         path = Save(bmp, "wf_rsv_01.png");
                     }
 
-                    host.Close();
+                    screen.Close();
                 }
             });
 

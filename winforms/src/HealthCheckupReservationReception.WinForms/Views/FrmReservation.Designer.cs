@@ -1,7 +1,7 @@
 ﻿// 화면 ID: WF-RSV-01 — 신규 예약 (03 §8)
 namespace HealthCheckupReservationReception.Views
 {
-    partial class UcReservation
+    partial class FrmReservation
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -14,7 +14,7 @@ namespace HealthCheckupReservationReception.Views
             base.Dispose(disposing);
         }
 
-        #region Component Designer generated code
+        #region Windows Form Designer generated code
 
         private void InitializeComponent()
         {
@@ -22,7 +22,6 @@ namespace HealthCheckupReservationReception.Views
             this.txtPatientChartNo = new DevExpress.XtraEditors.TextEdit();
             this.txtPatientName = new DevExpress.XtraEditors.TextEdit();
             this.txtPatientBirthGender = new DevExpress.XtraEditors.TextEdit();
-            this.btnPickPatient = new DevExpress.XtraEditors.SimpleButton();
             this.deReserveDate = new DevExpress.XtraEditors.DateEdit();
             this.rgSlot = new DevExpress.XtraEditors.RadioGroup();
             this.lblTarget = new DevExpress.XtraEditors.LabelControl();
@@ -37,13 +36,14 @@ namespace HealthCheckupReservationReception.Views
             this.colAexReason = new DevExpress.XtraGrid.Columns.GridColumn();
             this.repoChkAex = new DevExpress.XtraEditors.Repository.RepositoryItemCheckEdit();
             this.lblBlock = new DevExpress.XtraEditors.LabelControl();
+            this.btnSave = new DevExpress.XtraEditors.SimpleButton();
+            this.btnClose = new DevExpress.XtraEditors.SimpleButton();
             this.Root = new DevExpress.XtraLayout.LayoutControlGroup();
             this.lcgTop = new DevExpress.XtraLayout.LayoutControlGroup();
             this.lcgPatient = new DevExpress.XtraLayout.LayoutControlGroup();
             this.lciPatientChartNo = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciPatientName = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciPatientBirthGender = new DevExpress.XtraLayout.LayoutControlItem();
-            this.lciPickPatient = new DevExpress.XtraLayout.LayoutControlItem();
             this.emptyPatient = new DevExpress.XtraLayout.EmptySpaceItem();
             this.splitTop = new DevExpress.XtraLayout.SplitterItem();
             this.lcgSchedule = new DevExpress.XtraLayout.LayoutControlGroup();
@@ -57,6 +57,10 @@ namespace HealthCheckupReservationReception.Views
             this.lcgAex = new DevExpress.XtraLayout.LayoutControlGroup();
             this.lciAexList = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciBlock = new DevExpress.XtraLayout.LayoutControlItem();
+            this.lcgActions = new DevExpress.XtraLayout.LayoutControlGroup();
+            this.emptySpaceActions = new DevExpress.XtraLayout.EmptySpaceItem();
+            this.lciSave = new DevExpress.XtraLayout.LayoutControlItem();
+            this.lciClose = new DevExpress.XtraLayout.LayoutControlItem();
             ((System.ComponentModel.ISupportInitialize)(this.lcMain)).BeginInit();
             this.lcMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.txtPatientChartNo.Properties)).BeginInit();
@@ -76,7 +80,6 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lciPatientChartNo)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciPatientName)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciPatientBirthGender)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.lciPickPatient)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.emptyPatient)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.splitTop)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgSchedule)).BeginInit();
@@ -90,6 +93,10 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lcgAex)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciAexList)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciBlock)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lcgActions)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.emptySpaceActions)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciSave)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciClose)).BeginInit();
             this.SuspendLayout();
             //
             // lcMain
@@ -97,64 +104,57 @@ namespace HealthCheckupReservationReception.Views
             this.lcMain.Controls.Add(this.txtPatientChartNo);
             this.lcMain.Controls.Add(this.txtPatientName);
             this.lcMain.Controls.Add(this.txtPatientBirthGender);
-            this.lcMain.Controls.Add(this.btnPickPatient);
             this.lcMain.Controls.Add(this.deReserveDate);
             this.lcMain.Controls.Add(this.rgSlot);
             this.lcMain.Controls.Add(this.lblTarget);
             this.lcMain.Controls.Add(this.gcNexList);
             this.lcMain.Controls.Add(this.gcAexList);
             this.lcMain.Controls.Add(this.lblBlock);
-            // 항목을 숨기는 길이 하나여야 사용자가 되돌릴 줄 안다 — 기본 우클릭 메뉴를 닫는다.
+            this.lcMain.Controls.Add(this.btnSave);
+            this.lcMain.Controls.Add(this.btnClose);
             this.lcMain.AllowCustomization = false;
             this.lcMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lcMain.Location = new System.Drawing.Point(0, 0);
             this.lcMain.Name = "lcMain";
             this.lcMain.Root = this.Root;
-            this.lcMain.Size = new System.Drawing.Size(1916, 887);
+            this.lcMain.Size = new System.Drawing.Size(1100, 700);
             this.lcMain.TabIndex = 0;
             //
             // txtPatientChartNo
             //
+            // 03 §8.3 수검자 정보. 모달은 대상을 받고 열리므로 여기서 바꾸지 않는다.
             this.txtPatientChartNo.Location = new System.Drawing.Point(108, 43);
             this.txtPatientChartNo.Name = "txtPatientChartNo";
             this.txtPatientChartNo.Properties.ReadOnly = true;
-            this.txtPatientChartNo.Size = new System.Drawing.Size(736, 20);
+            this.txtPatientChartNo.Size = new System.Drawing.Size(370, 20);
             this.txtPatientChartNo.StyleController = this.lcMain;
-            this.txtPatientChartNo.TabIndex = 1;
+            this.txtPatientChartNo.TabIndex = 0;
+            this.txtPatientChartNo.TabStop = false;
             //
             // txtPatientName
             //
             this.txtPatientName.Location = new System.Drawing.Point(108, 67);
             this.txtPatientName.Name = "txtPatientName";
             this.txtPatientName.Properties.ReadOnly = true;
-            this.txtPatientName.Size = new System.Drawing.Size(736, 20);
+            this.txtPatientName.Size = new System.Drawing.Size(370, 20);
             this.txtPatientName.StyleController = this.lcMain;
-            this.txtPatientName.TabIndex = 2;
+            this.txtPatientName.TabIndex = 1;
+            this.txtPatientName.TabStop = false;
             //
             // txtPatientBirthGender
             //
             this.txtPatientBirthGender.Location = new System.Drawing.Point(108, 91);
             this.txtPatientBirthGender.Name = "txtPatientBirthGender";
             this.txtPatientBirthGender.Properties.ReadOnly = true;
-            this.txtPatientBirthGender.Size = new System.Drawing.Size(736, 20);
+            this.txtPatientBirthGender.Size = new System.Drawing.Size(370, 20);
             this.txtPatientBirthGender.StyleController = this.lcMain;
-            this.txtPatientBirthGender.TabIndex = 3;
-            //
-            // btnPickPatient
-            //
-            // 03 §8.5 최초 상태에서 유일하게 열려 있는 것. DLG-PAT-02 를 연다 (03 §7).
-            this.btnPickPatient.Location = new System.Drawing.Point(24, 115);
-            this.btnPickPatient.Name = "btnPickPatient";
-            this.btnPickPatient.Size = new System.Drawing.Size(140, 26);
-            this.btnPickPatient.StyleController = this.lcMain;
-            this.btnPickPatient.TabIndex = 0;
-            this.btnPickPatient.Text = "수검자 선택";
-            this.btnPickPatient.Click += new System.EventHandler(this.btnPickPatient_Click);
+            this.txtPatientBirthGender.TabIndex = 2;
+            this.txtPatientBirthGender.TabStop = false;
             //
             // deReserveDate
             //
             this.deReserveDate.EditValue = null;
-            this.deReserveDate.Location = new System.Drawing.Point(950, 43);
+            this.deReserveDate.Location = new System.Drawing.Point(580, 43);
             this.deReserveDate.Name = "deReserveDate";
             this.deReserveDate.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
             new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
@@ -162,37 +162,37 @@ namespace HealthCheckupReservationReception.Views
             new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
             this.deReserveDate.Size = new System.Drawing.Size(150, 20);
             this.deReserveDate.StyleController = this.lcMain;
-            this.deReserveDate.TabIndex = 4;
+            this.deReserveDate.TabIndex = 3;
             this.deReserveDate.EditValueChanged += new System.EventHandler(this.Schedule_Changed);
             //
             // rgSlot
             //
-            // 항목은 ConfigureUI 가 아니라 Presenter 가 준 Slots 로 그때그때 만든다 —
-            // 정원·마감·선택가능이 조회할 때마다 달라진다 (05 §9.7).
-            this.rgSlot.Location = new System.Drawing.Point(878, 69);
+            // 항목은 Presenter 가 준 Slots 로 그때그때 만든다 — 정원·마감·선택가능이
+            // 조회할 때마다 달라진다 (05 §9.7).
+            this.rgSlot.Location = new System.Drawing.Point(508, 69);
             this.rgSlot.Name = "rgSlot";
             this.rgSlot.Properties.Columns = 1;
-            this.rgSlot.Size = new System.Drawing.Size(1026, 206);
+            this.rgSlot.Size = new System.Drawing.Size(568, 68);
             this.rgSlot.StyleController = this.lcMain;
-            this.rgSlot.TabIndex = 5;
+            this.rgSlot.TabIndex = 4;
             this.rgSlot.SelectedIndexChanged += new System.EventHandler(this.Schedule_Changed);
             //
             // lblTarget
             //
             // 03 §8.7 — `대상판정 : 대상 — 최초검진` 한 줄. 굵게는 ConfigureUI 가 준다.
-            this.lblTarget.Location = new System.Drawing.Point(12, 291);
+            this.lblTarget.Location = new System.Drawing.Point(12, 221);
             this.lblTarget.Name = "lblTarget";
             this.lblTarget.Size = new System.Drawing.Size(0, 14);
             this.lblTarget.StyleController = this.lcMain;
-            this.lblTarget.TabIndex = 6;
+            this.lblTarget.TabIndex = 5;
             //
             // gcNexList
             //
-            this.gcNexList.Location = new System.Drawing.Point(24, 341);
+            this.gcNexList.Location = new System.Drawing.Point(24, 271);
             this.gcNexList.MainView = this.gvNexList;
             this.gcNexList.Name = "gcNexList";
-            this.gcNexList.Size = new System.Drawing.Size(1024, 522);
-            this.gcNexList.TabIndex = 7;
+            this.gcNexList.Size = new System.Drawing.Size(552, 351);
+            this.gcNexList.TabIndex = 6;
             this.gcNexList.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
             this.gvNexList});
             //
@@ -216,30 +216,29 @@ namespace HealthCheckupReservationReception.Views
             this.colNexName.Caption = "검사명";
             this.colNexName.FieldName = "ExamItemName";
             this.colNexName.Name = "colNexName";
-            this.colNexName.MinWidth = 200;
+            this.colNexName.MinWidth = 160;
             this.colNexName.Visible = true;
             this.colNexName.VisibleIndex = 0;
             //
             // colNexType
             //
-            // 03 §8.8 — 구분은 기본/조건부로 표시 가능하다. DB 가 준 값을 그대로 낸다.
             this.colNexType.Caption = "구분";
             this.colNexType.FieldName = "NexType";
             this.colNexType.Name = "colNexType";
-            this.colNexType.MinWidth = 90;
+            this.colNexType.MinWidth = 80;
             this.colNexType.Visible = true;
             this.colNexType.VisibleIndex = 1;
-            this.colNexType.Width = 120;
+            this.colNexType.Width = 100;
             //
             // gcAexList
             //
-            this.gcAexList.Location = new System.Drawing.Point(1070, 341);
+            this.gcAexList.Location = new System.Drawing.Point(622, 271);
             this.gcAexList.MainView = this.gvAexList;
             this.gcAexList.Name = "gcAexList";
             this.gcAexList.RepositoryItems.AddRange(new DevExpress.XtraEditors.Repository.RepositoryItem[] {
             this.repoChkAex});
-            this.gcAexList.Size = new System.Drawing.Size(834, 522);
-            this.gcAexList.TabIndex = 8;
+            this.gcAexList.Size = new System.Drawing.Size(454, 351);
+            this.gcAexList.TabIndex = 7;
             this.gcAexList.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
             this.gvAexList});
             //
@@ -277,11 +276,11 @@ namespace HealthCheckupReservationReception.Views
             this.colAexName.Caption = "검사명";
             this.colAexName.FieldName = "ExamItemName";
             this.colAexName.Name = "colAexName";
-            this.colAexName.MinWidth = 160;
+            this.colAexName.MinWidth = 140;
             this.colAexName.OptionsColumn.AllowEdit = false;
             this.colAexName.Visible = true;
             this.colAexName.VisibleIndex = 1;
-            this.colAexName.Width = 200;
+            this.colAexName.Width = 160;
             //
             // colAexReason
             //
@@ -289,7 +288,7 @@ namespace HealthCheckupReservationReception.Views
             this.colAexReason.Caption = "선택불가 사유";
             this.colAexReason.FieldName = "ReasonMessage";
             this.colAexReason.Name = "colAexReason";
-            this.colAexReason.MinWidth = 220;
+            this.colAexReason.MinWidth = 180;
             this.colAexReason.OptionsColumn.AllowEdit = false;
             this.colAexReason.Visible = true;
             this.colAexReason.VisibleIndex = 2;
@@ -302,11 +301,33 @@ namespace HealthCheckupReservationReception.Views
             // lblBlock
             //
             // 05 §9.6 차단메시지 · 03 §8.11 저장 실패 사유. 붉은 글씨는 ConfigureUI 가 준다.
-            this.lblBlock.Location = new System.Drawing.Point(12, 869);
+            this.lblBlock.Location = new System.Drawing.Point(12, 634);
             this.lblBlock.Name = "lblBlock";
             this.lblBlock.Size = new System.Drawing.Size(0, 14);
             this.lblBlock.StyleController = this.lcMain;
-            this.lblBlock.TabIndex = 9;
+            this.lblBlock.TabIndex = 8;
+            //
+            // btnSave
+            //
+            // 03 §8.2 의 `[예약저장]`. 2026-09-10 grilling 2회차에서 Ribbon Page 하나를
+            // 차지하던 것을 모달 하단으로 내렸다 — DLG-RSV-01(03 §10.1)과 같은 자리다.
+            this.btnSave.Location = new System.Drawing.Point(908, 660);
+            this.btnSave.Name = "btnSave";
+            this.btnSave.Size = new System.Drawing.Size(84, 26);
+            this.btnSave.StyleController = this.lcMain;
+            this.btnSave.TabIndex = 9;
+            this.btnSave.Text = "저장";
+            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
+            //
+            // btnClose
+            //
+            this.btnClose.Location = new System.Drawing.Point(1000, 660);
+            this.btnClose.Name = "btnClose";
+            this.btnClose.Size = new System.Drawing.Size(84, 26);
+            this.btnClose.StyleController = this.lcMain;
+            this.btnClose.TabIndex = 10;
+            this.btnClose.Text = "닫기";
+            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
             //
             // Root
             //
@@ -316,9 +337,10 @@ namespace HealthCheckupReservationReception.Views
             this.lcgTop,
             this.lciTarget,
             this.lcgBottom,
-            this.lciBlock});
+            this.lciBlock,
+            this.lcgActions});
             this.Root.Name = "Root";
-            this.Root.Size = new System.Drawing.Size(1916, 887);
+            this.Root.Size = new System.Drawing.Size(1100, 700);
             this.Root.TextVisible = false;
             //
             // lcgTop
@@ -331,7 +353,7 @@ namespace HealthCheckupReservationReception.Views
             this.lcgSchedule});
             this.lcgTop.Location = new System.Drawing.Point(0, 0);
             this.lcgTop.Name = "lcgTop";
-            this.lcgTop.Size = new System.Drawing.Size(1916, 280);
+            this.lcgTop.Size = new System.Drawing.Size(1100, 160);
             this.lcgTop.TextVisible = false;
             //
             // lcgPatient
@@ -340,23 +362,23 @@ namespace HealthCheckupReservationReception.Views
             this.lciPatientChartNo,
             this.lciPatientName,
             this.lciPatientBirthGender,
-            this.lciPickPatient,
             this.emptyPatient});
             this.lcgPatient.Location = new System.Drawing.Point(0, 0);
             this.lcgPatient.Name = "lcgPatient";
-            // 라벨 폭을 한 벌로 맞춘다 — 세로로 쌓인 항목이라 입력칸의 왼쪽 끝이 한 줄로 서야 한다.
             this.lcgPatient.OptionsItemText.TextAlignMode = DevExpress.XtraLayout.TextAlignModeGroup.AlignWithChildren;
-            this.lcgPatient.Size = new System.Drawing.Size(856, 280);
+            this.lcgPatient.Size = new System.Drawing.Size(490, 160);
             this.lcgPatient.Text = "수검자";
             //
             // lciPatientChartNo
             //
+            // [X] 캡션·테두리가 있는 그룹 안에서는 폭을 못 박지 않는다 — 그룹의 안쪽 폭이
+            //     그룹 폭보다 작아 넘친다(DLG-PAT-03 실측). 높이만 고정하고 폭은 맡긴다.
             this.lciPatientChartNo.Control = this.txtPatientChartNo;
             this.lciPatientChartNo.Location = new System.Drawing.Point(0, 0);
             this.lciPatientChartNo.MaxSize = new System.Drawing.Size(0, 24);
             this.lciPatientChartNo.MinSize = new System.Drawing.Size(150, 24);
             this.lciPatientChartNo.Name = "lciPatientChartNo";
-            this.lciPatientChartNo.Size = new System.Drawing.Size(856, 24);
+            this.lciPatientChartNo.Size = new System.Drawing.Size(490, 24);
             this.lciPatientChartNo.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciPatientChartNo.Text = "차트번호";
             this.lciPatientChartNo.TextSize = new System.Drawing.Size(84, 14);
@@ -368,7 +390,7 @@ namespace HealthCheckupReservationReception.Views
             this.lciPatientName.MaxSize = new System.Drawing.Size(0, 24);
             this.lciPatientName.MinSize = new System.Drawing.Size(150, 24);
             this.lciPatientName.Name = "lciPatientName";
-            this.lciPatientName.Size = new System.Drawing.Size(856, 24);
+            this.lciPatientName.Size = new System.Drawing.Size(490, 24);
             this.lciPatientName.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciPatientName.Text = "이름";
             this.lciPatientName.TextSize = new System.Drawing.Size(84, 14);
@@ -380,45 +402,34 @@ namespace HealthCheckupReservationReception.Views
             this.lciPatientBirthGender.MaxSize = new System.Drawing.Size(0, 24);
             this.lciPatientBirthGender.MinSize = new System.Drawing.Size(150, 24);
             this.lciPatientBirthGender.Name = "lciPatientBirthGender";
-            this.lciPatientBirthGender.Size = new System.Drawing.Size(856, 24);
+            this.lciPatientBirthGender.Size = new System.Drawing.Size(490, 24);
             this.lciPatientBirthGender.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciPatientBirthGender.Text = "생년월일 / 성별";
             this.lciPatientBirthGender.TextSize = new System.Drawing.Size(84, 14);
             //
-            // lciPickPatient
-            //
-            this.lciPickPatient.Control = this.btnPickPatient;
-            this.lciPickPatient.Location = new System.Drawing.Point(0, 72);
-            this.lciPickPatient.MaxSize = new System.Drawing.Size(152, 30);
-            this.lciPickPatient.MinSize = new System.Drawing.Size(152, 30);
-            this.lciPickPatient.Name = "lciPickPatient";
-            this.lciPickPatient.Size = new System.Drawing.Size(152, 30);
-            this.lciPickPatient.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
-            this.lciPickPatient.TextVisible = false;
-            //
             // emptyPatient
             //
             this.emptyPatient.AllowHotTrack = false;
-            this.emptyPatient.Location = new System.Drawing.Point(152, 72);
+            this.emptyPatient.Location = new System.Drawing.Point(0, 72);
             this.emptyPatient.Name = "emptyPatient";
-            this.emptyPatient.Size = new System.Drawing.Size(704, 208);
+            this.emptyPatient.Size = new System.Drawing.Size(490, 88);
             this.emptyPatient.TextSize = new System.Drawing.Size(0, 0);
             //
             // splitTop
             //
             this.splitTop.AllowHotTrack = true;
-            this.splitTop.Location = new System.Drawing.Point(856, 0);
+            this.splitTop.Location = new System.Drawing.Point(490, 0);
             this.splitTop.Name = "splitTop";
-            this.splitTop.Size = new System.Drawing.Size(10, 280);
+            this.splitTop.Size = new System.Drawing.Size(10, 160);
             //
             // lcgSchedule
             //
             this.lcgSchedule.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
             this.lciReserveDate,
             this.lciSlot});
-            this.lcgSchedule.Location = new System.Drawing.Point(866, 0);
+            this.lcgSchedule.Location = new System.Drawing.Point(500, 0);
             this.lcgSchedule.Name = "lcgSchedule";
-            this.lcgSchedule.Size = new System.Drawing.Size(1050, 280);
+            this.lcgSchedule.Size = new System.Drawing.Size(600, 160);
             this.lcgSchedule.Text = "예약 일정";
             //
             // lciReserveDate
@@ -426,9 +437,9 @@ namespace HealthCheckupReservationReception.Views
             this.lciReserveDate.Control = this.deReserveDate;
             this.lciReserveDate.Location = new System.Drawing.Point(0, 0);
             this.lciReserveDate.MaxSize = new System.Drawing.Size(0, 26);
-            this.lciReserveDate.MinSize = new System.Drawing.Size(150, 26);
+            this.lciReserveDate.MinSize = new System.Drawing.Size(220, 26);
             this.lciReserveDate.Name = "lciReserveDate";
-            this.lciReserveDate.Size = new System.Drawing.Size(1050, 26);
+            this.lciReserveDate.Size = new System.Drawing.Size(600, 26);
             this.lciReserveDate.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciReserveDate.Text = "예약일";
             this.lciReserveDate.TextSize = new System.Drawing.Size(60, 14);
@@ -437,19 +448,22 @@ namespace HealthCheckupReservationReception.Views
             //
             this.lciSlot.Control = this.rgSlot;
             this.lciSlot.Location = new System.Drawing.Point(0, 26);
+            this.lciSlot.MaxSize = new System.Drawing.Size(0, 68);
+            this.lciSlot.MinSize = new System.Drawing.Size(150, 68);
             this.lciSlot.Name = "lciSlot";
-            this.lciSlot.Size = new System.Drawing.Size(1050, 254);
+            this.lciSlot.Size = new System.Drawing.Size(600, 68);
+            this.lciSlot.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciSlot.TextSize = new System.Drawing.Size(0, 0);
             this.lciSlot.TextVisible = false;
             //
             // lciTarget
             //
             this.lciTarget.Control = this.lblTarget;
-            this.lciTarget.Location = new System.Drawing.Point(0, 280);
+            this.lciTarget.Location = new System.Drawing.Point(0, 160);
             this.lciTarget.MaxSize = new System.Drawing.Size(0, 26);
             this.lciTarget.MinSize = new System.Drawing.Size(104, 26);
             this.lciTarget.Name = "lciTarget";
-            this.lciTarget.Size = new System.Drawing.Size(1916, 26);
+            this.lciTarget.Size = new System.Drawing.Size(1100, 26);
             this.lciTarget.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciTarget.TextSize = new System.Drawing.Size(0, 0);
             this.lciTarget.TextVisible = false;
@@ -462,9 +476,9 @@ namespace HealthCheckupReservationReception.Views
             this.lcgNex,
             this.splitBottom,
             this.lcgAex});
-            this.lcgBottom.Location = new System.Drawing.Point(0, 306);
+            this.lcgBottom.Location = new System.Drawing.Point(0, 186);
             this.lcgBottom.Name = "lcgBottom";
-            this.lcgBottom.Size = new System.Drawing.Size(1916, 555);
+            this.lcgBottom.Size = new System.Drawing.Size(1100, 434);
             this.lcgBottom.TextVisible = false;
             //
             // lcgNex
@@ -473,7 +487,7 @@ namespace HealthCheckupReservationReception.Views
             this.lciNexList});
             this.lcgNex.Location = new System.Drawing.Point(0, 0);
             this.lcgNex.Name = "lcgNex";
-            this.lcgNex.Size = new System.Drawing.Size(1048, 555);
+            this.lcgNex.Size = new System.Drawing.Size(600, 434);
             this.lcgNex.Text = "국가검사 (NEX) · ReadOnly";
             //
             // lciNexList
@@ -481,24 +495,24 @@ namespace HealthCheckupReservationReception.Views
             this.lciNexList.Control = this.gcNexList;
             this.lciNexList.Location = new System.Drawing.Point(0, 0);
             this.lciNexList.Name = "lciNexList";
-            this.lciNexList.Size = new System.Drawing.Size(1048, 555);
+            this.lciNexList.Size = new System.Drawing.Size(600, 434);
             this.lciNexList.TextSize = new System.Drawing.Size(0, 0);
             this.lciNexList.TextVisible = false;
             //
             // splitBottom
             //
             this.splitBottom.AllowHotTrack = true;
-            this.splitBottom.Location = new System.Drawing.Point(1048, 0);
+            this.splitBottom.Location = new System.Drawing.Point(600, 0);
             this.splitBottom.Name = "splitBottom";
-            this.splitBottom.Size = new System.Drawing.Size(10, 555);
+            this.splitBottom.Size = new System.Drawing.Size(10, 434);
             //
             // lcgAex
             //
             this.lcgAex.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
             this.lciAexList});
-            this.lcgAex.Location = new System.Drawing.Point(1058, 0);
+            this.lcgAex.Location = new System.Drawing.Point(610, 0);
             this.lcgAex.Name = "lcgAex";
-            this.lcgAex.Size = new System.Drawing.Size(858, 555);
+            this.lcgAex.Size = new System.Drawing.Size(490, 434);
             this.lcgAex.Text = "추가검사 (AEX)";
             //
             // lciAexList
@@ -506,31 +520,82 @@ namespace HealthCheckupReservationReception.Views
             this.lciAexList.Control = this.gcAexList;
             this.lciAexList.Location = new System.Drawing.Point(0, 0);
             this.lciAexList.Name = "lciAexList";
-            this.lciAexList.Size = new System.Drawing.Size(858, 555);
+            this.lciAexList.Size = new System.Drawing.Size(490, 434);
             this.lciAexList.TextSize = new System.Drawing.Size(0, 0);
             this.lciAexList.TextVisible = false;
             //
             // lciBlock
             //
             this.lciBlock.Control = this.lblBlock;
-            this.lciBlock.Location = new System.Drawing.Point(0, 861);
-            this.lciBlock.MaxSize = new System.Drawing.Size(0, 26);
-            this.lciBlock.MinSize = new System.Drawing.Size(104, 26);
+            this.lciBlock.Location = new System.Drawing.Point(0, 620);
+            this.lciBlock.MaxSize = new System.Drawing.Size(0, 24);
+            this.lciBlock.MinSize = new System.Drawing.Size(104, 24);
             this.lciBlock.Name = "lciBlock";
-            this.lciBlock.Size = new System.Drawing.Size(1916, 26);
+            this.lciBlock.Size = new System.Drawing.Size(1100, 24);
             this.lciBlock.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
             this.lciBlock.TextSize = new System.Drawing.Size(0, 0);
             this.lciBlock.TextVisible = false;
             //
-            // UcReservation
+            // lcgActions
+            //
+            this.lcgActions.GroupBordersVisible = false;
+            this.lcgActions.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
+            this.emptySpaceActions,
+            this.lciSave,
+            this.lciClose});
+            this.lcgActions.Location = new System.Drawing.Point(0, 644);
+            this.lcgActions.Name = "lcgActions";
+            this.lcgActions.Size = new System.Drawing.Size(1100, 56);
+            this.lcgActions.TextVisible = false;
+            //
+            // emptySpaceActions
+            //
+            this.emptySpaceActions.AllowHotTrack = false;
+            this.emptySpaceActions.Location = new System.Drawing.Point(0, 0);
+            this.emptySpaceActions.Name = "emptySpaceActions";
+            this.emptySpaceActions.Size = new System.Drawing.Size(916, 56);
+            this.emptySpaceActions.TextSize = new System.Drawing.Size(0, 0);
+            //
+            // lciSave
+            //
+            this.lciSave.Control = this.btnSave;
+            this.lciSave.Location = new System.Drawing.Point(916, 0);
+            this.lciSave.MaxSize = new System.Drawing.Size(92, 34);
+            this.lciSave.MinSize = new System.Drawing.Size(92, 34);
+            this.lciSave.Name = "lciSave";
+            this.lciSave.Size = new System.Drawing.Size(92, 56);
+            this.lciSave.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            this.lciSave.TextVisible = false;
+            //
+            // lciClose
+            //
+            this.lciClose.Control = this.btnClose;
+            this.lciClose.Location = new System.Drawing.Point(1008, 0);
+            this.lciClose.MaxSize = new System.Drawing.Size(92, 34);
+            this.lciClose.MinSize = new System.Drawing.Size(92, 34);
+            this.lciClose.Name = "lciClose";
+            this.lciClose.Size = new System.Drawing.Size(92, 56);
+            this.lciClose.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            this.lciClose.TextVisible = false;
+            //
+            // FrmReservation
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            // Esc 도 [닫기] 와 같은 길로 보낸다 — 03 §8.10 의 폐기 확인이 OnFormClosing 하나에
+            // 걸려 있으므로 닫는 길이 늘어도 묻는 자리는 그대로다.
+            this.CancelButton = this.btnClose;
+            this.ClientSize = new System.Drawing.Size(1100, 700);
             // Dock=Fill 인 lcMain 을 먼저 넣는다 (references/designer.md 함정 3).
             this.Controls.Add(this.lcMain);
-            this.Name = "UcReservation";
-            this.Size = new System.Drawing.Size(1916, 887);
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.MinimumSize = new System.Drawing.Size(940, 640);
+            this.Name = "FrmReservation";
+            this.ShowIcon = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.Text = "신규 예약";
             ((System.ComponentModel.ISupportInitialize)(this.lcMain)).EndInit();
             this.lcMain.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.txtPatientChartNo.Properties)).EndInit();
@@ -550,7 +615,6 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lciPatientChartNo)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciPatientName)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciPatientBirthGender)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.lciPickPatient)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.emptyPatient)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.splitTop)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgSchedule)).EndInit();
@@ -564,6 +628,10 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lcgAex)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciAexList)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciBlock)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lcgActions)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.emptySpaceActions)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciSave)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciClose)).EndInit();
             this.ResumeLayout(false);
         }
 
@@ -576,11 +644,9 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraEditors.TextEdit txtPatientChartNo;
         private DevExpress.XtraEditors.TextEdit txtPatientName;
         private DevExpress.XtraEditors.TextEdit txtPatientBirthGender;
-        private DevExpress.XtraEditors.SimpleButton btnPickPatient;
         private DevExpress.XtraLayout.LayoutControlItem lciPatientChartNo;
         private DevExpress.XtraLayout.LayoutControlItem lciPatientName;
         private DevExpress.XtraLayout.LayoutControlItem lciPatientBirthGender;
-        private DevExpress.XtraLayout.LayoutControlItem lciPickPatient;
         private DevExpress.XtraLayout.EmptySpaceItem emptyPatient;
         private DevExpress.XtraLayout.SplitterItem splitTop;
         private DevExpress.XtraLayout.LayoutControlGroup lcgSchedule;
@@ -608,5 +674,11 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraLayout.LayoutControlItem lciAexList;
         private DevExpress.XtraEditors.LabelControl lblBlock;
         private DevExpress.XtraLayout.LayoutControlItem lciBlock;
+        private DevExpress.XtraLayout.LayoutControlGroup lcgActions;
+        private DevExpress.XtraEditors.SimpleButton btnSave;
+        private DevExpress.XtraEditors.SimpleButton btnClose;
+        private DevExpress.XtraLayout.EmptySpaceItem emptySpaceActions;
+        private DevExpress.XtraLayout.LayoutControlItem lciSave;
+        private DevExpress.XtraLayout.LayoutControlItem lciClose;
     }
 }

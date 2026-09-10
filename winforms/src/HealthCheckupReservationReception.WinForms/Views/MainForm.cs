@@ -32,7 +32,6 @@ namespace HealthCheckupReservationReception.Views
 
         private UcPatientManagement _patientView;
         private UcWorkbench _workView;
-        private UcReservation _reservationView;
 
         /// <summary>
         /// [X] **VS 디자이너 전용이다.** 디자이너는 설계 대상 타입을 매개변수 없는 생성자로
@@ -65,9 +64,6 @@ namespace HealthCheckupReservationReception.Views
             // 초기 상태(행 미선택)로 맞춘다.
             ApplyPatientRowActions();
             ApplyWorkActions(WorkActionState.None());
-
-            // 03 §8.5 최초 — 화면 준비상태가 충족되기 전에는 [예약저장] 이 닫혀 있다 (§8.2).
-            barBtnReservationSave.Enabled = false;
 
             _presenter = new MainPresenter(this, statusService, operatorName);
         }
@@ -159,17 +155,43 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// 03 §3 호출계약. 세 값은 전부 화면이 받아야 할 것이라 여기서 버리지 않는다 —
-        /// Context 는 예약일 ReadOnly 여부를(§9.8), PatientId 는 수검자 확정 상태를,
-        /// Source 는 §8.10 의 폐기 확인 트리거를 가른다.
+        /// 03 §3 호출계약. WF-RSV-01 은 업무 판이 아니라 **모달**이다 (2026-09-10 grilling 2회차).
+        /// Context 는 예약일 ReadOnly 여부를(§9.8), Source 는 §8.10 의 폐기 확인 맥락을 나른다.
+        ///
+        /// `patientId` 가 없으면 DLG-PAT-02 로 먼저 고른다. **고르는 창을 닫고 나서** 예약 창을
+        /// 연다 — 모달을 겹쳐 쌓으면 뒤에 깔린 창이 아무 일도 못 하면서 화면만 가린다.
+        /// 취소하면 아무 창도 열리지 않는다: "고르지 않았다" 는 곧 "예약하지 않는다" 이다.
         /// </summary>
         public void BeginNewReservation(ReservationContext context, long? patientId, NavigationSource source)
         {
-            // 세우는 것이 먼저다 — 화면이 붙어야 Presenter 가 서고, 그 뒤에 전달키를 준다.
-            ShowBusinessScreen(BusinessTab.NewReservation);
-            if (_reservationView != null)
+            long? target = patientId;
+            if (target == null)
             {
-                _reservationView.Begin(context, patientId, source);
+                using (var select = new FrmPatientSelect(_patientService, _operatorName))
+                {
+                    if (select.ShowDialog(this) != DialogResult.OK)
+                    {
+                        return;
+                    }
+
+                    target = select.SelectedPatientId;
+                }
+            }
+
+            if (target == null)
+            {
+                return;
+            }
+
+            using (var reservation = new FrmReservation(
+                _reservationService, _patientService, _operatorName, context, target.Value, source))
+            {
+                if (reservation.ShowDialog(this) == DialogResult.OK && reservation.Result != null)
+                {
+                    // 03 §8.5 기존 유효예약 · §8.11 저장 성공. 여는 것은 Navigation 을 가진
+                    // MainPresenter 의 일이라 그대로 올린다.
+                    Screen_WorkbenchRequested(this, reservation.Result);
+                }
             }
         }
 
@@ -233,23 +255,7 @@ namespace HealthCheckupReservationReception.Views
                 return workbench;
             }
 
-            if (tab == BusinessTab.NewReservation)
-            {
-                var reservation = new UcReservation();
-                reservation.SaveEnabledChanged += ReservationView_SaveEnabledChanged;
-                reservation.WorkbenchRequested += Screen_WorkbenchRequested;
-                reservation.Attach(_reservationService, _patientService, _operatorName);
-                _reservationView = reservation;
-                return reservation;
-            }
-
             return null;
-        }
-
-        private void ReservationView_SaveEnabledChanged(object sender, bool enabled)
-        {
-            // 03 §8.2 · 05 §9.12 — `저장가능` 그대로다. 화면이 다시 세지 않는다.
-            barBtnReservationSave.Enabled = enabled;
         }
 
         /// <summary>
@@ -396,13 +402,19 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
-        // 03 §8.2 — Ribbon 의 [예약저장]. 준비상태 판정도 저장도 화면 쪽이 한다.
-        private void barBtnReservationSave_ItemClick(object sender, ItemClickEventArgs e)
+        /// <summary>
+        /// 03 §5.2 `[신규예약]` — 수검자 관리에서 고른 행 그대로 예약 모달을 연다 (03 §3 의
+        /// `Source = PatientManagement`). 대상이 이미 정해져 있으므로 DLG-PAT-02 를 거치지 않는다.
+        /// </summary>
+        private void barBtnPatientReserve_ItemClick(object sender, ItemClickEventArgs e)
         {
-            if (_reservationView != null)
+            if (_patientView == null || _patientView.SelectedPatientId == null)
             {
-                _reservationView.RequestSave();
+                return;
             }
+
+            BeginNewReservation(ReservationContext.Normal,
+                _patientView.SelectedPatientId, NavigationSource.PatientManagement);
         }
 
         private void barBtnNotImplemented_ItemClick(object sender, ItemClickEventArgs e)

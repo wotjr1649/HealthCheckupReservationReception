@@ -47,7 +47,6 @@ namespace HealthCheckupReservationReception.Presenters
             _patientService = patientService;
             _operatorName = operatorName;
 
-            _view.PatientPicked += OnPatientPicked;
             _view.ScheduleChanged += OnScheduleChanged;
             _view.SaveRequested += OnSaveRequested;
 
@@ -57,10 +56,11 @@ namespace HealthCheckupReservationReception.Presenters
         /// <summary>
         /// 03 §3 `BeginNewReservation(Context, PatientId?, Source)`.
         ///
-        /// Context 가 바뀌거나 다른 PatientId 로 다시 부르면 전체 Reset 이다 (03 §8.1 · §8.10).
-        /// 미저장 폐기 확인은 아직 없다 — §8.10 Confirm 은 다음 구간이다.
+        /// **PatientId 는 늘 있다** — 모달을 여는 쪽이 DLG-PAT-02 를 먼저 거치거나 목록에서
+        /// 고른 값을 들고 온다 (2026-09-10 grilling 2회차). 화면 안에서 수검자를 바꾸지 않으므로
+        /// 03 §8.10 의 「다른 PatientId 로 재호출」 트리거는 `모달을 닫고 다시 여는 것` 이 된다.
         /// </summary>
-        public void Begin(ReservationContext context, long? patientId, NavigationSource source)
+        public void Begin(ReservationContext context, long patientId, NavigationSource source)
         {
             _context = context;
             Reset();
@@ -69,10 +69,18 @@ namespace HealthCheckupReservationReception.Presenters
             // 어긋나면 SP 가 `102` 로 막는다 (05 §9.3) — 여기서 우기지 않는다.
             _view.ReserveDateReadOnly = context == ReservationContext.WalkIn;
 
-            if (patientId != null)
-            {
-                ConfirmPatient(patientId.Value);
-            }
+            ConfirmPatient(patientId);
+        }
+
+        /// <summary>
+        /// 03 §8.10 폐기 확인 — 닫을 때 물어야 하는가.
+        ///
+        /// 수검자가 확정된 순간부터 화면에는 사용자가 들인 것이 있다(일정·AEX 선택). 저장이
+        /// 끝나면 <see cref="Reset"/> 이 이것을 내리므로 성공 뒤에는 묻지 않는다.
+        /// </summary>
+        public bool HasUnsavedInput
+        {
+            get { return _patientId != null; }
         }
 
         /// <summary>03 §8.5 최초 상태. 수검자 선택만 열려 있다.</summary>
@@ -93,11 +101,6 @@ namespace HealthCheckupReservationReception.Presenters
             _view.AexEnabled = false;
             _view.SaveEnabled = false;
             _view.BlockMessage = null;
-        }
-
-        private void OnPatientPicked(object sender, long patientId)
-        {
-            ConfirmPatient(patientId);
         }
 
         /// <summary>

@@ -289,9 +289,33 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var presenter = new ReservationPresenter(
                 view, new FakeReservationService { Availability = Availability() }, Patients(), "창구");
 
-            presenter.Begin(ReservationContext.WalkIn, null, NavigationSource.ReceptionDesk);
+            presenter.Begin(ReservationContext.WalkIn, PatientId, NavigationSource.ReceptionDesk);
 
             Assert.IsTrue(view.ReserveDateReadOnly);
+        }
+
+        // 03 §8.10 — 모달을 닫을 때 폐기를 묻는 근거. **수검자가 확정된 순간부터** 화면에는
+        // 사용자가 들인 것이 있고(일정·AEX), 저장이 끝나면 Reset 이 그것을 내린다.
+        [TestMethod]
+        public void 수검자가_확정되기_전에는_폐기를_묻지_않는다()
+        {
+            var view = new FakeReservationView();
+            var presenter = new ReservationPresenter(
+                view, new FakeReservationService(), new FakePatientService(), "창구");
+
+            Assert.IsFalse(presenter.HasUnsavedInput);
+        }
+
+        [TestMethod]
+        public void 수검자가_확정되면_폐기를_묻는다()
+        {
+            var view = new FakeReservationView();
+            var presenter = new ReservationPresenter(
+                view, new FakeReservationService { Availability = Availability() }, Patients(), "창구");
+
+            presenter.Begin(ReservationContext.Normal, PatientId, NavigationSource.Navigation);
+
+            Assert.IsTrue(presenter.HasUnsavedInput);
         }
 
         // 03 §8.11 실패 — Commit 없음. 사유를 보이고 일정·대상·검사구성을 최신값으로 다시 읽는다.
@@ -431,7 +455,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
     internal sealed class FakeReservationView : IReservationView
     {
-        public event EventHandler<long> PatientPicked;
         public event EventHandler ScheduleChanged;
         public event EventHandler SaveRequested;
 
@@ -466,12 +489,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         }
 
         public void ShowMessage(string message) { LastMessage = message; }
-
-        public void RaisePatientPicked(long patientId)
-        {
-            EventHandler<long> handler = PatientPicked;
-            if (handler != null) { handler(this, patientId); }
-        }
 
         public void RaiseScheduleChanged()
         {

@@ -130,6 +130,16 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
+            // 신규 예약도 같은 부류가 되었다 (2026-09-10 grilling 2회차) — WF-RSV-01 이 모달이라
+            // 이 Page 는 **여는 자리**일 뿐 세워 둘 업무 화면이 없다. `_lastBusinessPage` 를
+            // 건드리지 않는 것이 핵심이다: 닫고 나면 있던 자리로 돌아와야 한다.
+            if (target == BusinessNavigation.NewReservation)
+            {
+                _view.SelectNavigationPage(_lastBusinessPage);
+                _view.BeginNewReservation(ReservationContext.Normal, null, NavigationSource.Navigation);
+                return;
+            }
+
             ShowBusinessScreen(target);
         }
 
@@ -146,9 +156,6 @@ namespace HealthCheckupReservationReception.Presenters
 
             switch (target)
             {
-                case BusinessNavigation.NewReservation:
-                    _view.BeginNewReservation(ReservationContext.Normal, null, NavigationSource.Navigation);
-                    break;
                 case BusinessNavigation.ReservationDesk:
                     _view.OpenWorkbench(WorkContext.Reservation, null);
                     break;
