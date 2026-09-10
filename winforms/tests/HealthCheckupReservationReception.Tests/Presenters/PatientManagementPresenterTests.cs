@@ -412,6 +412,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public IList<PatientListItemDto> Rows { get; set; }
         public PatientDetailDto Detail { get; set; }
         public string ReserveStatusText { get; set; }
+        public string NoticeText { get; set; }
+        public long? SelectedPatientId { get; private set; }
+
+        public void SelectPatient(long patientId) { SelectedPatientId = patientId; }
         public bool RowSelected { get; set; }
         public string LastMessage { get; private set; }
 

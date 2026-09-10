@@ -57,7 +57,7 @@ namespace HealthCheckupReservationReception.Tests.Visual
                     }),
                 };
 
-                using (var form = new MainForm(service, new FakePatientService(), new FakeWorkService(), new FakeReservationService(), new FakeHolidayService(), "접수1번창구"))
+                using (var form = new MainForm(service, new FakePatientService(), new FakeWorkService(), new FakeReservationService(), new FakeHolidayService(), "접수1번창구", true))
                 {
                     // 화면 밖에 띄운다. 보이지 않으면 DevExpress 가 스킨을 그리지 않는다.
                     form.StartPosition = FormStartPosition.Manual;

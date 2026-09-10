@@ -53,6 +53,15 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>행 선택 여부에 따르는 Ribbon Action (03 §5.2).</summary>
         bool RowSelected { set; }
 
+        /// <summary>
+        /// 조회 결과 옆 한 줄. 저장 뒤 화면을 옮기지 않을 때 무슨 일이 있었는지 여기서 말한다
+        /// (2026-09-11 사용자 지시). 다음 조회가 지운다.
+        /// </summary>
+        string NoticeText { set; }
+
+        /// <summary>그 수검자 행을 다시 잡는다. 목록을 되읽어도 자리를 잃지 않는다.</summary>
+        void SelectPatient(long patientId);
+
         void ShowMessage(string message);
     }
 }

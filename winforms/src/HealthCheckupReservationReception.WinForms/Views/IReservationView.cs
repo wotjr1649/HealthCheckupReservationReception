@@ -74,9 +74,20 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>
         /// 03 §8.5 기존 유효예약 · §8.11 저장 성공 — 둘 다 신규예약을 접고 Workbench 로 넘긴다.
         /// 화면은 MainForm 으로 올리기만 한다.
+        ///
+        /// <paramref name="fromSave"/> 가 둘을 가른다 — 착지 규칙이 다르다 (WorkbenchTarget).
         /// </summary>
-        void GoToWorkbench(WorkContext context, long workId);
+        void GoToWorkbench(WorkContext context, long workId, bool fromSave);
+
+        /// <summary>
+        /// 넘길 곳 없이 창만 닫는다. 03 §8.5 에서 사용자가 「예약 관리로 갈까요」에 `아니오` 라고
+        /// 답했을 때의 길이다 — 그 수검자로는 더 진행할 수 없으므로 창은 어차피 닫힌다.
+        /// </summary>
+        void Dismiss();
 
         void ShowMessage(string message);
+
+        /// <summary>되돌릴 수 없거나 화면을 옮기는 물음. 예면 true 다.</summary>
+        bool Confirm(string message);
     }
 }

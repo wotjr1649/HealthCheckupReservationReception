@@ -64,6 +64,8 @@ namespace HealthCheckupReservationReception.Views
             this.lciBirthday = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciMobilePhone = new DevExpress.XtraLayout.LayoutControlItem();
             this.emptySpaceSearch = new DevExpress.XtraLayout.EmptySpaceItem();
+            this.lblNotice = new DevExpress.XtraEditors.LabelControl();
+            this.lciNotice = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciColumns = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciSearch = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciPatientList = new DevExpress.XtraLayout.LayoutControlItem();
@@ -116,6 +118,7 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lcgList)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgSearch)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciConditions)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciNotice)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciChartNo)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciName)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciSocialNumber)).BeginInit();
@@ -155,6 +158,7 @@ namespace HealthCheckupReservationReception.Views
             this.lcMain.Controls.Add(this.cboColumns);
             this.lcMain.Controls.Add(this.btnSearch);
             this.lcMain.Controls.Add(this.gcPatientList);
+            this.lcMain.Controls.Add(this.lblNotice);
             this.lcMain.Controls.Add(this.lblDetailReserve);
             this.lcMain.Controls.Add(this.txtDetailChartNo);
             this.lcMain.Controls.Add(this.txtDetailName);
@@ -561,6 +565,7 @@ namespace HealthCheckupReservationReception.Views
             //
             this.lcgList.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
             this.lcgSearch,
+            this.lciNotice,
             this.lciPatientList});
             this.lcgList.Location = new System.Drawing.Point(0, 0);
             this.lcgList.Name = "lcgList";
@@ -584,6 +589,27 @@ namespace HealthCheckupReservationReception.Views
             this.lcgSearch.Name = "lcgSearch";
             this.lcgSearch.Size = new System.Drawing.Size(1180, 26);
             this.lcgSearch.TextVisible = false;
+            //
+            // lblNotice
+            //
+            // 저장 뒤 화면을 옮기지 않을 때 무슨 일이 있었는지 여기서 말한다 (2026-09-11).
+            this.lblNotice.Location = new System.Drawing.Point(24, 62);
+            this.lblNotice.Name = "lblNotice";
+            this.lblNotice.Size = new System.Drawing.Size(0, 14);
+            this.lblNotice.StyleController = this.lcMain;
+            this.lblNotice.TabIndex = 40;
+            //
+            // lciNotice
+            //
+            this.lciNotice.Control = this.lblNotice;
+            this.lciNotice.Location = new System.Drawing.Point(0, 26);
+            this.lciNotice.MaxSize = new System.Drawing.Size(0, 22);
+            this.lciNotice.MinSize = new System.Drawing.Size(104, 22);
+            this.lciNotice.Name = "lciNotice";
+            this.lciNotice.Size = new System.Drawing.Size(1180, 22);
+            this.lciNotice.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            this.lciNotice.TextSize = new System.Drawing.Size(0, 0);
+            this.lciNotice.TextVisible = false;
             //
             // lciConditions
             //
@@ -689,9 +715,9 @@ namespace HealthCheckupReservationReception.Views
             // lciPatientList
             //
             this.lciPatientList.Control = this.gcPatientList;
-            this.lciPatientList.Location = new System.Drawing.Point(0, 26);
+            this.lciPatientList.Location = new System.Drawing.Point(0, 48);
             this.lciPatientList.Name = "lciPatientList";
-            this.lciPatientList.Size = new System.Drawing.Size(1180, 861);
+            this.lciPatientList.Size = new System.Drawing.Size(1180, 839);
             this.lciPatientList.TextSize = new System.Drawing.Size(0, 0);
             this.lciPatientList.TextVisible = false;
             //
@@ -939,6 +965,7 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lcgList)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgSearch)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciConditions)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciNotice)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciChartNo)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciName)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciSocialNumber)).EndInit();
@@ -994,6 +1021,8 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraLayout.LayoutControlItem lciBirthday;
         private DevExpress.XtraLayout.LayoutControlItem lciMobilePhone;
         private DevExpress.XtraLayout.EmptySpaceItem emptySpaceSearch;
+        private DevExpress.XtraEditors.LabelControl lblNotice;
+        private DevExpress.XtraLayout.LayoutControlItem lciNotice;
         private DevExpress.XtraLayout.LayoutControlItem lciColumns;
         private DevExpress.XtraLayout.LayoutControlItem lciSearch;
         private DevExpress.XtraGrid.GridControl gcPatientList;

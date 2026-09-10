@@ -351,6 +351,59 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("현장 당일예약", view.ReserveTypeText);
         }
 
+        /// <summary>
+        /// 03 §8.5 — 이 수검자로는 더 진행할 수 없다 (RP-06). 남은 선택은 「그 예약을 보러 갈까」
+        /// 하나이고, **묻고 간다** (2026-09-11 사용자 지시).
+        ///
+        /// [X] 예전에는 알리고 곧바로 데려갔다. 명단을 연달아 예약하는 중이면 잘못 누른 한 번이
+        ///     흐름을 끊는다.
+        /// </summary>
+        [TestMethod]
+        public void 기존_유효예약은_묻고_아니오면_그냥_닫는다()
+        {
+            var view = new FakeReservationView { ConfirmAnswer = false };
+            var patients = Patients();
+            patients.ValidWorkResult = OperationResult<PatientValidWorkDto>.Success(new PatientValidWorkDto
+            {
+                WorkId = 77,
+                ReserveDate = Day,
+                SlotCode = "AM",
+                StatusCode = "RSV",
+                StatusName = "예약",
+                RowVersion = new byte[8],
+            });
+            var presenter = new ReservationPresenter(
+                view, new FakeReservationService { Availability = Availability() }, patients, "창구");
+
+            presenter.Begin(PatientId);
+
+            Assert.IsTrue(view.Dismissed, "아니오인데 창을 안 닫았다");
+            Assert.IsNull(view.WorkbenchWorkId, "아니오인데 데려갔다");
+            StringAssert.Contains(view.LastQuestion, "2026-09-14", "물음에 그 예약의 일정이 없다");
+        }
+
+        // 저장으로 생긴 건과 보러 가는 건은 착지 규칙이 다르다 — 그 구분이 화면까지 가야 한다.
+        [TestMethod]
+        public void 저장으로_생긴_건인지가_함께_올라간다()
+        {
+            var view = new FakeReservationView();
+            var service = new FakeReservationService
+            {
+                Availability = Availability(),
+                Save = OperationResult<WorkSaveReadDto>.Success(new WorkSaveReadDto
+                {
+                    Result = Ok(),
+                    Row = new WorkSaveResultDto { WorkId = 91, StatusCode = "RSV", RowVersion = new byte[8] },
+                }),
+            };
+            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            presenter.Begin(PatientId);
+
+            view.RaiseSaveRequested();
+
+            Assert.AreEqual(true, view.WorkbenchFromSave);
+        }
+
         // 03 §8.10 — 모달을 닫을 때 폐기를 묻는 근거. **수검자가 확정된 순간부터** 화면에는
         // 사용자가 들인 것이 있고(일정·AEX), 저장이 끝나면 Reset 이 그것을 내린다.
         [TestMethod]
@@ -545,6 +598,9 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             AexSelection = new bool[ReservationAvailabilityRequest.AexParameterCount];
             ReserveDate = DateTime.Today;
+
+            // 예전 동작(묻지 않고 데려간다)과 같은 기본값이라 기존 시험이 그대로 산다.
+            ConfirmAnswer = true;
         }
 
         public PatientDetailDto Patient { get; set; }
@@ -564,14 +620,29 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         public WorkContext? WorkbenchContext { get; private set; }
         public long? WorkbenchWorkId { get; private set; }
+        public bool? WorkbenchFromSave { get; private set; }
+        public bool Dismissed { get; private set; }
 
-        public void GoToWorkbench(WorkContext context, long workId)
+        /// <summary>03 §8.5 의 「예약 관리로 갈까요」 에 어떻게 답할 것인가.</summary>
+        public bool ConfirmAnswer { get; set; }
+        public string LastQuestion { get; private set; }
+
+        public void GoToWorkbench(WorkContext context, long workId, bool fromSave)
         {
             WorkbenchContext = context;
             WorkbenchWorkId = workId;
+            WorkbenchFromSave = fromSave;
         }
 
+        public void Dismiss() { Dismissed = true; }
+
         public void ShowMessage(string message) { LastMessage = message; }
+
+        public bool Confirm(string message)
+        {
+            LastQuestion = message;
+            return ConfirmAnswer;
+        }
 
         public void RaiseScheduleChanged()
         {

@@ -63,6 +63,16 @@ namespace HealthCheckupReservationReception.Presenters
             Search(true);
         }
 
+        /// <summary>
+        /// 목록을 되읽고 그 수검자로 돌아간다. 예약이 하나 생기면 `예약` 칸이 낡는데,
+        /// 화면이 방금 예약한 사람을 계속 `가능` 으로 보이면 그것은 거짓말이다.
+        /// </summary>
+        public void Reload(long patientId)
+        {
+            Search(true);
+            _view.SelectPatient(patientId);
+        }
+
         private void Search(bool silent)
         {
             var request = new PatientSearchRequest
@@ -119,6 +129,7 @@ namespace HealthCheckupReservationReception.Presenters
             _view.Rows = rows;
             _view.Detail = null;
             _view.ReserveStatusText = string.Empty;
+            _view.NoticeText = string.Empty;
             _view.RowSelected = false;
         }
 

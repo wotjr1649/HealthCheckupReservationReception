@@ -18,6 +18,20 @@ namespace HealthCheckupReservationReception
         // 03 §1.3 — 조작자는 설정 파일에서 읽어 읽기 전용으로 표시하고,
         // Write SP 호출 때 @조작자명 으로 전달한다. 입력 Control 이 아니다.
         private const string OperatorSettingName = "OperatorName";
+        private const string MoveAfterSaveSettingName = "MoveToReceptionAfterSave";
+
+        /// <summary>
+        /// 2026-09-11 사용자 지시 — 저장 뒤 화면을 옮길지는 창구마다 다르다.
+        ///
+        /// [X] **못 읽으면 켬이다.** 설정을 지우거나 오타를 냈다고 동작이 조용히 바뀌면,
+        ///     현장 내원자를 접수하려는 창구가 이유 없이 탭을 옮기게 된다.
+        /// </summary>
+        private static bool MoveAfterSave()
+        {
+            string value = ConfigurationManager.AppSettings[MoveAfterSaveSettingName];
+            bool parsed;
+            return !bool.TryParse(value, out parsed) || parsed;
+        }
 
         [STAThread]
         private static void Main()
@@ -59,7 +73,8 @@ namespace HealthCheckupReservationReception
                 workService,
                 reservationService,
                 holidayService,
-                ConfigurationManager.AppSettings[OperatorSettingName]));
+                ConfigurationManager.AppSettings[OperatorSettingName],
+                MoveAfterSave()));
         }
     }
 }

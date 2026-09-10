@@ -131,8 +131,13 @@ namespace HealthCheckupReservationReception.Presenters
 
             if (valid.Value != null)
             {
-                _view.ShowMessage("이미 예약이 있는 수검자입니다. 예약 관리에서 확인하세요.");
-                _view.GoToWorkbench(WorkContext.Reservation, valid.Value.WorkId);
+                // 이 수검자로는 더 진행할 수 없다 (RP-06). 남은 선택은 「그 예약을 보러 갈까」뿐이다.
+                //
+                // [X] 예전에는 알리고 곧바로 데려갔다. 명단을 연달아 예약하는 중이면 잘못 누른
+                //     한 번이 흐름을 끊는다 — 2026-09-11 사용자 지시로 묻고 간다.
+                Leave(WorkContext.Reservation, valid.Value.WorkId,
+                    "이미 예약이 있는 수검자입니다 — " + Schedule(valid.Value)
+                    + ". 예약 관리에서 확인하시겠습니까?");
                 return;
             }
 
@@ -280,6 +285,26 @@ namespace HealthCheckupReservationReception.Presenters
         }
 
         /// <summary>
+        /// 이 수검자로는 더 진행할 수 없다. 그 예약을 보러 갈지만 묻고 어느 쪽이든 창을 닫는다.
+        /// </summary>
+        private void Leave(WorkContext context, long workId, string question)
+        {
+            if (_view.Confirm(question))
+            {
+                _view.GoToWorkbench(context, workId, false);
+            }
+            else
+            {
+                _view.Dismiss();
+            }
+        }
+
+        private static string Schedule(PatientValidWorkDto work)
+        {
+            return clsWorkText.FormatDate(work.ReserveDate) + " " + clsWorkText.FormatSlot(work.SlotCode);
+        }
+
+        /// <summary>
         /// 저장한 시간대의 예약일이 DB 오늘날짜인가.
         ///
         /// [X] `DateTime.Today` 와 비교하지 않는다 — PC 시계는 DB 시계가 아니다. 마감시각은
@@ -314,8 +339,9 @@ namespace HealthCheckupReservationReception.Presenters
             // 여기서도 신규예약을 접는다 (05 §9.6 `다른업무ID`).
             if (summary.OtherWorkId != null)
             {
-                _view.ShowMessage("이미 예약이 있는 수검자입니다. 예약 관리에서 확인하세요.");
-                _view.GoToWorkbench(WorkContext.Reservation, summary.OtherWorkId.Value);
+                // 여기서는 일정을 모른다 — RS1 은 `다른업무ID` 만 준다 (05 §9.6).
+                Leave(WorkContext.Reservation, summary.OtherWorkId.Value,
+                    "그 사이 다른 창구가 이 수검자를 예약했습니다. 예약 관리에서 확인하시겠습니까?");
                 return;
             }
 
@@ -444,7 +470,7 @@ namespace HealthCheckupReservationReception.Presenters
 
             // 03 §8.10 저장 성공 행 — 전체 Clear.
             Reset();
-            _view.GoToWorkbench(target, workId);
+            _view.GoToWorkbench(target, workId, true);
         }
     }
 }

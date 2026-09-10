@@ -245,17 +245,34 @@ namespace HealthCheckupReservationReception.Views
         /// 03 §8.11 — 저장이 끝나면 이 화면은 할 일이 없다. 결과만 남기고 닫는다.
         /// Workbench 를 여는 것은 Shell 의 일이다 (03 §3 `OpenWorkbench`).
         /// </summary>
-        public void GoToWorkbench(WorkContext context, long workId)
+        public void GoToWorkbench(WorkContext context, long workId, bool fromSave)
         {
-            Result = new WorkbenchTarget { Context = context, WorkId = workId };
+            Result = new WorkbenchTarget { Context = context, WorkId = workId, FromSave = fromSave };
             _saved = true;
             DialogResult = DialogResult.OK;
+            Close();
+        }
+
+        /// <summary>
+        /// 넘길 곳 없이 닫는다. 폐기 확인을 묻지 않는다 — 사용자가 방금 「가지 않겠다」고
+        /// 답했고, 그 수검자로는 애초에 진행할 수 없었다 (RP-06).
+        /// </summary>
+        public void Dismiss()
+        {
+            _saved = true;
+            DialogResult = DialogResult.Cancel;
             Close();
         }
 
         public void ShowMessage(string message)
         {
             XtraMessageBox.Show(this, message, Text);
+        }
+
+        public bool Confirm(string message)
+        {
+            return XtraMessageBox.Show(this, message, Text,
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
         }
 
         /// <summary>

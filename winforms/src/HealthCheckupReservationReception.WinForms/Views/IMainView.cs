@@ -96,5 +96,13 @@ namespace HealthCheckupReservationReception.Views
     {
         public WorkContext Context { get; set; }
         public long WorkId { get; set; }
+
+        /// <summary>
+        /// 저장으로 **생긴** 건인가, 이미 있던 것을 **보러** 가는 것인가 (2026-09-11 사용자 지시).
+        ///
+        /// 둘의 착지 규칙이 다르다. 저장은 날짜와 설정이 함께 정하고(오늘이 아니면 남는다),
+        /// 보러 가는 것은 사용자가 그 물음에 이미 `예` 라고 답한 것이라 여기서 다시 막지 않는다.
+        /// </summary>
+        public bool FromSave { get; set; }
     }
 }

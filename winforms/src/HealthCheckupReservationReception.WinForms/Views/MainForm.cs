@@ -15,6 +15,9 @@ namespace HealthCheckupReservationReception.Views
     public partial class MainForm : RibbonForm, IMainView
     {
         private readonly MainPresenter _presenter;
+        // App.config `MoveToReceptionAfterSave` (2026-09-11 사용자 지시).
+        private readonly bool _moveToReceptionAfterSave = true;
+
         private readonly ICommonStatusService _statusService;
         private readonly IHolidayService _holidayService;
         private readonly IPatientService _patientService;
@@ -55,12 +58,14 @@ namespace HealthCheckupReservationReception.Views
             IWorkService workService,
             IReservationService reservationService,
             IHolidayService holidayService,
-            string operatorName)
+            string operatorName,
+            bool moveToReceptionAfterSave)
         {
             InitializeComponent();
             ClampToWorkingArea();
             _statusService = statusService;
             _holidayService = holidayService;
+            _moveToReceptionAfterSave = moveToReceptionAfterSave;
             _patientService = patientService;
             _workService = workService;
             _reservationService = reservationService;
@@ -173,12 +178,47 @@ namespace HealthCheckupReservationReception.Views
             using (var reservation = new FrmReservation(
                 _reservationService, _patientService, _operatorName, patientId))
             {
-                if (reservation.ShowDialog(this) == DialogResult.OK && reservation.Result != null)
+                if (reservation.ShowDialog(this) != DialogResult.OK || reservation.Result == null)
                 {
-                    // 03 §8.5 기존 유효예약 · §8.11 저장 성공. 여는 것은 Navigation 을 가진
-                    // MainPresenter 의 일이라 그대로 올린다.
-                    Screen_WorkbenchRequested(this, reservation.Result);
+                    return;
                 }
+
+                Land(reservation.Result, patientId);
+            }
+        }
+
+        /// <summary>
+        /// 예약 창이 닫힌 뒤 어디로 갈 것인가 (2026-09-11 사용자 지시).
+        ///
+        /// 예전에는 무조건 옮겼다. 명단을 연달아 예약하는 창구에서는 사람마다 화면이 튀어
+        /// 흐름이 끊긴다 — 저장 뒤 「다음에 할 일」이 두 가지이기 때문이다:
+        ///
+        /// <list type="bullet">
+        /// <item>오늘 예약 — 그 사람이 창구에 서 있다. 다음은 접수다</item>
+        /// <item>미래 예약 — 다음은 다음 사람 예약이다. 옮기면 방해다</item>
+        /// </list>
+        ///
+        /// 답이 날짜로 정해지므로 묻지 않는다. 창구마다 다를 수 있는 것은 `App.config` 가 갖는다.
+        ///
+        /// **보러 가는 것은 막지 않는다** — 사용자가 「예약 관리에서 확인하시겠습니까」에 이미
+        /// `예` 라고 답한 것이라 여기서 한 번 더 판정하면 그 답을 무시하는 셈이다.
+        /// </summary>
+        private void Land(WorkbenchTarget target, long patientId)
+        {
+            bool move = !target.FromSave
+                || (_moveToReceptionAfterSave && target.Context == WorkContext.Reception);
+
+            if (move)
+            {
+                // 여는 것은 Navigation 을 가진 MainPresenter 의 일이라 그대로 올린다.
+                Screen_WorkbenchRequested(this, target);
+                return;
+            }
+
+            // 남는다 — 목록의 `예약` 칸이 방금 낡았으므로 되읽고 그 줄로 돌아간다.
+            if (_patientView != null)
+            {
+                _patientView.ReloadAfterReservation(patientId, "예약이 등록되었습니다.");
             }
         }
 

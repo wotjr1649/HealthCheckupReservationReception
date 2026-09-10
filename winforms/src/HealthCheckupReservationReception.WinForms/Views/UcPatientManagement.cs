@@ -131,6 +131,43 @@ namespace HealthCheckupReservationReception.Views
             set { lblDetailReserve.Text = value ?? string.Empty; }
         }
 
+        public string NoticeText
+        {
+            set { lblNotice.Text = value ?? string.Empty; }
+        }
+
+        public void SelectPatient(long patientId)
+        {
+            for (int i = 0; i < gvPatientList.RowCount; i++)
+            {
+                var row = gvPatientList.GetRow(i) as PatientListItemDto;
+                if (row != null && row.PatientId == patientId)
+                {
+                    _picker.Select(i);
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 예약이 하나 생겼다 — 목록의 `예약` 칸이 낡았으므로 되읽고 그 줄로 돌아간다.
+        /// MainForm 이 저장 뒤에 부른다.
+        /// </summary>
+        public void ReloadAfterReservation(long patientId, string notice)
+        {
+            if (_presenter == null)
+            {
+                return;
+            }
+
+            using (new clsBusyScope(this))
+            {
+                _presenter.Reload(patientId);
+            }
+
+            NoticeText = notice;
+        }
+
         public bool RowSelected
         {
             set
