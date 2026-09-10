@@ -95,8 +95,9 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         public void ShowEditMode()
         {
-            lblChartMode.Visible = false;
-            rgChartMode.Visible = false;
+            // [X] LayoutControl 안에서는 컨트롤의 Visible 을 끄면 **빈 자리가 남는다.**
+            //     줄 자체를 걷는 것은 항목의 Visibility 다.
+            lciChartMode.Visibility = DevExpress.XtraLayout.Utils.LayoutVisibility.Never;
             rgChartMode.EditValue = false;
             ApplyChartMode();
         }
