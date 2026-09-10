@@ -98,13 +98,17 @@ lci Bounds        X=110    →    X=165       정확히 ×1.5
 cd winforms
 ./scripts/test.sh            red 는 verify-screen-design.js 하나여야 한다
                              SCR-003 · SCR-004 가 §1.1 이 놓아 준 그 두 가지다
+                             화면이 늘면 그 화면 이름으로 같은 두 ID 가 더 뜬다 — 같은 것이다
                              다른 게 red 면 진짜 결함이다 (winforms/AGENTS.md)
-MSBuild + vstest             109/109 · warning 0
+MSBuild + vstest             warning 0 · 전건 통과
 ```
 
 **SP 21개가 전부 배포돼 있다.** `SP-LOG-01` 포함. 남은 것은 전부 C# 이다 — DB 의존 0.
 
-C# 이 부르는 SP 는 다섯뿐이다: `COM-01` · `PAT-01` · `PAT-02` · `PAT-03` · `PAT-04`.
+**C# 이 지금 몇 개를 부르는지는 여기 적지 않는다** — `verify-layering.sh` 의 `LAY-002` 가
+세어서 05 §1.3 과 대조한다. 예전에 `다섯뿐이다` 라 적어 두었다가 `WRK-01`·`WRK-02` 가
+붙으면서 거짓이 되었다 (ROOT `AGENTS.md` §6). 시험 건수도 같은 이유로 뺐다 — 세는 게이트가
+없는 수치다.
 
 ---
 
@@ -182,12 +186,16 @@ Caption 은 탭이 없어졌으니 정말 필요 없다. 그러나 그 값이 �
    → licenses.licx 에 세 줄이 들어왔다 (LayoutControl · GridControl · TextEdit)
    → MainForm 이 안 열려서 화면 셋에 디자이너용 생성자를 달았다 (커밋 c86e320)
 
-1. IMainView 에 BeginNewReservation / OpenWorkbench 두 메서드
-   + Workbench Context 복구 (§4.2)
+1. 끝났다 (커밋 `a0e1de7`). `IMainView` 가 03 §3 의 호출계약 둘을 이름 그대로 갖는다
+   → **Context 를 되살린 자리는 필드가 아니라 `OpenWorkbench` 의 매개변수다.** 값을
+     두 곳에 두지 않으려는 것이고, §4.2 가 말한 「그 값이 나르던 Context」가 바로 이것이다
+   → `ReservationContext`·`WorkContext`·`NavigationSource` 셋이 `IMainView.cs` 에 산다
 
-2. WF-WRK-01 조회 골격
-   구조가 수검자 관리와 같다(조회조건 + Grid + 상세 + Ribbon).
-   1구간의 LayoutControl 패턴이 진짜 재사용되는지 여기서 드러난다
+2. 끝났다 (커밋 `e4015d4`). WF-WRK-01 이 조회·상세·Ribbon Action 까지 선다
+   → LayoutControl 패턴은 그대로 재사용됐다. 새 함정은 없었다 — §2.1 에 더할 것이 없다
+   → 예약·접수 Page 의 `[검색]` 그룹과 `[컬럼설정]` 을 걷었다. 수검자 Page 가 먼저 간 길이다
+   → `verify-work-actions.sh` 를 새로 두었다: 05 §8.2 의 업무동작코드 다섯 ↔ `DbWorkAction.cs`
+   → **아직 사람이 클릭해 보지 않았다** (§8)
 
 3. WF-RSV-01 Normal
    정원 · TGT · NEX · AEX · 2단계 저장. 새 개념이 전부 여기 몰려 있다
@@ -230,3 +238,16 @@ C# 은 UTF-8 BOM + CRLF                            verify-ui-baseline.sh UIB-005
 다만 **앱을 사람이 직접 클릭해 본 범위는 수검자 관리 하나뿐이다.** 예약·접수를 세운 뒤에는
 같은 확인을 사용자에게 요청한다 — 시험과 캡처가 못 보는 것이 있다(1구간에서 실제로
 `PerformClick` 이 그랬다).
+
+`[!]` **WF-WRK-01 이 그 상태다** (§6 2번, 2026-09-10). 시험 125건과 게이트는 전부 지났지만
+사람이 눌러 본 적은 없다. DB 에 붙여 확인할 것:
+
+```text
+상단 [예약 관리] · [접수 관리] 를 오갈 때 좌측 그룹 Caption 이 따라오는가
+기간이 오늘로 서 있고 열자마자 목록이 채워지는가
+기간을 지우고 [조회] → 붉은 Inline 오류가 뜨고 SP 를 부르지 않는가
+시작일 > 종료일 → 같은 자리에 다른 문구
+행을 고르면 우측 상세·NEX·AEX 가 서고 Ribbon 버튼이 상태대로 열리는가
+   (RSV 행이면 예약변경·예약취소, RCP 행이면 추가검사변경·접수취소, 취소행이면 변경이력만)
+[컬럼 설정] 으로 성별·생년월일·휴대전화를 켜면 가로 스크롤이 서는가 · [기본값 복원]
+```
