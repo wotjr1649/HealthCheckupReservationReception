@@ -48,6 +48,15 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>03 §9.6 · §9.7 의 Ribbon Action 상태. Ribbon 은 MainForm 이 갖는다.</summary>
         WorkActionState Actions { set; }
 
+        /// <summary>
+        /// 03 §9.1 WorkId Targeted Navigation — 그 한 건이 보이도록 조회조건을 그 날 하루로
+        /// 좁히고 나머지 조건을 비운다. 조건을 그대로 두면 방금 저장한 업무가 목록에 없을 수 있다.
+        /// </summary>
+        void FocusSearchOn(DateTime day);
+
+        /// <summary>목록에서 그 업무를 골라 세운다. 없으면 false 다.</summary>
+        bool SelectWork(long workId);
+
         void ShowMessage(string message);
     }
 }

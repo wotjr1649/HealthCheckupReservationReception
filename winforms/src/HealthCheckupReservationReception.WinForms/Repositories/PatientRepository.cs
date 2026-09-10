@@ -217,6 +217,63 @@ namespace HealthCheckupReservationReception.Repositories
             return rows;
         }
 
+        /// <summary>
+        /// SP-PAT-05 (05 §7.4). RS1 은 0행 또는 1행이다 — 0행이 "유효업무 없음" 이고 정상이다.
+        /// </summary>
+        public PatientValidWorkReadDto ReadValidWork(long patientId)
+        {
+            var read = new PatientValidWorkReadDto();
+            using (var connection = new SqlConnection(_connectionString))
+            using (var command = new SqlCommand("dbo.USP_HC_수검자유효업무_조회", connection))
+            {
+                command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.Add("@수검자ID", SqlDbType.BigInt).Value = patientId;
+
+                connection.Open();
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    read.Result = DbResultReader.Read(reader);
+                    if (read.Result != null && read.Result.Success && reader.NextResult())
+                    {
+                        read.Work = ReadValidWorkRow(reader);
+                    }
+                }
+            }
+
+            return read;
+        }
+
+        private static PatientValidWorkDto ReadValidWorkRow(SqlDataReader reader)
+        {
+            // ordinal 을 Read 앞에서 잡는다 — 0행이어도 컬럼 이름 계약이 전건 검증된다.
+            int ordWorkId = reader.GetOrdinal("업무ID");
+            int ordReserveDate = reader.GetOrdinal("예약일");
+            int ordSlotCode = reader.GetOrdinal("시간대코드");
+            int ordStatusCode = reader.GetOrdinal("상태코드");
+            int ordStatusName = reader.GetOrdinal("상태명");
+            int ordIsToday = reader.GetOrdinal("오늘여부");
+            int ordRowVersion = reader.GetOrdinal("행버전");
+
+            if (!reader.Read())
+            {
+                return null;
+            }
+
+            var rowVersion = new byte[8];
+            reader.GetBytes(ordRowVersion, 0, rowVersion, 0, rowVersion.Length);
+
+            return new PatientValidWorkDto
+            {
+                WorkId = reader.GetInt64(ordWorkId),
+                ReserveDate = reader.GetDateTime(ordReserveDate),
+                SlotCode = reader.GetString(ordSlotCode),
+                StatusCode = reader.GetString(ordStatusCode),
+                StatusName = reader.GetString(ordStatusName),
+                IsToday = reader.GetBoolean(ordIsToday),
+                RowVersion = rowVersion,
+            };
+        }
+
         private static byte[] Bytes(SqlDataReader reader, int ordinal)
         {
             var value = new byte[8];

@@ -70,6 +70,8 @@
     <Compile Include="Models\PatientSaveReadDto.cs" />
     <Compile Include="Models\PatientSaveRequest.cs" />
     <Compile Include="Models\PatientSaveResultDto.cs" />
+    <Compile Include="Models\PatientValidWorkDto.cs" />
+    <Compile Include="Models\PatientValidWorkReadDto.cs" />
     <Compile Include="Models\ExamTargetDto.cs" />
     <Compile Include="Models\ReservationAexItemDto.cs" />
     <Compile Include="Models\ReservationAvailabilityReadDto.cs" />
@@ -92,6 +94,7 @@
     <Compile Include="Presenters\PatientEditorPresenter.cs" />
     <Compile Include="Presenters\PatientSelectPresenter.cs" />
     <Compile Include="Presenters\WorkbenchPresenter.cs" />
+    <Compile Include="Presenters\ReservationPresenter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Repositories\CommonStatusRepository.cs" />
     <Compile Include="Repositories\DbResultReader.cs" />
@@ -145,6 +148,7 @@
     <Compile Include="Views\IPatientEditorView.cs" />
     <Compile Include="Views\IPatientSelectView.cs" />
     <Compile Include="Views\IWorkbenchView.cs" />
+    <Compile Include="Views\IReservationView.cs" />
     <Compile Include="Views\clsBusyScope.cs" />
     <Compile Include="Views\clsGridColumns.cs" />
     <Compile Include="Views\clsColumnChooser.cs" />
@@ -174,6 +178,16 @@
     </Compile>
     <Compile Include="Views\UcWorkbench.UI.cs">
       <DependentUpon>UcWorkbench.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Views\UcReservation.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\UcReservation.Designer.cs">
+      <DependentUpon>UcReservation.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UcReservation.UI.cs">
+      <DependentUpon>UcReservation.cs</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

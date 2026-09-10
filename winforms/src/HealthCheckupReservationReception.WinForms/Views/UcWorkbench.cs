@@ -164,6 +164,33 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
+        /// <summary>
+        /// 03 §9.1 — 그 하루로 좁히고 상태·차트번호·이름을 비운다. Presenter 가 곧바로 다시
+        /// 조회하므로 여기서는 값만 놓는다.
+        /// </summary>
+        public void FocusSearchOn(DateTime day)
+        {
+            deFrom.EditValue = day;
+            deTo.EditValue = day;
+            cboStatus.EditValue = null;
+            txtChartNo.Text = string.Empty;
+            txtName.Text = string.Empty;
+        }
+
+        public bool SelectWork(long workId)
+        {
+            for (int i = 0; i < gvWorkList.RowCount; i++)
+            {
+                var row = gvWorkList.GetRow(i) as WorkListItemDto;
+                if (row != null && row.WorkId == workId)
+                {
+                    return _picker.Select(i);
+                }
+            }
+
+            return false;
+        }
+
         public void ShowMessage(string message)
         {
             Form owner = FindForm();

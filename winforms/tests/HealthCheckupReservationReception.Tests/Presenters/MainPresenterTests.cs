@@ -219,6 +219,48 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             CollectionAssert.Contains(view.Calls, "ShowBusinessScreen:PatientManagement");
         }
 
+        // 03 §8.5 기존 유효예약 · §8.11 저장 성공 — 업무 화면이 Workbench 로 넘겨 달라고 한다.
+        // [X] Ribbon Page 도 함께 옮겨야 한다. 화면만 바꾸고 Page 를 두면 열려 있는 Action 이
+        //     그 화면의 것이 아니게 되고, 휴무일에서 돌아올 자리도 어긋난다.
+        [TestMethod]
+        public void 화면이_Workbench_를_부르면_Page_도_함께_옮긴다()
+        {
+            FakeMainView view = LoadedShell();
+
+            view.RaiseWorkbenchRequested(WorkContext.Reservation, 91);
+
+            CollectionAssert.AreEqual(
+                new List<string> { "SelectNavigationPage:ReservationDesk", "OpenWorkbench:Reservation,91" },
+                view.Calls);
+        }
+
+        [TestMethod]
+        public void WalkIn_저장은_접수_관리_Page_로_옮긴다()
+        {
+            FakeMainView view = LoadedShell();
+
+            view.RaiseWorkbenchRequested(WorkContext.Reception, 92);
+
+            CollectionAssert.AreEqual(
+                new List<string> { "SelectNavigationPage:ReceptionDesk", "OpenWorkbench:Reception,92" },
+                view.Calls);
+        }
+
+        // 그 뒤에 휴무일을 열면 돌아올 자리도 Workbench 여야 한다 — `_lastBusinessPage` 가 한 곳이다.
+        [TestMethod]
+        public void Workbench_로_옮긴_뒤_휴무일에서_돌아올_자리도_그곳이다()
+        {
+            FakeMainView view = LoadedShell();
+            view.RaiseWorkbenchRequested(WorkContext.Reception, 92);
+            view.Calls.Clear();
+
+            view.RaiseNavigationRequested(BusinessNavigation.HolidayManagement);
+
+            CollectionAssert.AreEqual(
+                new List<string> { "SelectNavigationPage:ReceptionDesk", "ShowHolidayManagement" },
+                view.Calls);
+        }
+
         private static FakeMainView LoadedShell()
         {
             var view = new FakeMainView();
@@ -255,6 +297,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
     {
         public event EventHandler ShellLoaded;
         public event EventHandler<BusinessNavigation> NavigationRequested;
+        public event EventHandler<WorkbenchTarget> WorkbenchRequested;
 
         public List<string> Calls { get; private set; }
 
@@ -300,6 +343,15 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             EventHandler<BusinessNavigation> handler = NavigationRequested;
             if (handler != null) { handler(this, target); }
+        }
+
+        public void RaiseWorkbenchRequested(WorkContext context, long workId)
+        {
+            EventHandler<WorkbenchTarget> handler = WorkbenchRequested;
+            if (handler != null)
+            {
+                handler(this, new WorkbenchTarget { Context = context, WorkId = workId });
+            }
         }
 
     }

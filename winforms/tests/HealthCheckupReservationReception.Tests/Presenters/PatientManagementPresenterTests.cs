@@ -276,6 +276,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public OperationResult<PatientDetailDto> DetailResult { get; set; }
         public Exception Failure { get; set; }
 
+        // SP-PAT-05 (05 §7.4). 기본은 "유효업무 없음" 이고 그것이 성공한 0행이다.
+        public OperationResult<PatientValidWorkDto> ValidWorkResult { get; set; }
+        public long? LastValidWorkPatientId { get; private set; }
+
         // DLG-PAT-01 은 한 번의 저장이 두 번 부를 수 있다 — 203 을 받고 확인값을 실어 다시
         // 부르는 길이다 (03 §6.5). 그래서 결과를 하나가 아니라 줄로 세워 둔다.
         public Queue<OperationResult<PatientSaveReadDto>> RegisterResults { get; private set; }
@@ -321,6 +325,13 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             if (Failure != null) { throw Failure; }
             Record(request);
             return UpdateResult;
+        }
+
+        public OperationResult<PatientValidWorkDto> GetValidWork(long patientId)
+        {
+            if (Failure != null) { throw Failure; }
+            LastValidWorkPatientId = patientId;
+            return ValidWorkResult ?? OperationResult<PatientValidWorkDto>.Success(null);
         }
 
         private void Record(PatientSaveRequest request)

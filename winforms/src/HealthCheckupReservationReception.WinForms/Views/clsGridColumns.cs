@@ -1,4 +1,5 @@
-﻿using DevExpress.Utils;
+﻿using System;
+using DevExpress.Utils;
 using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Base;
 using DevExpress.XtraGrid.Views.Grid;
@@ -19,6 +20,23 @@ namespace HealthCheckupReservationReception.Views
             column.AppearanceCell.Options.UseTextOptions = true;
             column.AppearanceHeader.TextOptions.HAlignment = alignment;
             column.AppearanceHeader.Options.UseTextOptions = true;
+        }
+
+        /// <summary>
+        /// 컬럼 하나의 **표시글**만 바꾼다. 값은 건드리지 않는다.
+        ///
+        /// 같은 세 줄이 화면마다 되풀이되던 자리다 — NEX 의 `구분` 은 WF-RSV-01 과 WF-WRK-01
+        /// 둘 다 같은 규칙으로 적어야 한다 (킷 §2 · ROOT AGENTS.md §6).
+        /// </summary>
+        public static void Display(GridView view, GridColumn column, Func<string, string> format)
+        {
+            view.CustomColumnDisplayText += delegate(object sender, CustomColumnDisplayTextEventArgs e)
+            {
+                if (e.Column == column)
+                {
+                    e.DisplayText = format(e.Value as string);
+                }
+            };
         }
 
         /// <summary>

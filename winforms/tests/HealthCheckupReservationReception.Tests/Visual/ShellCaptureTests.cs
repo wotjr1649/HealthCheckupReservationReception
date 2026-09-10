@@ -57,7 +57,7 @@ namespace HealthCheckupReservationReception.Tests.Visual
                     }),
                 };
 
-                using (var form = new MainForm(service, new FakePatientService(), new FakeWorkService(), "접수1번창구"))
+                using (var form = new MainForm(service, new FakePatientService(), new FakeWorkService(), new FakeReservationService(), "접수1번창구"))
                 {
                     // 화면 밖에 띄운다. 보이지 않으면 DevExpress 가 스킨을 그리지 않는다.
                     form.StartPosition = FormStartPosition.Manual;
@@ -230,6 +230,108 @@ namespace HealthCheckupReservationReception.Tests.Visual
             return new List<WorkExamItemDto>
             {
                 new WorkExamItemDto { AexCode = "OPT01", ExamItemCode = "E11", ExamItemName = "복부초음파" },
+            };
+        }
+
+        /// <summary>
+        /// WF-RSV-01 을 수검자·일정·검사구성이 찬 상태로 뜬다. 03 §8.4 의 상단 30~35% ·
+        /// 하단 65~70% 비율과 AEX 의 `선택불가 사유` 칸은 값이 들어 있어야 보인다.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void WFRSV01_실행_화면을_PNG_로_뜬다()
+        {
+            string path = null;
+            RunSta(() =>
+            {
+                WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
+                WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
+
+                var screen = new UcReservation();
+                screen.Attach(new FakeReservationService { Availability = SampleAvailability() },
+                    new FakePatientService
+                    {
+                        DetailResult = OperationResult<PatientDetailDto>.Success(new PatientDetailDto
+                        {
+                            PatientId = 1000,
+                            ChartNo = "C000001",
+                            Name = "홍길동",
+                            Birthday = "19800101",
+                            Gender = "M",
+                        }),
+                    },
+                    "접수1번창구");
+
+                using (var host = new Form())
+                {
+                    host.StartPosition = FormStartPosition.Manual;
+                    host.Location = new Point(-32000, -32000);
+                    host.ClientSize = new Size(1916, 887);
+                    screen.Dock = DockStyle.Fill;
+                    host.Controls.Add(screen);
+                    host.Show();
+                    Application.DoEvents();
+
+                    screen.Begin(ReservationContext.Normal, 1000, NavigationSource.PatientManagement);
+                    Application.DoEvents();
+
+                    using (var bmp = new Bitmap(host.ClientSize.Width, host.ClientSize.Height))
+                    {
+                        host.DrawToBitmap(bmp, new Rectangle(Point.Empty, bmp.Size));
+                        path = Save(bmp, "wf_rsv_01.png");
+                    }
+
+                    host.Close();
+                }
+            });
+
+            var info = new FileInfo(path);
+            Assert.IsTrue(info.Exists && info.Length > 10 * 1024,
+                "PNG 가 비었거나 너무 작다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
+            Console.WriteLine("캡처: " + path);
+        }
+
+        private static ReservationAvailabilityReadDto SampleAvailability()
+        {
+            return new ReservationAvailabilityReadDto
+            {
+                Result = new DbResult { Success = true, Code = 0, Message = "정상 처리되었습니다." },
+                Summary = new ReservationSummaryDto
+                {
+                    ChangeScope = "ALL",
+                    PatientId = 1000,
+                    ReserveType = "NORMAL",
+                    ReserveDate = new DateTime(2026, 9, 14),
+                    SlotCode = "AM",
+                    WorkAllowed = true,
+                    CanSave = true,
+                    BlockMessage = string.Empty,
+                },
+                Slots = new List<SlotInfoDto>
+                {
+                    new SlotInfoDto { SlotCode = "AM", SlotName = "오전", Capacity = 20, CurrentCount = 12, AppliedCount = 13, RemainingSeats = 7, IsOperating = true, Selectable = true, BlockMessage = string.Empty },
+                    new SlotInfoDto { SlotCode = "PM", SlotName = "오후", Capacity = 20, CurrentCount = 20, AppliedCount = 21, RemainingSeats = 0, IsOperating = true, Selectable = false, BlockCode = (int)DbCode.SlotFull, BlockMessage = "해당 시간대의 정원이 찼습니다." },
+                },
+                Target = new ExamTargetDto { IsTarget = true, Age = 46, LastCompletedDate = new DateTime(2024, 5, 11), ReasonMessage = string.Empty },
+                NexItems = new List<WorkExamItemDto>
+                {
+                    new WorkExamItemDto { ExamItemCode = "EX001", ExamItemName = "문진/진찰", NexType = "BASIC" },
+                    new WorkExamItemDto { ExamItemCode = "EX002", ExamItemName = "신체계측", NexType = "BASIC" },
+                    new WorkExamItemDto { ExamItemCode = "EX003", ExamItemName = "혈압", NexType = "BASIC" },
+                    new WorkExamItemDto { ExamItemCode = "EX004", ExamItemName = "시력·청력", NexType = "BASIC" },
+                    new WorkExamItemDto { ExamItemCode = "EX005", ExamItemName = "흉부 X-ray", NexType = "BASIC" },
+                    new WorkExamItemDto { ExamItemCode = "EX012", ExamItemName = "골밀도검사", NexType = "CONDITIONAL" },
+                },
+                AexItems = new List<ReservationAexItemDto>
+                {
+                    new ReservationAexItemDto { AexCode = "OPT01", ExamItemName = "복부초음파", Requested = true, EffectiveSelected = true, Selectable = true, ReasonMessage = string.Empty },
+                    new ReservationAexItemDto { AexCode = "OPT02", ExamItemName = "갑상선초음파", Selectable = true, ReasonMessage = string.Empty },
+                    new ReservationAexItemDto { AexCode = "OPT03", ExamItemName = "유방초음파", Selectable = false, ReasonCode = 411, ReasonMessage = "성별 조건을 충족하지 않는 추가검사입니다." },
+                    new ReservationAexItemDto { AexCode = "OPT04", ExamItemName = "골밀도검사", Selectable = false, ReasonCode = 412, ReasonMessage = "일반건강검진에 포함된 검사입니다." },
+                    new ReservationAexItemDto { AexCode = "OPT05", ExamItemName = "PSA", Selectable = true, ReasonMessage = string.Empty },
+                    new ReservationAexItemDto { AexCode = "OPT06", ExamItemName = "HbA1c", Selectable = true, ReasonMessage = string.Empty },
+                    new ReservationAexItemDto { AexCode = "OPT07", ExamItemName = "HPV 검사", Selectable = false, ReasonCode = 411, ReasonMessage = "성별 조건을 충족하지 않는 추가검사입니다." },
+                },
             };
         }
 

@@ -15,5 +15,8 @@ namespace HealthCheckupReservationReception.Repositories
 
         /// <summary>SP-PAT-04 `[dbo].[USP_HC_수검자정보_수정]` (05 §10.2).</summary>
         PatientSaveReadDto Update(PatientSaveRequest request);
+
+        /// <summary>SP-PAT-05 `[dbo].[USP_HC_수검자유효업무_조회]` (05 §7.4).</summary>
+        PatientValidWorkReadDto ReadValidWork(long patientId);
     }
 }

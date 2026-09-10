@@ -81,6 +81,32 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
+        /// <summary>
+        /// 코드가 행을 고른다 (03 §9.1 WorkId Targeted Navigation). 사용자가 고른 것과 같은
+        /// 상태가 되고 <see cref="PickChanged"/> 도 그대로 난다 — 상세와 Action 이 따라와야 한다.
+        ///
+        /// [X] 이미 그 행이 focus 되어 있으면 `FocusedRowHandle` 대입이 이벤트를 내지 않는다.
+        ///     그 경우만 직접 고른다 — 아니면 대입이 낸 이벤트로 한 번만 돈다.
+        /// </summary>
+        public bool Select(int rowHandle)
+        {
+            if (_view.GetRow(rowHandle) == null)
+            {
+                return false;
+            }
+
+            if (_view.FocusedRowHandle == rowHandle)
+            {
+                Pick(rowHandle);
+            }
+            else
+            {
+                _view.FocusedRowHandle = rowHandle;
+            }
+
+            return true;
+        }
+
         private void Pick(int rowHandle)
         {
             if (_suppress)

@@ -259,6 +259,60 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsFalse(view.Actions.ChangeLog);
         }
 
+        // ── 03 §9.1 WorkId Targeted Navigation
+
+        // 신규예약 저장 성공(03 §8.11)과 접수 Shortcut 이 이 길로 돌아온다.
+        // [X] 조회조건을 그대로 두면 방금 저장한 건이 목록에 없을 수 있다 — 그 날 하루로 좁힌다.
+        [TestMethod]
+        public void WorkId_로_열면_그_날짜로_좁혀_조회하고_그_행을_고른다()
+        {
+            var view = new FakeWorkbenchView { FromDate = Today.AddDays(-30), SelectFound = true };
+            var service = new FakeWorkService
+            {
+                SearchResult = Ok(OneRow()),
+                DetailResult = OkDetail(Allowed(DbWorkAction.EditReservation)),
+            };
+            var presenter = new WorkbenchPresenter(view, service);
+
+            presenter.OpenContext(WorkContext.Reservation, 77);
+
+            Assert.AreEqual(Today, view.FocusedDay, "그 업무의 예약일로 좁히지 않았다");
+            Assert.AreEqual(Today, view.FromDate);
+            Assert.AreEqual(Today, view.ToDate);
+            Assert.IsNull(view.StatusCode, "상태 조건이 남으면 방금 저장한 건이 안 보일 수 있다");
+            Assert.AreEqual(77L, view.SelectedWorkId);
+            Assert.IsNotNull(view.Rows);
+        }
+
+        [TestMethod]
+        public void WorkId_를_목록에서_못_찾으면_Inline_으로_알린다()
+        {
+            var view = new FakeWorkbenchView { SelectFound = false };
+            var service = new FakeWorkService
+            {
+                SearchResult = Ok(new List<WorkListItemDto>()),
+                DetailResult = OkDetail(Allowed()),
+            };
+            var presenter = new WorkbenchPresenter(view, service);
+
+            presenter.OpenContext(WorkContext.Reception, 77);
+
+            Assert.AreEqual("방금 저장한 업무를 목록에서 찾지 못했습니다.", view.ValidationMessage);
+        }
+
+        [TestMethod]
+        public void WorkId_가_없으면_조회조건을_건드리지_않는다()
+        {
+            var view = new FakeWorkbenchView { FromDate = Today.AddDays(-30) };
+            var service = new FakeWorkService { DetailResult = OkDetail(Allowed()) };
+            var presenter = new WorkbenchPresenter(view, service);
+
+            presenter.OpenContext(WorkContext.Reception, null);
+
+            Assert.IsNull(view.FocusedDay);
+            Assert.AreEqual(Today.AddDays(-30), view.FromDate, "상단 전환이 조회조건을 갈아치웠다");
+        }
+
         // ── helpers
 
         private static OperationResult<IList<WorkListItemDto>> Ok(IList<WorkListItemDto> rows)
@@ -369,6 +423,27 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public IList<WorkExamItemDto> AexItems { get; set; }
         public WorkActionState Actions { get; set; }
         public string LastMessage { get; private set; }
+
+        // 03 §9.1 WorkId Targeted Navigation
+        public DateTime? FocusedDay { get; private set; }
+        public long? SelectedWorkId { get; private set; }
+        public bool SelectFound { get; set; }
+
+        public void FocusSearchOn(DateTime day)
+        {
+            FocusedDay = day;
+            FromDate = day;
+            ToDate = day;
+            StatusCode = null;
+            ChartNo = null;
+            PatientName = null;
+        }
+
+        public bool SelectWork(long workId)
+        {
+            SelectedWorkId = workId;
+            return SelectFound;
+        }
 
         public void ShowMessage(string message) { LastMessage = message; }
 

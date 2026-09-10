@@ -48,11 +48,14 @@ namespace HealthCheckupReservationReception
                 new PatientRepository(connection.ConnectionString));
             IWorkService workService = new WorkService(
                 new WorkRepository(connection.ConnectionString));
+            IReservationService reservationService = new ReservationService(
+                new ReservationRepository(connection.ConnectionString));
 
             Application.Run(new MainForm(
                 statusService,
                 patientService,
                 workService,
+                reservationService,
                 ConfigurationManager.AppSettings[OperatorSettingName]));
         }
     }

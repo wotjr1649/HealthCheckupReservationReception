@@ -22,5 +22,14 @@ namespace HealthCheckupReservationReception.Services
 
         /// <summary>DLG-PAT-01 Edit 저장 (SP-PAT-04 · 05 §10.2). 성패 규약은 Register 와 같다.</summary>
         OperationResult<PatientSaveReadDto> Update(PatientSaveRequest request);
+
+        /// <summary>
+        /// SP-PAT-05 현재일 이후 RSV/RCP 유효업무 (05 §7.4).
+        ///
+        /// 03 §8.5 의 중복판단이 이것을 쓴다 — 신규예약은 수검자를 확정한 **직후**,
+        /// 아직 예약일이 없을 때 물어야 하므로 SP-RSV-01 의 `다른업무ID` 로는 대신할 수 없다.
+        /// 유효업무가 없으면 `Value` 가 null 이고 그것이 정상이다.
+        /// </summary>
+        OperationResult<PatientValidWorkDto> GetValidWork(long patientId);
     }
 }

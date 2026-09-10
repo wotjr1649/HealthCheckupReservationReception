@@ -17,6 +17,7 @@ namespace HealthCheckupReservationReception.Views
         private readonly MainPresenter _presenter;
         private readonly IPatientService _patientService;
         private readonly IWorkService _workService;
+        private readonly IReservationService _reservationService;
         private readonly string _operatorName;
         // 한 번 만든 업무 화면은 들고 있는다. Tab 스트립이 사라졌어도 화면을 오갈 때마다
         // 새로 세우면 사용자가 조회해 둔 목록이 매번 날아간다.
@@ -31,6 +32,7 @@ namespace HealthCheckupReservationReception.Views
 
         private UcPatientManagement _patientView;
         private UcWorkbench _workView;
+        private UcReservation _reservationView;
 
         /// <summary>
         /// [X] **VS 디자이너 전용이다.** 디자이너는 설계 대상 타입을 매개변수 없는 생성자로
@@ -49,18 +51,23 @@ namespace HealthCheckupReservationReception.Views
             ICommonStatusService statusService,
             IPatientService patientService,
             IWorkService workService,
+            IReservationService reservationService,
             string operatorName)
         {
             InitializeComponent();
             ClampToWorkingArea();
             _patientService = patientService;
             _workService = workService;
+            _reservationService = reservationService;
             _operatorName = operatorName;
 
             // Designer 는 버튼을 켜진 채로 만든다. Presenter 가 붙기 전에 03 §5.2 · §9.6 · §9.7 의
             // 초기 상태(행 미선택)로 맞춘다.
             ApplyPatientRowActions();
             ApplyWorkActions(WorkActionState.None());
+
+            // 03 §8.5 최초 — 화면 준비상태가 충족되기 전에는 [예약저장] 이 닫혀 있다 (§8.2).
+            barBtnReservationSave.Enabled = false;
 
             _presenter = new MainPresenter(this, statusService, operatorName);
         }
@@ -83,6 +90,7 @@ namespace HealthCheckupReservationReception.Views
 
         public event EventHandler ShellLoaded;
         public event EventHandler<BusinessNavigation> NavigationRequested;
+        public event EventHandler<WorkbenchTarget> WorkbenchRequested;
 
         public string WorkStatusText
         {
@@ -157,8 +165,12 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         public void BeginNewReservation(ReservationContext context, long? patientId, NavigationSource source)
         {
-            // EXTENSION POINT: WF-RSV-01 이 서면 셋을 그 화면에 넘긴다 (03 §8.10).
+            // 세우는 것이 먼저다 — 화면이 붙어야 Presenter 가 서고, 그 뒤에 전달키를 준다.
             ShowBusinessScreen(BusinessTab.NewReservation);
+            if (_reservationView != null)
+            {
+                _reservationView.Begin(context, patientId, source);
+            }
         }
 
         /// <summary>
@@ -221,8 +233,36 @@ namespace HealthCheckupReservationReception.Views
                 return workbench;
             }
 
-            // EXTENSION POINT: WF-RSV-01.
+            if (tab == BusinessTab.NewReservation)
+            {
+                var reservation = new UcReservation();
+                reservation.SaveEnabledChanged += ReservationView_SaveEnabledChanged;
+                reservation.WorkbenchRequested += Screen_WorkbenchRequested;
+                reservation.Attach(_reservationService, _patientService, _operatorName);
+                _reservationView = reservation;
+                return reservation;
+            }
+
             return null;
+        }
+
+        private void ReservationView_SaveEnabledChanged(object sender, bool enabled)
+        {
+            // 03 §8.2 · 05 §9.12 — `저장가능` 그대로다. 화면이 다시 세지 않는다.
+            barBtnReservationSave.Enabled = enabled;
+        }
+
+        /// <summary>
+        /// 03 §8.5 기존 유효예약 · §8.11 저장 성공. Navigation 상태는 MainPresenter 가 갖고
+        /// 있으므로 여기서 직접 열지 않고 그대로 올린다.
+        /// </summary>
+        private void Screen_WorkbenchRequested(object sender, WorkbenchTarget target)
+        {
+            EventHandler<WorkbenchTarget> handler = WorkbenchRequested;
+            if (handler != null)
+            {
+                handler(this, target);
+            }
         }
 
         private void PatientView_RowActionsChanged(object sender, bool rowSelected)
@@ -353,6 +393,15 @@ namespace HealthCheckupReservationReception.Views
             using (var editor = new FrmPatientEditor(_patientService, _operatorName, patientId))
             {
                 editor.ShowDialog(this);
+            }
+        }
+
+        // 03 §8.2 — Ribbon 의 [예약저장]. 준비상태 판정도 저장도 화면 쪽이 한다.
+        private void barBtnReservationSave_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (_reservationView != null)
+            {
+                _reservationView.RequestSave();
             }
         }
 

@@ -136,7 +136,7 @@ namespace HealthCheckupReservationReception.Tests
                     Result = OperationResult<CommonWorkStatusDto>.Success(blocked),
                 };
 
-                using (var form = new MainForm(service, new FakePatientService(), new FakeWorkService(), "접수1번창구"))
+                using (var form = new MainForm(service, new FakePatientService(), new FakeWorkService(), new FakeReservationService(), "접수1번창구"))
                 {
                     form.StartPosition = FormStartPosition.Manual;
                     form.Location = new Point(-32000, -32000);
@@ -375,7 +375,8 @@ namespace HealthCheckupReservationReception.Tests
         private static MainForm NewShell()
         {
             return new MainForm(
-                new FakeCommonStatusService(), new FakePatientService(), new FakeWorkService(), "접수1번창구");
+                new FakeCommonStatusService(), new FakePatientService(),
+                new FakeWorkService(), new FakeReservationService(), "접수1번창구");
         }
 
         private static Control BusinessPanel(MainForm form)

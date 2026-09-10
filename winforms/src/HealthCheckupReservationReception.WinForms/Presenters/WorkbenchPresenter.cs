@@ -46,9 +46,46 @@ namespace HealthCheckupReservationReception.Presenters
             _view.ContextTitle = TitleOf(context);
             ClearSelection();
 
-            // EXTENSION POINT: WorkId Targeted Navigation (03 §9.1) — 조회조건과 무관하게
-            //                  그 한 건을 직접 조회해 행을 자동선택한다. 신규예약 저장 성공과
-            //                  접수 Shortcut 이 이 길로 돌아온다.
+            if (workId != null)
+            {
+                Target(workId.Value);
+            }
+        }
+
+        /// <summary>
+        /// 03 §9.1 WorkId Targeted Navigation — 조회조건과 무관하게 그 한 건을 직접 조회하고
+        /// 행을 자동선택한다. 신규예약 저장 성공(§8.11)과 접수 Shortcut 이 이 길로 돌아온다.
+        ///
+        /// [X] 상세를 **먼저** 부른다. 그 업무가 며칠인지 알아야 목록을 그 날로 좁힐 수 있기
+        ///     때문이다 — 조회조건만으로는 방금 저장한 건이 목록에 없을 수 있다. 행을 고르면
+        ///     선택 이벤트가 상세를 한 번 더 읽지만, 그 값이 화면에 서는 최신값이다.
+        /// </summary>
+        private void Target(long workId)
+        {
+            OperationResult<WorkDetailReadDto> detail;
+            try
+            {
+                detail = _service.GetDetail(workId);
+            }
+            catch (Exception)
+            {
+                _view.ValidationMessage = "업무 상세를 조회하지 못했습니다.";
+                return;
+            }
+
+            if (detail == null || !detail.IsSuccess)
+            {
+                _view.ValidationMessage = detail == null ? "업무 상세를 조회하지 못했습니다." : detail.Message;
+                return;
+            }
+
+            _view.FocusSearchOn(detail.Value.Detail.ReserveDate.Date);
+            Search();
+
+            if (!_view.SelectWork(workId))
+            {
+                _view.ValidationMessage = "방금 저장한 업무를 목록에서 찾지 못했습니다.";
+            }
         }
 
         /// <summary>

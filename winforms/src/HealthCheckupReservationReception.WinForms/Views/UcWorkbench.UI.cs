@@ -3,6 +3,7 @@ using System;
 using System.Drawing;
 using DevExpress.Utils;
 using DevExpress.XtraEditors.Controls;
+using HealthCheckupReservationReception.Common;
 
 namespace HealthCheckupReservationReception.Views
 {
@@ -48,6 +49,9 @@ namespace HealthCheckupReservationReception.Views
 
             // [X] 성공한 0건과 실패가 사용자에게 같은 그림이면 안 된다 — 2026-09-10 실측.
             clsGridColumns.ShowEmptyText(gvWorkList, "조회 결과가 없습니다.");
+            // 03 §8.8 — 구분은 기본/조건부로 적는다. WF-RSV-01 과 같은 규칙을 쓴다.
+            clsGridColumns.Display(gvNexList, colNexType, clsWorkText.FormatNexType);
+
             clsGridColumns.ShowEmptyText(gvNexList, "선택한 업무가 없습니다.");
             clsGridColumns.ShowEmptyText(gvAexList, "선택한 업무가 없습니다.");
 

@@ -13,6 +13,10 @@ namespace HealthCheckupReservationReception.Common
         public const string SlotMorning = "AM";
         public const string SlotAfternoon = "PM";
 
+        // 05 §7.x 의 `국가검사구분` 도메인. 03 §8.8 은 화면에 기본/조건부로 적으라고 한다.
+        public const string NexBasic = "BASIC";
+        public const string NexConditional = "CONDITIONAL";
+
         /// <summary>
         /// 04 §8.x 의 시간대코드 `AM`/`PM` 을 화면 글로 바꾼다.
         /// 모르는 값은 그대로 낸다 — 화면이 값을 숨기면 사용자가 무엇을 본 것인지 알 수 없다.
@@ -21,6 +25,17 @@ namespace HealthCheckupReservationReception.Common
         {
             if (value == SlotMorning) { return "오전"; }
             if (value == SlotAfternoon) { return "오후"; }
+            return value ?? string.Empty;
+        }
+
+        /// <summary>
+        /// 03 §8.8 — 국가검사 구분은 화면에서 기본/조건부로 적는다. DB 는 `BASIC`/`CONDITIONAL`
+        /// 로 준다 (05 §7.x). 모르는 값은 그대로 낸다 — 틀려도 원문이 보이므로 조용하지 않다.
+        /// </summary>
+        public static string FormatNexType(string value)
+        {
+            if (value == NexBasic) { return "기본"; }
+            if (value == NexConditional) { return "조건부"; }
             return value ?? string.Empty;
         }
 

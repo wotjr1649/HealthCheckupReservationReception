@@ -12,6 +12,13 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>Ribbon Page 를 고르거나 [휴무일 관리] 를 눌렀다 (03 §1.1 상단 업무 Navigation).</summary>
         event EventHandler<BusinessNavigation> NavigationRequested;
 
+        /// <summary>
+        /// 업무 화면이 Workbench 로 넘겨 달라고 한다 — 03 §8.5 기존 유효예약과
+        /// §8.11 저장 성공이 그 길이다. Navigation 상태를 Presenter 가 갖고 있으므로
+        /// 화면이 직접 <see cref="OpenWorkbench"/> 를 부르지 않고 이 이벤트로 올린다.
+        /// </summary>
+        event EventHandler<WorkbenchTarget> WorkbenchRequested;
+
         string WorkStatusText { set; }
         string OperatorText { set; }
 
@@ -83,6 +90,17 @@ namespace HealthCheckupReservationReception.Views
     {
         Reservation,
         Reception
+    }
+
+    /// <summary>
+    /// 03 §9.1 WorkId Targeted Navigation 의 대상. 어느 Context 로 갈지와 어느 업무를 고를지가
+    /// 늘 함께 다닌다 — 같은 WorkId 라도 예약 관리와 접수 관리에서 열리는 Action 이 다르다
+    /// (§9.6 · §9.7). 그래서 둘을 갈라 나르지 않는다.
+    /// </summary>
+    public sealed class WorkbenchTarget
+    {
+        public WorkContext Context { get; set; }
+        public long WorkId { get; set; }
     }
 
     /// <summary>

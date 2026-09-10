@@ -31,6 +31,7 @@ namespace HealthCheckupReservationReception.Presenters
 
             _view.ShellLoaded += OnShellLoaded;
             _view.NavigationRequested += OnNavigationRequested;
+            _view.WorkbenchRequested += OnWorkbenchRequested;
         }
 
         private void OnShellLoaded(object sender, EventArgs e)
@@ -159,6 +160,24 @@ namespace HealthCheckupReservationReception.Presenters
                     _view.ShowBusinessScreen(BusinessTab.PatientManagement);
                     break;
             }
+        }
+
+        /// <summary>
+        /// 03 §8.5 기존 유효예약 · §8.11 저장 성공 — 업무 화면이 Workbench 로 넘겨 달라고 한다.
+        ///
+        /// Ribbon Page 도 함께 옮긴다. 화면만 바꾸고 Page 를 두면 열려 있는 Action 이 그 화면의
+        /// 것이 아니게 되고, `_lastBusinessPage` 가 어긋나 휴무일에서 엉뚱한 곳으로 돌아온다 —
+        /// Navigation 상태를 한 곳에 두는 이유가 이것이다.
+        /// </summary>
+        private void OnWorkbenchRequested(object sender, WorkbenchTarget target)
+        {
+            BusinessNavigation page = target.Context == WorkContext.Reception
+                ? BusinessNavigation.ReceptionDesk
+                : BusinessNavigation.ReservationDesk;
+
+            _lastBusinessPage = page;
+            _view.SelectNavigationPage(page);
+            _view.OpenWorkbench(target.Context, target.WorkId);
         }
     }
 }

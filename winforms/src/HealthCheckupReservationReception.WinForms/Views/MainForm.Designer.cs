@@ -144,6 +144,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnReservationSave.Id = 8;
             this.barBtnReservationSave.Name = "barBtnReservationSave";
             this.barBtnReservationSave.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.barBtnReservationSave.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnReservationSave_ItemClick);
             //
             // barBtnRsvEdit
             //

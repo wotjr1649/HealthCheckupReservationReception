@@ -65,6 +65,26 @@ namespace HealthCheckupReservationReception.Services
                 read.Rows ?? new List<PatientListItemDto>());
         }
 
+        /// <summary>
+        /// SP-PAT-05 (05 §7.4). **0행은 실패가 아니다** — 유효업무가 없다는 뜻이고
+        /// 03 §8.5 는 그때 일정영역을 연다. `Value` 가 null 인 성공으로 돌려준다.
+        /// </summary>
+        public OperationResult<PatientValidWorkDto> GetValidWork(long patientId)
+        {
+            PatientValidWorkReadDto read = _repository.ReadValidWork(patientId);
+            if (read == null || read.Result == null)
+            {
+                return OperationResult<PatientValidWorkDto>.Failure("수검자의 유효업무를 읽지 못했습니다.");
+            }
+
+            if (!read.Result.Success)
+            {
+                return OperationResult<PatientValidWorkDto>.Failure(read.Result.Message);
+            }
+
+            return OperationResult<PatientValidWorkDto>.Success(read.Work);
+        }
+
         public OperationResult<PatientDetailDto> GetDetail(long patientId)
         {
             PatientDetailReadDto read = _repository.ReadDetail(patientId);
