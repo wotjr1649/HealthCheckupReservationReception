@@ -80,28 +80,41 @@ gate that read it does not run. Keep writing it: it is how a human finds every f
 screen. `grep -rl "화면 ID:" --include=*.cs` is the count; do not write the number here —
 nothing checks it any more, so it rots (ROOT `AGENTS.md` §6, and it already did).
 
-### The gates that do not run
+### The one gate that does not run
 
-Document-conformance gates are stopped under ROOT `AGENTS.md` §1.1.
+**Exactly one gate is stopped under ROOT `AGENTS.md` §1.1: `verify-screen-design.js`.** It is
+the only one that reads the design source as the truth about layout, which is what §1.1
+released. Its failures are the release itself — `SCR-003` (ribbon buttons and group order) and
+`SCR-004` (`03` labels absent from C#).
+
+`SCR-SELFTEST` fails with them, deterministically, and it is not a separate defect: its first
+case copies the current tree and asserts the check passes on it, so an intended red makes the
+copy red too. Measured three times on 2026-09-10 — all three the same, and the other six
+selftest cases pass. Do not go hunting.
+
+`[!]` **`scripts/test.sh` red must be that one gate and nothing else.** Anything else red is a
+real defect, not overhaul noise. Read the output; do not wave the whole run off.
+
+The stop was once written as seven gates. Six of those were measured green on 2026-09-10 and
+turned back on the same day — the long stopped-list had become a blanket excuse, and under it
+nobody noticed the six were passing. Keep this list at one.
 
 ```text
-stopped   verify-screen-design.js · verify-ui-db-matrix.sh · verify-social-century.sh
-          verify-contract-names.sh · verify-dbcode.sh · verify-layering.sh · verify-rs-columns.sh
-
-kept      verify-no-secret.sh    security control, unrelated to how screens are designed
-          verify-db-frozen.sh    catches a silent edit to the frozen contract — needed more,
-                                 not less, while the UI is being torn up
-          verify-ui-baseline.sh  kit §1 technique (DPI, 굴림 9pt, BOM+CRLF), not design match
-          MSBuild + vstest       a build and unit tests are not a gate
+runs, and catches what a unit test cannot
+  verify-no-secret.sh       credentials in winforms
+  verify-db-frozen.sh       a silent edit to the frozen contract — needed more, not less,
+                            while the UI is being torn up
+  verify-ui-baseline.sh     kit §1 technique (DPI, 굴림 9pt, BOM+CRLF)
+  verify-layering.sh        kit §2·§3 — SqlClient only in Repositories/, DevExpress only in
+                            Views/, no AddWithValue, no inline DML. Architecture, not design
+  verify-rs-columns.sh      `reader.GetOrdinal("오늘날짜")` typos: they compile, they pass the
+                            fake-repository tests, and they blow up only at runtime
+  verify-dbcode.sh          DbCode.cs ↔ 05 §16.1 — the enum is copied, so it is checked
+  verify-social-century.sh  03 §6.2 주민번호 century table ↔ the presenter's branch
+  verify-contract-names.sh  05 §1.1 names ↔ App.config · csproj
+  verify-ui-db-matrix.sh    07 §3·§4 ID lists ↔ 03 §2 · 05 §1.3 (ID lists only, not status)
+  MSBuild + vstest          a build and unit tests are not a gate
 ```
-
-`scripts/test.sh` still runs all ten and is left intact so restarting is one command. Run the
-kept four individually instead. **Do not report `test.sh` red as a failure of the work** — the
-seven stopped gates are expected to be red while the overhaul is in flight.
-
-`verify-rs-columns.sh` is the one worth reconsidering: it reads as document conformance but
-what it actually catches is `reader.GetOrdinal("오늘날짜")` typos, which compile and pass the
-fake-repository tests and only blow up at runtime. Re-enable it once repository code settles.
 
 ### What the toolchain writes follows the kit; the rest follows the repository
 
