@@ -50,6 +50,7 @@
     <Reference Include="DevExpress.XtraBars.v20.2" />
     <Reference Include="DevExpress.XtraEditors.v20.2" />
     <Reference Include="DevExpress.XtraGrid.v20.2" />
+    <Reference Include="DevExpress.XtraLayout.v20.2" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common\DbCode.cs" />
@@ -80,12 +81,6 @@
     <Compile Include="Services\ICommonStatusService.cs" />
     <Compile Include="Services\IPatientService.cs" />
     <Compile Include="Services\PatientService.cs" />
-    <Compile Include="Views\FrmColumnChooser.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Views\FrmColumnChooser.Designer.cs">
-      <DependentUpon>FrmColumnChooser.cs</DependentUpon>
-    </Compile>
     <Compile Include="Views\FrmPatientDuplicate.cs">
       <SubType>Form</SubType>
     </Compile>

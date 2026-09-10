@@ -1,6 +1,5 @@
 ﻿// 화면 ID: WF-00 — MainForm Shell (03 §4)
 using System;
-using System.Collections.Generic;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
 using HealthCheckupReservationReception.Services;
@@ -10,8 +9,7 @@ namespace HealthCheckupReservationReception.Presenters
 {
     /// <summary>
     /// WF-00 MainForm Shell 의 Presenter (03 §1.3 · §4).
-    /// 어느 Tab 이 열려 있는지와 Workbench 의 Context 는 여기가 들고 있는다 —
-    /// 화면은 그리기만 한다 (킷 §2).
+    /// 어느 업무 화면을 세울지는 여기가 정한다 — 화면은 그리기만 한다 (킷 §2).
     /// </summary>
     public sealed class MainPresenter
     {
@@ -21,10 +19,6 @@ namespace HealthCheckupReservationReception.Presenters
         private readonly IMainView _view;
         private readonly ICommonStatusService _service;
         private readonly string _operatorName;
-        private readonly HashSet<BusinessTab> _openTabs = new HashSet<BusinessTab>();
-
-        // 03 §9.1 — Workbench 는 Tab 하나를 Reservation / Reception 두 Context 가 나눠 쓴다.
-        private BusinessNavigation _workbenchContext = BusinessNavigation.ReservationDesk;
 
         // 휴무일 관리 Page 에서 돌아올 자리. Shell 은 첫 Page 가 선택된 채 열린다 (03 §1.1 순서).
         private BusinessNavigation _lastBusinessPage = BusinessNavigation.PatientManagement;
@@ -37,8 +31,6 @@ namespace HealthCheckupReservationReception.Presenters
 
             _view.ShellLoaded += OnShellLoaded;
             _view.NavigationRequested += OnNavigationRequested;
-            _view.TabCloseRequested += OnTabCloseRequested;
-            _view.TabActivated += OnTabActivated;
         }
 
         private void OnShellLoaded(object sender, EventArgs e)
@@ -49,9 +41,9 @@ namespace HealthCheckupReservationReception.Presenters
 
             // [X] 기동 직후 Ribbon 은 첫 Page 가 선택된 채로 뜨는데 그것은 "변경"이 아니라
             //     초기값이라 SelectedPageChanged 가 나지 않는다. 그래서 업무 Tab 이 하나도
-            //     열리지 않고, 이미 선택된 [수검자 관리] 를 눌러도 이벤트가 없어 영원히
-            //     열리지 않았다. 첫 Page 의 Tab 은 Shell 이 직접 연다. §14.3 A-06.
-            OpenBusinessTab(_lastBusinessPage);
+            //     서지 않고, 이미 선택된 [수검자 관리] 를 눌러도 이벤트가 없어 영원히
+            //     서지 않았다. 첫 Page 의 화면은 Shell 이 직접 세운다. §14.3 A-06.
+            ShowBusinessScreen(_lastBusinessPage);
         }
 
         /// <summary>
@@ -127,7 +119,7 @@ namespace HealthCheckupReservationReception.Presenters
 
         private void OnNavigationRequested(object sender, BusinessNavigation target)
         {
-            // 03 §24.2 — 휴무일 관리는 업무 Tab 을 열지 않고 Modal 을 연다.
+            // 03 §24.2 — 휴무일 관리는 업무 화면을 세우지 않고 Modal 을 연다.
             // 공통 업무조건도 이 화면에는 걸리지 않으므로 여기서 막지 않는다.
             if (target == BusinessNavigation.HolidayManagement)
             {
@@ -137,45 +129,17 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
-            OpenBusinessTab(target);
+            ShowBusinessScreen(target);
         }
 
-        private void OpenBusinessTab(BusinessNavigation target)
+        /// <summary>
+        /// 03 §4.3 — 같은 화면을 다시 부르면 새로 만들지 않고 세워 둔 것을 앞에 낸다.
+        /// 그 판정은 화면을 들고 있는 Shell 이 한다.
+        /// </summary>
+        private void ShowBusinessScreen(BusinessNavigation target)
         {
             _lastBusinessPage = target;
-            BusinessTab tab = TabOf(target);
-
-            if (tab == BusinessTab.Workbench)
-            {
-                _workbenchContext = target;
-            }
-
-            if (_openTabs.Add(tab))
-            {
-                _view.OpenTab(tab, CaptionOf(tab));
-            }
-            else
-            {
-                // 03 §4.3 — 같은 Tab 을 다시 부르면 새로 만들지 않고 기존 것을 살린다.
-                // Workbench 는 Context 가 바뀌었을 수 있으므로 Caption 을 다시 쓴다 (§9.1).
-                _view.SetTabCaption(tab, CaptionOf(tab));
-            }
-
-            _view.ActivateTab(tab);
-        }
-
-        private void OnTabCloseRequested(object sender, BusinessTab tab)
-        {
-            if (_openTabs.Remove(tab))
-            {
-                _view.CloseTab(tab);
-            }
-        }
-
-        private void OnTabActivated(object sender, BusinessTab tab)
-        {
-            // 03 §4.2 — Tab 전환 시 그 Tab 의 Ribbon Page 를 활성화한다.
-            _view.SelectNavigationPage(NavigationOf(tab));
+            _view.ShowBusinessScreen(TabOf(target));
         }
 
         private static BusinessTab TabOf(BusinessNavigation target)
@@ -188,33 +152,6 @@ namespace HealthCheckupReservationReception.Presenters
                     return BusinessTab.NewReservation;
                 default:
                     return BusinessTab.Workbench;
-            }
-        }
-
-        private BusinessNavigation NavigationOf(BusinessTab tab)
-        {
-            switch (tab)
-            {
-                case BusinessTab.PatientManagement:
-                    return BusinessNavigation.PatientManagement;
-                case BusinessTab.NewReservation:
-                    return BusinessNavigation.NewReservation;
-                default:
-                    return _workbenchContext;
-            }
-        }
-
-        private string CaptionOf(BusinessTab tab)
-        {
-            switch (tab)
-            {
-                case BusinessTab.PatientManagement:
-                    return "수검자 관리";
-                case BusinessTab.NewReservation:
-                    return "신규 예약";
-                default:
-                    // 03 §9.1 — Context 에 따라 Caption 이 바뀐다.
-                    return _workbenchContext == BusinessNavigation.ReceptionDesk ? "접수 관리" : "예약 관리";
             }
         }
     }

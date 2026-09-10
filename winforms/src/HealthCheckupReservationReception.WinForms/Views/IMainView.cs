@@ -12,19 +12,15 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>Ribbon Page 를 고르거나 [휴무일 관리] 를 눌렀다 (03 §1.1 상단 업무 Navigation).</summary>
         event EventHandler<BusinessNavigation> NavigationRequested;
 
-        /// <summary>업무 Tab 의 × 를 눌렀다 (03 §4.1).</summary>
-        event EventHandler<BusinessTab> TabCloseRequested;
-
-        /// <summary>사용자가 업무 Tab 을 직접 골랐다.</summary>
-        event EventHandler<BusinessTab> TabActivated;
-
         string WorkStatusText { set; }
         string OperatorText { set; }
 
-        void OpenTab(BusinessTab tab, string caption);
-        void ActivateTab(BusinessTab tab);
-        void SetTabCaption(BusinessTab tab, string caption);
-        void CloseTab(BusinessTab tab);
+        /// <summary>
+        /// 그 업무 화면을 앞에 세운다. 2026-09-10 사용자 결정 — 한 번에 하나만 뜨고
+        /// Tab 스트립도 닫기도 없다.
+        /// </summary>
+        void ShowBusinessScreen(BusinessTab screen);
+
         void SelectNavigationPage(BusinessNavigation page);
 
         void ShowMessage(string message);
@@ -46,7 +42,7 @@ namespace HealthCheckupReservationReception.Views
     }
 
     /// <summary>
-    /// 03 §4.3 Single Instance 업무 Tab. 예약 관리와 접수 관리는 같은 Tab 하나를 나눠 쓴다 (§1.1).
+    /// 업무 화면 셋. 예약 관리와 접수 관리는 같은 화면 하나를 나눠 쓴다 (03 §1.1 · §4.3).
     /// </summary>
     public enum BusinessTab
     {

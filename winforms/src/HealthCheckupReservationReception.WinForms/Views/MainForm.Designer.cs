@@ -19,12 +19,10 @@ namespace HealthCheckupReservationReception.Views
         private void InitializeComponent()
         {
             this.barRibbonMain = new DevExpress.XtraBars.Ribbon.RibbonControl();
-            this.barBtnPatientSearch = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnPatientNew = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnPatientEdit = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnPatientReserve = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnPatientLog = new DevExpress.XtraBars.BarButtonItem();
-            this.barBtnPatientColumns = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnReservationSave = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnRsvSearch = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnRsvEdit = new DevExpress.XtraBars.BarButtonItem();
@@ -43,7 +41,6 @@ namespace HealthCheckupReservationReception.Views
             this.barStaticWorkStatus = new DevExpress.XtraBars.BarStaticItem();
             this.barStaticOperator = new DevExpress.XtraBars.BarStaticItem();
             this.barPagePatient = new DevExpress.XtraBars.Ribbon.RibbonPage();
-            this.barGroupPatientSearch = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupPatientWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupPatientView = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barPageNewReservation = new DevExpress.XtraBars.Ribbon.RibbonPage();
@@ -58,9 +55,9 @@ namespace HealthCheckupReservationReception.Views
             this.barGroupRcpWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupRcpView = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barStatusMain = new DevExpress.XtraBars.Ribbon.RibbonStatusBar();
-            this.tabBusiness = new DevExpress.XtraTab.XtraTabControl();
+            this.pnlBusiness = new DevExpress.XtraEditors.PanelControl();
             ((System.ComponentModel.ISupportInitialize)(this.barRibbonMain)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.tabBusiness)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pnlBusiness)).BeginInit();
             this.SuspendLayout();
             //
             // barRibbonMain
@@ -68,12 +65,10 @@ namespace HealthCheckupReservationReception.Views
             this.barRibbonMain.ExpandCollapseItem.Id = 0;
             this.barRibbonMain.Items.AddRange(new DevExpress.XtraBars.BarItem[] {
             this.barRibbonMain.ExpandCollapseItem,
-            this.barBtnPatientSearch,
             this.barBtnPatientNew,
             this.barBtnPatientEdit,
             this.barBtnPatientReserve,
             this.barBtnPatientLog,
-            this.barBtnPatientColumns,
             this.barBtnReservationSave,
             this.barBtnRsvSearch,
             this.barBtnRsvEdit,
@@ -121,14 +116,6 @@ namespace HealthCheckupReservationReception.Views
             this.barRibbonMain.ToolbarLocation = DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Hidden;
             this.barRibbonMain.SelectedPageChanged += new System.EventHandler(this.barRibbonMain_SelectedPageChanged);
             //
-            // barBtnPatientSearch
-            //
-            this.barBtnPatientSearch.Caption = "조회";
-            this.barBtnPatientSearch.Id = 2;
-            this.barBtnPatientSearch.Name = "barBtnPatientSearch";
-            this.barBtnPatientSearch.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnPatientSearch.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnPatientSearch_ItemClick);
-            //
             // barBtnPatientNew
             //
             this.barBtnPatientNew.Caption = "신규등록";
@@ -160,14 +147,6 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientLog.Name = "barBtnPatientLog";
             this.barBtnPatientLog.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             this.barBtnPatientLog.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
-            //
-            // barBtnPatientColumns
-            //
-            this.barBtnPatientColumns.Caption = "컬럼설정";
-            this.barBtnPatientColumns.Id = 7;
-            this.barBtnPatientColumns.Name = "barBtnPatientColumns";
-            this.barBtnPatientColumns.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnPatientColumns.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnPatientColumns_ItemClick);
             //
             // barBtnReservationSave
             //
@@ -288,17 +267,10 @@ namespace HealthCheckupReservationReception.Views
             // barPagePatient
             //
             this.barPagePatient.Groups.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPageGroup[] {
-            this.barGroupPatientSearch,
             this.barGroupPatientWork,
             this.barGroupPatientView});
             this.barPagePatient.Name = "barPagePatient";
             this.barPagePatient.Text = "수검자 관리";
-            //
-            // barGroupPatientSearch
-            //
-            this.barGroupPatientSearch.ItemLinks.Add(this.barBtnPatientSearch);
-            this.barGroupPatientSearch.Name = "barGroupPatientSearch";
-            this.barGroupPatientSearch.Text = "검색";
             //
             // barGroupPatientWork
             //
@@ -311,7 +283,6 @@ namespace HealthCheckupReservationReception.Views
             // barGroupPatientView
             //
             this.barGroupPatientView.ItemLinks.Add(this.barBtnPatientLog);
-            this.barGroupPatientView.ItemLinks.Add(this.barBtnPatientColumns);
             this.barGroupPatientView.Name = "barGroupPatientView";
             this.barGroupPatientView.Text = "보기";
             //
@@ -406,16 +377,16 @@ namespace HealthCheckupReservationReception.Views
             this.barStatusMain.Ribbon = this.barRibbonMain;
             this.barStatusMain.Size = new System.Drawing.Size(1920, 22);
             //
-            // tabBusiness
+            // pnlBusiness
             //
-            this.tabBusiness.ClosePageButtonShowMode = DevExpress.XtraTab.ClosePageButtonShowMode.InAllTabPageHeaders;
-            this.tabBusiness.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabBusiness.Location = new System.Drawing.Point(0, 143);
-            this.tabBusiness.Name = "tabBusiness";
-            this.tabBusiness.Size = new System.Drawing.Size(1920, 915);
-            this.tabBusiness.TabIndex = 2;
-            this.tabBusiness.CloseButtonClick += new System.EventHandler(this.tabBusiness_CloseButtonClick);
-            this.tabBusiness.SelectedPageChanged += new DevExpress.XtraTab.TabPageChangedEventHandler(this.tabBusiness_SelectedPageChanged);
+            // 2026-09-10 사용자 결정 — 업무 Tab 스트립(XtraTabControl)을 걷었다. 화면은 한 번에
+            // 하나만 뜨고 전환은 Ribbon Page 가 한다. 여러 폼을 겹쳐 두지 않는다.
+            this.pnlBusiness.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            this.pnlBusiness.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlBusiness.Location = new System.Drawing.Point(0, 143);
+            this.pnlBusiness.Name = "pnlBusiness";
+            this.pnlBusiness.Size = new System.Drawing.Size(1920, 915);
+            this.pnlBusiness.TabIndex = 2;
             //
             // MainForm
             //
@@ -424,7 +395,7 @@ namespace HealthCheckupReservationReception.Views
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1920, 1080);
             this.MinimumSize = new System.Drawing.Size(1366, 768);
-            this.Controls.Add(this.tabBusiness);
+            this.Controls.Add(this.pnlBusiness);
             this.Controls.Add(this.barStatusMain);
             this.Controls.Add(this.barRibbonMain);
             this.Name = "MainForm";
@@ -433,7 +404,7 @@ namespace HealthCheckupReservationReception.Views
             this.StatusBar = this.barStatusMain;
             this.Text = "검진 예약·접수 관리 프로그램";
             ((System.ComponentModel.ISupportInitialize)(this.barRibbonMain)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.tabBusiness)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pnlBusiness)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
         }
@@ -447,7 +418,6 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageRsvDesk;
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageRcpDesk;
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageHoliday;
-        private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientSearch;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientWork;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientView;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupReservationWork;
@@ -457,12 +427,10 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRcpSearch;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRcpWork;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRcpView;
-        private DevExpress.XtraBars.BarButtonItem barBtnPatientSearch;
         private DevExpress.XtraBars.BarButtonItem barBtnPatientNew;
         private DevExpress.XtraBars.BarButtonItem barBtnPatientEdit;
         private DevExpress.XtraBars.BarButtonItem barBtnPatientReserve;
         private DevExpress.XtraBars.BarButtonItem barBtnPatientLog;
-        private DevExpress.XtraBars.BarButtonItem barBtnPatientColumns;
         private DevExpress.XtraBars.BarButtonItem barBtnReservationSave;
         private DevExpress.XtraBars.BarButtonItem barBtnRsvSearch;
         private DevExpress.XtraBars.BarButtonItem barBtnRsvEdit;
@@ -480,6 +448,6 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraBars.BarButtonItem barBtnRcpColumns;
         private DevExpress.XtraBars.BarStaticItem barStaticWorkStatus;
         private DevExpress.XtraBars.BarStaticItem barStaticOperator;
-        private DevExpress.XtraTab.XtraTabControl tabBusiness;
+        private DevExpress.XtraEditors.PanelControl pnlBusiness;
     }
 }

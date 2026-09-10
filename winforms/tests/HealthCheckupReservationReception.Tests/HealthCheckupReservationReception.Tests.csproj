@@ -47,6 +47,7 @@
     <Reference Include="DevExpress.XtraBars.v20.2" />
     <Reference Include="DevExpress.XtraEditors.v20.2" />
     <Reference Include="DevExpress.XtraGrid.v20.2" />
+    <Reference Include="DevExpress.XtraLayout.v20.2" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />

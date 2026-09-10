@@ -25,13 +25,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
             view.RaiseSearchRequested();
 
-            // [R16] 03 §5.3 — 막지 않는다. 다섯 조건이 전부 null 인 채로 SP 가 불린다.
+            // [R16] 03 §5.3 — 막지 않는다. 조건이 전부 null 인 채로 SP 가 불린다.
             Assert.IsNotNull(service.LastRequest, "조건이 없다고 SP 를 안 불렀다");
             Assert.IsNull(service.LastRequest.ChartNo);
             Assert.IsNull(service.LastRequest.Name);
             Assert.IsNull(service.LastRequest.SocialNumber);
-            Assert.IsNull(service.LastRequest.Birthday);
-            Assert.IsNull(service.LastRequest.MobilePhone);
             Assert.IsNull(view.LastMessage, "안내창이 떴다");
         }
 
@@ -95,8 +93,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 ChartNo = "2026-000123",
                 Name = "홍",
                 SocialNumber = "660312-2000019",
-                Birthday = "19660312",
-                MobilePhone = "010-0000-0003",
             };
             var service = new FakePatientService { SearchResult = Rows() };
             new PatientManagementPresenter(view, service);
@@ -107,8 +103,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("2026-000123", service.LastRequest.ChartNo);
             Assert.AreEqual("홍", service.LastRequest.Name);
             Assert.AreEqual("660312-2000019", service.LastRequest.SocialNumber);
-            Assert.AreEqual("19660312", service.LastRequest.Birthday);
-            Assert.AreEqual("010-0000-0003", service.LastRequest.MobilePhone);
+            // 2026-09-10 사용자 결정 — 화면 조회조건이 셋으로 줄었다. SP 는 그 둘도 받지만
+            // 채우는 곳이 없다 (05 §7.2).
+            Assert.IsNull(service.LastRequest.Birthday);
+            Assert.IsNull(service.LastRequest.MobilePhone);
         }
 
         // 03 §5.3 · §5.5 — 재조회 시 선택행과 우측 상세를 초기화한다.
@@ -251,8 +249,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public string ChartNo { get; set; }
         public string Name { get; set; }
         public string SocialNumber { get; set; }
-        public string Birthday { get; set; }
-        public string MobilePhone { get; set; }
 
         public IList<PatientListItemDto> Rows { get; set; }
         public PatientDetailDto Detail { get; set; }

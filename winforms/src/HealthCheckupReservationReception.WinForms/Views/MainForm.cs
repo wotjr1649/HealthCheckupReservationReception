@@ -6,7 +6,6 @@ using System.Windows.Forms;
 using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
 using DevExpress.XtraEditors;
-using DevExpress.XtraTab;
 using HealthCheckupReservationReception.Presenters;
 using HealthCheckupReservationReception.Services;
 
@@ -17,7 +16,9 @@ namespace HealthCheckupReservationReception.Views
         private readonly MainPresenter _presenter;
         private readonly IPatientService _patientService;
         private readonly string _operatorName;
-        private readonly Dictionary<BusinessTab, XtraTabPage> _pages = new Dictionary<BusinessTab, XtraTabPage>();
+        // 한 번 만든 업무 화면은 들고 있는다. Tab 스트립이 사라졌어도 화면을 오갈 때마다
+        // 새로 세우면 사용자가 조회해 둔 목록이 매번 날아간다.
+        private readonly Dictionary<BusinessTab, Control> _screens = new Dictionary<BusinessTab, Control>();
 
         // Presenter 가 시킨 변경이 다시 event 로 돌아와 무한 왕복하는 것을 막는다.
         private bool _suppressEvents;
@@ -45,7 +46,7 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>
         /// 기본 크기는 03 §1.4 의 권장 기준 1920x1080 이고 최대화도 그대로 쓴다.
         /// 화면이 그보다 작으면 작업 영역에 맞춘다 — 그러지 않으면 창의 아래·오른쪽이
-        /// 화면 밖으로 나가 상태바와 Tab 스트립을 볼 수 없다 (03 §1.4 최소 검증 1366x768).
+        /// 화면 밖으로 나가 상태바를 볼 수 없다 (03 §1.4 최소 검증 1366x768).
         /// </summary>
         private void ClampToWorkingArea()
         {
@@ -60,8 +61,6 @@ namespace HealthCheckupReservationReception.Views
 
         public event EventHandler ShellLoaded;
         public event EventHandler<BusinessNavigation> NavigationRequested;
-        public event EventHandler<BusinessTab> TabCloseRequested;
-        public event EventHandler<BusinessTab> TabActivated;
 
         public string WorkStatusText
         {
@@ -100,31 +99,39 @@ namespace HealthCheckupReservationReception.Views
             barBtnPatientLog.Enabled = _patientRowSelected;
         }
 
-        public void OpenTab(BusinessTab tab, string caption)
+        /// <summary>
+        /// 2026-09-10 사용자 결정 — 업무 화면은 한 번에 하나만 뜬다. Tab 스트립을 걷었으므로
+        /// 여기서 하는 일은 "그 화면을 앞에 세우는 것" 뿐이다. 닫기도 Caption 도 없다.
+        /// </summary>
+        public void ShowBusinessScreen(BusinessTab screen)
         {
-            if (_pages.ContainsKey(tab))
+            Control content;
+            if (!_screens.TryGetValue(screen, out content))
             {
-                return;
+                content = CreateScreen(screen);
+                _screens.Add(screen, content);
+                if (content != null)
+                {
+                    content.Dock = DockStyle.Fill;
+                    pnlBusiness.Controls.Add(content);
+                }
             }
 
-            var page = new XtraTabPage { Text = caption, Tag = tab };
+            foreach (Control child in pnlBusiness.Controls)
+            {
+                child.Visible = ReferenceEquals(child, content);
+            }
 
-            Control content = CreateTabContent(tab);
             if (content != null)
             {
-                content.Dock = DockStyle.Fill;
-                page.Controls.Add(content);
+                content.BringToFront();
             }
-
-            _pages.Add(tab, page);
-            tabBusiness.TabPages.Add(page);
         }
 
         /// <summary>
-        /// 03 §1.4 — 업무 Tab 의 내용은 화면마다 하나의 XtraUserControl 이다.
-        /// 아직 만들지 않은 화면은 빈 Tab 으로 열린다.
+        /// 업무 화면 하나는 XtraUserControl 하나다. 아직 만들지 않은 화면은 빈 자리로 둔다.
         /// </summary>
-        private Control CreateTabContent(BusinessTab tab)
+        private Control CreateScreen(BusinessTab tab)
         {
             if (tab != BusinessTab.PatientManagement)
             {
@@ -142,62 +149,6 @@ namespace HealthCheckupReservationReception.Views
         private void PatientView_RowActionsChanged(object sender, bool rowSelected)
         {
             PatientRowSelected = rowSelected;
-        }
-
-        public void ActivateTab(BusinessTab tab)
-        {
-            XtraTabPage page;
-            if (!_pages.TryGetValue(tab, out page))
-            {
-                return;
-            }
-
-            _suppressEvents = true;
-            try
-            {
-                tabBusiness.SelectedTabPage = page;
-            }
-            finally
-            {
-                _suppressEvents = false;
-            }
-        }
-
-        public void SetTabCaption(BusinessTab tab, string caption)
-        {
-            XtraTabPage page;
-            if (_pages.TryGetValue(tab, out page))
-            {
-                page.Text = caption;
-            }
-        }
-
-        public void CloseTab(BusinessTab tab)
-        {
-            XtraTabPage page;
-            if (!_pages.TryGetValue(tab, out page))
-            {
-                return;
-            }
-
-            _pages.Remove(tab);
-            if (tab == BusinessTab.PatientManagement)
-            {
-                _patientView = null;
-                PatientRowSelected = false;
-            }
-
-            _suppressEvents = true;
-            try
-            {
-                tabBusiness.TabPages.Remove(page);
-            }
-            finally
-            {
-                _suppressEvents = false;
-            }
-
-            page.Dispose();
         }
 
         public void SelectNavigationPage(BusinessNavigation page)
@@ -290,28 +241,7 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
-        // [X] 마지막 업무 Tab 을 닫으면 남는 것이 Ribbon 뿐이고, 이미 선택돼 있는 Page 를
-        //     다시 눌러도 SelectedPageChanged 가 나지 않아 돌아갈 길이 없었다.
-        //     업무 Action 이 자기 Tab 을 먼저 보장하게 해서 막다른 골목을 없앤다 (07 §14.3 A-08).
-        private void barBtnPatientSearch_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            UcPatientManagement view = EnsurePatientTab();
-            if (view != null)
-            {
-                view.RequestSearch();
-            }
-        }
-
-        private void barBtnPatientColumns_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            UcPatientManagement view = EnsurePatientTab();
-            if (view != null)
-            {
-                view.ShowColumnChooser();
-            }
-        }
-
-        // 03 §5.2 — [신규등록] 은 대상 행이 필요 없다. Modal 만 열면 되므로 Tab 을 열지 않는다.
+        // 03 §5.2 — [신규등록] 은 대상 행이 필요 없다. Modal 만 열면 된다.
         private void barBtnPatientNew_ItemClick(object sender, ItemClickEventArgs e)
         {
             OpenPatientEditor(null);
@@ -346,52 +276,6 @@ namespace HealthCheckupReservationReception.Views
         {
             // EXTENSION POINT: WF-RSV-01 · DLG-LOG-01.
             XtraMessageBox.Show(this, e.Item.Caption + " 화면은 아직 만들지 않았습니다.", Text);
-        }
-
-        private UcPatientManagement EnsurePatientTab()
-        {
-            EventHandler<BusinessNavigation> handler = NavigationRequested;
-            if (handler != null)
-            {
-                handler(this, BusinessNavigation.PatientManagement);
-            }
-
-            return _patientView;
-        }
-
-        private void tabBusiness_CloseButtonClick(object sender, EventArgs e)
-        {
-            var args = e as DevExpress.XtraTab.ViewInfo.ClosePageButtonEventArgs;
-            if (args == null)
-            {
-                return;
-            }
-
-            var page = args.Page as XtraTabPage;
-            if (page == null || !(page.Tag is BusinessTab))
-            {
-                return;
-            }
-
-            EventHandler<BusinessTab> handler = TabCloseRequested;
-            if (handler != null)
-            {
-                handler(this, (BusinessTab)page.Tag);
-            }
-        }
-
-        private void tabBusiness_SelectedPageChanged(object sender, TabPageChangedEventArgs e)
-        {
-            if (_suppressEvents || e.Page == null || !(e.Page.Tag is BusinessTab))
-            {
-                return;
-            }
-
-            EventHandler<BusinessTab> handler = TabActivated;
-            if (handler != null)
-            {
-                handler(this, (BusinessTab)e.Page.Tag);
-            }
         }
     }
 }

@@ -91,7 +91,7 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // 03 §1.3 · §5.2 · §9.6 · §9.7 — 공통 업무불가면 변경이력·컬럼설정만 남는다.
+        // 03 §1.3 · §5.2 · §9.6 · §9.7 — 공통 업무불가여도 업무 Action 은 닫히지 않는다.
         // [R12] 공통 업무불가는 Action 을 닫지 않는다 (`00` §1.1 · 03 §1.3 · §5.2 · §9.6 · §9.7).
         //       화면이 미리 닫으면 저장 시점의 DB 판정을 사용자가 받아볼 수 없다.
         //       R12 이전에는 이 자리가 "변경이력·컬럼설정만 남는다" 를 재는 시험이었다.
@@ -130,7 +130,9 @@ namespace HealthCheckupReservationReception.Tests
                     //     "공통 업무불가가 닫지 않는다" 뿐이고, 03 §9.6·§9.7 은 여전히
                     //     Work 상태로 닫는 칸을 갖는다 — WF-WRK-01 이 그 표대로 구현되는
                     //     순간 과잉 단언이 red 가 된다. 03 §5.2 가 실제로 다루는 Action 만 센다.
-                    string[] shouldStayOpen = { "조회", "신규등록", "정보수정", "신규예약", "컬럼설정" };
+                    // [조회]·[컬럼설정] 은 2026-09-10 결정으로 수검자 Page 에서 화면 안으로
+                    // 옮겨 갔다. 여기 남기면 예약·접수 Page 의 동명 버튼을 재게 된다.
+                    string[] shouldStayOpen = { "신규등록", "정보수정", "신규예약" };
                     foreach (string caption in shouldStayOpen)
                     {
                         Assert.IsTrue(Enabled(form, caption),
@@ -166,22 +168,23 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // 03 §1.4 — 업무 Tab 은 화면마다 하나의 UserControl 을 담는다.
+        // 2026-09-10 사용자 결정 — 업무 화면은 한 번에 하나만 뜬다. Tab 스트립을 걷었으므로
+        // 담는 자리는 PanelControl 하나이고, 같은 화면을 다시 불러도 하나를 넘지 않는다.
         [TestMethod]
-        public void 수검자_관리_Tab_은_설계_화면을_담는다()
+        public void 수검자_관리_화면은_업무_판_하나에_선다()
         {
             RunSta(() =>
             {
                 using (MainForm form = NewShell())
                 {
                     IMainView view = form;
-                    view.OpenTab(BusinessTab.PatientManagement, "수검자 관리");
+                    view.ShowBusinessScreen(BusinessTab.PatientManagement);
+                    view.ShowBusinessScreen(BusinessTab.PatientManagement);
 
-                    DevExpress.XtraTab.XtraTabControl tabs = BusinessTabs(form);
-                    Assert.AreEqual(1, tabs.TabPages.Count);
-                    Assert.AreEqual(1, tabs.TabPages[0].Controls.Count, "Tab 이 비어 있다");
-                    Assert.IsInstanceOfType(tabs.TabPages[0].Controls[0], typeof(UcPatientManagement));
-                    Assert.AreEqual(DockStyle.Fill, tabs.TabPages[0].Controls[0].Dock);
+                    Control panel = BusinessPanel(form);
+                    Assert.AreEqual(1, panel.Controls.Count, "화면이 겹쳐 쌓였다");
+                    Assert.IsInstanceOfType(panel.Controls[0], typeof(UcPatientManagement));
+                    Assert.AreEqual(DockStyle.Fill, panel.Controls[0].Dock);
                 }
             });
         }
@@ -249,11 +252,11 @@ namespace HealthCheckupReservationReception.Tests
             return new MainForm(new FakeCommonStatusService(), new FakePatientService(), "접수1번창구");
         }
 
-        private static DevExpress.XtraTab.XtraTabControl BusinessTabs(MainForm form)
+        private static Control BusinessPanel(MainForm form)
         {
-            Control[] found = form.Controls.Find("tabBusiness", true);
-            Assert.AreEqual(1, found.Length, "업무 Tab Control 을 찾지 못했다");
-            return (DevExpress.XtraTab.XtraTabControl)found[0];
+            Control[] found = form.Controls.Find("pnlBusiness", true);
+            Assert.AreEqual(1, found.Length, "업무 화면 판을 찾지 못했다");
+            return found[0];
         }
 
         private static void RunSta(Action action)

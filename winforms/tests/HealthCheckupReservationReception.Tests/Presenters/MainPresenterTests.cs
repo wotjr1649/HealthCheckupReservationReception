@@ -128,37 +128,23 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("조작자 : (미지정)", view.OperatorText);
         }
 
-        // ── 03 §4.3 Single Instance 업무 Tab
+        // ── 2026-09-10 사용자 결정: 업무 화면은 한 번에 하나만 뜬다 (Tab 스트립 제거)
 
-        // 기동이 이미 수검자 관리 Tab 을 열어 두므로 아직 열리지 않은 화면으로 시험한다.
+        // 기동이 이미 수검자 관리 화면을 세우므로 아직 세우지 않은 화면으로 시험한다.
         [TestMethod]
-        public void Navigation_은_업무_Tab_을_열고_활성화한다()
+        public void Navigation_은_그_업무_화면을_세운다()
         {
             FakeMainView view = LoadedShell();
 
             view.RaiseNavigationRequested(BusinessNavigation.NewReservation);
 
             CollectionAssert.AreEqual(
-                new List<string> { "OpenTab:NewReservation:신규 예약", "ActivateTab:NewReservation" },
-                view.Calls);
+                new List<string> { "ShowBusinessScreen:NewReservation" }, view.Calls);
         }
 
+        // 03 §1.1 · §9.1 — 예약 관리와 접수 관리는 화면 하나를 나눠 쓴다.
         [TestMethod]
-        public void 같은_Tab_을_다시_부르면_새로_만들지_않고_살린다()
-        {
-            FakeMainView view = LoadedShell();
-            view.RaiseNavigationRequested(BusinessNavigation.NewReservation);
-            view.Calls.Clear();
-
-            view.RaiseNavigationRequested(BusinessNavigation.NewReservation);
-
-            CollectionAssert.DoesNotContain(view.Calls, "OpenTab:NewReservation:신규 예약");
-            CollectionAssert.Contains(view.Calls, "ActivateTab:NewReservation");
-        }
-
-        // 03 §1.1 · §9.1 — 예약 관리와 접수 관리는 Tab 하나를 나눠 쓰고 Caption 만 바뀐다.
-        [TestMethod]
-        public void 예약관리와_접수관리는_같은_Workbench_Tab_을_Caption_만_바꿔_쓴다()
+        public void 예약관리와_접수관리는_같은_Workbench_화면을_쓴다()
         {
             FakeMainView view = LoadedShell();
 
@@ -167,64 +153,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             view.RaiseNavigationRequested(BusinessNavigation.ReceptionDesk);
 
             CollectionAssert.AreEqual(
-                new List<string> { "SetTabCaption:Workbench:접수 관리", "ActivateTab:Workbench" },
-                view.Calls);
+                new List<string> { "ShowBusinessScreen:Workbench" }, view.Calls);
         }
 
+        // 03 §24.2 — 휴무일 관리는 업무 화면을 세우지 않고, 고른 뒤에는 직전 Page 로 돌아간다.
         [TestMethod]
-        public void Tab_을_닫으면_다음_호출에서_다시_연다()
-        {
-            FakeMainView view = LoadedShell();
-            view.RaiseNavigationRequested(BusinessNavigation.PatientManagement);
-            view.RaiseTabCloseRequested(BusinessTab.PatientManagement);
-            view.Calls.Clear();
-
-            view.RaiseNavigationRequested(BusinessNavigation.PatientManagement);
-
-            CollectionAssert.Contains(view.Calls, "OpenTab:PatientManagement:수검자 관리");
-        }
-
-        [TestMethod]
-        public void 열리지_않은_Tab_의_닫기는_아무것도_하지_않는다()
-        {
-            FakeMainView view = LoadedShell();
-            view.Calls.Clear();
-
-            view.RaiseTabCloseRequested(BusinessTab.Workbench);
-
-            Assert.AreEqual(0, view.Calls.Count);
-        }
-
-        // 03 §4.2 — Tab 전환 시 그 Tab 의 Ribbon Page 를 활성화한다.
-        [TestMethod]
-        public void Tab_을_고르면_그_Tab_의_Ribbon_Page_가_선택된다()
-        {
-            FakeMainView view = LoadedShell();
-            view.RaiseNavigationRequested(BusinessNavigation.NewReservation);
-            view.Calls.Clear();
-
-            view.RaiseTabActivated(BusinessTab.NewReservation);
-
-            CollectionAssert.AreEqual(
-                new List<string> { "SelectNavigationPage:NewReservation" }, view.Calls);
-        }
-
-        [TestMethod]
-        public void Workbench_Tab_을_고르면_마지막_Context_의_Page_로_돌아간다()
-        {
-            FakeMainView view = LoadedShell();
-            view.RaiseNavigationRequested(BusinessNavigation.ReceptionDesk);
-            view.Calls.Clear();
-
-            view.RaiseTabActivated(BusinessTab.Workbench);
-
-            CollectionAssert.AreEqual(
-                new List<string> { "SelectNavigationPage:ReceptionDesk" }, view.Calls);
-        }
-
-        // 03 §24.2 — 휴무일 관리는 Tab 을 열지 않고, 고른 뒤에는 직전 Page 로 돌아간다.
-        [TestMethod]
-        public void 휴무일_관리는_Tab_을_열지_않고_직전_Page_로_돌아간다()
+        public void 휴무일_관리는_업무_화면을_세우지_않고_직전_Page_로_돌아간다()
         {
             FakeMainView view = LoadedShell();
             view.RaiseNavigationRequested(BusinessNavigation.ReceptionDesk);
@@ -270,29 +204,17 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         }
 
         // [X] 기동 직후 Ribbon 은 첫 Page 가 선택된 채 뜨지만 그것은 "변경"이 아니라 이벤트가
-        //     나지 않는다. Shell 이 첫 Tab 을 직접 열지 않으면, 이미 선택된 [수검자 관리] 를
-        //     눌러도 영원히 열리지 않는다. 실행 화면에서 실측한 결함이다.
+        //     나지 않는다. Shell 이 첫 화면을 직접 세우지 않으면, 이미 선택된 [수검자 관리] 를
+        //     눌러도 영원히 서지 않는다. 실행 화면에서 실측한 결함이다.
         [TestMethod]
-        public void 기동하면_첫_업무_Tab_이_열린다()
+        public void 기동하면_첫_업무_화면이_선다()
         {
             var view = new FakeMainView();
             new MainPresenter(view, new FakeCommonStatusService { Result = Ok(Allowed()) }, "창구");
 
             view.RaiseShellLoaded();
 
-            CollectionAssert.Contains(view.Calls, "OpenTab:PatientManagement:수검자 관리");
-            CollectionAssert.Contains(view.Calls, "ActivateTab:PatientManagement");
-        }
-
-        [TestMethod]
-        public void 기동으로_열린_Tab_은_다시_열리지_않는다()
-        {
-            FakeMainView view = LoadedShell();
-
-            view.RaiseNavigationRequested(BusinessNavigation.PatientManagement);
-
-            CollectionAssert.DoesNotContain(view.Calls, "OpenTab:PatientManagement:수검자 관리");
-            CollectionAssert.Contains(view.Calls, "ActivateTab:PatientManagement");
+            CollectionAssert.Contains(view.Calls, "ShowBusinessScreen:PatientManagement");
         }
 
         private static FakeMainView LoadedShell()
@@ -331,8 +253,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
     {
         public event EventHandler ShellLoaded;
         public event EventHandler<BusinessNavigation> NavigationRequested;
-        public event EventHandler<BusinessTab> TabCloseRequested;
-        public event EventHandler<BusinessTab> TabActivated;
 
         public List<string> Calls { get; private set; }
 
@@ -345,10 +265,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public string OperatorText { get; set; }
         public string LastMessage { get; private set; }
 
-        public void OpenTab(BusinessTab tab, string caption) { Calls.Add("OpenTab:" + tab + ":" + caption); }
-        public void ActivateTab(BusinessTab tab) { Calls.Add("ActivateTab:" + tab); }
-        public void SetTabCaption(BusinessTab tab, string caption) { Calls.Add("SetTabCaption:" + tab + ":" + caption); }
-        public void CloseTab(BusinessTab tab) { Calls.Add("CloseTab:" + tab); }
+        public void ShowBusinessScreen(BusinessTab screen) { Calls.Add("ShowBusinessScreen:" + screen); }
         public void SelectNavigationPage(BusinessNavigation page) { Calls.Add("SelectNavigationPage:" + page); }
         public void ShowHolidayManagement() { Calls.Add("ShowHolidayManagement"); }
 
@@ -366,17 +283,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             if (handler != null) { handler(this, target); }
         }
 
-        public void RaiseTabCloseRequested(BusinessTab tab)
-        {
-            EventHandler<BusinessTab> handler = TabCloseRequested;
-            if (handler != null) { handler(this, tab); }
-        }
-
-        public void RaiseTabActivated(BusinessTab tab)
-        {
-            EventHandler<BusinessTab> handler = TabActivated;
-            if (handler != null) { handler(this, tab); }
-        }
     }
 
     internal sealed class FakeCommonStatusService : ICommonStatusService

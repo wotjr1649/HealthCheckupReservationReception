@@ -4,7 +4,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
+using DevExpress.XtraEditors.Controls;
+using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Base;
+using DevExpress.XtraLayout;
+using DevExpress.XtraLayout.Utils;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
 using HealthCheckupReservationReception.Presenters;
@@ -13,9 +17,11 @@ using HealthCheckupReservationReception.Services;
 namespace HealthCheckupReservationReception.Views
 {
     /// <summary>
-    /// WF-PAT-01 수검자 관리 업무 Tab (03 §5). 배치의 출처는
-    /// `tools/docgen/wireframe/screens/wf_pat_01.js` 다 — 조회조건 밴드 위, 좌 목록 0.62 ·
-    /// 우 상세 0.38 이다. 판정은 하지 않는다: 그리고 이벤트만 올린다 (킷 §2).
+    /// WF-PAT-01 수검자 관리 업무 Tab (03 §5). 판정은 하지 않는다: 그리고 이벤트만 올린다 (킷 §2).
+    ///
+    /// 배치는 `lcMain` LayoutControl 하나가 갖는다 — 조회조건은 `수검자 목록` 그룹 안의 한 줄이고,
+    /// 좌 목록 · 우 상세는 `splitPatient` 로 나뉜다. 03 과 와이어프레임은 더 이상 배치를 구속하지
+    /// 않는다 (ROOT AGENTS.md §1.1, 2026-09-10 사용자 결정) — 필드의 뜻만 거기서 온다.
     /// </summary>
     public partial class UcPatientManagement : XtraUserControl, IPatientManagementView
     {
@@ -28,8 +34,11 @@ namespace HealthCheckupReservationReception.Views
         // 지금 화면이 "행이 골라진" 꼴로 보이는가. ShowSelection 이 유일한 쓰기 지점이다.
         private bool _rowPicked;
 
-        // [R17] 조회 재진입 가드. Ribbon 과 화면 버튼이 같은 Action 을 부른다.
+        // [R17] 조회 재진입 가드. 동기 SP 호출 동안 쌓인 클릭이 되돌아오는 것을 막는다.
         private bool _searching;
+
+        // 체크 목록을 코드가 고쳐 쓰는 동안 ItemCheck 이 되돌아오는 것을 막는다.
+        private bool _syncingChecks;
 
         // 03 §18 `기본값 복원` 이 되돌릴 자리. Designer 가 직렬화한 그 상태다.
         private readonly MemoryStream _defaultLayout = new MemoryStream();
@@ -87,23 +96,6 @@ namespace HealthCheckupReservationReception.Views
         string IPatientManagementView.Name { get { return txtName.Text; } }
 
         public string SocialNumber { get { return txtSocialNumber.Text; } }
-
-        public string Birthday
-        {
-            get
-            {
-                object value = deBirthday.EditValue;
-                if (value == null || value == DBNull.Value)
-                {
-                    return null;
-                }
-
-                DateTime picked = deBirthday.DateTime;
-                return picked == DateTime.MinValue ? null : picked.ToString("yyyyMMdd");
-            }
-        }
-
-        public string MobilePhone { get { return txtMobilePhone.Text; } }
 
         public IList<PatientListItemDto> Rows
         {
@@ -196,26 +188,6 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// Ribbon 의 `[조회]` 도 조회조건의 `[조회]` 와 같은 Action 이다 (03 §5.2 · §5.3).
-        /// </summary>
-        public void RequestSearch()
-        {
-            RaiseSearchRequested();
-        }
-
-        /// <summary>
-        /// 03 §5.5 · §18 — `[컬럼설정]`. 표시/숨김과 기본값 복원, 그 둘뿐이다.
-        /// </summary>
-        public void ShowColumnChooser()
-        {
-            using (var chooser = new FrmColumnChooser())
-            {
-                chooser.Bind(gvPatientList, RestoreDefaultColumns);
-                chooser.ShowDialog(FindForm());
-            }
-        }
-
-        /// <summary>
         /// 03 §18 `기본값 복원`. 무엇이 기본인지는 Designer 가 직렬화한 그 상태이므로
         /// 화면이 서는 순간 한 벌 떠 둔다 — 어느 컬럼이 기본인지를 코드에 다시 적으면
         /// Designer 와 두 곳이 된다 (ROOT AGENTS.md §6).
@@ -232,11 +204,137 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
+        /// 조회조건 칸에서 Enter 를 치면 `[조회]` 와 같은 일이 난다 (2026-09-10 사용자 결정).
+        ///
+        /// [X] `Form.AcceptButton` 을 쓰지 않는다. 그 속성은 폼이 갖는데 이 화면은 UserControl 이고,
+        ///     MainForm 에 걸면 어느 업무 화면이 떠 있든 이 버튼이 Enter 를 먹는다.
+        /// </summary>
+        private void SearchInput_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Enter)
+            {
+                return;
+            }
+
+            // Enter 가 위로 새어 나가면 상위 폼이 한 번 더 받는다.
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+            RaiseSearchRequested();
+        }
+
+        // 2026-09-10 사용자 결정 — 두 드롭다운은 무엇이 골라졌는지를 적지 않고 늘 제 이름을 적는다.
+        // 안에 든 것은 체크 목록이지 값이 아니므로, 값을 요약해 봐야 읽히지 않는다.
+        private void cboConditions_QueryDisplayText(object sender, QueryDisplayTextEventArgs e)
+        {
+            e.DisplayText = "조회 조건";
+        }
+
+        private void cboColumns_QueryDisplayText(object sender, QueryDisplayTextEventArgs e)
+        {
+            e.DisplayText = "컬럼 설정";
+        }
+
+        /// <summary>
+        /// 2026-09-10 사용자 결정 — 조회조건 줄에 어떤 입력칸을 낼지는 `clbConditions` 가 정한다.
+        ///
+        /// [X] `ItemCheck` 이 항목에 반영되기 **전**에 오는지 뒤에 오는지는 재지 않는다 —
+        ///     어느 쪽이든 `e.State` 를 한 번 더 써 넣으면 같은 값이 된다. 재진입만 막으면 된다.
+        /// </summary>
+        private void clbConditions_ItemCheck(object sender, DevExpress.XtraEditors.Controls.ItemCheckEventArgs e)
+        {
+            if (_syncingChecks) { return; }
+
+            _syncingChecks = true;
+            try
+            {
+                clbConditions.Items[e.Index].CheckState = e.State;
+                ApplyConditionVisibility();
+            }
+            finally { _syncingChecks = false; }
+        }
+
+        private void ApplyConditionVisibility()
+        {
+            for (int i = 0; i < clbConditions.Items.Count; i++)
+            {
+                bool on = clbConditions.GetItemChecked(i);
+                switch (Convert.ToString(clbConditions.Items[i].Value))
+                {
+                    case "ChartNo": ShowCondition(lciChartNo, txtChartNo, on); break;
+                    case "Name": ShowCondition(lciName, txtName, on); break;
+                    case "SocialNumber": ShowCondition(lciSocialNumber, txtSocialNumber, on); break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// [X] **끈 조건은 값도 버린다.** 안 보이는 칸에 남은 글자가 조회에 섞이면 사용자는
+        ///     왜 그 결과가 나왔는지 알 길이 없다 — Presenter 는 세 칸을 그대로 읽는다.
+        /// </summary>
+        private static void ShowCondition(LayoutControlItem item, BaseEdit editor, bool on)
+        {
+            item.Visibility = on ? LayoutVisibility.Always : LayoutVisibility.Never;
+            if (!on)
+            {
+                editor.EditValue = null;
+            }
+        }
+
+        /// <summary>
+        /// 03 §18 컬럼설정. 2026-09-10 사용자 결정으로 Ribbon [보기] 에서 Grid 옆 드롭다운으로
+        /// 옮겼다 — 목록을 보면서 켜고 끄는 편이 낫다. Modal 이던 `FrmColumnChooser` 는 걷었다.
+        ///
+        /// 확인/취소를 두지 않는다. 되돌리는 길이 `[기본값 복원]` 하나로 충분하다 (03 §18).
+        /// </summary>
+        private void clbColumns_ItemCheck(object sender, DevExpress.XtraEditors.Controls.ItemCheckEventArgs e)
+        {
+            if (_syncingChecks) { return; }
+
+            _syncingChecks = true;
+            try
+            {
+                clbColumns.Items[e.Index].CheckState = e.State;
+                var column = clbColumns.Items[e.Index].Value as GridColumn;
+                if (column != null)
+                {
+                    column.Visible = e.State == CheckState.Checked;
+                }
+            }
+            finally { _syncingChecks = false; }
+        }
+
+        private void btnColumnsDefault_Click(object sender, EventArgs e)
+        {
+            RestoreDefaultColumns();
+            SyncColumnChecks();
+        }
+
+        /// <summary>
+        /// 체크 상태를 Grid 에서 받아 적는다. **Grid 가 단일 출처다** (ROOT AGENTS.md §6) —
+        /// `기본값 복원` 은 Grid 를 되돌리므로 목록도 거기서 다시 읽어야 어긋나지 않는다.
+        /// </summary>
+        private void SyncColumnChecks()
+        {
+            _syncingChecks = true;
+            try
+            {
+                for (int i = 0; i < clbColumns.Items.Count; i++)
+                {
+                    var column = clbColumns.Items[i].Value as GridColumn;
+                    clbColumns.Items[i].CheckState = column != null && column.Visible
+                        ? CheckState.Checked
+                        : CheckState.Unchecked;
+                }
+            }
+            finally { _syncingChecks = false; }
+        }
+
+        /// <summary>
         /// [R17] 조회는 UI 스레드에서 동기로 SP 를 부르고, 그동안 쌓인 클릭은 끝난 뒤 발화한다.
         ///
-        /// **가드가 둘 다 필요하다.** `[조회]` 는 화면 버튼과 Ribbon 버튼 둘이 같은 Action 을
-        /// 부르므로 버튼 하나만 잠그면 다른 쪽이 열려 있다 — `_searching` 이 그 구멍을 닫고,
-        /// `clsBusyScope` 는 사용자가 잠긴 것을 **보게** 한다 (2026-09-10 사용자 결정).
+        /// **가드가 둘 다 필요하다.** `clsBusyScope` 는 사용자가 잠긴 것을 **보게** 하고,
+        /// `_searching` 은 그 사이 들어온 Enter·연타를 막는다 (2026-09-10 사용자 결정).
+        /// Ribbon [검색] 그룹의 `[조회]` 는 걷었다 — 같은 버튼이 두 곳에 있을 이유가 없다.
         /// </summary>
         private void RaiseSearchRequested()
         {

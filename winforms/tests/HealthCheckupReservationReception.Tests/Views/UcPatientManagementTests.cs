@@ -5,6 +5,8 @@ using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
+using DevExpress.XtraLayout;
+using DevExpress.XtraLayout.Utils;
 using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Grid;
 using HealthCheckupReservationReception.Models;
@@ -103,6 +105,127 @@ namespace HealthCheckupReservationReception.Tests.Views
                 var screen = new UcPatientManagement();
                 Assert.IsFalse(Grid(screen).OptionsCustomization.AllowQuickHideColumns);
             });
+        }
+
+        // 2026-09-10 사용자 결정 — 조회조건은 차트번호·이름·주민번호 셋이고, 무엇을 낼지는
+        // [조회 조건] 드롭다운의 체크 목록이 정한다. 생년월일·휴대전화는 걷었다.
+        [TestMethod]
+        public void 조회조건은_세_칸이고_기본은_전부_켜져_있다()
+        {
+            RunSta(() =>
+            {
+                var screen = new UcPatientManagement();
+                CheckedListBoxControl list = Field<CheckedListBoxControl>(screen, "clbConditions");
+
+                Assert.AreEqual(3, list.Items.Count, "조회조건이 셋이 아니다");
+                Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciChartNo").Visibility);
+                Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciName").Visibility);
+                Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciSocialNumber").Visibility);
+            });
+        }
+
+        // [X] 끈 조건은 값도 버린다. 안 보이는 칸에 남은 글자가 조회에 섞이면
+        //     사용자는 왜 그 결과가 나왔는지 알 길이 없다 — Presenter 는 세 칸을 그대로 읽는다.
+        [TestMethod]
+        public void 조회조건을_끄면_칸이_사라지고_값도_비워진다()
+        {
+            RunSta(() =>
+            {
+                var screen = new UcPatientManagement();
+                var view = (IPatientManagementView)screen;
+                Field<TextEdit>(screen, "txtChartNo").Text = "C000001";
+                Assert.AreEqual("C000001", view.ChartNo, "칸에 값이 들어가지 않았다");
+
+                // 사용자가 목록에서 체크를 끄는 것과 같은 경로다.
+                Field<CheckedListBoxControl>(screen, "clbConditions").ToggleItem(0);
+
+                Assert.AreEqual(LayoutVisibility.Never, Item(screen, "lciChartNo").Visibility, "끈 조건이 아직 보인다");
+                Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciName").Visibility, "켜 둔 조건까지 사라졌다");
+                Assert.IsTrue(string.IsNullOrEmpty(view.ChartNo), "숨긴 칸에 값이 남아 조회에 섞인다: " + view.ChartNo);
+            });
+        }
+
+        // 03 §18 — 컬럼설정은 Ribbon 이 아니라 Grid 옆 드롭다운이 갖는다 (2026-09-10 사용자 결정).
+        // 목록은 Grid 가 가진 컬럼에서 만들고, 체크를 끄면 그 컬럼이 사라진다.
+        [TestMethod]
+        public void 컬럼_체크를_끄면_그_컬럼이_사라지고_기본값_복원이_되살린다()
+        {
+            RunSta(() =>
+            {
+                var screen = new UcPatientManagement();
+                GridView grid = Grid(screen);
+                CheckedListBoxControl list = Field<CheckedListBoxControl>(screen, "clbColumns");
+
+                Assert.AreEqual(grid.Columns.Count, list.Items.Count, "컬럼 목록이 Grid 와 다르다");
+
+                int chartNo = IndexOfColumn(list, "차트번호");
+                Assert.IsTrue(list.GetItemChecked(chartNo), "차트번호는 기본 컬럼이다");
+
+                list.ToggleItem(chartNo);
+                Assert.IsFalse(Column(grid, "차트번호").Visible, "체크를 껐는데 컬럼이 남았다");
+
+                // [X] `SimpleButton.PerformClick()` 은 폼에 올라가 보이지 않는 버튼에서는
+                //     아무 일도 하지 않는다(실측 2026-09-10 — 컬럼이 그대로 숨은 채였다).
+                //     Designer 가 이름으로 잇는 그 핸들러를 직접 부른다.
+                Invoke(screen, "btnColumnsDefault_Click");
+
+                Assert.IsTrue(Column(grid, "차트번호").Visible, "기본값 복원이 컬럼을 되살리지 못했다");
+                Assert.IsTrue(list.GetItemChecked(chartNo), "Grid 는 돌아왔는데 체크가 어긋났다");
+            });
+        }
+
+        /// <summary>Designer 가 이름으로 잇는 이벤트 핸들러를 그대로 부른다.</summary>
+        private static void Invoke(UcPatientManagement screen, string handler)
+        {
+            MethodInfo method = typeof(UcPatientManagement).GetMethod(
+                handler, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(method, handler + " 가 사라졌다");
+            method.Invoke(screen, new object[] { null, EventArgs.Empty });
+        }
+
+        // [X] `OptionsView.ColumnAutoWidth` 는 기본이 true 라 Grid 가 컬럼을 뷰 폭에 욱여넣는다.
+        //     그래서 컬럼 폭을 아무리 넓혀도 가로 스크롤바가 서지 않는다(실측 2026-09-10:
+        //     컬럼폭합 3000 · 뷰폭 1140 인데 가로 스크롤 숨김). 가로로 미는 지렛대는 `MinWidth`
+        //     하나뿐이다 — 컬럼을 새로 더하면서 이것을 빼먹으면 그 컬럼은 20px 까지 찌그러진다.
+        [TestMethod]
+        public void 모든_컬럼이_찌그러짐을_막을_MinWidth_를_갖는다()
+        {
+            RunSta(() =>
+            {
+                var screen = new UcPatientManagement();
+                foreach (GridColumn column in Grid(screen).Columns)
+                {
+                    Assert.IsTrue(column.MinWidth > 20,
+                        column.Caption + " 에 MinWidth 가 없다 — 가로 스크롤이 서지 않는다");
+                }
+            });
+        }
+
+        private static int IndexOfColumn(CheckedListBoxControl list, string caption)
+        {
+            for (int i = 0; i < list.Items.Count; i++)
+            {
+                var column = list.Items[i].Value as GridColumn;
+                if (column != null && column.Caption == caption)
+                {
+                    return i;
+                }
+            }
+
+            throw new AssertFailedException("컬럼 목록에 " + caption + " 이 없다");
+        }
+
+        private static BaseLayoutItem Item(UcPatientManagement screen, string name)
+        {
+            return Field<BaseLayoutItem>(screen, name);
+        }
+
+        private static T Field<T>(UcPatientManagement screen, string name)
+        {
+            FieldInfo field = typeof(UcPatientManagement).GetField(
+                name, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(field, name + " 필드가 사라졌다");
+            return (T)field.GetValue(screen);
         }
 
         private static GridColumn Column(GridView view, string caption)
