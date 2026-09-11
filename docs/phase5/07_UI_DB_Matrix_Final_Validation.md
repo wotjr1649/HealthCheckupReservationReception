@@ -71,6 +71,11 @@ Phase 5 구현이 실제로 돌아간 뒤에 채운다 — **§12 가 비어 있
 그 뒤 UI/UX 를 고칠 때마다 재봉인이 되어 §1.1 의 국면과 정면으로 부딪혔을 것이다.
 **실행검증 기록은 이제 `docs/phase5/` 의 개별 문서가 갖는다** (예: `2026-09-11-Deadline-Field-Check.md`).
 
+`[!]` **면제는 §12 와 FINAL 승격에 한정된다 — 이 문서 전체가 아니다.**
+`winforms/scripts/verify-ui-db-matrix.sh` 의 `UIDB-001`~`003` 이 **매 winforms 회차에서** §3·§4 의
+화면 ID·SP ID 목록을 `03` §2 · `05` §1.3 과 양방향 대조한다. 화면이나 SP 가 하나 늘면 그 게이트가
+red 가 되고 **이 문서를 반드시 고쳐야 한다.** 그 red 를 「면제받았으니 무시」로 읽지 마라.
+
 ---
 
 # 1. 판정 대상과 판정하지 않는 것
@@ -864,7 +869,7 @@ contract belongs to the service"*, *"Integrity and concurrency live in the datab
 | P11 | 시각 검증 | 100% · 125% 배율에서 잘림 0건 | **`PASS`**(WF-00 · WF-PAT-01 · 컬럼설정) — 사용자 실측 (2026-09-09). §12.7. **DLG-PAT-01·02·03 은 100% 캡처만 있고 125% 는 미실측이다** (§12.8) |
 | P14 | 배치 ↔ 설계 | 화면 ID·Navigation·Ribbon 그룹/버튼·라벨이 `tools/docgen/wireframe` 의 설계와 같다 | **`PASS`** — `winforms/tools/verify-screen-design.js` `SCR-000`~`004` (2026-09-09) |
 | P15 | 주민번호 세기 | `03` §6.2 의 7번째 자리 여덟 갈래 ↔ Presenter 의 파생 분기 양방향 차집합 0 | **`PASS`** — `winforms/scripts/verify-social-century.sh` `SOC-001`·`SOC-002` (2026-09-09) |
-| P12 | manifest | winforms 변경 커밋마다 manifest 동봉 | **`PASS`** — 2026-09-11 에 매니페스트를 되살렸고 규칙은 `winforms/AGENTS.md` 가 갖는다 |
+| P12 | manifest | winforms 변경 커밋마다 manifest 동봉 | **`부분`** — `database/scripts/verify-winforms-unchanged.sh` 가 판정하고 회차 `R19` 에서 PASS 였다. 다만 그것은 `database/scripts/test.sh` 에서만 돌고 `winforms/scripts/test.sh` 는 **의도적으로 부르지 않는다** — winforms 만 고치는 회차는 이 게이트를 한 번도 안 돌린다. 규칙은 사람이 든다 |
 | P13 | `07` 문서 | 구현과 일치하는 FINAL | **`상실`** — ROOT `AGENTS.md` §4 가 갱신 의무를 면제했다. §12 는 안 채워지고 이 문서는 봉인에 들어가지 않는다 (§0.3) |
 
 `[X]` **`PASS` 는 실제로 돈 것만이다.** 나머지에 `PASS` 를 적으려면

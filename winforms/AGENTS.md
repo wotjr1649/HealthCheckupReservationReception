@@ -127,7 +127,8 @@ decisions, and a decision can be changed. What differs is the cost, and it split
 SCR-002·003   the ribbon: kit.js NAV, per-screen groups and buttons.  9 mismatches,
               every one an intended change (신규예약 → 예약, DLG-PAT-02 removed,
               [조회]·[컬럼설정] moved out of the ribbon, the 검색 group dropped).
-              **The target is now stable** — 14 ribbon buttons, all wired, no more coming.
+              **The target has settled** — 14 ribbon buttons, 14 wired (measured 2026-09-11).
+              That is a measurement, not a promise that none will be added.
               Revivable by refreshing the design source. The price: the published 03 then
               draws the current ribbon, which reverses §4.19 for the ribbon alone.
 

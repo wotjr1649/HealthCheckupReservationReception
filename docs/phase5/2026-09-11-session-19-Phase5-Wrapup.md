@@ -4,7 +4,9 @@
 - **앞 문서:** `2026-09-11-session-18-Phase5-Handover.md`(할 일 목록) ·
   `2026-09-10-session-17-Phase5-UI-Overhaul.md` §4.1~§4.19(**설계 결정과 근거 전부**)
   이 문서는 그것을 베끼지 않는다 (ROOT `AGENTS.md` §6)
-- **브랜치:** `phase5-start` — `221d57d`, `main` 보다 86 커밋 앞. **origin 은 아직 `98a6f6e` 다 (미푸시)**
+- **브랜치:** `phase5-start`. **커밋 해시·앞선 커밋 수·푸시 여부를 여기 적지 않는다** — 적어 두었다가
+  이 세션 안에서 이미 거짓이 됐다 (ROOT `AGENTS.md` §6, 하필 「읽지 말고 돌려서 봐라」 절 머리였다).
+  `git log --oneline -1` · `git rev-list --count main..HEAD` · `git status -sb` 가 단일 출처다
 
 ---
 
@@ -48,7 +50,11 @@ sqlcmd -S '.\SQLEXPRESS' -E -d HealthCheckupReservationReceptionDb -b -I -i test
 bd61691  1년치를 심어 SP 힌트를 다시 쟀다 (§4.16). 본전이라 봉인을 열지 않는다
 65c3f3e  reseal(R19) — R18 이 NOT RUN 으로 미룬 전체 회귀를 돌려 닫고, §1 의 R4 잔재를 걷었다
 221d57d  인계 문장 둘 — 07 의 자리 · 공개본 03 의 지위
+ac9bd5d  마감시각 실측 쪼리 · SCR 재분석 · 07 의 상실한 약속
+그 뒤     PR #2 리뷰가 찾은 여덟 건 — H1 의 창을 5배로 정정하고 특성화 시험을 넣었다
 ```
+
+`[!]` **이 목록은 손으로 쓴 사본이다.** 정확한 것은 `git log --oneline main..HEAD` 다.
 
 수치와 경위는 각 커밋 메시지와 §4.16 · `06` 머리말 · `docs/phase4/reseal-history.md` 가
 갖는다. 여기에 베끼지 않는다.
@@ -67,8 +73,10 @@ Sqlcmd: The -E and the -U/-P options are mutually exclusive.
 ```
 
 **상대경로만 쓴다.** `cd database && sqlcmd ... -i tests/00_Test_Harness.sql -o artifacts/logs/x.log`.
-`-u`(유니코드 출력)도 같은 자리에서 `-U` 로 읽히므로 손으로 부를 때는 붙이지 않는다 —
-`scripts/test.sh` 가 쓰는 것은 스크립트 안에서만 듣는다.
+`[X]` **`-u` 는 죄가 없다.** 초판은 「`-u` 도 `-U` 로 읽힌다」고 적었는데 **틀렸다** — 실측:
+`sqlcmd -E -u -d <DB> -b -I -o artifacts/logs/x.log -Q "SELECT 1"` 은 `rc=0` 이고 UTF-16 으로
+제대로 쓴다. `sqlcmd` 는 옵션 문자의 대소문자를 가린다. 실패의 원인은 같이 줬던 **절대경로**
+하나뿐이었고, 그 오진이 멀쩡한 플래그를 금지하는 문장으로 굳을 뻔했다.
 
 ### 3-2. 쉘 히어독으로 만든 `.sql` 은 **BOM 이 없어 조용히 틀린다**
 

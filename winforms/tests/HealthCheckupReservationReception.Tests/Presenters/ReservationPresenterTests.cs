@@ -443,6 +443,51 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         }
 
         /// <summary>
+        /// `[X]` **이것은 특성화 시험이다 — 지금 동작이 옳다고 말하지 않는다.**
+        /// 확정된 결함 하나를 고정해 둔다 (`docs/phase5/2026-09-11-Deadline-Field-Check.md` §4).
+        ///
+        /// `CutoffBlocked` 는 *시간대 중 하나라도 `304`* 면 참이다. 그런데 마감은 시간대마다
+        /// 다른 값이라(`03_Functions.sql` 의 `기본마감시각` CASE), **AM 이 마감이고 PM 은 아직
+        /// 마감 전인 구간**이 존재한다. 그 구간에서 PM 을 고르면 `00` RP-05 대로는 일반
+        /// 당일예약이어야 하는데 화면이 대화상자 전체를 현장으로 바꾸고, 저장 SP 는 `WALKIN` 을
+        /// 「예약일 = 오늘날짜」만으로 받아들여 되잡지 않는다. 막히지 않으므로 조용하다.
+        ///
+        /// `[!]` **이 시험이 red 가 되면 결함이 고쳐진 것이다.** 그때는 시험을 고치지 말고
+        ///      지우고, 옳은 동작을 단언하는 시험으로 바꿔라. 고치는 데에는 설계 판단이
+        ///      필요하다 — 시간대를 아직 고르지 않은 최초 조회가 무엇을 기준으로 전환할지를
+        ///      정해야 한다 (`05` §9.6 은 DB 가 하나를 골라 돌려준다고 정했다).
+        /// </summary>
+        [TestMethod]
+        public void PM_이_아직_마감_전이어도_AM_마감_하나로_현장으로_넘어간다_결함고정()
+        {
+            ReservationAvailabilityReadDto normal = CutoffAvailability();
+            // AM 은 마감(304), PM 은 **고를 수 있다** — 정원도 남아 있다.
+            normal.Slots[1].Selectable = true;
+            normal.Slots[1].CutoffPassed = false;
+            normal.Slots[1].BlockCode = (int)DbCode.Ok;
+            normal.Slots[1].BlockMessage = string.Empty;
+            normal.Slots[1].CurrentCount = 3;
+            normal.Slots[1].AppliedCount = 4;
+            normal.Slots[1].RemainingSeats = 16;
+
+            var view = new FakeReservationView();
+            var service = new FakeReservationService
+            {
+                Availability = normal,
+                WalkInAvailability = TodayAvailability(DbReserveType.WalkIn),
+            };
+            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+
+            presenter.Begin(PatientId);
+
+            Assert.AreEqual(2, service.AvailabilityCalls,
+                "PM 이 고를 수 있는데도 AM 의 304 하나로 현장 재질의가 일어난다");
+            Assert.AreEqual(DbReserveType.WalkIn, service.LastAvailability.ReserveType);
+            Assert.AreEqual("현장 당일예약", view.ReserveTypeText,
+                "화면이 현장이라고 표시까지 한다 — 조작자에게 틀렸다는 단서가 없다");
+        }
+
+        /// <summary>
         /// 03 §8.5 — 이 수검자로는 더 진행할 수 없다 (RP-06). 남은 선택은 「그 예약을 보러 갈까」
         /// 하나이고, **묻고 간다** (2026-09-11 사용자 지시).
         ///
