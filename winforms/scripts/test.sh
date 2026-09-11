@@ -66,8 +66,11 @@ run ./scripts/verify-layering.sh selftest
 run ./scripts/verify-layering.sh
 run ./scripts/verify-rs-columns.sh selftest
 run ./scripts/verify-rs-columns.sh
-run node tools/verify-screen-design.js selftest
-run node tools/verify-screen-design.js
+# [X] `source` 모드만 돈다 — SCR-000·001(설계 소스 ↔ 03)이다. SCR-002·003·004 는
+#     ROOT AGENTS.md §1.1 이 놓아 준 *구현 ↔ 03* 이라 의도된 red 이고, 회귀에 두면
+#     다음 사람이 red 에 무뎌진다 (2026-09-11 사용자 결정). 되살릴 때는 인자를 뺀다.
+run node tools/verify-screen-design.js selftest source
+run node tools/verify-screen-design.js source
 run ./scripts/verify-ui-db-matrix.sh selftest
 run ./scripts/verify-ui-db-matrix.sh
 

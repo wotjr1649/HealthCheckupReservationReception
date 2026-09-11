@@ -5,11 +5,23 @@
 // 그리므로, 구현이 설계와 다르면 여기서 갈린다. 산출된 pptx 를 역추출하지 않는다 —
 // 생성기를 그대로 돌려 kit 함수의 인자를 가로챈다.
 //
-//   SCR-000  설계를 못 읽으면 통과가 아니라 FAIL
-//   SCR-001  screens/*.js 의 화면 ID 전건 ↔ 03 §2 양방향 차집합 0
+//   SCR-000  설계를 못 읽으면 통과가 아니라 FAIL              [source 모드에서도 돈다]
+//   SCR-001  screens/*.js 의 화면 ID 전건 ↔ 03 §2 양방향 차집합 0  [source 모드에서도 돈다]
 //   SCR-002  kit.js 의 NAV 전건·순서 ↔ MainForm 의 RibbonPage 캡션 순서
 //   SCR-003  화면마다 K.shell 의 Ribbon 그룹명·버튼 ↔ Ribbon.Pages[navActive]
 //   SCR-004  화면마다 설계의 라벨·캡션·헤더 ⊆ 그 화면 ID 를 단 C# 의 문자열
+//
+// [X] **이 게이트는 한 덩어리가 아니다** (2026-09-11 사용자 결정).
+//     ROOT AGENTS.md §1.1 이 놓아 준 것은 *구현 ↔ 03* 이고, 그것을 재는 것은
+//     SCR-002·003·004 다. SCR-000·001 은 *설계 소스 ↔ 03* 이라 여전히 참이어야 한다 —
+//     공개본 생성기가 03 이 선언한 화면 열넷을 빠짐없이 그리는지가 그 불변식이다.
+//
+//     그래서 모드가 둘이다:
+//       node verify-screen-design.js source    SCR-000·001 만. scripts/test.sh 가 이것을 돌린다
+//       node verify-screen-design.js           전부. §1.1 을 되살릴 때 돌린다 (지금은 red 가 정상)
+//
+//     `source` 를 뺀 전체 실행은 **의도된 red** 다. 고치려 들지 마라 — 고친다는 것은
+//     화면을 다시 03 에 맞춘다는 뜻이고 §1.1 이 그것을 중지시켰다.
 //
 // [X] 샘플 데이터는 계약이 아니다. K.grid 의 행과 K.field 의 값(홍길동·2026-000123)은
 //     걷어내고 헤더·라벨만 본다. 낱말을 통째로 긁으면 그 값들이 전부 요구사항이 된다.
@@ -175,7 +187,7 @@ function readDoc03Ids() {
 //     여기서 그림과 똑같이 대조한다. 산출물은 그대로다.
 const SHELL_RIBBON_SKIP = new Set(['WF-00']);
 
-function check() {
+function check(sourceOnly) {
   let design;
   try {
     design = readDesign();
@@ -202,6 +214,11 @@ function check() {
       a.forEach(x => console.log('    설계에만: ' + x));
       b.forEach(x => console.log('    03 §2 에만: ' + x));
     }
+  }
+
+  // [X] source 모드는 여기서 끝난다 — 아래 셋은 *구현 ↔ 03* 이고 §1.1 이 놓아 준 것이다.
+  if (sourceOnly) {
+    return;
   }
 
   const cs = readCsharp();
@@ -291,7 +308,7 @@ function check() {
 // [X] 실물 C# 을 사본으로 떠서 변조한다. 픽스처를 손으로 적으면 설계가 바뀔 때 픽스처도
 //     같이 낡고, 그 낡음을 아무도 안 본다 (verify-winforms-unchanged.sh 의 같은 [X]).
 // [I] 뒷정리는 만든 파일만 지우고 빈 디렉터리를 닫는다. 재귀 삭제를 쓰지 않는다.
-function selftest() {
+function selftest(sourceOnly) {
   const { execFileSync } = require('child_process');
   const os = require('os');
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'scrdesign-'));
@@ -317,10 +334,11 @@ function selftest() {
   //     바깥 경계는 scripts/test.sh 의 GATE_TIMEOUT 이 따로 친다.
   const CHILD_TIMEOUT_MS = 120000;
   let rc = 0;
+  const childArgs = sourceOnly ? ['source'] : ['check'];
   const run = (label, expect, env) => {
     let code = 0, out = '', timedOut = false;
     try {
-      out = execFileSync(process.execPath, [__filename, 'check'], {
+      out = execFileSync(process.execPath, [__filename].concat(childArgs), {
         env: Object.assign({}, process.env, env),
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
@@ -355,6 +373,19 @@ function selftest() {
   copyTree();
   run('사본 그대로면 통과한다', 0, { SRC_DIR: tmp });
 
+  // [X] source 모드는 여기서 끝낸다. 아래 변조 시험들은 SCR-002·003·004 를 겨누는데
+  //     그 셋은 §1.1 이 놓아 주어 지금 red 가 정상이다 — 변조 전에 이미 red 이므로
+  //     「변조를 잡았다」가 아무것도 증명하지 못한다.
+  if (sourceOnly) {
+    for (const f of made) { try { fs.unlinkSync(f); } catch (e) { /* 이미 없다 */ } }
+    for (const d of [...dirs].sort((a, b) => b.length - a.length)) { try { fs.rmdirSync(d); } catch (e) { /* 비지 않았다 */ } }
+    try { fs.rmdirSync(tmp); } catch (e) { /* 남은 것이 있으면 그대로 둔다 */ }
+
+    run('03 을 못 읽으면 통과가 아니라 FAIL 이다', 1, { DOC03: path.join(tmp, '없는파일.md') });
+    run('설계를 못 읽으면 통과가 아니라 FAIL 이다', 1, { WF_DIR: path.join(tmp, '없는디렉터리') });
+    process.exit(rc);
+  }
+
   tamper(DESIGNER, 'this.barPageRcpDesk.Text = "접수 관리";', 'this.barPageRcpDesk.Text = "접수데스크";');
   run('Navigation 캡션 변조를 잡는다', 1, { SRC_DIR: tmp });
 
@@ -383,10 +414,15 @@ function selftest() {
   process.exit(rc);
 }
 
-if (process.argv[2] === 'selftest') {
-  selftest();
+const MODE = process.argv[2];
+const SOURCE = MODE === 'source' || process.argv[3] === 'source';
+
+if (MODE === 'selftest') {
+  selftest(SOURCE);
 } else {
-  check();
-  console.log(FAIL ? '== FAIL ==' : '== PASS 배치 ↔ 설계 ==');
+  check(SOURCE);
+  console.log(FAIL
+    ? '== FAIL =='
+    : (SOURCE ? '== PASS 설계 소스 ↔ 03 ==' : '== PASS 배치 ↔ 설계 =='));
   process.exit(FAIL);
 }

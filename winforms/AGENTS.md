@@ -80,24 +80,43 @@ gate that read it does not run. Keep writing it: it is how a human finds every f
 screen. `grep -rl "화면 ID:" --include=*.cs` is the count; do not write the number here —
 nothing checks it any more, so it rots (ROOT `AGENTS.md` §6, and it already did).
 
-### The one gate that does not run
+### The checks that do not run — three of them, inside one script
 
-**Exactly one gate is stopped under ROOT `AGENTS.md` §1.1: `verify-screen-design.js`.** It is
-the only one that reads the design source as the truth about layout, which is what §1.1
-released. Its failures are the release itself — `SCR-003` (ribbon buttons and group order) and
-`SCR-004` (`03` labels absent from C#).
+**`verify-screen-design.js` is not one thing.** It carries five checks and §1.1 released three
+of them, not the script:
 
-`SCR-SELFTEST` fails with them, deterministically, and it is not a separate defect: its first
-case copies the current tree and asserts the check passes on it, so an intended red makes the
-copy red too. Measured three times on 2026-09-10 — all three the same, and the other six
-selftest cases pass. Do not go hunting.
+```text
+runs      SCR-000  the design source is readable at all
+runs      SCR-001  screens/*.js screen IDs ↔ 03 §2, both directions
+stopped   SCR-002  kit.js NAV ↔ MainForm RibbonPage order
+stopped   SCR-003  per-screen ribbon group names and buttons
+stopped   SCR-004  design labels ⊆ that screen's C# strings
+```
 
-`[!]` **`scripts/test.sh` red must be that one gate and nothing else.** Anything else red is a
-real defect, not overhaul noise. Read the output; do not wave the whole run off.
+ROOT `AGENTS.md` §1.1 released *implementation ↔ `03`*, which is exactly `SCR-002`·`003`·`004`.
+`SCR-000`·`001` compare the **design source** to `03` — that the deliverable generator still
+draws every screen `03` declares. That invariant never stopped being true, so it keeps running.
 
-The stop was once written as seven gates. Six of those were measured green on 2026-09-10 and
-turned back on the same day — the long stopped-list had become a blanket excuse, and under it
-nobody noticed the six were passing. Keep this list at one.
+`scripts/test.sh` therefore runs the script in `source` mode:
+
+```text
+node tools/verify-screen-design.js selftest source   three cases, all green
+node tools/verify-screen-design.js source            SCR-000·001
+```
+
+`[!]` **`scripts/test.sh` must be green. Every red is a real defect.** There is no longer an
+"expected red" to wave off — that exemption is gone as of 2026-09-11 (user decision), because a
+permanently red run teaches the next person to stop reading the output.
+
+Running the script **without** `source` is still an intended red, and so is its full selftest
+(the first case copies the current tree and asserts the check passes on it, so an intended red
+makes the copy red too). Do not go hunting there; that full mode is what a future round would
+run if §1.1 were ever revived.
+
+The stop was once written as seven gates, then one, and is now three checks inside one script.
+Each narrowing came from measuring rather than assuming — six of the original seven were green
+on 2026-09-10, and two of this script's five were green on 2026-09-11. Narrow it again the same
+way: measure first.
 
 ```text
 runs, and catches what a unit test cannot
