@@ -11,8 +11,8 @@ const exp={
  "02_Function_Definition.xlsx":"cd616207717d4cbb8c2ed3284061d728af4933af00dac75acf835650865798c0",
  "03_Wireframe_Definition.md":"b68262131f6c266c1573f8fa5a4f835e5ff3cedd744dd4404cbd3ce892d88d87",
  "04_DB_Design.md":"d5792867bd48f5a12d12864d6ba7e573aafb975258db9ac3e4a3b2ee69390e1f",
- "05_DB_Rule_SP_Contract.md":"fb3a31fe4b2fe4d9c8839a9e383249588be94dcd176ead8e0b7f256604b2fea3",
- "06_DB_Transaction_Security_Seed.md":"47d434b4a07c253d3fb7f65d03e75438331297e6c614264c881185ba90bf24f4"};
+ "05_DB_Rule_SP_Contract.md":"77c4c8d572cf8fad93ad8ffa177effaa641a0ab020e362d4cf149d86aa75b30a",
+ "06_DB_Transaction_Security_Seed.md":"ee8140ce4f303c70696a04e912954f8de0b9e0f4418876e618c06393300825ba"};
 const N=Object.keys(exp).length;
 let ok=0;
 for(const [n,e] of Object.entries(exp)){

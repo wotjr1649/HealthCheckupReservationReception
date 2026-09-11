@@ -517,6 +517,29 @@ BEGIN
           END) r
     WHERE w.[업무ID] = @업무ID
     ORDER BY a.[정렬순서];
+
+    -- RS5 추가검사구성 — 정확히 7행 (05 §8.2, R18).
+    --   RS3 은 **저장된** AEX 만 준다. 고치는 화면(DLG-RCP-02)은 안 고른 것까지 일곱을
+    --   모두 봐야 하고, 각각이 이 사람에게 가능한지도 알아야 한다.
+    --   [X] 요청선택여부에 0 을 넘긴다. 사유코드는 그 값에 의존하지 않으므로
+    --       (03_Functions.sql UFN_HC_추가검사확인 의 파생표 b) 판정이 같고, 이 Result Set 은
+    --       **고르기 전 상태**를 낸다.
+    --   [X] 저장검사사용여부=1 — 성별·중복 판정의 근거가 그 Work 에 **저장된 NEX** 여야 한다
+    --       (05 §6.4.3). 예약일 기준 TGT 재판정(400/401)도 그래서 건너뛴다.
+    SELECT
+          [추가검사코드] = CAST(x.[추가검사코드] AS VARCHAR(10))
+        , [검사항목코드]   = CAST(x.[검사항목코드] AS VARCHAR(10))
+        , [검사항목명]   = CAST(x.[검사항목명] AS NVARCHAR(100))
+        , [선택여부]     = CAST(CASE WHEN N',' + ISNULL(w.[추가검사항목], N'') + N','
+                                       LIKE N'%,' + x.[검사항목코드] + N',%' THEN 1 ELSE 0 END AS BIT)
+        , [선택가능]     = CAST(x.[선택가능] AS BIT)
+        , [사유코드]    = CAST(x.[사유코드] AS INT)
+        , [사유메시지] = CAST(x.[사유메시지] AS NVARCHAR(300))
+    FROM [dbo].[예약접수] w
+    CROSS APPLY [dbo].[UFN_HC_추가검사확인](w.[수검자ID], w.[예약일], w.[업무ID], 1,
+                   0, 0, 0, 0, 0, 0, 0) x
+    WHERE w.[업무ID] = @업무ID
+    ORDER BY x.[추가검사코드] ASC;
 END
 GO
 -- 허용 결과코드 0 / 100~102 / 200 / 500~502 / 601 / 700~701 (05 §9).

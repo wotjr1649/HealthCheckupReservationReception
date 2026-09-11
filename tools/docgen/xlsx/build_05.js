@@ -159,7 +159,8 @@ M.emit(wb, '05_검진_예약접수_SP계약서.xlsx', [
   ['SP 20개', S1.length, 20],
   ['SP Parameter 전건', spParams, 113],
   ['TVF Parameter 전건', tvfParams, 19],
-  ['Result Set 행 (RS0 100 + RS1~RS5 171)', S3.length, 271],
+  // [R18] SELECT_예약접수상세 가 RS5 추가검사구성 7행을 얻었다 (05 §8.2).
+  ['Result Set 행 (RS0 100 + RS1~RS5 178)', S3.length, 278],
   ['ResultCode 종수', S4.length, 40],
   ['TVF 시트 행 (책임 4 + 입력 19 + 반환 28)', S5.length, 51],
 ]).catch(e => { console.error(e); process.exit(1); });
