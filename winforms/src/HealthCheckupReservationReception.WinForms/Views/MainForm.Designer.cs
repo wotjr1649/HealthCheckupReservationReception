@@ -151,7 +151,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnRsvCancel.Id = 11;
             this.barBtnRsvCancel.Name = "barBtnRsvCancel";
             this.barBtnRsvCancel.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnRsvCancel.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
+            this.barBtnRsvCancel.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnWorkAction_ItemClick);
             //
             // barBtnRcpStart
             //
@@ -183,7 +183,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnRcpCancel.Id = 20;
             this.barBtnRcpCancel.Name = "barBtnRcpCancel";
             this.barBtnRcpCancel.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnRcpCancel.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
+            this.barBtnRcpCancel.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnWorkAction_ItemClick);
             //
             // barBtnRcpLog
             //

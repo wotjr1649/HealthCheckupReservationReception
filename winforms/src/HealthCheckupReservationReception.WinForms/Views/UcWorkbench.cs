@@ -46,9 +46,35 @@ namespace HealthCheckupReservationReception.Views
         /// Presenter 를 붙인다. UserControl 은 디자이너가 만들어야 하므로 생성자로 받지 않는다
         /// (킷 `references/mvp-wiring.md`).
         /// </summary>
-        public void Attach(IWorkService service, ICommonStatusService statusService)
+        public void Attach(
+            IWorkService service,
+            IReservationService reservationService,
+            ICommonStatusService statusService,
+            string operatorName)
         {
-            _presenter = new WorkbenchPresenter(this, service, statusService);
+            _presenter = new WorkbenchPresenter(this, service, reservationService, statusService, operatorName);
+        }
+
+        /// <summary>
+        /// Ribbon 이 누른 업무 동작을 Presenter 로 올린다 (03 §9.6 · §9.7). Ribbon 은 MainForm 이
+        /// 갖고 판정과 실행은 Presenter 가 하므로 이 화면은 지나가는 길이다.
+        /// </summary>
+        public void RequestAction(string actionCode)
+        {
+            EventHandler<string> handler = ActionRequested;
+            if (handler != null)
+            {
+                using (new clsBusyScope(this)) { handler(this, actionCode); }
+            }
+        }
+
+        public event EventHandler<string> ActionRequested;
+
+        public bool Confirm(string message)
+        {
+            Form owner = FindForm();
+            return XtraMessageBox.Show(owner, message, owner == null ? string.Empty : owner.Text,
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
         }
 
         /// <summary>

@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
 using DevExpress.XtraEditors;
+using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
 using HealthCheckupReservationReception.Presenters;
 using HealthCheckupReservationReception.Services;
@@ -295,7 +296,7 @@ namespace HealthCheckupReservationReception.Views
             {
                 var workbench = new UcWorkbench();
                 workbench.WorkActionsChanged += WorkView_WorkActionsChanged;
-                workbench.Attach(_workService, _statusService);
+                workbench.Attach(_workService, _reservationService, _statusService, _operatorName);
                 _workView = workbench;
                 return workbench;
             }
@@ -508,6 +509,31 @@ namespace HealthCheckupReservationReception.Views
         private void barBtnWorkLog_ItemClick(object sender, ItemClickEventArgs e)
         {
             if (_workView != null) { OpenChangeLog(_workView.CurrentLogTarget()); }
+        }
+
+        /// <summary>
+        /// 03 §9.6 · §9.7 — 업무 Action 을 Workbench 로 넘긴다. **어느 것인지는 업무동작코드가
+        /// 말한다** (05 §8.2). Ribbon 버튼마다 핸들러를 두면 같은 이름이 다섯 쌍 생긴다.
+        /// </summary>
+        private void barBtnWorkAction_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (_workView == null)
+            {
+                return;
+            }
+
+            _workView.RequestAction(ActionOf(e.Item));
+        }
+
+        /// <summary>Ribbon 버튼 ↔ 05 §8.2 업무동작코드. 여기 한 곳에서만 잇는다.</summary>
+        private string ActionOf(BarItem item)
+        {
+            if (item == barBtnRsvEdit) { return DbWorkAction.EditReservation; }
+            if (item == barBtnRsvCancel) { return DbWorkAction.CancelReservation; }
+            if (item == barBtnRcpStart) { return DbWorkAction.StartReception; }
+            if (item == barBtnRcpExtra) { return DbWorkAction.EditExtra; }
+            if (item == barBtnRcpCancel) { return DbWorkAction.CancelReception; }
+            return null;
         }
 
         private void barBtnNotImplemented_ItemClick(object sender, ItemClickEventArgs e)

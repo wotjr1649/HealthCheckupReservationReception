@@ -18,6 +18,21 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>Grid 의 행 선택이 바뀌었다. 선택이 없으면 null 이다 (03 §9.4).</summary>
         event EventHandler<long?> SelectionChanged;
 
+        /// <summary>
+        /// Ribbon 의 업무 Action 을 눌렀다 (03 §9.6 · §9.7). **어느 것인지는 인자가 말한다** —
+        /// 05 §8.2 의 업무동작코드 다섯이 이미 그 이름을 갖고 있으므로 이벤트를 다섯으로
+        /// 늘리지 않는다 (`DbWorkAction`).
+        /// </summary>
+        event EventHandler<string> ActionRequested;
+
+        /// <summary>
+        /// 03 §13 취소 확인. `[확인]` 이면 true 다.
+        ///
+        /// [X] **화면이 묻는 길을 하나로 모은다.** 시험이 이것만 덮어쓰면 회귀가 사람 손을
+        ///     기다리지 않는다 (2026-09-11 사용자 지적 · `FrmReservation.Confirm` 과 같은 규약).
+        /// </summary>
+        bool Confirm(string message);
+
         // 조회조건 (03 §9.3). 화면이 담은 그대로 넘긴다 — 정규화는 Service 가 한다.
         DateTime? FromDate { get; }
         DateTime? ToDate { get; }

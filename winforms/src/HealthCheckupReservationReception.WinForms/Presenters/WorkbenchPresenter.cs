@@ -42,22 +42,45 @@ namespace HealthCheckupReservationReception.Presenters
             DbWorkStatus.Reserved, DbWorkStatus.Received, DbWorkStatus.CancelledReception,
         };
 
+        // 03 §13 의 확인 문구 — **되돌릴 수 없다**는 것이 두 문장의 핵심이다.
+        private const string CancelReservationAsk =
+            "선택한 예약을 취소하시겠습니까?"
+            + "\n취소 후 기존 예약으로 복원할 수 없습니다.";
+        private const string CancelReceptionAsk =
+            "선택한 접수를 취소하시겠습니까?"
+            + "\n예약 상태로 되돌아가지 않으며 해당 업무 전체가 취소됩니다.";
+
         private readonly IWorkbenchView _view;
         private readonly IWorkService _service;
+        private readonly IReservationService _reservationService;
         private readonly ICommonStatusService _statusService;
+        private readonly string _operatorName;
+
+        // 마지막으로 읽은 상세. 업무 Action 이 실어 보낼 `행버전` 이 여기서 나온다 —
+        // 목록 행(05 §8.1 RS1)에는 `행버전` 이 없다.
 
         // 03 §9.1 — 상단에서 [예약 관리] 로 들어오는 것이 기본이다.
         private WorkContext _context = WorkContext.Reservation;
         private string[] _statuses = ReservationStatuses;
 
-        public WorkbenchPresenter(IWorkbenchView view, IWorkService service, ICommonStatusService statusService)
+        private WorkDetailDto _detail;
+
+        public WorkbenchPresenter(
+            IWorkbenchView view,
+            IWorkService service,
+            IReservationService reservationService,
+            ICommonStatusService statusService,
+            string operatorName)
         {
             _view = view;
             _service = service;
+            _reservationService = reservationService;
             _statusService = statusService;
+            _operatorName = operatorName;
 
             _view.SearchRequested += OnSearchRequested;
             _view.SelectionChanged += OnSelectionChanged;
+            _view.ActionRequested += OnActionRequested;
 
             _view.ContextTitle = TitleOf(_context);
             _view.StatusChoices = _statuses;
@@ -276,6 +299,89 @@ namespace HealthCheckupReservationReception.Presenters
             return kept;
         }
 
+        /// <summary>
+        /// 03 §9.6 · §9.7 의 업무 Action. **다섯이 한 입구로 들어온다** — 어느 것인지는
+        /// 05 §8.2 의 업무동작코드가 말한다 (`DbWorkAction`). 이벤트를 다섯으로 늘리면
+        /// 같은 이름이 화면·Presenter·Ribbon 세 곳에 생긴다 (ROOT AGENTS.md §6).
+        ///
+        /// **여기가 맡는 것은 창을 열지 않는 둘**(취소)이다. 모달을 여는 `[예약변경]`·`[접수]`
+        /// 는 MainForm 이 맡는다 — 모달의 주인은 Form 이고, UserControl 이 창을 띄우면
+        /// 그 창의 부모가 누구인지가 화면마다 달라진다.
+        ///
+        /// [X] **허용여부를 여기서 다시 재지 않는다.** Ribbon 이 이미 RS4 `허용여부` 그대로
+        ///     닫혀 있고(§9.6), 최종 판정은 어차피 SP 다. 화면이 한 번 더 재면 같은 판정이
+        ///     세 곳에 생긴다.
+        /// </summary>
+        private void OnActionRequested(object sender, string actionCode)
+        {
+            if (_detail == null)
+            {
+                _view.ValidationMessage = "먼저 목록에서 행을 선택하십시오.";
+                return;
+            }
+
+            if (DbWorkAction.CancelReservation.Equals(actionCode, StringComparison.Ordinal))
+            {
+                Run(CancelReservationAsk, _reservationService.Cancel, "예약을 취소하지 못했습니다.");
+            }
+            else if (DbWorkAction.CancelReception.Equals(actionCode, StringComparison.Ordinal))
+            {
+                Run(CancelReceptionAsk, _service.CancelReception, "접수를 취소하지 못했습니다.");
+            }
+        }
+
+        /// <summary>
+        /// 03 §13 — 묻고, 부르고, 다시 읽는다. 취소 둘이 글자 하나까지 같은 길이라 한 벌이다.
+        ///
+        /// [X] **성공해도 목록을 다시 읽는다.** 상태가 바뀌었고 `행버전` 도 바뀌었다 —
+        ///     화면에 남은 옛 값으로 다음 Action 을 걸면 `601` 이 난다.
+        /// </summary>
+        private void Run(
+            string question,
+            Func<WorkActionRequest, OperationResult<WorkSaveReadDto>> call,
+            string failure)
+        {
+            if (!_view.Confirm(question))
+            {
+                return;
+            }
+
+            long workId = _detail.WorkId;
+            OperationResult<WorkSaveReadDto> result;
+            try
+            {
+                result = call(new WorkActionRequest
+                {
+                    WorkId = workId,
+                    RowVersion = _detail.RowVersion,
+                    OperatorName = _operatorName,
+                });
+            }
+            catch (Exception)
+            {
+                // 예외 본문을 화면에 싣지 않는다 (킷 §6).
+                _view.ValidationMessage = failure;
+                return;
+            }
+
+            if (result == null || !result.IsSuccess)
+            {
+                _view.ValidationMessage = result == null ? failure : result.Message;
+                return;
+            }
+
+            // DB 가 실패 결과코드를 준 경우다 — 사유를 그대로 적고 **최신값을 다시 읽는다**.
+            // 행버전 충돌(601)이면 그 다시 읽기가 곧 복구다.
+            if (result.Value.Result != null && !result.Value.Result.Success)
+            {
+                Target(workId);
+                _view.ValidationMessage = result.Value.Result.Message;
+                return;
+            }
+
+            Target(workId);
+        }
+
         private static bool HasCondition(WorkSearchRequest request)
         {
             return request.FromDate != null
@@ -312,6 +418,7 @@ namespace HealthCheckupReservationReception.Presenters
             }
 
             WorkDetailReadDto read = result.Value;
+            _detail = read.Detail;
             _view.Detail = read.Detail;
             _view.NexItems = read.NexItems;
             _view.AexItems = read.AexItems;
@@ -320,6 +427,7 @@ namespace HealthCheckupReservationReception.Presenters
 
         private void ClearSelection()
         {
+            _detail = null;
             _view.Detail = null;
             _view.NexItems = new List<WorkExamItemDto>();
             _view.AexItems = new List<WorkExamItemDto>();

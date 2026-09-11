@@ -21,7 +21,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView { FromDate = Today, ToDate = Today };
             var service = new FakeWorkService { SearchResult = Ok(OneRow()) };
-            var presenter = new WorkbenchPresenter(view, service, Status(Today));
+            var presenter = new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             presenter.LoadInitial();
 
@@ -37,7 +37,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView { FromDate = Today.AddDays(1), ToDate = Today };
             var service = new FakeWorkService { SearchResult = Ok(OneRow()) };
-            new WorkbenchPresenter(view, service, Status(Today));
+            new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             view.RaiseSearchRequested();
 
@@ -52,7 +52,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView { StatusCode = "RSV" };
             var service = new FakeWorkService { SearchResult = Ok(OneRow()) };
-            new WorkbenchPresenter(view, service, Status(Today));
+            new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             view.RaiseSearchRequested();
 
@@ -65,7 +65,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView { ChartNo = "C-0001" };
             var service = new FakeWorkService { SearchResult = Ok(new List<WorkListItemDto>()) };
-            new WorkbenchPresenter(view, service, Status(Today));
+            new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             view.RaiseSearchRequested();
 
@@ -84,7 +84,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 SearchResult = Ok(OneRow()),
                 DetailResult = OkDetail(Allowed(DbWorkAction.EditReservation)),
             };
-            new WorkbenchPresenter(view, service, Status(Today));
+            new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
             view.RaiseSelectionChanged(77);
             Assert.IsNotNull(view.Detail, "먼저 상세가 서 있어야 이 시험이 뜻을 갖는다");
 
@@ -107,7 +107,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             {
                 DetailResult = OkDetail(Allowed(DbWorkAction.EditReservation, DbWorkAction.CancelReservation)),
             };
-            new WorkbenchPresenter(view, service, Status(Today));
+            new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             view.RaiseSelectionChanged(77);
 
@@ -129,7 +129,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView();
             var service = new FakeWorkService { DetailResult = OkDetail(Allowed()) };
-            new WorkbenchPresenter(view, service, Status(Today));
+            new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             view.RaiseSelectionChanged(77);
 
@@ -152,7 +152,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 DetailResult = OkDetail(Allowed(
                     DbWorkAction.StartReception, DbWorkAction.EditExtra, DbWorkAction.CancelReception)),
             };
-            new WorkbenchPresenter(view, service, Status(Today));
+            new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             view.RaiseSelectionChanged(77);
 
@@ -167,7 +167,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView();
             var service = new FakeWorkService { DetailResult = OkDetail(Allowed(DbWorkAction.EditReservation)) };
-            new WorkbenchPresenter(view, service, Status(Today));
+            new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
             view.RaiseSelectionChanged(77);
 
             view.RaiseSelectionChanged(null);
@@ -185,7 +185,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             {
                 DetailResult = OperationResult<WorkDetailReadDto>.Failure("대상 업무를 찾을 수 없습니다."),
             };
-            new WorkbenchPresenter(view, service, Status(Today));
+            new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             view.RaiseSelectionChanged(77);
 
@@ -203,7 +203,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             {
                 SearchFailure = new InvalidOperationException("서버 DESKTOP-XYZ 의 로그인에 실패했습니다"),
             };
-            new WorkbenchPresenter(view, service, Status(Today));
+            new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             view.RaiseSearchRequested();
 
@@ -222,7 +222,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             {
                 SearchResult = OperationResult<IList<WorkListItemDto>>.Failure("읽지 못했습니다."),
             };
-            var presenter = new WorkbenchPresenter(view, service, Status(Today));
+            var presenter = new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             presenter.LoadInitial();
 
@@ -236,7 +236,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public void 기본_Context_는_예약_관리다()
         {
             var view = new FakeWorkbenchView();
-            new WorkbenchPresenter(view, new FakeWorkService(), Status(Today));
+            new WorkbenchPresenter(view, new FakeWorkService(), new FakeReservationService(), Status(Today), "접수1번창구");
 
             Assert.AreEqual("예약 관리", view.ContextTitle);
         }
@@ -248,7 +248,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView();
             var service = new FakeWorkService { DetailResult = OkDetail(Allowed(DbWorkAction.EditReservation)) };
-            var presenter = new WorkbenchPresenter(view, service, Status(Today));
+            var presenter = new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
             view.RaiseSelectionChanged(77);
 
             presenter.OpenContext(WorkContext.Reception, null);
@@ -272,7 +272,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 SearchResult = Ok(OneRow()),
                 DetailResult = OkDetail(Allowed(DbWorkAction.EditReservation)),
             };
-            var presenter = new WorkbenchPresenter(view, service, Status(Today));
+            var presenter = new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             presenter.OpenContext(WorkContext.Reservation, 77);
 
@@ -293,7 +293,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 SearchResult = Ok(new List<WorkListItemDto>()),
                 DetailResult = OkDetail(Allowed()),
             };
-            var presenter = new WorkbenchPresenter(view, service, Status(Today));
+            var presenter = new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             presenter.OpenContext(WorkContext.Reception, 77);
 
@@ -310,7 +310,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView { FromDate = Today.AddDays(-30) };
             var service = new FakeWorkService { SearchResult = Ok(OneRow()) };
-            var presenter = new WorkbenchPresenter(view, service, Status(Today));
+            var presenter = new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             presenter.OpenContext(WorkContext.Reception, null);
 
@@ -327,6 +327,120 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             return OperationResult<IList<WorkListItemDto>>.Success(rows);
         }
 
+        // ── 2026-09-11: 03 §13 취소 둘
+
+        /// <summary>
+        /// 03 §13.1 — 묻고, 부르고, 다시 읽는다. 문구의 핵심은 **되돌릴 수 없다**는 것이다.
+        /// </summary>
+        [TestMethod]
+        public void 예약취소는_묻고_행버전을_실어_보낸다()
+        {
+            var view = new FakeWorkbenchView { ConfirmAnswer = true, SelectFound = true };
+            var service = new FakeWorkService { SearchResult = Ok(OneRow()), DetailResult = OkDetail(Allowed()) };
+            var reservation = new FakeReservationService { Save = SavedOk() };
+            var presenter = new WorkbenchPresenter(view, service, reservation, Status(Today), "접수1번창구");
+            presenter.LoadInitial();
+            view.RaiseSelectionChanged(77);
+
+            view.RaiseAction(DbWorkAction.CancelReservation);
+
+            Assert.AreEqual(1, view.Questions.Count, "묻지 않았거나 두 번 물었다");
+            StringAssert.Contains(view.Questions[0], "복원할 수 없습니다");
+            Assert.AreEqual(77L, reservation.LastCancel.WorkId);
+            Assert.IsNotNull(reservation.LastCancel.RowVersion, "행버전을 안 실었다");
+            Assert.AreEqual("접수1번창구", reservation.LastCancel.OperatorName);
+        }
+
+        [TestMethod]
+        public void 아니오라고_하면_부르지_않는다()
+        {
+            var view = new FakeWorkbenchView { ConfirmAnswer = false, SelectFound = true };
+            var service = new FakeWorkService { SearchResult = Ok(OneRow()), DetailResult = OkDetail(Allowed()) };
+            var reservation = new FakeReservationService();
+            var presenter = new WorkbenchPresenter(view, service, reservation, Status(Today), "접수1번창구");
+            presenter.LoadInitial();
+            view.RaiseSelectionChanged(77);
+
+            view.RaiseAction(DbWorkAction.CancelReservation);
+
+            Assert.AreEqual(1, view.Questions.Count);
+            Assert.IsNull(reservation.LastCancel, "아니오라고 했는데 SP 를 불렀다");
+        }
+
+        [TestMethod]
+        public void 접수취소는_접수_계열_SP_로_간다()
+        {
+            var view = new FakeWorkbenchView { ConfirmAnswer = true, SelectFound = true };
+            var service = new FakeWorkService
+            {
+                SearchResult = Ok(OneRow()),
+                DetailResult = OkDetail(Allowed()),
+                SaveResult = SavedOk(),
+            };
+            var presenter = new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
+            presenter.LoadInitial();
+            view.RaiseSelectionChanged(77);
+
+            view.RaiseAction(DbWorkAction.CancelReception);
+
+            StringAssert.Contains(view.Questions[0], "되돌아가지 않으며");
+            Assert.AreEqual(77L, service.LastCancel.WorkId);
+        }
+
+        /// <summary>
+        /// [X] **DB 가 막아도 최신값을 다시 읽는다.** 행버전 충돌(601)이면 그 다시 읽기가 곧
+        ///     복구다 — 사유만 적고 옛 값을 두면 다음 Action 도 같은 이유로 막힌다.
+        /// </summary>
+        [TestMethod]
+        public void DB_가_막으면_사유를_적고_최신값을_다시_읽는다()
+        {
+            var view = new FakeWorkbenchView { ConfirmAnswer = true, SelectFound = true };
+            var service = new FakeWorkService { SearchResult = Ok(OneRow()), DetailResult = OkDetail(Allowed()) };
+            var reservation = new FakeReservationService
+            {
+                Save = OperationResult<WorkSaveReadDto>.Success(new WorkSaveReadDto
+                {
+                    Result = new DbResult
+                    {
+                        Success = false,
+                        Code = 601,
+                        Message = "다른 사용자가 예약·접수 업무를 변경했습니다. 최신 정보를 다시 조회하십시오.",
+                    },
+                }),
+            };
+            var presenter = new WorkbenchPresenter(view, service, reservation, Status(Today), "접수1번창구");
+            presenter.LoadInitial();
+            view.RaiseSelectionChanged(77);
+            int before = service.DetailCalls;
+
+            view.RaiseAction(DbWorkAction.CancelReservation);
+
+            StringAssert.Contains(view.ValidationMessage, "최신 정보를 다시 조회");
+            Assert.IsTrue(service.DetailCalls > before, "막힌 뒤 최신값을 다시 읽지 않았다");
+        }
+
+        [TestMethod]
+        public void 행이_없으면_묻지도_않는다()
+        {
+            var view = new FakeWorkbenchView { ConfirmAnswer = true };
+            var reservation = new FakeReservationService();
+            new WorkbenchPresenter(view, new FakeWorkService(), reservation, Status(Today), "접수1번창구");
+
+            view.RaiseAction(DbWorkAction.CancelReservation);
+
+            Assert.AreEqual(0, view.Questions.Count);
+            Assert.IsNull(reservation.LastCancel);
+        }
+
+        private static OperationResult<WorkSaveReadDto> SavedOk()
+        {
+            return OperationResult<WorkSaveReadDto>.Success(new WorkSaveReadDto
+            {
+                Result = new DbResult { Success = true, Code = 0, Message = "정상 처리되었습니다." },
+                Row = new WorkSaveResultDto { WorkId = 77, StatusCode = "CNR", RowVersion = new byte[8] },
+            });
+        }
+
         // ── 2026-09-11: 탭은 창구다
 
         /// <summary>
@@ -338,7 +452,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView();
             var service = new FakeWorkService { SearchResult = Ok(AllStatuses()) };
-            var presenter = new WorkbenchPresenter(view, service, Status(Today));
+            var presenter = new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             presenter.OpenContext(WorkContext.Reception, null);
 
@@ -355,7 +469,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView();
             var service = new FakeWorkService { SearchResult = Ok(AllStatuses()) };
-            var presenter = new WorkbenchPresenter(view, service, Status(Today));
+            var presenter = new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             presenter.OpenContext(WorkContext.Reservation, null);
 
@@ -373,7 +487,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView();
             var service = new FakeWorkService { SearchResult = Ok(OneRow()) };
-            var presenter = new WorkbenchPresenter(view, service, Status(Today));
+            var presenter = new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
 
             presenter.OpenContext(WorkContext.Reception, null);
             Assert.AreEqual(Today, view.RangeFrom);
@@ -394,7 +508,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakeWorkbenchView { FromDate = Today.AddDays(-3) };
             var service = new FakeWorkService { SearchResult = Ok(OneRow()) };
             var status = new FakeCommonStatusService { Failure = new InvalidOperationException("끊겼다") };
-            var presenter = new WorkbenchPresenter(view, service, status);
+            var presenter = new WorkbenchPresenter(view, service, new FakeReservationService(), status, "접수1번창구");
 
             presenter.OpenContext(WorkContext.Reception, null);
 
@@ -582,6 +696,25 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         }
 
         public void ShowMessage(string message) { LastMessage = message; }
+
+        // 2026-09-11 — 03 §13 취소 확인. 시험은 답을 미리 정해 둔다.
+        public bool ConfirmAnswer { get; set; }
+        public IList<string> Questions { get { return _questions; } }
+        private readonly IList<string> _questions = new List<string>();
+
+        public bool Confirm(string message)
+        {
+            _questions.Add(message);
+            return ConfirmAnswer;
+        }
+
+        public event EventHandler<string> ActionRequested;
+
+        public void RaiseAction(string actionCode)
+        {
+            EventHandler<string> handler = ActionRequested;
+            if (handler != null) { handler(this, actionCode); }
+        }
 
         public void RaiseSearchRequested()
         {
