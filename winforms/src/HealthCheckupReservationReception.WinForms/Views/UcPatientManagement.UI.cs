@@ -42,9 +42,6 @@ namespace HealthCheckupReservationReception.Views
             _conditions.Add("생년월일", false, lciBirthday, deBirthday);
             _conditions.Add("휴대전화", false, lciMobilePhone, txtMobilePhone);
 
-            // 여섯째. 칸이 없는 조건이다 — 켜고 끄는 것 자체가 값이라 편집기를 붙이지 않는다.
-            _conditions.Add("예약 없는 수검자만", false, null, null);
-
             _columns = new clsColumnChooser(clbColumns, gvPatientList);
 
             // 2026-09-11 — 상세의 `예약·접수 이력`. 값은 DB 가 준 것이고 글로 바꾸는 규칙은

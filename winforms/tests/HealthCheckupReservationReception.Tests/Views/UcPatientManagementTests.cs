@@ -83,7 +83,11 @@ namespace HealthCheckupReservationReception.Tests.Views
                 // [X] 숨어 있어도 켜면 자리를 차지하므로 보이는 것만 세면 아무것도 못 잡는다.
                 //     반대로 EmptySpaceItem 은 남는 자리를 빨아들이는 쪽이라 세면 안 된다 —
                 //     조건 둘이 꺼져 있는 동안 그만큼 부풀어 있어 합이 늘 넘치게 나온다.
-                int need = 0;
+                //
+                // [X] **줄마다 따로 센다** (2026-09-11). 조회 영역이 두 줄이 되었다 —
+                //     `예약 없는 수검자만` 체크박스가 둘째 줄이다. 전부 한 줄로 더하면
+                //     넘치지 않는 배치도 넘친 것으로 잡힌다.
+                var rows = new Dictionary<int, int>();
                 foreach (BaseLayoutItem item in group.Items)
                 {
                     if (item is EmptySpaceItem)
@@ -91,11 +95,17 @@ namespace HealthCheckupReservationReception.Tests.Views
                         continue;
                     }
 
-                    need += item.MaxSize.Width > 0 ? item.MaxSize.Width : item.Size.Width;
+                    int y = item.Location.Y;
+                    int width = item.MaxSize.Width > 0 ? item.MaxSize.Width : item.Size.Width;
+                    rows[y] = (rows.ContainsKey(y) ? rows[y] : 0) + width;
                 }
 
-                Assert.IsTrue(need <= group.Size.Width,
-                    "조회 한 줄이 " + need + "px 인데 자리는 " + group.Size.Width + "px 다");
+                Assert.AreNotEqual(0, rows.Count, "조회 영역에 항목이 없다");
+                foreach (KeyValuePair<int, int> row in rows)
+                {
+                    Assert.IsTrue(row.Value <= group.Size.Width,
+                        "y=" + row.Key + " 줄이 " + row.Value + "px 인데 자리는 " + group.Size.Width + "px 다");
+                }
             });
         }
 
@@ -144,20 +154,22 @@ namespace HealthCheckupReservationReception.Tests.Views
         // 여섯째 `예약 없는 수검자만` 은 2026-09-11 grilling 이 더한 것이다. SP 로 가지 않고
         // 화면이 거르므로 여닫을 칸이 없다 — 앞 다섯과 성질이 다르다.
         [TestMethod]
-        public void 조회조건은_여섯이고_기본은_앞_셋만_켜져_있다()
+        public void 조회조건은_다섯이고_기본은_앞_셋만_켜져_있다()
         {
             RunSta(() =>
             {
                 var screen = new UcPatientManagement();
                 CheckedListBoxControl list = Field<CheckedListBoxControl>(screen, "clbConditions");
 
-                Assert.AreEqual(6, list.Items.Count, "조회조건이 여섯이 아니다");
+                // 2026-09-11 — `예약 없는 수검자만` 이 드롭다운을 떠나 조회 영역의 체크박스가
+                // 되었다. 같은 조건을 두 곳에서 켜고 끄면 어느 쪽이 참인지 화면이 말하지 못한다.
+                Assert.AreEqual(5, list.Items.Count, "조회조건이 다섯이 아니다");
                 Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciChartNo").Visibility);
                 Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciName").Visibility);
                 Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciSocialNumber").Visibility);
                 Assert.AreEqual(LayoutVisibility.Never, Item(screen, "lciBirthday").Visibility, "생년월일은 기본이 꺼짐이다");
                 Assert.AreEqual(LayoutVisibility.Never, Item(screen, "lciMobilePhone").Visibility, "휴대전화는 기본이 꺼짐이다");
-                Assert.IsFalse(((IPatientManagementView)screen).ReservableOnly, "여섯째도 기본은 꺼짐이다");
+                Assert.IsFalse(((IPatientManagementView)screen).ReservableOnly, "체크박스도 기본은 꺼짐이다");
             });
         }
 

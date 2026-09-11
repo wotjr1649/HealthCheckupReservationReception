@@ -87,6 +87,9 @@ namespace HealthCheckupReservationReception.Views
             this.lciDetailAddressDetail = new DevExpress.XtraLayout.LayoutControlItem();
             this.lcgDetailMemo = new DevExpress.XtraLayout.LayoutControlGroup();
             this.lciDetailMemo = new DevExpress.XtraLayout.LayoutControlItem();
+            this.chkReservableOnly = new DevExpress.XtraEditors.CheckEdit();
+            this.lciReservableOnly = new DevExpress.XtraLayout.LayoutControlItem();
+            this.emptySpaceReservable = new DevExpress.XtraLayout.EmptySpaceItem();
             this.lcgDetailHistory = new DevExpress.XtraLayout.LayoutControlGroup();
             this.lciDetailHistory = new DevExpress.XtraLayout.LayoutControlItem();
             this.gcHistory = new DevExpress.XtraGrid.GridControl();
@@ -152,6 +155,8 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailAddressDetail)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgDetailMemo)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailMemo)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chkReservableOnly.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciReservableOnly)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgDetailHistory)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailHistory)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.gcHistory)).BeginInit();
@@ -169,6 +174,7 @@ namespace HealthCheckupReservationReception.Views
             this.lcMain.Controls.Add(this.cboColumns);
             this.lcMain.Controls.Add(this.btnSearch);
             this.lcMain.Controls.Add(this.gcPatientList);
+            this.lcMain.Controls.Add(this.chkReservableOnly);
             this.lcMain.Controls.Add(this.gcHistory);
             this.lcMain.Controls.Add(this.lblNotice);
             this.lcMain.Controls.Add(this.lblDetailReserve);
@@ -594,12 +600,14 @@ namespace HealthCheckupReservationReception.Views
             this.lciBirthday,
             this.lciMobilePhone,
             this.emptySpaceSearch,
+            this.lciReservableOnly,
+            this.emptySpaceReservable,
             this.lciSearch,
             this.lciConditions,
             this.lciColumns});
             this.lcgSearch.Location = new System.Drawing.Point(0, 0);
             this.lcgSearch.Name = "lcgSearch";
-            this.lcgSearch.Size = new System.Drawing.Size(1180, 26);
+            this.lcgSearch.Size = new System.Drawing.Size(1180, 52);
             this.lcgSearch.TextVisible = false;
             //
             // lblNotice
@@ -694,6 +702,42 @@ namespace HealthCheckupReservationReception.Views
             this.lciMobilePhone.Text = "휴대전화";
             this.lciMobilePhone.TextSize = new System.Drawing.Size(48, 14);
             //
+            // chkReservableOnly
+            //
+            // 2026-09-11 사용자 결정 — 조건 드롭다운 안에 숨겨 두었더니 있는 줄을 몰랐다.
+            // CheckEdit 이 제 캡션을 갖는다 — 항목 라벨을 두면 같은 말이 두 번 적힌다.
+            //
+            // [X] **첫 줄에 같이 못 선다.** 조건 다섯을 다 켜면 810 + 뒤 셋 326 = 1136 이고
+            //     줄이 1180 이라 남는 자리가 44 뿐이다. 체크박스를 끼우면 1284 가 되어
+            //     종료일 칸이 잘리던 그 고장이 돌아온다(UcPatientManagementTests 가 잡았다).
+            //     그래서 조회 영역의 **둘째 줄**이다 — 세로 26px 은 Grid 가 내줄 수 있다.
+            this.chkReservableOnly.Location = new System.Drawing.Point(16, 29);
+            this.chkReservableOnly.Name = "chkReservableOnly";
+            this.chkReservableOnly.Properties.Caption = "예약 없는 수검자만";
+            this.chkReservableOnly.Size = new System.Drawing.Size(140, 20);
+            this.chkReservableOnly.StyleController = this.lcMain;
+            this.chkReservableOnly.TabIndex = 4;
+            this.chkReservableOnly.CheckedChanged += new System.EventHandler(this.chkReservableOnly_CheckedChanged);
+            //
+            // lciReservableOnly
+            //
+            this.lciReservableOnly.Control = this.chkReservableOnly;
+            this.lciReservableOnly.Location = new System.Drawing.Point(0, 26);
+            this.lciReservableOnly.MaxSize = new System.Drawing.Size(148, 26);
+            this.lciReservableOnly.MinSize = new System.Drawing.Size(148, 26);
+            this.lciReservableOnly.Name = "lciReservableOnly";
+            this.lciReservableOnly.Size = new System.Drawing.Size(148, 26);
+            this.lciReservableOnly.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            this.lciReservableOnly.TextVisible = false;
+            //
+            // emptySpaceReservable
+            //
+            this.emptySpaceReservable.AllowHotTrack = false;
+            this.emptySpaceReservable.Location = new System.Drawing.Point(148, 26);
+            this.emptySpaceReservable.Name = "emptySpaceReservable";
+            this.emptySpaceReservable.Size = new System.Drawing.Size(1032, 26);
+            this.emptySpaceReservable.TextSize = new System.Drawing.Size(0, 0);
+            //
             // emptySpaceSearch
             //
             this.emptySpaceSearch.AllowHotTrack = false;
@@ -727,9 +771,9 @@ namespace HealthCheckupReservationReception.Views
             // lciPatientList
             //
             this.lciPatientList.Control = this.gcPatientList;
-            this.lciPatientList.Location = new System.Drawing.Point(0, 48);
+            this.lciPatientList.Location = new System.Drawing.Point(0, 74);
             this.lciPatientList.Name = "lciPatientList";
-            this.lciPatientList.Size = new System.Drawing.Size(1180, 839);
+            this.lciPatientList.Size = new System.Drawing.Size(1180, 813);
             this.lciPatientList.TextSize = new System.Drawing.Size(0, 0);
             this.lciPatientList.TextVisible = false;
             //
@@ -1082,6 +1126,8 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailAddressDetail)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgDetailMemo)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailMemo)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chkReservableOnly.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciReservableOnly)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgDetailHistory)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailHistory)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.gcHistory)).EndInit();
@@ -1160,6 +1206,9 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraLayout.LayoutControlGroup lcgDetailMemo;
         private DevExpress.XtraEditors.MemoEdit memoDetailMemo;
         private DevExpress.XtraLayout.LayoutControlItem lciDetailMemo;
+        private DevExpress.XtraEditors.CheckEdit chkReservableOnly;
+        private DevExpress.XtraLayout.LayoutControlItem lciReservableOnly;
+        private DevExpress.XtraLayout.EmptySpaceItem emptySpaceReservable;
         private DevExpress.XtraLayout.LayoutControlGroup lcgDetailHistory;
         private DevExpress.XtraLayout.LayoutControlItem lciDetailHistory;
         private DevExpress.XtraGrid.GridControl gcHistory;

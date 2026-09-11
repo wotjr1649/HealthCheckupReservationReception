@@ -121,9 +121,17 @@ namespace HealthCheckupReservationReception.Views
         /// 여섯째 조회조건 `예약 없는 수검자만`. 앞 다섯과 달리 **SP 로 가지 않는다** —
         /// SP-PAT-01 은 예약을 모르므로 Presenter 가 이어 붙인 뒤 거른다.
         /// </summary>
+        /// <summary>
+        /// 여섯째 조회조건. **조건 드롭다운이 아니라 조회 줄의 체크박스다**
+        /// (2026-09-11 사용자 결정) — 드롭다운 안에 두었더니 있는 줄을 몰랐다.
+        ///
+        /// 나머지 다섯과 성질이 다르다: 입력칸이 없고 SP 도 모르며 화면이 거른다.
+        /// 그래서 `clsSearchConditions` 의 켜고 끄는 목록에도 두지 않는다 — 같은 조건을
+        /// 두 곳에서 켜고 끄게 되면 어느 쪽이 참인지 화면이 말하지 못한다.
+        /// </summary>
         public bool ReservableOnly
         {
-            get { return _conditions != null && _conditions.IsOn("예약 없는 수검자만"); }
+            get { return chkReservableOnly.Checked; }
         }
 
         public string ReserveStatusText
@@ -201,6 +209,15 @@ namespace HealthCheckupReservationReception.Views
         }
 
         private void btnSearch_Click(object sender, EventArgs e)
+        {
+            RaiseSearchRequested();
+        }
+
+        /// <summary>
+        /// 눈에 보이는 체크박스는 누르는 즉시 목록이 바뀌어야 한다 — `[조회]` 를 한 번 더
+        /// 눌러야 듣는 토글은 고장으로 읽힌다.
+        /// </summary>
+        private void chkReservableOnly_CheckedChanged(object sender, EventArgs e)
         {
             RaiseSearchRequested();
         }
