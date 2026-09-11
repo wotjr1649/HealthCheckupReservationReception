@@ -15,7 +15,7 @@ PASS 12_예약접수목록_조건없음 Result Set 계약 일치 (1개 RS · RS0
 PASS 13_예약접수목록_날짜범위 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 14_예약접수상세_미존재 Result Set 계약 일치 (1개 RS · RS0 Code=500)
 PASS 15_예약접수상세_NEX0행701 Result Set 계약 일치 (1개 RS · RS0 Code=701)
-PASS 16_예약접수상세_정상 Result Set 계약 일치 (5개 RS · RS0 Code=0)
+PASS 16_예약접수상세_정상 Result Set 계약 일치 (6개 RS · RS0 Code=0)
 PASS 17_예약가능정보_RowVersion단독 Result Set 계약 일치 (1개 RS · RS0 Code=102)
 PASS 18_예약가능정보_AEX_NULL Result Set 계약 일치 (1개 RS · RS0 Code=100)
 PASS 19_예약가능정보_WALKIN_날짜불일치 Result Set 계약 일치 (1개 RS · RS0 Code=102)

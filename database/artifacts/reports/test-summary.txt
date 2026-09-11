@@ -1,22 +1,14 @@
 === Phase 4 테스트 요약 ===
-생성시각: 2026-09-09T22:58:06+09:00
-회귀 로그: artifacts/logs/full_test_run_r12_off.log
-회차 시각: === Deploy 시작 2026-09-09T22:53:17.8741076+09:00 ===
+생성시각: 2026-09-11T15:09:20+09:00
+회귀 로그: artifacts/logs/full_test_run_r19.log
+회차 시각: === Deploy 시작 2026-09-11T14:58:51.7752351+09:00 ===
 
 --- 이 회차의 판정 (test.sh 출력 그대로) ---
-NOT RUN CON-001 업무시간(월~토 09:00~17:58, 비휴무일) 밖 — Write SP 가 308/309 를 낸다
-NOT RUN CON-002 업무시간(월~토 09:00~17:58, 비휴무일) 밖 — Write SP 가 308/309 를 낸다
-NOT RUN CON-003 업무시간(월~토 09:00~17:58, 비휴무일) 밖 — Write SP 가 308/309 를 낸다
-NOT RUN CON-004 업무시간(월~토 09:00~17:58, 비휴무일) 밖 — Write SP 가 308/309 를 낸다
-NOT RUN CON-005 업무시간(월~토 09:00~17:58, 비휴무일) 밖 — Write SP 가 308/309 를 낸다
-NOT RUN CON-006 업무시간(월~토 09:00~17:58, 비휴무일) 밖 — Write SP 가 308/309 를 낸다
-NOT RUN CON-007 업무시간(월~토 09:00~17:58, 비휴무일) 밖 — Write SP 가 308/309 를 낸다
-NOT RUN CON-008 업무시간(월~토 09:00~17:58, 비휴무일) 밖 — Write SP 가 308/309 를 낸다
 NOT RUN RBD-001 잘못된 서버명(50020) - 인스턴스가 1개뿐이라 음성 시험 불가
-!! NOT RUN 9 건 — 아래 요약을 완료로 읽지 않는다 (CLAUDE.md §10)
-=== 실패 0건 (NOT RUN 9 건) ===
+!! NOT RUN 1 건 — 아래 요약을 완료로 읽지 않는다 (CLAUDE.md §10)
+=== 실패 0건 (NOT RUN 1 건) ===
 
-PASS=273  FAIL=0  SKIP=56
+PASS=411  FAIL=0  SKIP=0
 
 --- SQL 시험 파일별 (이 회차가 쓴 것만) ---
 test_00.log                        PASS=4    FAIL=0    SKIP=0
@@ -26,9 +18,9 @@ test_00b.log                       PASS=3    FAIL=0    SKIP=0
 test_03.log                        PASS=51   FAIL=0    SKIP=0
 test_04.log                        PASS=1    FAIL=0    SKIP=0
 test_05.log                        PASS=26   FAIL=0    SKIP=0
-test_06.log                        PASS=1    FAIL=0    SKIP=0
-test_07.log                        PASS=1    FAIL=0    SKIP=0
-test_08.log                        PASS=1    FAIL=0    SKIP=0
+test_06.log                        PASS=25   FAIL=0    SKIP=0
+test_07.log                        PASS=25   FAIL=0    SKIP=0
+test_08.log                        PASS=8    FAIL=0    SKIP=0
 test_15.log                        PASS=18   FAIL=0    SKIP=0
 test_14.log                        PASS=3    FAIL=0    SKIP=0
 
@@ -45,7 +37,8 @@ PASS CON-008 접수완료 vs WalkIn 신규 → 최종 20 (21 이면 §24.2 결�
 --- artifacts/reports/contract-verify.txt ---
 PASS SEL-025 조회 SP 의 Capacity = 20 (AM·PM 동일) — 저장 쪽은 CON-002·008 이 고정
 PASS 01_공통업무상태 Result Set 계약 일치 (2개 RS · RS0 Code=0)
-PASS 02_수검자목록_조건없음 Result Set 계약 일치 (1개 RS · RS0 Code=103)
+PASS 02_수검자목록_전체조회 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS 02b_수검자목록_차트번호_포함검색 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 03_수검자목록_ChartNo Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 04_수검자목록_0건 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 05_수검자목록_주민번호형식 Result Set 계약 일치 (1개 RS · RS0 Code=101)
@@ -59,7 +52,7 @@ PASS 12_예약접수목록_조건없음 Result Set 계약 일치 (1개 RS · RS0
 PASS 13_예약접수목록_날짜범위 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 14_예약접수상세_미존재 Result Set 계약 일치 (1개 RS · RS0 Code=500)
 PASS 15_예약접수상세_NEX0행701 Result Set 계약 일치 (1개 RS · RS0 Code=701)
-PASS 16_예약접수상세_정상 Result Set 계약 일치 (5개 RS · RS0 Code=0)
+PASS 16_예약접수상세_정상 Result Set 계약 일치 (6개 RS · RS0 Code=0)
 PASS 17_예약가능정보_RowVersion단독 Result Set 계약 일치 (1개 RS · RS0 Code=102)
 PASS 18_예약가능정보_AEX_NULL Result Set 계약 일치 (1개 RS · RS0 Code=100)
 PASS 19_예약가능정보_WALKIN_날짜불일치 Result Set 계약 일치 (1개 RS · RS0 Code=102)
@@ -69,30 +62,30 @@ PASS 22_예약가능정보_Scope_SLOT Result Set 계약 일치 (6개 RS · RS0 C
 PASS 23_예약가능정보_Scope_EXTRA Result Set 계약 일치 (6개 RS · RS0 Code=0)
 PASS 24_예약가능정보_Scope_SLOT_EXTRA Result Set 계약 일치 (6개 RS · RS0 Code=0)
 PASS 25_예약가능정보_Scope_NONE Result Set 계약 일치 (6개 RS · RS0 Code=0)
-SKIP CWR-000_fixture 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-001_접수완료_미존재_WorkId 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-002_접수완료_미래예약일 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-003_접수완료_stale_RowVersion 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-004_접수완료_CNR_Work 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-005_접수완료_NEX0행 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-006_접수완료_성공 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-007_접수완료_이미_RCP 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-008_접수완료_과거예약일 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-009_접수완료_마감경과 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-011_접수완료_Master역할불일치 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-020_접수추가검사_동일집합 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-021_접수추가검사_실제변경 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-022_접수추가검사_전체해제 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-023_접수추가검사_성별불충족 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-024_접수추가검사_NEX중복 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-025_접수추가검사_RSV상태 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-026_접수추가검사_stale_RowVersion 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-040_접수취소_RSV상태 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-041_접수취소_stale_RowVersion 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-042_접수취소_성공 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-043_접수취소_이미_CNC 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-044_CNC_예약변경_불가 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP CWR-099_cleanup 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
+PASS CWR-000_fixture Result Set 계약 일치 (0개 RS · RS0 Code=undefined)
+PASS CWR-001_접수완료_미존재_WorkId Result Set 계약 일치 (1개 RS · RS0 Code=500)
+PASS CWR-002_접수완료_미래예약일 Result Set 계약 일치 (1개 RS · RS0 Code=503)
+PASS CWR-003_접수완료_stale_RowVersion Result Set 계약 일치 (1개 RS · RS0 Code=601)
+PASS CWR-004_접수완료_CNR_Work Result Set 계약 일치 (1개 RS · RS0 Code=502)
+PASS CWR-005_접수완료_NEX0행 Result Set 계약 일치 (1개 RS · RS0 Code=701)
+PASS CWR-006_접수완료_성공 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS CWR-007_접수완료_이미_RCP Result Set 계약 일치 (1개 RS · RS0 Code=502)
+PASS CWR-008_접수완료_과거예약일 Result Set 계약 일치 (1개 RS · RS0 Code=503)
+PASS CWR-009_접수완료_마감경과 Result Set 계약 일치 (1개 RS · RS0 Code=304)
+PASS CWR-011_접수완료_Master역할불일치 Result Set 계약 일치 (1개 RS · RS0 Code=701)
+PASS CWR-020_접수추가검사_동일집합 Result Set 계약 일치 (2개 RS · RS0 Code=1)
+PASS CWR-021_접수추가검사_실제변경 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS CWR-022_접수추가검사_전체해제 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS CWR-023_접수추가검사_성별불충족 Result Set 계약 일치 (1개 RS · RS0 Code=411)
+PASS CWR-024_접수추가검사_NEX중복 Result Set 계약 일치 (1개 RS · RS0 Code=412)
+PASS CWR-025_접수추가검사_RSV상태 Result Set 계약 일치 (1개 RS · RS0 Code=502)
+PASS CWR-026_접수추가검사_stale_RowVersion Result Set 계약 일치 (1개 RS · RS0 Code=601)
+PASS CWR-040_접수취소_RSV상태 Result Set 계약 일치 (1개 RS · RS0 Code=502)
+PASS CWR-041_접수취소_stale_RowVersion Result Set 계약 일치 (1개 RS · RS0 Code=601)
+PASS CWR-042_접수취소_성공 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS CWR-043_접수취소_이미_CNC Result Set 계약 일치 (1개 RS · RS0 Code=502)
+PASS CWR-044_CNC_예약변경_불가 Result Set 계약 일치 (1개 RS · RS0 Code=502)
+PASS CWR-099_cleanup Result Set 계약 일치 (0개 RS · RS0 Code=undefined)
 PASS HOL-001_휴무일목록_정상 Result Set 계약 일치 (3개 RS · RS0 Code=0)
 PASS HOL-002_휴무일목록_시작일_NULL Result Set 계약 일치 (1개 RS · RS0 Code=100)
 PASS HOL-003_휴무일목록_기간역전 Result Set 계약 일치 (1개 RS · RS0 Code=104)
@@ -124,38 +117,38 @@ PASS PWR-026_수정_미존재_PatientId Result Set 계약 일치 (1개 RS · RS0
 PASS PWR-027_주민번호변경_RCP보유 Result Set 계약 일치 (1개 RS · RS0 Code=205)
 PASS PWR-028_차트번호변경_RCP보유 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS PWR-099_cleanup Result Set 계약 일치 (0개 RS · RS0 Code=undefined)
-SKIP RWR-000_fixture 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-001_신규예약_과거일 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-002_신규예약_일요일 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-003_신규예약_휴무일 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-004_신규예약_토요일PM 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-005_신규예약_WALKIN_날짜불일치 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-006_신규예약_TGT_미달 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-007_신규예약_AEX_성별불충족 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-008_신규예약_성공 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-010_신규예약_타유효업무1건 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-011_신규예약_타유효업무2건 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-012_신규예약_정원마감 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-020_예약변경_변경없음 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-021_예약변경_시간대만 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-022_예약변경_AEX만 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-023_예약변경_예약일만 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-024_예약변경_시간대_AEX 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-025_예약변경_stale_RowVersion 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-026_예약변경_CNR_Work 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-027_예약변경_미존재_WorkId 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-028_예약변경_자기Work_오탐없음 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-029_예약변경_TGT_비대상 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-030_예약변경_정원유지 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-031_예약변경_나이경계_AEX중복 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-032_신규예약_타유효업무1건_재확인 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-033_신규예약_타유효업무2건_재확인 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-034_예약변경_NEX상한초과 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-040_예약취소_미존재_WorkId 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-041_예약취소_stale_RowVersion 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-042_예약취소_이미_CNR 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-043_예약취소_성공 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
-SKIP RWR-099_cleanup 업무시간 밖 — 예약·접수 Write 는 308/309 를 업무 Rule 보다 먼저 판정한다
+PASS RWR-000_fixture Result Set 계약 일치 (0개 RS · RS0 Code=undefined)
+PASS RWR-001_신규예약_과거일 Result Set 계약 일치 (1개 RS · RS0 Code=300)
+PASS RWR-002_신규예약_일요일 Result Set 계약 일치 (1개 RS · RS0 Code=301)
+PASS RWR-003_신규예약_휴무일 Result Set 계약 일치 (1개 RS · RS0 Code=302)
+PASS RWR-004_신규예약_토요일PM Result Set 계약 일치 (1개 RS · RS0 Code=303)
+PASS RWR-005_신규예약_WALKIN_날짜불일치 Result Set 계약 일치 (1개 RS · RS0 Code=102)
+PASS RWR-006_신규예약_TGT_미달 Result Set 계약 일치 (1개 RS · RS0 Code=400)
+PASS RWR-007_신규예약_AEX_성별불충족 Result Set 계약 일치 (1개 RS · RS0 Code=411)
+PASS RWR-008_신규예약_성공 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS RWR-010_신규예약_타유효업무1건 Result Set 계약 일치 (1개 RS · RS0 Code=306)
+PASS RWR-011_신규예약_타유효업무2건 Result Set 계약 일치 (1개 RS · RS0 Code=701)
+PASS RWR-012_신규예약_정원마감 Result Set 계약 일치 (1개 RS · RS0 Code=305)
+PASS RWR-020_예약변경_변경없음 Result Set 계약 일치 (2개 RS · RS0 Code=1)
+PASS RWR-021_예약변경_시간대만 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS RWR-022_예약변경_AEX만 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS RWR-023_예약변경_예약일만 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS RWR-024_예약변경_시간대_AEX Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS RWR-025_예약변경_stale_RowVersion Result Set 계약 일치 (1개 RS · RS0 Code=601)
+PASS RWR-026_예약변경_CNR_Work Result Set 계약 일치 (1개 RS · RS0 Code=502)
+PASS RWR-027_예약변경_미존재_WorkId Result Set 계약 일치 (1개 RS · RS0 Code=500)
+PASS RWR-028_예약변경_자기Work_오탐없음 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS RWR-029_예약변경_TGT_비대상 Result Set 계약 일치 (1개 RS · RS0 Code=401)
+PASS RWR-030_예약변경_정원유지 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS RWR-031_예약변경_나이경계_AEX중복 Result Set 계약 일치 (1개 RS · RS0 Code=412)
+PASS RWR-032_신규예약_타유효업무1건_재확인 Result Set 계약 일치 (1개 RS · RS0 Code=306)
+PASS RWR-033_신규예약_타유효업무2건_재확인 Result Set 계약 일치 (1개 RS · RS0 Code=701)
+PASS RWR-034_예약변경_NEX상한초과 Result Set 계약 일치 (1개 RS · RS0 Code=701)
+PASS RWR-040_예약취소_미존재_WorkId Result Set 계약 일치 (1개 RS · RS0 Code=500)
+PASS RWR-041_예약취소_stale_RowVersion Result Set 계약 일치 (1개 RS · RS0 Code=601)
+PASS RWR-042_예약취소_이미_CNR Result Set 계약 일치 (1개 RS · RS0 Code=502)
+PASS RWR-043_예약취소_성공 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS RWR-099_cleanup Result Set 계약 일치 (0개 RS · RS0 Code=undefined)
 PASS SEL-021_변경이력_정상 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS SEL-022_변경이력_기록0건 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS SEL-023_변경이력_TargetTable_허용밖 Result Set 계약 일치 (1개 RS · RS0 Code=101)
@@ -164,16 +157,16 @@ PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 (총계 0/41 — 총계는 SED-0
 
 --- artifacts/reports/no-secret.txt ---
 배포 원본 검사 12 개 · HIT 0
-실행 스크립트 검사 22 개 · HIT 0
-시험 원본 검사 132 개 · HIT 0
+실행 스크립트 검사 24 개 · HIT 0
+시험 원본 검사 133 개 · HIT 0
 도구 검사 11 개 · HIT 0
-로그 검사 1177 개 · HIT 0
+로그 검사 1731 개 · HIT 0
 보고서 검사 14 개 · HIT 0
 PASS SEC-010 배포 원본·로그·보고서에 secret 0건
 
 --- artifacts/reports/tsql-allowlist.txt ---
 PASS G13-b2 CREATE OR ALTER 는 배포 원본 안에만 있다
-PASS G13-b 허용목록 밖 T-SQL 0건 (.sql 144 개 · 주석 제외)
+PASS G13-b 허용목록 밖 T-SQL 0건 (.sql 145 개 · 주석 제외)
 INFO G13 은 세 갈래다 — (a) 배포·시험 성공 (b) 이 스캔 (c) §9.2 준수는 REVIEWED (자동 판정 불가)
 
 --- artifacts/reports/clean-rebuild.txt ---
@@ -188,7 +181,7 @@ PASS RBD-011 재배포가 IDENTITY 시드를 감사기록 뒤로 이어받았다
 clean-rebuild FAILED=0
 
 --- artifacts/reports/object-inventory.txt ---
-PASS RBD-004 인벤토리 지문 일치  INVENTORY|6|4|20|1|6|2|2|1|5|26|10|0|0|19|41
+PASS RBD-004 인벤토리 지문 일치  INVENTORY|7|4|20|1|7|2|2|1|5|28|10|0|0|19|41
 PASS RBD-006 Seed 역할 분포 NEX 13 / AEX 7 / 겸용 1 / AEX Active 7
 PASS RBD-010 DB 에 credential·대칭키·HC Login 0건 (파일 스캔은 verify-no-secret.sh)
 --- OBJECTS ---
@@ -215,6 +208,8 @@ OBJ|C |CK_예약접수_EXAM_PAIR
 OBJ|C |CK_예약접수_STATUS
 OBJ|C |CK_예약접수_TIME_SLOT
 OBJ|C |CK_완료이력_EXAM_FORMAT
+OBJ|C |CK_운영기준_HOURS
+OBJ|C |CK_운영기준_SINGLETON
 OBJ|C |CK_휴무일_EDIT_DATE
 OBJ|C |CK_휴무일_NAME_NOT_BLANK
 OBJ|C |CK_휴무일_TYPE
@@ -259,6 +254,7 @@ OBJ|PK|PK_변경이력
 OBJ|PK|PK_수검자
 OBJ|PK|PK_예약접수
 OBJ|PK|PK_완료이력
+OBJ|PK|PK_운영기준
 OBJ|PK|PK_휴무일
 OBJ|SO|SEQ_HC_CHART_NO
 OBJ|U |검사코드
@@ -266,6 +262,7 @@ OBJ|U |변경이력
 OBJ|U |수검자
 OBJ|U |예약접수
 OBJ|U |완료이력
+OBJ|U |운영기준
 OBJ|U |휴무일
 OBJ|UQ|UQ_수검자_CHART_NO
 OBJ|UQ|UQ_수검자_SOCIAL_NUMBER
@@ -315,6 +312,13 @@ COL|완료이력|1|수검자ID|bigint|8|0
 COL|완료이력|2|완료일자|date|3|0
 COL|완료이력|3|국가검사항목|nvarchar|200|1
 COL|완료이력|4|추가검사항목|nvarchar|100|1
+COL|운영기준|1|기준ID|tinyint|1|0
+COL|운영기준|2|운영시작시각|time|3|0
+COL|운영기준|3|운영종료시각|time|3|0
+COL|운영기준|4|일반예약AM마감|time|3|0
+COL|운영기준|5|일반예약PM마감|time|3|0
+COL|운영기준|6|접수AM마감|time|3|0
+COL|운영기준|7|접수PM마감|time|3|0
 COL|휴무일|1|휴무일자|date|3|0
 COL|휴무일|2|생성일시|datetime2|6|0
 COL|휴무일|3|최종수정일시|datetime2|6|0
@@ -356,6 +360,7 @@ IDX|예약접수|IX_예약접수_SLOT|0|0|1|0|수검자ID
 IDX|예약접수|PK_예약접수|1|0|0|1|업무ID
 IDX|완료이력|PK_완료이력|1|0|0|1|수검자ID
 IDX|완료이력|PK_완료이력|1|0|0|2|완료일자
+IDX|운영기준|PK_운영기준|1|0|0|1|기준ID
 IDX|휴무일|PK_휴무일|1|0|0|1|휴무일자
 --- PARAMETERS ---
 PRM|USP_HC_변경이력_조회|1|@대상테이블|nvarchar|20
