@@ -154,29 +154,33 @@ namespace HealthCheckupReservationReception.Tests.Views
         // 여섯째 `예약 없는 수검자만` 은 2026-09-11 grilling 이 더한 것이다. SP 로 가지 않고
         // 화면이 거르므로 여닫을 칸이 없다 — 앞 다섯과 성질이 다르다.
         [TestMethod]
-        public void 조회조건은_다섯이고_기본은_앞_셋만_켜져_있다()
+        public void 조회조건은_셋이고_모두_켜져_있다()
         {
             RunSta(() =>
             {
                 var screen = new UcPatientManagement();
                 CheckedListBoxControl list = Field<CheckedListBoxControl>(screen, "clbConditions");
 
-                // 2026-09-11 — `예약 없는 수검자만` 이 드롭다운을 떠나 조회 영역의 체크박스가
-                // 되었다. 같은 조건을 두 곳에서 켜고 끄면 어느 쪽이 참인지 화면이 말하지 못한다.
-                Assert.AreEqual(5, list.Items.Count, "조회조건이 다섯이 아니다");
+                // 2026-09-11 — 생년월일·휴대전화를 걷었다 (사용자 지시). 남은 셋은 전부 켜져
+                // 있고, 끌 수 있다는 것이 [조회 조건] 드롭다운이 남아 있는 이유다.
+                Assert.AreEqual(3, list.Items.Count, "조회조건이 셋이 아니다");
                 Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciChartNo").Visibility);
                 Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciName").Visibility);
                 Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciSocialNumber").Visibility);
-                Assert.AreEqual(LayoutVisibility.Never, Item(screen, "lciBirthday").Visibility, "생년월일은 기본이 꺼짐이다");
-                Assert.AreEqual(LayoutVisibility.Never, Item(screen, "lciMobilePhone").Visibility, "휴대전화는 기본이 꺼짐이다");
-                Assert.IsFalse(((IPatientManagementView)screen).ReservableOnly, "체크박스도 기본은 꺼짐이다");
+                Assert.IsFalse(((IPatientManagementView)screen).ReservableOnly, "체크박스는 기본이 꺼짐이다");
             });
         }
 
-        // [X] 걷어 둔 두 조건은 **켜면 실제로 조회에 실려야** 한다. SP-PAT-01 은 처음부터
-        //     받고 있었으므로(05 §7.2) 화면이 값을 내주는지가 유일한 고리다.
+        /// <summary>
+        /// `[X]` **걷었다는 것을 화면 밖에서도 고정한다.** `SP-PAT-01` 은 `@생년월일`·
+        ///      `@휴대전화` 를 여전히 받으므로(`05` §7.2) 계약만 봐서는 화면이 그 둘을
+        ///      보내는지 알 수 없다. 화면이 `null` 을 내주는 것이 유일한 고리다.
+        ///
+        /// `[!]` 이 시험이 red 가 되면 둘이 되살아난 것이다. 그때는 `01` P01-01 ·
+        ///      `02` F-PAT-001 과의 이탈이 함께 사라지므로 session-17 §5 도 같이 고쳐라.
+        /// </summary>
         [TestMethod]
-        public void 생년월일_휴대전화를_켜면_조회조건으로_실린다()
+        public void 생년월일_휴대전화는_조회조건으로_가지_않는다()
         {
             RunSta(() =>
             {
@@ -184,17 +188,15 @@ namespace HealthCheckupReservationReception.Tests.Views
                 var view = (IPatientManagementView)screen;
                 CheckedListBoxControl list = Field<CheckedListBoxControl>(screen, "clbConditions");
 
-                list.ToggleItem(3);   // 생년월일
-                list.ToggleItem(4);   // 휴대전화
+                for (int i = 0; i < list.Items.Count; i++)
+                {
+                    string caption = list.GetItemValue(i) as string;
+                    Assert.AreNotEqual("생년월일", caption, "드롭다운에 생년월일이 남아 있다");
+                    Assert.AreNotEqual("휴대전화", caption, "드롭다운에 휴대전화가 남아 있다");
+                }
 
-                Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciBirthday").Visibility);
-                Assert.AreEqual(LayoutVisibility.Always, Item(screen, "lciMobilePhone").Visibility);
-
-                Field<DateEdit>(screen, "deBirthday").EditValue = new DateTime(1980, 1, 1);
-                Field<TextEdit>(screen, "txtMobilePhone").Text = "010-1234-5678";
-
-                Assert.AreEqual("19800101", view.Birthday, "달력 값이 yyyyMMdd 로 가지 않는다");
-                Assert.AreEqual("010-1234-5678", view.MobilePhone);
+                Assert.IsNull(view.Birthday, "화면이 생년월일을 조회조건으로 내주고 있다");
+                Assert.IsNull(view.MobilePhone, "화면이 휴대전화를 조회조건으로 내주고 있다");
             });
         }
 

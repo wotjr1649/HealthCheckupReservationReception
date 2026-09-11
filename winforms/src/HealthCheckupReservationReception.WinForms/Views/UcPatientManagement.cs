@@ -86,11 +86,16 @@ namespace HealthCheckupReservationReception.Views
 
         public string SocialNumber { get { return txtSocialNumber.Text; } }
 
-        // 03 §5.3 · §7.2 — 달력 칸의 값을 조회조건이 쓰는 yyyyMMdd 로 바꾼다.
-        // 그 규칙은 DLG-PAT-02 와 한 벌이다 (clsSearchConditions).
-        public string Birthday { get { return clsSearchConditions.BirthdayOf(deBirthday); } }
+        /// <summary>
+        /// **2026-09-11 사용자 지시로 조회조건에서 걷었다** — 이 화면에는 입력칸이 없다.
+        ///
+        /// `SP-PAT-01` 은 `@생년월일`·`@휴대전화` 를 여전히 받으므로 계약을 건드리지 않고
+        /// **화면이 묻지 않는 것**으로 끊는다. null 이 가면 SP 가 조건으로 세지 않는다.
+        /// 되살리려면 Designer 에 칸 둘과 `ConfigureUI` 의 `_conditions.Add` 두 줄이면 된다.
+        /// </summary>
+        public string Birthday { get { return null; } }
 
-        public string MobilePhone { get { return txtMobilePhone.Text; } }
+        public string MobilePhone { get { return null; } }
 
         public IList<PatientListItemDto> Rows
         {
