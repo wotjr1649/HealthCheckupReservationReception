@@ -69,6 +69,12 @@ the task states; `03` supplies business rules and field meaning, not layout and 
 `../tools/docgen/wireframe/` keeps drawing the published `pptx` and is still the place to edit
 that deliverable — it is no longer a source for implementation.
 
+**The running program is the truth; the published `03` is a record of the design moment.**
+2026-09-11, by the user (`docs/phase5/2026-09-10-session-17-Phase5-UI-Overhaul.md` §4.19):
+the published deliverable is not brought back in line with the screens that were built.
+It stays behind on purpose. Cite it for business rules and field meaning (that part still
+comes from `03` itself); never cite its layout or navigation as what the program does.
+
 `// 화면 ID: <ID>` at the top of a screen's C# files is now **convention, not a gate**. The
 gate that read it does not run. Keep writing it: it is how a human finds every file of one
 screen. `grep -rl "화면 ID:" --include=*.cs` is the count; do not write the number here —
