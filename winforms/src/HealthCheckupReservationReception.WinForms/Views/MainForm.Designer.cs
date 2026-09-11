@@ -41,6 +41,9 @@ namespace HealthCheckupReservationReception.Views
             this.barGroupRsvView = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barPageRcpDesk = new DevExpress.XtraBars.Ribbon.RibbonPage();
             this.barBtnHolidayManage = new DevExpress.XtraBars.BarButtonItem();
+            this.barGroupPatientBase = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
+            this.barGroupRsvBase = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
+            this.barGroupRcpBase = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupRcpWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupRcpView = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barStatusMain = new DevExpress.XtraBars.Ribbon.RibbonStatusBar();
@@ -71,7 +74,6 @@ namespace HealthCheckupReservationReception.Views
             this.barRibbonMain.Location = new System.Drawing.Point(0, 0);
             this.barRibbonMain.MaxItemId = 28;
             this.barRibbonMain.Name = "barRibbonMain";
-            this.barRibbonMain.PageHeaderItemLinks.Add(this.barBtnHolidayManage);
             // **Page 는 「가는 곳」만 갖는다** (2026-09-11 사용자 결정). 업무 화면 셋이 그
             // 전부이고, Page 를 누르면 반드시 그 화면이 선다 — Page ↔ 화면 1:1 이다.
             // 예전에는 `신규 예약` 과 `휴무일 관리` 도 Page 였는데 둘 다 눌러도 아무 데도
@@ -202,7 +204,8 @@ namespace HealthCheckupReservationReception.Views
             //
             this.barPagePatient.Groups.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPageGroup[] {
             this.barGroupPatientWork,
-            this.barGroupPatientView});
+            this.barGroupPatientView,
+            this.barGroupPatientBase});
             this.barPagePatient.Name = "barPagePatient";
             this.barPagePatient.Text = "수검자 관리";
             //
@@ -227,7 +230,8 @@ namespace HealthCheckupReservationReception.Views
             // 같은 버튼이 두 곳에 있을 이유가 없다. 수검자 Page 가 먼저 같은 길을 갔다.
             this.barPageRsvDesk.Groups.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPageGroup[] {
             this.barGroupRsvWork,
-            this.barGroupRsvView});
+            this.barGroupRsvView,
+            this.barGroupRsvBase});
             this.barPageRsvDesk.Name = "barPageRsvDesk";
             this.barPageRsvDesk.Text = "예약 관리";
             //
@@ -248,7 +252,8 @@ namespace HealthCheckupReservationReception.Views
             //
             this.barPageRcpDesk.Groups.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPageGroup[] {
             this.barGroupRcpWork,
-            this.barGroupRcpView});
+            this.barGroupRcpView,
+            this.barGroupRcpBase});
             this.barPageRcpDesk.Name = "barPageRcpDesk";
             this.barPageRcpDesk.Text = "접수 관리";
             //
@@ -282,6 +287,31 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnHolidayManage.Caption = "휴무일 관리";
             this.barBtnHolidayManage.Id = 25;
             this.barBtnHolidayManage.Name = "barBtnHolidayManage";
+            // [X] 페이지 머리줄의 기본 스타일은 **아이콘만**이다. 아이콘이 없으니 빈 네모
+            //     하나가 되어 무엇인지 알 수 없었다 (2026-09-11 캡처 실측). 글자를 세운다.
+            this.barBtnHolidayManage.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            // [X] 처음엔 PageHeaderItemLinks 에 달았다. 이 DevExpress 버전은 그 자리를
+            //     **아이콘만**으로 그려서 RibbonStyle 도 PaintStyle 도 듣지 않았고, 글자
+            //     없는 작은 네모 하나가 남았다 (2026-09-11 캡처 실측). 항목은 하나로 두고
+            //     링크만 세 페이지에 건다 — 어느 탭에서든 글자로 보이고 탭 흉내도 안 낸다.
+            //
+            // barGroupPatientBase
+            //
+            this.barGroupPatientBase.ItemLinks.Add(this.barBtnHolidayManage);
+            this.barGroupPatientBase.Name = "barGroupPatientBase";
+            this.barGroupPatientBase.Text = "기준정보";
+            //
+            // barGroupRsvBase
+            //
+            this.barGroupRsvBase.ItemLinks.Add(this.barBtnHolidayManage);
+            this.barGroupRsvBase.Name = "barGroupRsvBase";
+            this.barGroupRsvBase.Text = "기준정보";
+            //
+            // barGroupRcpBase
+            //
+            this.barGroupRcpBase.ItemLinks.Add(this.barBtnHolidayManage);
+            this.barGroupRcpBase.Name = "barGroupRcpBase";
+            this.barGroupRcpBase.Text = "기준정보";
             this.barBtnHolidayManage.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnHolidayManage_ItemClick);
             //
             //
@@ -334,6 +364,9 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageRsvDesk;
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageRcpDesk;
         private DevExpress.XtraBars.BarButtonItem barBtnHolidayManage;
+        private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientBase;
+        private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRsvBase;
+        private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRcpBase;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientWork;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientView;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRsvWork;

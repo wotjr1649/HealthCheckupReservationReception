@@ -115,8 +115,21 @@ namespace HealthCheckupReservationReception.Tests
                         }
 
                         inspected.Add(page.Text);
-                        Assert.AreEqual("보기", page.Groups[page.Groups.Count - 1].Text,
-                            page.Text + " 마지막 그룹");
+
+                        // 2026-09-11 — `기준정보` 그룹이 생겼다. 그것은 **업무 Action 이 아니라**
+                        // DLG-HOL-01 모달로 가는 문이므로 업무 그룹 뒤에 따로 선다 (03 §24.2).
+                        // 규칙은 그대로다: `[보기]` 는 **업무 그룹 중** 마지막이다.
+                        var order = new List<string>();
+                        foreach (RibbonPageGroup group in page.Groups)
+                        {
+                            order.Add(group.Text);
+                        }
+
+                        int view = order.IndexOf("보기");
+                        int basis = order.IndexOf("기준정보");
+                        Assert.AreNotEqual(-1, basis, page.Text + " 에 [기준정보] 가 없다 — 휴무일 관리로 가는 문이 사라졌다");
+                        Assert.AreEqual(order.Count - 1, basis, page.Text + " 의 [기준정보] 는 맨 뒤다");
+                        Assert.AreEqual(basis - 1, view, page.Text + " 의 [보기] 는 업무 그룹 중 마지막이다");
                     }
 
                     // 아무 Page 도 집지 못하면 위 단언이 한 번도 돌지 않는다.
