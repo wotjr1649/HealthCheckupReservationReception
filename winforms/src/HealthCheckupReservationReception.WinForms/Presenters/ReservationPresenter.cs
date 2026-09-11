@@ -77,7 +77,9 @@ namespace HealthCheckupReservationReception.Presenters
         }
 
         /// <summary>
-        /// DLG-RSV-01 예약 변경 (03 §10). **같은 화면이 모드만 바꾼다** — 수검자는 ReadOnly,
+        /// 화면 ID: DLG-RSV-01 — 예약 변경 (03 §10).
+        ///
+        /// **같은 화면이 모드만 바꾼다** — 수검자는 ReadOnly,
         /// 예약일·시간대·AEX 는 Editable 이라는 것이 §10.2 이고 그것은 신규예약과 같다.
         ///
         /// 진입값은 Workbench 가 방금 읽은 상세다. 수검자 조회(`SP-PAT-02`)를 다시 하지

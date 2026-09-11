@@ -66,8 +66,11 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// DLG-RSV-01 예약 변경 (03 §10). **같은 화면이다** — 모드를 가르는 것은 진입값뿐이고
-        /// 03 §10.2 가 요구하는 편집 범위(예약일·시간대·AEX)가 신규예약과 같기 때문이다.
+        /// 화면 ID: DLG-RSV-01 — 예약 변경 (03 §10).
+        ///
+        /// **같은 화면이다** — 모드를 가르는 것은 진입값뿐이고, 03 §10.2 가 요구하는 편집
+        /// 범위(예약일·시간대·AEX)가 신규예약과 같기 때문이다. 그래서 파일이 따로 없고
+        /// `grep "화면 ID:"` 는 이 줄로 잡는다 (winforms/AGENTS.md).
         /// </summary>
         public FrmReservation(IReservationService service, IPatientService patientService,
             string operatorName, WorkDetailDto work)

@@ -42,6 +42,13 @@ namespace HealthCheckupReservationReception.Presenters
             DbWorkStatus.Reserved, DbWorkStatus.Received, DbWorkStatus.CancelledReception,
         };
 
+        // 화면 ID: CNF-RSV-01 — 예약 취소 확인 (03 §13.1)
+        // 화면 ID: CNF-RCP-01 — 접수 취소 확인 (03 §13.2)
+        //
+        // [X] **이 둘은 전용 파일이 없다.** Confirm 한 줄이 화면의 전부라 폼을 만들지 않았고,
+        //     그래서 `grep "화면 ID:"` 로는 안 잡힌다. 관례의 목적이 「사람이 한 화면의 파일을
+        //     다 찾는 것」이므로 여기에 표지를 단다 (winforms/AGENTS.md).
+        //
         // 03 §13 의 확인 문구 — **되돌릴 수 없다**는 것이 두 문장의 핵심이다.
         private const string CancelReservationAsk =
             "선택한 예약을 취소하시겠습니까?"
