@@ -1,5 +1,6 @@
 ﻿// 화면 ID: WF-PAT-01 — 수검자 관리 (03 §5)
 using DevExpress.Utils;
+using HealthCheckupReservationReception.Common;
 
 namespace HealthCheckupReservationReception.Views
 {
@@ -45,6 +46,20 @@ namespace HealthCheckupReservationReception.Views
             _conditions.Add("예약 없는 수검자만", false, null, null);
 
             _columns = new clsColumnChooser(clbColumns, gvPatientList);
+
+            // 2026-09-11 — 상세의 `예약·접수 이력`. 값은 DB 가 준 것이고 글로 바꾸는 규칙은
+            // 목록·Workbench 와 같은 한 곳에서 온다 (clsWorkText · ROOT AGENTS.md §6).
+            colHistoryDate.DisplayFormat.FormatType = FormatType.DateTime;
+            colHistoryDate.DisplayFormat.FormatString = "yyyy-MM-dd";
+            clsGridColumns.Display(gvHistory, colHistorySlot, clsWorkText.FormatSlot);
+            clsGridColumns.Display(gvHistory, colHistoryStatus, clsWorkText.FormatStatus);
+            clsGridColumns.Align(colHistoryDate, HorzAlignment.Center);
+            clsGridColumns.Align(colHistorySlot, HorzAlignment.Center);
+            clsGridColumns.Align(colHistoryStatus, HorzAlignment.Center);
+            clsGridColumns.ShowEmptyText(gvHistory, "예약·접수 이력이 없습니다.");
+
+            // 최신이 위다 — 창구가 묻는 것은 「지난번에 어땠지」이고 그 답이 맨 위에 있어야 한다.
+            colHistoryDate.SortOrder = DevExpress.Data.ColumnSortOrder.Descending;
         }
     }
 }

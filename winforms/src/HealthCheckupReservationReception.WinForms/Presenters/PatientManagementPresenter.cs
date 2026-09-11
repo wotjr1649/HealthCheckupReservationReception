@@ -281,6 +281,7 @@ namespace HealthCheckupReservationReception.Presenters
             {
                 _view.Detail = null;
                 _view.ReserveStatusText = string.Empty;
+                _view.History = null;
                 _view.RowActions = PatientActionState.None();
                 return;
             }
@@ -321,6 +322,45 @@ namespace HealthCheckupReservationReception.Presenters
             }
 
             _view.Detail = result.Value;
+            _view.History = LoadHistory(result.Value.ChartNo);
+        }
+
+        /// <summary>
+        /// 03 §5.5 상세의 `예약·접수 이력` (2026-09-11 사용자 지시).
+        ///
+        /// `SP-WRK-01` 을 **차트번호 정확검색**으로 부른다 (05 §8.1 `@차트번호 정확검색`,
+        /// `04` §8.1.5 `UQ_수검자_CHART_NO`) — 날짜도 상태도 걸지 않으므로 그 사람의 전 업무가
+        /// 온다. 한 사람치라 양이 갇힌다.
+        ///
+        /// [X] **`@수검자ID` 로 부를 수 없다.** `SP-WRK-01` 의 Parameter 다섯에 그것이 없고
+        ///     (05 §8.1) 계약은 동결이다. 차트번호가 고유하므로 결과는 같다.
+        ///
+        /// [X] 목록 조회에서 이미 읽어 둔 `_reserveDetail` 로는 못 만든다. 그쪽은 RP-06 이
+        ///     보는 둘(`RSV` 전체 · 오늘 `RCP`)만 담고 있어 지난 접수도 취소도 빠져 있다.
+        ///
+        /// 실패하면 **비운다.** 이력이 없는 것과 못 읽은 것을 같은 그림으로 보이지 않으려면
+        /// 빈 Grid 가 말하는 「이력이 없습니다」가 거짓이면 안 되는데, 여기서 구별해 적을 자리가
+        /// 없다 — 상세 조회는 이미 성공했으므로 모달을 띄우면 행을 고를 때마다 창이 뜬다.
+        /// 그래서 비우고, 사용자가 목록을 다시 조회하면 같은 길을 다시 탄다.
+        /// </summary>
+        private IList<WorkListItemDto> LoadHistory(string chartNo)
+        {
+            if (string.IsNullOrWhiteSpace(chartNo))
+            {
+                return null;
+            }
+
+            OperationResult<IList<WorkListItemDto>> result;
+            try
+            {
+                result = _workService.Search(new WorkSearchRequest { ChartNo = chartNo });
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+
+            return result != null && result.IsSuccess ? result.Value : null;
         }
     }
 }

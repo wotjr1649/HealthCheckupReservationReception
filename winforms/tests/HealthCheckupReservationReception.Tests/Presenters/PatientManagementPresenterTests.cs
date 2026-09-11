@@ -239,6 +239,74 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         private static readonly DateTime Today = new DateTime(2026, 9, 11);
 
+        // ── 2026-09-11: 상세의 `예약·접수 이력`
+
+        /// <summary>
+        /// `SP-WRK-01` 에 `@수검자ID` 가 없다 (05 §8.1 Parameter 다섯). 차트번호가 고유하므로
+        /// (04 §8.1.5 `UQ_수검자_CHART_NO`) **정확검색**으로 그 사람의 전 업무를 받는다 —
+        /// 날짜도 상태도 걸지 않는다.
+        /// </summary>
+        [TestMethod]
+        public void 행을_고르면_차트번호로_전_업무를_읽어_이력에_싣는다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService { SearchResult = Rows(), DetailResult = Detail() };
+            var works = new FakeWorkService
+            {
+                SearchResult = OperationResult<IList<WorkListItemDto>>.Success(new List<WorkListItemDto>
+                {
+                    new WorkListItemDto
+                    {
+                        WorkId = 91, PatientId = 11, ReserveDate = Today.AddDays(-200),
+                        SlotCode = "PM", StatusCode = DbWorkStatus.CancelledReservation,
+                    },
+                }),
+            };
+            new PatientManagementPresenter(view, service, works, Status(Today));
+
+            view.RaiseSelectionChanged(11);
+
+            WorkSearchRequest history = works.Searches[works.Searches.Count - 1];
+            Assert.AreEqual("2026-000123", history.ChartNo, "차트번호로 묻지 않았다");
+            Assert.IsNull(history.FromDate, "기간을 걸면 지난 이력이 잘린다");
+            Assert.IsNull(history.ToDate);
+            Assert.IsNull(history.StatusCode, "상태를 걸면 취소 이력이 빠진다");
+            Assert.AreEqual(1, view.History.Count);
+        }
+
+        [TestMethod]
+        public void 선택이_풀리면_이력도_비운다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService { SearchResult = Rows(), DetailResult = Detail() };
+            var works = new FakeWorkService();
+            new PatientManagementPresenter(view, service, works, Status(Today));
+
+            view.RaiseSelectionChanged(11);
+            view.RaiseSelectionChanged(null);
+
+            Assert.IsNull(view.History);
+        }
+
+        /// <summary>
+        /// 이력을 못 읽으면 비운다 — 상세 조회는 이미 성공했으므로 모달을 띄우면 행을 고를
+        /// 때마다 창이 뜬다.
+        /// </summary>
+        [TestMethod]
+        public void 이력_조회가_실패해도_상세는_선다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService { SearchResult = Rows(), DetailResult = Detail() };
+            var works = new FakeWorkService { SearchFailure = new InvalidOperationException("끊겼다") };
+            new PatientManagementPresenter(view, service, works, Status(Today));
+
+            view.RaiseSelectionChanged(11);
+
+            Assert.IsNotNull(view.Detail, "상세까지 같이 죽었다");
+            Assert.IsNull(view.History);
+            Assert.IsNull(view.LastMessage, "행을 고를 때마다 창이 뜬다");
+        }
+
         private static FakeCommonStatusService Status(DateTime today)
         {
             return new FakeCommonStatusService
@@ -466,6 +534,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         public void SelectPatient(long patientId) { SelectedPatientId = patientId; }
         public PatientActionState RowActions { get; set; }
+        public IList<WorkListItemDto> History { get; set; }
         public string LastMessage { get; private set; }
 
         public void ShowMessage(string message) { LastMessage = message; }

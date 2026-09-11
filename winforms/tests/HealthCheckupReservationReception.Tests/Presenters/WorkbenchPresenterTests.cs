@@ -602,6 +602,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public OperationResult<WorkDetailReadDto> DetailResult { get; set; }
         public Exception SearchFailure { get; set; }
         public WorkSearchRequest LastSearch { get; private set; }
+        public IList<WorkSearchRequest> Searches { get { return _searches; } }
+        private readonly IList<WorkSearchRequest> _searches = new List<WorkSearchRequest>();
         public long? LastDetailWorkId { get; private set; }
         public int DetailCalls { get; private set; }
 
@@ -613,6 +615,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             }
 
             LastSearch = request;
+            _searches.Add(request);
             return SearchResult ?? OperationResult<IList<WorkListItemDto>>.Success(new List<WorkListItemDto>());
         }
 

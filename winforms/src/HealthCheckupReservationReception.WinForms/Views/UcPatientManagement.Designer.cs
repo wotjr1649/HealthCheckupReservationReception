@@ -87,6 +87,13 @@ namespace HealthCheckupReservationReception.Views
             this.lciDetailAddressDetail = new DevExpress.XtraLayout.LayoutControlItem();
             this.lcgDetailMemo = new DevExpress.XtraLayout.LayoutControlGroup();
             this.lciDetailMemo = new DevExpress.XtraLayout.LayoutControlItem();
+            this.lcgDetailHistory = new DevExpress.XtraLayout.LayoutControlGroup();
+            this.lciDetailHistory = new DevExpress.XtraLayout.LayoutControlItem();
+            this.gcHistory = new DevExpress.XtraGrid.GridControl();
+            this.gvHistory = new DevExpress.XtraGrid.Views.Grid.GridView();
+            this.colHistoryDate = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.colHistorySlot = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.colHistoryStatus = new DevExpress.XtraGrid.Columns.GridColumn();
             ((System.ComponentModel.ISupportInitialize)(this.lcMain)).BeginInit();
             this.lcMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.cboConditions.Properties)).BeginInit();
@@ -145,6 +152,10 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailAddressDetail)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgDetailMemo)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailMemo)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lcgDetailHistory)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciDetailHistory)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.gcHistory)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.gvHistory)).BeginInit();
             this.SuspendLayout();
             //
             // lcMain
@@ -158,6 +169,7 @@ namespace HealthCheckupReservationReception.Views
             this.lcMain.Controls.Add(this.cboColumns);
             this.lcMain.Controls.Add(this.btnSearch);
             this.lcMain.Controls.Add(this.gcPatientList);
+            this.lcMain.Controls.Add(this.gcHistory);
             this.lcMain.Controls.Add(this.lblNotice);
             this.lcMain.Controls.Add(this.lblDetailReserve);
             this.lcMain.Controls.Add(this.txtDetailChartNo);
@@ -737,7 +749,8 @@ namespace HealthCheckupReservationReception.Views
             this.lcgDetailBasic,
             this.lcgDetailContact,
             this.lcgDetailAddress,
-            this.lcgDetailMemo});
+            this.lcgDetailMemo,
+            this.lcgDetailHistory});
             this.lcgDetail.Location = new System.Drawing.Point(1190, 0);
             this.lcgDetail.Name = "lcgDetail";
             // 세 소그룹의 라벨 폭을 한 벌로 맞춘다 — 손으로 x 좌표를 맞추던 자리다.
@@ -908,9 +921,12 @@ namespace HealthCheckupReservationReception.Views
             //
             this.lcgDetailMemo.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
             this.lciDetailMemo});
+            // 2026-09-11 사용자 결정 — 메모를 **세로가 아니라 가로로** 줄이고 그 오른쪽에
+            // 이력을 세운다. 둘 다 제자리에서 세로로 스크롤한다. 6 : 4 인 것은 이력의 컬럼이
+            // 셋뿐이라 290px 이면 잘리지 않고, 메모는 문장이라 넓을수록 읽히기 때문이다.
             this.lcgDetailMemo.Location = new System.Drawing.Point(0, 312);
             this.lcgDetailMemo.Name = "lcgDetailMemo";
-            this.lcgDetailMemo.Size = new System.Drawing.Size(726, 575);
+            this.lcgDetailMemo.Size = new System.Drawing.Size(436, 575);
             this.lcgDetailMemo.Text = "메모";
             //
             // lciDetailMemo
@@ -918,9 +934,83 @@ namespace HealthCheckupReservationReception.Views
             this.lciDetailMemo.Control = this.memoDetailMemo;
             this.lciDetailMemo.Location = new System.Drawing.Point(0, 0);
             this.lciDetailMemo.Name = "lciDetailMemo";
-            this.lciDetailMemo.Size = new System.Drawing.Size(726, 623);
+            this.lciDetailMemo.Size = new System.Drawing.Size(436, 623);
             this.lciDetailMemo.TextSize = new System.Drawing.Size(0, 0);
             this.lciDetailMemo.TextVisible = false;
+            //
+            // lcgDetailHistory
+            //
+            // 제목이 `예약·접수 이력` 이다 — `완료이력`(04 §4.1) 은 읽는 SP 가 없어 싣지
+            // 못하므로 (05 §7.3 상세 15컬럼에도 없다) 없는 것을 제목으로 약속하지 않는다.
+            this.lcgDetailHistory.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
+            this.lciDetailHistory});
+            this.lcgDetailHistory.Location = new System.Drawing.Point(436, 312);
+            this.lcgDetailHistory.Name = "lcgDetailHistory";
+            this.lcgDetailHistory.Size = new System.Drawing.Size(290, 575);
+            this.lcgDetailHistory.Text = "예약·접수 이력";
+            //
+            // lciDetailHistory
+            //
+            this.lciDetailHistory.Control = this.gcHistory;
+            this.lciDetailHistory.Location = new System.Drawing.Point(0, 0);
+            this.lciDetailHistory.Name = "lciDetailHistory";
+            this.lciDetailHistory.Size = new System.Drawing.Size(290, 623);
+            this.lciDetailHistory.TextSize = new System.Drawing.Size(0, 0);
+            this.lciDetailHistory.TextVisible = false;
+            //
+            // gcHistory
+            //
+            this.gcHistory.Location = new System.Drawing.Point(1638, 381);
+            this.gcHistory.MainView = this.gvHistory;
+            this.gcHistory.Name = "gcHistory";
+            this.gcHistory.Size = new System.Drawing.Size(266, 551);
+            this.gcHistory.TabIndex = 40;
+            this.gcHistory.ViewCollection.AddRange(new DevExpress.XtraGrid.Views.Base.BaseView[] {
+            this.gvHistory});
+            //
+            // gvHistory
+            //
+            this.gvHistory.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] {
+            this.colHistoryDate,
+            this.colHistorySlot,
+            this.colHistoryStatus});
+            this.gvHistory.GridControl = this.gcHistory;
+            this.gvHistory.Name = "gvHistory";
+            this.gvHistory.OptionsBehavior.AutoPopulateColumns = false;
+            this.gvHistory.OptionsBehavior.Editable = false;
+            this.gvHistory.OptionsSelection.MultiSelect = false;
+            this.gvHistory.OptionsView.ShowGroupPanel = false;
+            this.gvHistory.OptionsView.ShowIndicator = false;
+            //
+            // colHistoryDate
+            //
+            this.colHistoryDate.Caption = "예약일";
+            this.colHistoryDate.FieldName = "ReserveDate";
+            this.colHistoryDate.Name = "colHistoryDate";
+            this.colHistoryDate.MinWidth = 86;
+            this.colHistoryDate.Visible = true;
+            this.colHistoryDate.VisibleIndex = 0;
+            this.colHistoryDate.Width = 86;
+            //
+            // colHistorySlot
+            //
+            this.colHistorySlot.Caption = "시간대";
+            this.colHistorySlot.FieldName = "SlotCode";
+            this.colHistorySlot.Name = "colHistorySlot";
+            this.colHistorySlot.MinWidth = 54;
+            this.colHistorySlot.Visible = true;
+            this.colHistorySlot.VisibleIndex = 1;
+            this.colHistorySlot.Width = 54;
+            //
+            // colHistoryStatus
+            //
+            this.colHistoryStatus.Caption = "상태";
+            this.colHistoryStatus.FieldName = "StatusCode";
+            this.colHistoryStatus.Name = "colHistoryStatus";
+            this.colHistoryStatus.MinWidth = 78;
+            this.colHistoryStatus.Visible = true;
+            this.colHistoryStatus.VisibleIndex = 2;
+            this.colHistoryStatus.Width = 78;
             //
             // UcPatientManagement
             //
@@ -992,6 +1082,10 @@ namespace HealthCheckupReservationReception.Views
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailAddressDetail)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcgDetailMemo)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lciDetailMemo)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lcgDetailHistory)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciDetailHistory)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.gcHistory)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.gvHistory)).EndInit();
             this.ResumeLayout(false);
         }
 
@@ -1066,5 +1160,12 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraLayout.LayoutControlGroup lcgDetailMemo;
         private DevExpress.XtraEditors.MemoEdit memoDetailMemo;
         private DevExpress.XtraLayout.LayoutControlItem lciDetailMemo;
+        private DevExpress.XtraLayout.LayoutControlGroup lcgDetailHistory;
+        private DevExpress.XtraLayout.LayoutControlItem lciDetailHistory;
+        private DevExpress.XtraGrid.GridControl gcHistory;
+        private DevExpress.XtraGrid.Views.Grid.GridView gvHistory;
+        private DevExpress.XtraGrid.Columns.GridColumn colHistoryDate;
+        private DevExpress.XtraGrid.Columns.GridColumn colHistorySlot;
+        private DevExpress.XtraGrid.Columns.GridColumn colHistoryStatus;
     }
 }

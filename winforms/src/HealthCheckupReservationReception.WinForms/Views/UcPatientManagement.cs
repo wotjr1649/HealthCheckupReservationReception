@@ -297,6 +297,11 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
+        public IList<WorkListItemDto> History
+        {
+            set { gcHistory.DataSource = value; }
+        }
+
         private void gvPatientList_CustomColumnDisplayText(object sender, CustomColumnDisplayTextEventArgs e)
         {
             // 03 §5.6 — DB 가 주는 값과 화면 표기가 다른 네 컬럼. 값 자체는 바꾸지 않는다.

@@ -62,6 +62,16 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         string NoticeText { set; }
 
+        /// <summary>
+        /// 우측 상세의 `예약·접수 이력` (2026-09-11 사용자 지시). 고른 수검자의 전 업무를
+        /// 최신순으로 싣는다. null 이면 비운다.
+        ///
+        /// [X] 제목이 `예약·접수 이력` 인 것은 **`완료이력` 을 못 싣기 때문**이다 —
+        ///     `04` §4.1 의 독립 테이블인데 읽는 SP 가 없고 `05` §7.3 상세 15컬럼에도 없다.
+        ///     계약이 동결이므로 여기서 끝이고, 없는 것을 제목으로 약속하지 않는다.
+        /// </summary>
+        IList<WorkListItemDto> History { set; }
+
         /// <summary>그 수검자 행을 다시 잡는다. 목록을 되읽어도 자리를 잃지 않는다.</summary>
         void SelectPatient(long patientId);
 
