@@ -167,18 +167,14 @@ namespace HealthCheckupReservationReception.Presenters
 
             DateTime today = _today;
             var latestValid = new Dictionary<long, WorkListItemDto>();
-            var latestMissed = new Dictionary<long, WorkListItemDto>();
 
             foreach (WorkListItemDto work in works)
             {
+                // SP 가 이미 `예약일 >= 오늘` 로 좁혔다. 한 번 더 재는 것은 계약을 믿는
+                // 자리가 아니라 RP-06 의 경계를 화면에도 적어 두는 자리다.
                 if (work.ReserveDate.Date >= today)
                 {
                     latestValid[work.PatientId] = work;
-                }
-                else if (DbWorkStatus.Reserved.Equals(work.StatusCode, StringComparison.Ordinal))
-                {
-                    // 지난 예약인데 접수가 없다 — 새 상태코드 없이 두 값의 조합으로 읽는다.
-                    latestMissed[work.PatientId] = work;
                 }
             }
 
@@ -194,10 +190,7 @@ namespace HealthCheckupReservationReception.Presenters
                 else
                 {
                     row.ReserveStatus = Open;
-                    WorkListItemDto missed;
-                    row.ReserveStatusDetail = latestMissed.TryGetValue(row.PatientId, out missed)
-                        ? "예약 가능 (지난 예약 " + Schedule(missed) + " 미접수)"
-                        : "예약 가능";
+                    row.ReserveStatusDetail = "예약 가능";
                 }
 
                 _reserveDetail[row.PatientId] = row.ReserveStatusDetail;
@@ -208,12 +201,15 @@ namespace HealthCheckupReservationReception.Presenters
         }
 
         /// <summary>
-        /// RP-06 이 보는 두 상태를 한 번씩 읽는다.
+        /// RP-06 이 보는 두 상태를 한 번씩 읽는다. **둘 다 오늘부터다.**
         ///
-        /// `RSV` 는 날짜를 걸지 않는다 — 과거의 미접수 건까지 봐야 상세에 그것을 적을 수 있고,
-        /// 남는 양도 작다(예약 대기 + 노쇼). `RCP` 는 오늘 것만 본다: 접수는 당일 업무이므로
-        /// (05 §8.2 `START_RECEPTION` 이 `예약일=오늘`) 유효한 `RCP` 는 오늘뿐이고, 날짜를
-        /// 걸지 않으면 완료된 접수가 세월과 함께 쌓인다.
+        /// RP-06 의 유효집합이 `예약일 >= DB 현재일` 이므로 이 판정에 지난 행은 쓰이지 않는다.
+        ///
+        /// [X] **`RSV` 에 날짜를 걸지 않던 자리다** (2026-09-11 고침). 지난 미접수 건을 상세에
+        ///     한 마디로 적으려고 전 기간을 끌어왔는데, `IX_예약접수_SLOT` 의 선행 컬럼이
+        ///     `예약일` 이라 날짜가 없으면 seek 이 안 선다 — 수검자 목록을 조회할 때마다
+        ///     예약 전건을 스캔해 받아 오는 꼴이었다. 그 한 마디는 이제 상세의
+        ///     `예약·접수 이력` 이 날짜까지 보여 주므로 중복이다.
         /// </summary>
         private IList<WorkListItemDto> LoadWorks()
         {
@@ -234,7 +230,7 @@ namespace HealthCheckupReservationReception.Presenters
 
             _today = status.Value.Today.Date;
 
-            IList<WorkListItemDto> reserved = Works(DbWorkStatus.Reserved, null);
+            IList<WorkListItemDto> reserved = Works(DbWorkStatus.Reserved, _today);
             if (reserved == null)
             {
                 return null;

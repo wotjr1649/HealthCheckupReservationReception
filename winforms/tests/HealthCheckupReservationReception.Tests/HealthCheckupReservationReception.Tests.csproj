@@ -71,6 +71,7 @@
     <Compile Include="Views\UcPatientManagementTests.cs" />
     <Compile Include="Views\UcWorkbenchTests.cs" />
     <Compile Include="Views\FrmPatientEditorTests.cs" />
+    <Compile Include="Views\FrmReservationTests.cs" />
     <Compile Include="Visual\ShellCaptureTests.cs" />
   </ItemGroup>
   <ItemGroup>

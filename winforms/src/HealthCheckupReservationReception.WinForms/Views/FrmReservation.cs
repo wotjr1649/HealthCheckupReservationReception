@@ -269,7 +269,15 @@ namespace HealthCheckupReservationReception.Views
             XtraMessageBox.Show(this, message, Text);
         }
 
-        public bool Confirm(string message)
+        /// <summary>
+        /// **이 화면이 사용자에게 묻는 유일한 길이다** (2026-09-11 사용자 지적).
+        ///
+        /// [X] 폐기 확인이 여기를 거치지 않고 `XtraMessageBox` 를 직접 불렀다. 그래서 캡처
+        ///     시험이 폼을 닫을 때 창이 떠 **사람이 Yes 를 눌러야 돌았다** — 손이 필요한
+        ///     것은 단위시험이 아니다. 묻는 자리를 하나로 모으고 `virtual` 로 열어, 시험은
+        ///     이것만 덮어써 답한다 (`FrmReservationTests.SilentReservationForm`).
+        /// </summary>
+        public virtual bool Confirm(string message)
         {
             return XtraMessageBox.Show(this, message, Text,
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
@@ -283,11 +291,7 @@ namespace HealthCheckupReservationReception.Views
         {
             if (!_saved && _presenter != null && _presenter.HasUnsavedInput)
             {
-                DialogResult answer = XtraMessageBox.Show(this,
-                    "입력한 내용이 저장되지 않았습니다. 닫으시겠습니까?", Text,
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                if (answer != DialogResult.Yes)
+                if (!Confirm("입력한 내용이 저장되지 않았습니다. 닫으시겠습니까?"))
                 {
                     e.Cancel = true;
                     return;

@@ -9,6 +9,7 @@ using DevExpress.XtraEditors;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
 using HealthCheckupReservationReception.Tests.Presenters;
+using HealthCheckupReservationReception.Tests.Views;
 using HealthCheckupReservationReception.Views;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -259,9 +260,12 @@ namespace HealthCheckupReservationReception.Tests.Visual
                 };
 
                 // 모달이다 — 생성자가 곧 03 §3 의 `BeginNewReservation` 이다.
-                using (var screen = new FrmReservation(
+                //
+                // [X] `SilentReservationForm` 을 쓴다. 실물 폼은 닫을 때 폐기 확인을 띄우고
+                //     캡처가 **사람이 Yes 를 누를 때까지 멈춘다** (2026-09-11 사용자 보고).
+                using (var screen = new SilentReservationForm(
                     new FakeReservationService { Availability = SampleAvailability() },
-                    patients, "접수1번창구", 1000))
+                    patients, "접수1번창구", 1000, true))
                 {
                     screen.StartPosition = FormStartPosition.Manual;
                     screen.Location = new Point(-32000, -32000);

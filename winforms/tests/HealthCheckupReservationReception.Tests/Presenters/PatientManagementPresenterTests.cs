@@ -416,7 +416,15 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             view.RaiseSearchRequested();
 
             Assert.AreEqual("가능", view.Rows[0].ReserveStatus);
-            StringAssert.Contains(view.Rows[0].ReserveStatusDetail, "미접수");
+            Assert.AreEqual("예약 가능", view.Rows[0].ReserveStatusDetail);
+
+            // 2026-09-11 — `RSV` 도 **오늘부터** 묻는다. 전 기간을 끌어오면 IX_예약접수_SLOT
+            // 의 선행 컬럼이 `예약일` 이라 seek 이 안 서고, 수검자 목록을 조회할 때마다
+            // 예약 전건을 받아 오는 꼴이 된다. 지난 건은 상세의 `예약·접수 이력` 이 보여 준다.
+            foreach (WorkSearchRequest asked in works.Searches)
+            {
+                Assert.AreEqual(Today, asked.FromDate, "지난 예약까지 끌어왔다");
+            }
         }
 
         // 여섯째 조회조건 — SP 가 모르므로 화면이 거른다.
