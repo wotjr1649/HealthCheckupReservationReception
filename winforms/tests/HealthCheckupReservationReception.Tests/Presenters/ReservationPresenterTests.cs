@@ -50,6 +50,30 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(1, service.AvailabilityCalls, "일정영역을 연 뒤 한 번은 물어야 정원이 보인다");
         }
 
+        /// <summary>
+        /// 노쇼 — 지난 예약이 `RSV` 인 채로 남아 있어도 오늘·미래 예약을 막지 않는다
+        /// (`00` RP-06 *"과거 업무는 중복판단에서 제외한다"*, 2026-09-11 사용자 지시).
+        ///
+        /// `USP_HC_수검자유효업무_조회` 의 조회범위가 `예약일 >= @오늘날짜` 이므로 (05 §7.4)
+        /// 지난 건은 **RS1 에 아예 없다** — 화면이 받는 그림은 `유효업무 없음` 이고 그때
+        /// 일정영역이 열려야 한다. 앞의 `기존_유효예약이_있으면…` 과 한 쌍이다.
+        /// </summary>
+        [TestMethod]
+        public void 지난_미접수_예약만_있으면_일정이_열린다()
+        {
+            var view = new FakeReservationView();
+            var patients = Patients();
+            patients.ValidWorkResult = OperationResult<PatientValidWorkDto>.Success(null);
+            var service = new FakeReservationService { Availability = Availability() };
+            var presenter = new ReservationPresenter(view, service, patients, "창구");
+
+            presenter.Begin(PatientId);
+
+            Assert.IsTrue(view.ScheduleEnabled, "지난 노쇼 하나로 신규예약이 막혔다");
+            Assert.IsNull(view.WorkbenchWorkId, "Workbench 로 보냈다");
+            Assert.AreEqual(1, service.AvailabilityCalls);
+        }
+
         // 03 §8.5 — 기존 유효예약이 있으면 신규예약을 중단하고 그 WorkId 로 Workbench 로 간다.
         [TestMethod]
         public void 기존_유효예약이_있으면_신규예약을_접고_Workbench_로_간다()

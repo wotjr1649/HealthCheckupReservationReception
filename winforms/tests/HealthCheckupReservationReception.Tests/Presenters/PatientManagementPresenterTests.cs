@@ -239,6 +239,43 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         private static readonly DateTime Today = new DateTime(2026, 9, 11);
 
+        /// <summary>
+        /// 노쇼 — 지난 예약을 접수도 검사도 하지 않아 `RSV` 인 채로 남았다. 그 사람이 오늘
+        /// 다시 예약할 수 있어야 한다 (2026-09-11 사용자 지시).
+        ///
+        /// **`00` RP-06 이 이미 답을 갖고 있다**: *"중복판단 유효예약은 `예약일 >= DB 현재일`
+        /// 이고 상태가 `RSV` 또는 `RCP` 인 업무다. **과거 업무는 중복판단에서 제외한다.**"*
+        /// 잴 것은 그 문장이 아니라 **화면이 그것을 따르는가**다 — 목록은 `가능` 이라 적으면서
+        /// 버튼은 닫아 두면 사용자는 예약할 길이 없다.
+        ///
+        /// SP 를 고칠 일은 없다. `USP_HC_수검자유효업무_조회` 의 조회범위가 이미
+        /// `예약일 >= @오늘날짜` 라 (05 §7.4) 지난 노쇼 건은 애초에 나오지 않는다.
+        /// </summary>
+        [TestMethod]
+        public void 지난_미접수_예약은_예약_버튼을_닫지_않는다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService { SearchResult = Rows(), DetailResult = Detail() };
+            var works = new FakeWorkService
+            {
+                SearchResult = OperationResult<IList<WorkListItemDto>>.Success(new List<WorkListItemDto>
+                {
+                    new WorkListItemDto
+                    {
+                        WorkId = 91, PatientId = 11, ReserveDate = Today.AddDays(-40),
+                        SlotCode = "AM", StatusCode = DbWorkStatus.Reserved,
+                    },
+                }),
+            };
+            new PatientManagementPresenter(view, service, works, Status(Today));
+            view.RaiseSearchRequested();
+
+            view.RaiseSelectionChanged(11);
+
+            Assert.AreEqual("가능", view.Rows[0].ReserveStatus);
+            Assert.IsTrue(view.RowActions.Reserve, "지난 노쇼 하나로 예약이 막혔다");
+        }
+
         // ── 2026-09-11: 상세의 `예약·접수 이력`
 
         /// <summary>
