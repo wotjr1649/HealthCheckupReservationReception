@@ -126,4 +126,23 @@ namespace HealthCheckupReservationReception.Tests.Services
             return Read;
         }
     }
+
+    /// <summary>화면 시험이 쓰는 빈 서비스 — DLG-LOG-01 은 열릴 때만 부른다.</summary>
+    internal sealed class FakeChangeLogService : IChangeLogService
+    {
+        public OperationResult<ChangeLogReadDto> Result { get; set; }
+        public Exception Failure { get; set; }
+        public string LastTargetTable { get; private set; }
+        public long LastTargetKey { get; private set; }
+
+        public OperationResult<ChangeLogReadDto> Read(string targetTable, long targetKey)
+        {
+            if (Failure != null) { throw Failure; }
+
+            LastTargetTable = targetTable;
+            LastTargetKey = targetKey;
+            return Result ?? OperationResult<ChangeLogReadDto>.Success(
+                new ChangeLogReadDto { Rows = new List<ChangeLogItemDto>() });
+        }
+    }
 }

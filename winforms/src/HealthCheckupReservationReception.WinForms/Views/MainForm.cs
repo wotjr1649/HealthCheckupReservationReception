@@ -23,6 +23,7 @@ namespace HealthCheckupReservationReception.Views
         private readonly IPatientService _patientService;
         private readonly IWorkService _workService;
         private readonly IReservationService _reservationService;
+        private readonly IChangeLogService _changeLogService;
         private readonly string _operatorName;
         // 한 번 만든 업무 화면은 들고 있는다. Tab 스트립이 사라졌어도 화면을 오갈 때마다
         // 새로 세우면 사용자가 조회해 둔 목록이 매번 날아간다.
@@ -58,6 +59,7 @@ namespace HealthCheckupReservationReception.Views
             IWorkService workService,
             IReservationService reservationService,
             IHolidayService holidayService,
+            IChangeLogService changeLogService,
             string operatorName,
             bool moveToReceptionAfterSave)
         {
@@ -69,6 +71,7 @@ namespace HealthCheckupReservationReception.Views
             _patientService = patientService;
             _workService = workService;
             _reservationService = reservationService;
+            _changeLogService = changeLogService;
             _operatorName = operatorName;
 
             // Designer 는 버튼을 켜진 채로 만든다. Presenter 가 붙기 전에 03 §5.2 · §9.6 · §9.7 의
@@ -475,6 +478,36 @@ namespace HealthCheckupReservationReception.Views
             }
 
             BeginNewReservation(_patientView.SelectedPatientId.Value);
+        }
+
+        /// <summary>
+        /// 03 §23.2 — 진입점 둘이 같은 Modal 을 연다. 다른 것은 대상뿐이고 그것은 고른 행이
+        /// 안다. **버튼이 셋인데 화면은 하나다** — 여기서 갈라지지 않는다.
+        /// </summary>
+        private void OpenChangeLog(ChangeLogTarget target)
+        {
+            if (target == null)
+            {
+                // Ribbon 이 이미 선택행 없이는 닫혀 있다 (03 §5.2 · §9.6). 여기 오면 그 판정이
+                // 어긋난 것이므로 조용히 무시하지 않고 말한다.
+                ShowMessage("먼저 목록에서 행을 선택하십시오.");
+                return;
+            }
+
+            using (var log = new FrmChangeLog(_changeLogService, target))
+            {
+                log.ShowDialog(this);
+            }
+        }
+
+        private void barBtnPatientLog_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (_patientView != null) { OpenChangeLog(_patientView.CurrentLogTarget()); }
+        }
+
+        private void barBtnWorkLog_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            if (_workView != null) { OpenChangeLog(_workView.CurrentLogTarget()); }
         }
 
         private void barBtnNotImplemented_ItemClick(object sender, ItemClickEventArgs e)

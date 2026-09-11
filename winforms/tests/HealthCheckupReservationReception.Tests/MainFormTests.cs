@@ -8,6 +8,7 @@ using DevExpress.XtraBars.Ribbon;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
 using HealthCheckupReservationReception.Tests.Presenters;
+using HealthCheckupReservationReception.Tests.Services;
 using HealthCheckupReservationReception.Views;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -153,7 +154,7 @@ namespace HealthCheckupReservationReception.Tests
                     Result = OperationResult<CommonWorkStatusDto>.Success(blocked),
                 };
 
-                using (var form = new MainForm(service, new FakePatientService(), new FakeWorkService(), new FakeReservationService(), new FakeHolidayService(), "접수1번창구", true))
+                using (var form = new MainForm(service, new FakePatientService(), new FakeWorkService(), new FakeReservationService(), new FakeHolidayService(), new FakeChangeLogService(), "접수1번창구", true))
                 {
                     form.StartPosition = FormStartPosition.Manual;
                     form.Location = new Point(-32000, -32000);
@@ -397,7 +398,7 @@ namespace HealthCheckupReservationReception.Tests
         {
             return new MainForm(
                 new FakeCommonStatusService(), new FakePatientService(),
-                new FakeWorkService(), new FakeReservationService(), new FakeHolidayService(), "접수1번창구", true);
+                new FakeWorkService(), new FakeReservationService(), new FakeHolidayService(), new FakeChangeLogService(), "접수1번창구", true);
         }
 
         private static Control BusinessPanel(MainForm form)

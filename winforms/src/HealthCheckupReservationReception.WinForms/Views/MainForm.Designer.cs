@@ -135,7 +135,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientLog.Id = 6;
             this.barBtnPatientLog.Name = "barBtnPatientLog";
             this.barBtnPatientLog.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnPatientLog.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
+            this.barBtnPatientLog.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnPatientLog_ItemClick);
             //
             // barBtnRsvEdit
             //
@@ -167,7 +167,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnRsvLog.Id = 13;
             this.barBtnRsvLog.Name = "barBtnRsvLog";
             this.barBtnRsvLog.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnRsvLog.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
+            this.barBtnRsvLog.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnWorkLog_ItemClick);
             //
             // barBtnRcpExtra
             //
@@ -191,7 +191,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnRcpLog.Id = 21;
             this.barBtnRcpLog.Name = "barBtnRcpLog";
             this.barBtnRcpLog.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnRcpLog.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
+            this.barBtnRcpLog.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnWorkLog_ItemClick);
             //
             // barStaticWorkStatus
             //

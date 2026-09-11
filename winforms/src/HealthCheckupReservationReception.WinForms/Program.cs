@@ -66,6 +66,8 @@ namespace HealthCheckupReservationReception
                 new ReservationRepository(connection.ConnectionString));
             IHolidayService holidayService = new HolidayService(
                 new HolidayRepository(connection.ConnectionString));
+            IChangeLogService changeLogService = new ChangeLogService(
+                new ChangeLogRepository(connection.ConnectionString));
 
             Application.Run(new MainForm(
                 statusService,
@@ -73,6 +75,7 @@ namespace HealthCheckupReservationReception
                 workService,
                 reservationService,
                 holidayService,
+                changeLogService,
                 ConfigurationManager.AppSettings[OperatorSettingName],
                 MoveAfterSave()));
         }

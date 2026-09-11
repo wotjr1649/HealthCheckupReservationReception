@@ -178,6 +178,29 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
+        /// 03 §23.2 — `[변경이력]` 이 겨눌 대상. 고른 행이 없으면 null 이다.
+        ///
+        /// 제목줄에 일정까지 적는다 — 한 수검자가 여러 업무를 가질 수 있어 이름만으로는
+        /// 어느 건의 이력인지 가려지지 않는다 (03 §23.5).
+        /// </summary>
+        public ChangeLogTarget CurrentLogTarget()
+        {
+            var row = _picker.Row as WorkListItemDto;
+            if (row == null)
+            {
+                return null;
+            }
+
+            return new ChangeLogTarget
+            {
+                TargetTable = DbLogTarget.Work,
+                TargetKey = row.WorkId,
+                Caption = row.Name + " (" + row.ChartNo + ") "
+                    + clsWorkText.FormatDate(row.ReserveDate) + " " + clsWorkText.FormatSlot(row.SlotCode),
+            };
+        }
+
+        /// <summary>
         /// 03 §9.1 — 그 하루로 좁히고 상태·차트번호·이름을 비운다. Presenter 가 곧바로 다시
         /// 조회하므로 여기서는 값만 놓는다.
         /// </summary>

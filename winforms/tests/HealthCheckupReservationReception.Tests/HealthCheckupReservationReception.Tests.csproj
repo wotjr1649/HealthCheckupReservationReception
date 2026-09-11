@@ -58,6 +58,7 @@
     <Compile Include="Common\clsWorkTextTests.cs" />
     <Compile Include="Integration\PatientRepositoryDbTests.cs" />
     <Compile Include="MainFormTests.cs" />
+    <Compile Include="Presenters\ChangeLogPresenterTests.cs" />
     <Compile Include="Presenters\HolidayPresenterTests.cs" />
     <Compile Include="Presenters\MainPresenterTests.cs" />
     <Compile Include="Presenters\PatientManagementPresenterTests.cs" />

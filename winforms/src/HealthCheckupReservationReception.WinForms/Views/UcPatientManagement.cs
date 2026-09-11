@@ -202,6 +202,28 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
+        /// <summary>
+        /// 03 §23.2 — `[변경이력]` 이 겨눌 대상. 고른 행이 없으면 null 이다.
+        ///
+        /// 선택행이 무엇인지는 화면이 아는 것이고(`clsGridRowPicker`), 제목줄에 쓸 이름·차트번호도
+        /// 그 행에 이미 실려 있다. Presenter 를 한 번 더 거칠 값이 없다.
+        /// </summary>
+        public ChangeLogTarget CurrentLogTarget()
+        {
+            var row = _picker.Row as PatientListItemDto;
+            if (row == null)
+            {
+                return null;
+            }
+
+            return new ChangeLogTarget
+            {
+                TargetTable = DbLogTarget.Patient,
+                TargetKey = row.PatientId,
+                Caption = "수검자 " + row.Name + " (" + row.ChartNo + ")",
+            };
+        }
+
         public void ShowMessage(string message)
         {
             Form owner = FindForm();

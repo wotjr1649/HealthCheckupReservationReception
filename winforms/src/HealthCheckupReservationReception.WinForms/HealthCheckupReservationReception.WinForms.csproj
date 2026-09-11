@@ -116,6 +116,16 @@
     <Compile Include="Services\IReservationService.cs" />
     <Compile Include="Services\ReservationService.cs" />
     <Compile Include="Services\WorkService.cs" />
+    <Compile Include="Views\FrmChangeLog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\FrmChangeLog.Designer.cs">
+      <DependentUpon>FrmChangeLog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FrmChangeLog.UI.cs">
+      <DependentUpon>FrmChangeLog.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Views\FrmPatientDuplicate.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -173,6 +183,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Models\ChangeLogItemDto.cs" />
+    <Compile Include="Models\ChangeLogTarget.cs" />
     <Compile Include="Models\ChangeLogReadDto.cs" />
     <Compile Include="Models\HolidayListItemDto.cs" />
     <Compile Include="Models\HolidayRegistryDto.cs" />
@@ -184,6 +195,8 @@
     <Compile Include="Repositories\ChangeLogRepository.cs" />
     <Compile Include="Repositories\IHolidayRepository.cs" />
     <Compile Include="Repositories\HolidayRepository.cs" />
+    <Compile Include="Presenters\ChangeLogPresenter.cs" />
+    <Compile Include="Views\IChangeLogView.cs" />
     <Compile Include="Services\IChangeLogService.cs" />
     <Compile Include="Services\ChangeLogService.cs" />
     <Compile Include="Services\IHolidayService.cs" />

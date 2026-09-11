@@ -9,6 +9,7 @@ using DevExpress.XtraEditors;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
 using HealthCheckupReservationReception.Tests.Presenters;
+using HealthCheckupReservationReception.Tests.Services;
 using HealthCheckupReservationReception.Tests.Views;
 using HealthCheckupReservationReception.Views;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -58,7 +59,7 @@ namespace HealthCheckupReservationReception.Tests.Visual
                     }),
                 };
 
-                using (var form = new MainForm(service, new FakePatientService(), new FakeWorkService(), new FakeReservationService(), new FakeHolidayService(), "접수1번창구", true))
+                using (var form = new MainForm(service, new FakePatientService(), new FakeWorkService(), new FakeReservationService(), new FakeHolidayService(), new FakeChangeLogService(), "접수1번창구", true))
                 {
                     // 화면 밖에 띄운다. 보이지 않으면 DevExpress 가 스킨을 그리지 않는다.
                     form.StartPosition = FormStartPosition.Manual;
@@ -286,6 +287,42 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Assert.IsTrue(info.Exists && info.Length > 10 * 1024,
                 "PNG 가 비었거나 너무 작다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
             Console.WriteLine("캡처: " + path);
+        }
+
+        /// <summary>DLG-LOG-01 — 진입점 둘이 같은 창을 연다. 수검자 쪽으로 한 장 뜬다.</summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void DLGLOG01_실행_화면을_PNG_로_뜬다()
+        {
+            string path = Capture("dlg_log_01.png", () => new FrmChangeLog(
+                new FakeChangeLogService
+                {
+                    Result = OperationResult<ChangeLogReadDto>.Success(new ChangeLogReadDto
+                    {
+                        Rows = SampleLog(),
+                    }),
+                },
+                new ChangeLogTarget
+                {
+                    TargetTable = DbLogTarget.Patient,
+                    TargetKey = 1000,
+                    Caption = "수검자 홍길동 (C000001)",
+                }));
+
+            var info = new FileInfo(path);
+            Assert.IsTrue(info.Exists && info.Length > 5 * 1024,
+                "PNG 가 비었거나 너무 작다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
+            Console.WriteLine("캡처: " + path);
+        }
+
+        private static IList<ChangeLogItemDto> SampleLog()
+        {
+            return new List<ChangeLogItemDto>
+            {
+                new ChangeLogItemDto { LogId = 3, RecordedAt = new DateTime(2026, 9, 7, 14, 20, 11), OperatorName = "접수1번창구", ColumnName = "휴대전화", BeforeValue = "010-0000-0001", AfterValue = "010-1234-5678" },
+                new ChangeLogItemDto { LogId = 2, RecordedAt = new DateTime(2026, 9, 6, 9, 11, 42), OperatorName = "접수1번창구", ColumnName = "주소", BeforeValue = "서울특별시 중구 세종대로 110", AfterValue = "경기도 성남시 분당구 판교로 235" },
+                new ChangeLogItemDto { LogId = 1, RecordedAt = new DateTime(2026, 9, 3, 16, 2, 5), OperatorName = "접수2번창구", ColumnName = "비고", BeforeValue = null, AfterValue = "회사 단체검진. 심전도 같이 보기로 함" },
+            };
         }
 
         private static ReservationAvailabilityReadDto SampleAvailability()
