@@ -59,12 +59,6 @@ changes anything under `winforms/`, run
 `cd ../database && ./scripts/verify-winforms-unchanged.sh init` and include the regenerated
 manifest in that same commit — the same rule ROOT `AGENTS.md` §2.2 applies to reseals.
 
-**Suspended for the overhaul (ROOT `AGENTS.md` §1.1).** Nearly every commit now changes
-`winforms/`, so regenerating the manifest each time buys nothing. The manifest stays where it
-is and the rule stays written here; it resumes when the overhaul lands. Until then
-`verify-winforms-unchanged.sh` reads stale and is not evidence of anything — do not cite it
-either way.
-
 ### The screen is not matched to `03` or to the design source
 
 **2026-09-10, by the user (ROOT `AGENTS.md` §1.1): building screens to match
