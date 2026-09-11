@@ -58,6 +58,7 @@
     <Compile Include="Common\DbWorkAction.cs" />
     <Compile Include="Common\DbWorkStatus.cs" />
     <Compile Include="Common\DbHolidayType.cs" />
+    <Compile Include="Common\DbLogTarget.cs" />
     <Compile Include="Common\OperationResult.cs" />
     <Compile Include="Common\clsPatientText.cs" />
     <Compile Include="Common\clsWorkText.cs" />
@@ -171,14 +172,20 @@
       <DependentUpon>UcWorkbench.cs</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Models\ChangeLogItemDto.cs" />
+    <Compile Include="Models\ChangeLogReadDto.cs" />
     <Compile Include="Models\HolidayListItemDto.cs" />
     <Compile Include="Models\HolidayRegistryDto.cs" />
     <Compile Include="Models\HolidayListReadDto.cs" />
     <Compile Include="Models\HolidaySearchRequest.cs" />
     <Compile Include="Models\HolidaySaveRequest.cs" />
     <Compile Include="Models\HolidaySaveReadDto.cs" />
+    <Compile Include="Repositories\IChangeLogRepository.cs" />
+    <Compile Include="Repositories\ChangeLogRepository.cs" />
     <Compile Include="Repositories\IHolidayRepository.cs" />
     <Compile Include="Repositories\HolidayRepository.cs" />
+    <Compile Include="Services\IChangeLogService.cs" />
+    <Compile Include="Services\ChangeLogService.cs" />
     <Compile Include="Services\IHolidayService.cs" />
     <Compile Include="Services\HolidayService.cs" />
     <Compile Include="Presenters\HolidayPresenter.cs" />

@@ -56,8 +56,10 @@ run ./scripts/verify-work-actions.sh
 run ./scripts/verify-work-status.sh selftest
 run ./scripts/verify-work-status.sh
 
-run ./scripts/verify-holiday-type.sh selftest
-run ./scripts/verify-holiday-type.sh
+# 같은 모양의 검사가 둘이다 — 스크립트를 복사하지 않고 환경변수로 대상을 바꿔 두 번 돌린다.
+run ./scripts/verify-check-values.sh selftest
+run ./scripts/verify-check-values.sh
+CONSTRAINT=CK_변경이력_TARGET_TABLE LABEL=대상테이블   CODE=src/HealthCheckupReservationReception.WinForms/Common/DbLogTarget.cs   run ./scripts/verify-check-values.sh
 run ./scripts/verify-social-century.sh selftest
 run ./scripts/verify-social-century.sh
 run ./scripts/verify-layering.sh selftest
