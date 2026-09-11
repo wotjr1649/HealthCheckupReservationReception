@@ -9,6 +9,8 @@ GO
 -- [변경이력] 은 이 목록에 없다. 감사 기록은 배포로 지워지지 않는다 (CLAUDE.md §8 의 유일한 예외).
 -- 수검자가 새로 만들어지면 [대상키] 는 사라진 행을 가리키게 되는데, 그것이 04 §8.6.3 이 정한
 -- "감사 기록은 대상 행보다 오래 산다" 의 의미다.
+-- [R13] 운영기준. FK 가 없어 순서는 무관하지만 목록에서 빠지면 clean-create 가 아니게 된다.
+DROP TABLE IF EXISTS [dbo].[운영기준];
 DROP TABLE IF EXISTS [dbo].[완료이력];
 DROP TABLE IF EXISTS [dbo].[예약접수];
 DROP TABLE IF EXISTS [dbo].[휴무일];
@@ -175,6 +177,26 @@ CREATE TABLE [dbo].[휴무일]
     CONSTRAINT [CK_휴무일_NAME_NOT_BLANK] CHECK (LEN(LTRIM(RTRIM([휴무일명]))) > 0),
     CONSTRAINT [CK_휴무일_TYPE]           CHECK ([휴무구분] IN (N'법정공휴일', N'대체공휴일', N'자체휴무일')),
     CONSTRAINT [CK_휴무일_EDIT_DATE]      CHECK ([최종수정일시] >= [생성일시])
+);
+GO
+-- [R13] 운영기준 — 00 CP-04 의 운영시간과 00 §3 의 마감시각 넷 (04 §8.7).
+--       정책을 설정으로 바꾸는 것이 아니다. 수치의 소유자는 00 이고 여기는 Rule 이 읽을 수
+--       있는 자리다. 관리 CRUD SP 를 만들지 않으므로 00 §8.2 밖에 그대로 있고,
+--       verify-operating-baseline.sh 가 Seed = 00 과 회차 끝의 복원을 판정한다.
+--       감사 컬럼과 행버전을 두지 않는다 — 값을 바꾸는 주체가 없다 (04 §8.7.2).
+CREATE TABLE [dbo].[운영기준]
+(
+    [기준ID]         TINYINT NOT NULL,
+    [운영시작시각]   TIME(0) NOT NULL,
+    [운영종료시각]   TIME(0) NOT NULL,
+    [일반예약AM마감] TIME(0) NOT NULL,
+    [일반예약PM마감] TIME(0) NOT NULL,
+    [접수AM마감]     TIME(0) NOT NULL,
+    [접수PM마감]     TIME(0) NOT NULL,
+
+    CONSTRAINT [PK_운영기준]           PRIMARY KEY CLUSTERED ([기준ID]),
+    CONSTRAINT [CK_운영기준_SINGLETON] CHECK ([기준ID] = 1),
+    CONSTRAINT [CK_운영기준_HOURS]     CHECK ([운영시작시각] < [운영종료시각])
 );
 GO
 CREATE TABLE [dbo].[예약접수]

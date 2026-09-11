@@ -9,8 +9,6 @@
 -- [!] 심은 행은 이 파일에서 반드시 지운다. 남으면 뒤따르는 PWR/RWR/CWR 계약이 전부 308 이 된다.
 --     verify-contract-all.sh 가 루프 뒤에 한 번 더 지우고 휴무일 2건을 확인한다.
 --
--- 주민번호 9701011000013 은 체크디지트가 무효지만(유효값은 …2) 상관없다 —
--- 같은 값을 쓰는 OFF-309-01 이 309 로 통과해 308/309 가 주민번호 검증보다 앞임을 이미 증명했다.
 DECLARE @D DATE = CONVERT(DATE, SYSDATETIME());
 DECLARE @Seeded BIT = 0;
 
@@ -26,9 +24,12 @@ BEGIN
     SET @Seeded = 1;
 END
 
--- Write SP 는 공통 업무가능을 업무 Rule 보다 먼저 판정하므로 입력이 완전해도 308 이다 (05 §5 우선순위 9번).
-EXEC [dbo].[USP_HC_수검자_등록] 1, NULL, N'업무일아님', '9701011000013',
-     NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, N'TEST';
+-- [R12] 대상을 수검자등록에서 **예약등록**으로 옮겼다. 수검자 Write 는 R12 부터 308/309 를
+--       내지 않는다 (05 §10.1). 308 을 재는 계약시험이 이것 하나뿐이므로 폐기하지 않고 옮긴다.
+-- 예약 Write SP 는 공통 업무가능을 업무 Rule 보다 먼저 판정하므로 입력이 완전해도 308 이다
+-- (05 §11.1 검증순서 · §5 우선순위 9번).
+DECLARE @P BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T015');
+EXEC [dbo].[USP_HC_예약_등록] @P, 'NORMAL', '2026-11-17', 'AM', 1,0,0,0,0,0,0, N'TEST';
 
 IF @Seeded = 1
     DELETE FROM [dbo].[휴무일]

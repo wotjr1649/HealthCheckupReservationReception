@@ -1,19 +1,19 @@
 === Phase 4 테스트 요약 ===
-생성시각: 2026-09-08T13:04:12+09:00
-회귀 로그: artifacts/logs/full_test_run.log
-회차 시각: === Deploy 시작 2026-09-08T12:58:25.7953441+09:00 ===
+생성시각: 2026-09-11T15:09:20+09:00
+회귀 로그: artifacts/logs/full_test_run_r19.log
+회차 시각: === Deploy 시작 2026-09-11T14:58:51.7752351+09:00 ===
 
 --- 이 회차의 판정 (test.sh 출력 그대로) ---
 NOT RUN RBD-001 잘못된 서버명(50020) - 인스턴스가 1개뿐이라 음성 시험 불가
 !! NOT RUN 1 건 — 아래 요약을 완료로 읽지 않는다 (CLAUDE.md §10)
 === 실패 0건 (NOT RUN 1 건) ===
 
-PASS=357  FAIL=0  SKIP=2
+PASS=411  FAIL=0  SKIP=0
 
 --- SQL 시험 파일별 (이 회차가 쓴 것만) ---
 test_00.log                        PASS=4    FAIL=0    SKIP=0
 test_01.log                        PASS=19   FAIL=0    SKIP=0
-test_02.log                        PASS=18   FAIL=0    SKIP=0
+test_02.log                        PASS=20   FAIL=0    SKIP=0
 test_00b.log                       PASS=3    FAIL=0    SKIP=0
 test_03.log                        PASS=51   FAIL=0    SKIP=0
 test_04.log                        PASS=1    FAIL=0    SKIP=0
@@ -21,6 +21,7 @@ test_05.log                        PASS=26   FAIL=0    SKIP=0
 test_06.log                        PASS=25   FAIL=0    SKIP=0
 test_07.log                        PASS=25   FAIL=0    SKIP=0
 test_08.log                        PASS=8    FAIL=0    SKIP=0
+test_15.log                        PASS=18   FAIL=0    SKIP=0
 test_14.log                        PASS=3    FAIL=0    SKIP=0
 
 --- 동시성 (CON) 시나리오별 최신 회차 ---
@@ -36,7 +37,8 @@ PASS CON-008 접수완료 vs WalkIn 신규 → 최종 20 (21 이면 §24.2 결�
 --- artifacts/reports/contract-verify.txt ---
 PASS SEL-025 조회 SP 의 Capacity = 20 (AM·PM 동일) — 저장 쪽은 CON-002·008 이 고정
 PASS 01_공통업무상태 Result Set 계약 일치 (2개 RS · RS0 Code=0)
-PASS 02_수검자목록_조건없음 Result Set 계약 일치 (1개 RS · RS0 Code=103)
+PASS 02_수검자목록_전체조회 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS 02b_수검자목록_차트번호_포함검색 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 03_수검자목록_ChartNo Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 04_수검자목록_0건 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 05_수검자목록_주민번호형식 Result Set 계약 일치 (1개 RS · RS0 Code=101)
@@ -50,7 +52,7 @@ PASS 12_예약접수목록_조건없음 Result Set 계약 일치 (1개 RS · RS0
 PASS 13_예약접수목록_날짜범위 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 14_예약접수상세_미존재 Result Set 계약 일치 (1개 RS · RS0 Code=500)
 PASS 15_예약접수상세_NEX0행701 Result Set 계약 일치 (1개 RS · RS0 Code=701)
-PASS 16_예약접수상세_정상 Result Set 계약 일치 (5개 RS · RS0 Code=0)
+PASS 16_예약접수상세_정상 Result Set 계약 일치 (6개 RS · RS0 Code=0)
 PASS 17_예약가능정보_RowVersion단독 Result Set 계약 일치 (1개 RS · RS0 Code=102)
 PASS 18_예약가능정보_AEX_NULL Result Set 계약 일치 (1개 RS · RS0 Code=100)
 PASS 19_예약가능정보_WALKIN_날짜불일치 Result Set 계약 일치 (1개 RS · RS0 Code=102)
@@ -84,9 +86,15 @@ PASS CWR-042_접수취소_성공 Result Set 계약 일치 (2개 RS · RS0 Code=0
 PASS CWR-043_접수취소_이미_CNC Result Set 계약 일치 (1개 RS · RS0 Code=502)
 PASS CWR-044_CNC_예약변경_불가 Result Set 계약 일치 (1개 RS · RS0 Code=502)
 PASS CWR-099_cleanup Result Set 계약 일치 (0개 RS · RS0 Code=undefined)
-PASS OFF-308-01_업무일아님_수검자등록 Result Set 계약 일치 (1개 RS · RS0 Code=308)
-SKIP OFF-309-01_업무시간밖_수검자등록 업무시간 안이거나 업무일이 아님 — 309 는 업무일의 시간 밖에서만 나온다
-SKIP OFF-309-02_업무시간밖_예약등록 업무시간 안이거나 업무일이 아님 — 309 는 업무일의 시간 밖에서만 나온다
+PASS HOL-001_휴무일목록_정상 Result Set 계약 일치 (3개 RS · RS0 Code=0)
+PASS HOL-002_휴무일목록_시작일_NULL Result Set 계약 일치 (1개 RS · RS0 Code=100)
+PASS HOL-003_휴무일목록_기간역전 Result Set 계약 일치 (1개 RS · RS0 Code=104)
+PASS HOL-004_휴무일목록_구분_허용밖 Result Set 계약 일치 (1개 RS · RS0 Code=101)
+PASS HOL-005_자체휴무일_등록_날짜중복 Result Set 계약 일치 (1개 RS · RS0 Code=801)
+PASS HOL-006_자체휴무일_수정_법정공휴일 Result Set 계약 일치 (1개 RS · RS0 Code=802)
+PASS HOL-007_자체휴무일_삭제_미존재 Result Set 계약 일치 (1개 RS · RS0 Code=800)
+PASS OFF-308-01_업무일아님_예약등록 Result Set 계약 일치 (1개 RS · RS0 Code=308)
+PASS OFF-309-02_업무시간밖_예약등록 Result Set 계약 일치 (1개 RS · RS0 Code=309)
 PASS PWR-000_fixture Result Set 계약 일치 (0개 RS · RS0 Code=undefined)
 PASS PWR-001_신규등록_자동차트 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS PWR-002_동일주민_동일이름 Result Set 계약 일치 (2개 RS · RS0 Code=2)
@@ -100,7 +108,7 @@ PASS PWR-010_유사후보_확인후등록 Result Set 계약 일치 (2개 RS · R
 PASS PWR-013_주민번호_14자리_경계절단 Result Set 계약 일치 (2개 RS · RS0 Code=2)
 PASS PWR-014_주민번호_비숫자 Result Set 계약 일치 (1개 RS · RS0 Code=101)
 PASS PWR-020_수정_Noop Result Set 계약 일치 (2개 RS · RS0 Code=1)
-PASS PWR-021_수정_stale_LastEditDate Result Set 계약 일치 (1개 RS · RS0 Code=600)
+PASS PWR-021_수정_stale_RowVersion Result Set 계약 일치 (1개 RS · RS0 Code=601)
 PASS PWR-022_수정_이름변경 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS PWR-023_주민번호변경_RSV보유 Result Set 계약 일치 (1개 RS · RS0 Code=205)
 PASS PWR-024_차트번호변경_RSV보유 Result Set 계약 일치 (2개 RS · RS0 Code=0)
@@ -145,20 +153,20 @@ PASS SEL-021_변경이력_정상 Result Set 계약 일치 (2개 RS · RS0 Code=0
 PASS SEL-022_변경이력_기록0건 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS SEL-023_변경이력_TargetTable_허용밖 Result Set 계약 일치 (1개 RS · RS0 Code=101)
 PASS SEL-024_변경이력_TargetTable_NULL Result Set 계약 일치 (1개 RS · RS0 Code=100)
-PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 · 휴무일 Seed 2건
+PASS OFF-308-CLEAN 임시 휴무일 잔여 0건 (총계 0/41 — 총계는 SED-008·VER-007 이 판정한다)
 
 --- artifacts/reports/no-secret.txt ---
-배포 원본 검사 11 개 · HIT 0
-실행 스크립트 검사 21 개 · HIT 0
-시험 원본 검사 125 개 · HIT 0
-도구 검사 9 개 · HIT 0
-로그 검사 572 개 · HIT 0
+배포 원본 검사 12 개 · HIT 0
+실행 스크립트 검사 24 개 · HIT 0
+시험 원본 검사 133 개 · HIT 0
+도구 검사 11 개 · HIT 0
+로그 검사 1731 개 · HIT 0
 보고서 검사 14 개 · HIT 0
 PASS SEC-010 배포 원본·로그·보고서에 secret 0건
 
 --- artifacts/reports/tsql-allowlist.txt ---
 PASS G13-b2 CREATE OR ALTER 는 배포 원본 안에만 있다
-PASS G13-b 허용목록 밖 T-SQL 0건 (.sql 136 개 · 주석 제외)
+PASS G13-b 허용목록 밖 T-SQL 0건 (.sql 145 개 · 주석 제외)
 INFO G13 은 세 갈래다 — (a) 배포·시험 성공 (b) 이 스캔 (c) §9.2 준수는 REVIEWED (자동 판정 불가)
 
 --- artifacts/reports/clean-rebuild.txt ---
@@ -173,7 +181,7 @@ PASS RBD-011 재배포가 IDENTITY 시드를 감사기록 뒤로 이어받았다
 clean-rebuild FAILED=0
 
 --- artifacts/reports/object-inventory.txt ---
-PASS RBD-004 인벤토리 지문 일치  INVENTORY|6|4|16|1|6|2|2|1|5|24|8|0|0|19|2
+PASS RBD-004 인벤토리 지문 일치  INVENTORY|7|4|20|1|7|2|2|1|5|28|10|0|0|19|41
 PASS RBD-006 Seed 역할 분포 NEX 13 / AEX 7 / 겸용 1 / AEX Active 7
 PASS RBD-010 DB 에 credential·대칭키·HC Login 0건 (파일 스캔은 verify-no-secret.sh)
 --- OBJECTS ---
@@ -200,7 +208,11 @@ OBJ|C |CK_예약접수_EXAM_PAIR
 OBJ|C |CK_예약접수_STATUS
 OBJ|C |CK_예약접수_TIME_SLOT
 OBJ|C |CK_완료이력_EXAM_FORMAT
+OBJ|C |CK_운영기준_HOURS
+OBJ|C |CK_운영기준_SINGLETON
+OBJ|C |CK_휴무일_EDIT_DATE
 OBJ|C |CK_휴무일_NAME_NOT_BLANK
+OBJ|C |CK_휴무일_TYPE
 OBJ|D |DF_검사코드_AEX_ACTIVE
 OBJ|D |DF_변경이력_CREATION_DATE
 OBJ|D |DF_수검자_CREATION_DATE
@@ -209,6 +221,8 @@ OBJ|D |DF_수검자_LAST_EDIT_DATE
 OBJ|D |DF_예약접수_CREATION_DATE
 OBJ|D |DF_예약접수_LAST_EDIT_DATE
 OBJ|D |DF_휴무일_ACTIVE
+OBJ|D |DF_휴무일_CREATION_DATE
+OBJ|D |DF_휴무일_LAST_EDIT_DATE
 OBJ|F |FK_예약접수_수검자
 OBJ|F |FK_완료이력_수검자
 OBJ|IF|UFN_HC_검진대상확인
@@ -228,14 +242,19 @@ OBJ|P |USP_HC_예약_취소
 OBJ|P |USP_HC_예약가능정보_조회
 OBJ|P |USP_HC_예약접수목록_조회
 OBJ|P |USP_HC_예약접수상세_조회
+OBJ|P |USP_HC_자체휴무일_등록
+OBJ|P |USP_HC_자체휴무일_삭제
+OBJ|P |USP_HC_자체휴무일_수정
 OBJ|P |USP_HC_접수_완료
 OBJ|P |USP_HC_접수_취소
 OBJ|P |USP_HC_접수추가검사_변경
+OBJ|P |USP_HC_휴무일목록_조회
 OBJ|PK|PK_검사코드
 OBJ|PK|PK_변경이력
 OBJ|PK|PK_수검자
 OBJ|PK|PK_예약접수
 OBJ|PK|PK_완료이력
+OBJ|PK|PK_운영기준
 OBJ|PK|PK_휴무일
 OBJ|SO|SEQ_HC_CHART_NO
 OBJ|U |검사코드
@@ -243,6 +262,7 @@ OBJ|U |변경이력
 OBJ|U |수검자
 OBJ|U |예약접수
 OBJ|U |완료이력
+OBJ|U |운영기준
 OBJ|U |휴무일
 OBJ|UQ|UQ_수검자_CHART_NO
 OBJ|UQ|UQ_수검자_SOCIAL_NUMBER
@@ -262,39 +282,51 @@ COL|변경이력|6|컬럼명|nvarchar|60|0
 COL|변경이력|7|변경전|nvarchar|8000|1
 COL|변경이력|8|변경후|nvarchar|8000|1
 COL|수검자|1|수검자ID|bigint|8|0
-COL|수검자|2|차트번호|nvarchar|200|0
-COL|수검자|3|성명|nvarchar|200|0
-COL|수검자|4|주민번호|varchar|13|0
-COL|수검자|5|생년월일|varchar|8|0
-COL|수검자|6|성별|char|1|0
-COL|수검자|7|이메일|varchar|200|1
-COL|수검자|8|휴대전화|varchar|13|1
-COL|수검자|9|전화번호|varchar|13|1
-COL|수검자|10|우편번호|varchar|10|1
-COL|수검자|11|주소|nvarchar|400|1
-COL|수검자|12|상세주소|nvarchar|400|1
-COL|수검자|13|B형간염제외여부|bit|1|0
-COL|수검자|14|비고|nvarchar|-1|1
-COL|수검자|15|생성일시|datetime|8|0
-COL|수검자|16|최종수정일시|datetime|8|0
+COL|수검자|2|생성일시|datetime|8|0
+COL|수검자|3|최종수정일시|datetime|8|0
+COL|수검자|4|행버전|timestamp|8|0
+COL|수검자|5|차트번호|nvarchar|200|0
+COL|수검자|6|성명|nvarchar|200|0
+COL|수검자|7|주민번호|varchar|13|0
+COL|수검자|8|생년월일|varchar|8|0
+COL|수검자|9|성별|char|1|0
+COL|수검자|10|이메일|varchar|200|1
+COL|수검자|11|휴대전화|varchar|13|1
+COL|수검자|12|전화번호|varchar|13|1
+COL|수검자|13|우편번호|varchar|10|1
+COL|수검자|14|주소|nvarchar|400|1
+COL|수검자|15|상세주소|nvarchar|400|1
+COL|수검자|16|B형간염제외여부|bit|1|0
+COL|수검자|17|비고|nvarchar|-1|1
 COL|예약접수|1|업무ID|bigint|8|0
-COL|예약접수|2|수검자ID|bigint|8|0
-COL|예약접수|3|예약일|date|3|0
-COL|예약접수|4|시간대코드|char|2|0
-COL|예약접수|5|상태코드|char|3|0
-COL|예약접수|6|국가검사항목|nvarchar|200|0
-COL|예약접수|7|추가검사항목|nvarchar|100|1
-COL|예약접수|8|생성일시|datetime2|6|0
-COL|예약접수|9|최종수정일시|datetime2|6|0
-COL|예약접수|10|행버전|timestamp|8|0
+COL|예약접수|2|생성일시|datetime2|6|0
+COL|예약접수|3|최종수정일시|datetime2|6|0
+COL|예약접수|4|행버전|timestamp|8|0
+COL|예약접수|5|수검자ID|bigint|8|0
+COL|예약접수|6|예약일|date|3|0
+COL|예약접수|7|시간대코드|char|2|0
+COL|예약접수|8|상태코드|char|3|0
+COL|예약접수|9|국가검사항목|nvarchar|200|0
+COL|예약접수|10|추가검사항목|nvarchar|100|1
 COL|완료이력|1|수검자ID|bigint|8|0
 COL|완료이력|2|완료일자|date|3|0
 COL|완료이력|3|국가검사항목|nvarchar|200|1
 COL|완료이력|4|추가검사항목|nvarchar|100|1
+COL|운영기준|1|기준ID|tinyint|1|0
+COL|운영기준|2|운영시작시각|time|3|0
+COL|운영기준|3|운영종료시각|time|3|0
+COL|운영기준|4|일반예약AM마감|time|3|0
+COL|운영기준|5|일반예약PM마감|time|3|0
+COL|운영기준|6|접수AM마감|time|3|0
+COL|운영기준|7|접수PM마감|time|3|0
 COL|휴무일|1|휴무일자|date|3|0
-COL|휴무일|2|휴무일명|nvarchar|200|0
-COL|휴무일|3|사용여부|bit|1|0
-COL|휴무일|4|비고|nvarchar|1000|1
+COL|휴무일|2|생성일시|datetime2|6|0
+COL|휴무일|3|최종수정일시|datetime2|6|0
+COL|휴무일|4|행버전|timestamp|8|0
+COL|휴무일|5|휴무일명|nvarchar|200|0
+COL|휴무일|6|휴무구분|nvarchar|20|0
+COL|휴무일|7|사용여부|bit|1|0
+COL|휴무일|8|비고|nvarchar|1000|1
 --- INDEXES ---
 IDX|검사코드|PK_검사코드|1|0|0|1|검사항목코드
 IDX|검사코드|UX_검사코드_AEX_CODE|1|1|0|1|추가검사코드
@@ -328,6 +360,7 @@ IDX|예약접수|IX_예약접수_SLOT|0|0|1|0|수검자ID
 IDX|예약접수|PK_예약접수|1|0|0|1|업무ID
 IDX|완료이력|PK_완료이력|1|0|0|1|수검자ID
 IDX|완료이력|PK_완료이력|1|0|0|2|완료일자
+IDX|운영기준|PK_운영기준|1|0|0|1|기준ID
 IDX|휴무일|PK_휴무일|1|0|0|1|휴무일자
 --- PARAMETERS ---
 PRM|USP_HC_변경이력_조회|1|@대상테이블|nvarchar|20
@@ -354,7 +387,7 @@ PRM|USP_HC_수검자목록_조회|5|@휴대전화|varchar|13
 PRM|USP_HC_수검자상세_조회|1|@수검자ID|bigint|8
 PRM|USP_HC_수검자유효업무_조회|1|@수검자ID|bigint|8
 PRM|USP_HC_수검자정보_수정|1|@수검자ID|bigint|8
-PRM|USP_HC_수검자정보_수정|2|@최종수정일시|datetime|8
+PRM|USP_HC_수검자정보_수정|2|@행버전|binary|8
 PRM|USP_HC_수검자정보_수정|3|@차트번호|nvarchar|200
 PRM|USP_HC_수검자정보_수정|4|@성명|nvarchar|200
 PRM|USP_HC_수검자정보_수정|5|@주민번호|varchar|13
@@ -413,6 +446,17 @@ PRM|USP_HC_예약접수목록_조회|3|@상태코드|char|3
 PRM|USP_HC_예약접수목록_조회|4|@차트번호|nvarchar|200
 PRM|USP_HC_예약접수목록_조회|5|@성명|nvarchar|200
 PRM|USP_HC_예약접수상세_조회|1|@업무ID|bigint|8
+PRM|USP_HC_자체휴무일_등록|1|@휴무일자|date|3
+PRM|USP_HC_자체휴무일_등록|2|@휴무일명|nvarchar|200
+PRM|USP_HC_자체휴무일_등록|3|@사용여부|bit|1
+PRM|USP_HC_자체휴무일_등록|4|@비고|nvarchar|1000
+PRM|USP_HC_자체휴무일_삭제|1|@휴무일자|date|3
+PRM|USP_HC_자체휴무일_삭제|2|@행버전|binary|8
+PRM|USP_HC_자체휴무일_수정|1|@휴무일자|date|3
+PRM|USP_HC_자체휴무일_수정|2|@행버전|binary|8
+PRM|USP_HC_자체휴무일_수정|3|@휴무일명|nvarchar|200
+PRM|USP_HC_자체휴무일_수정|4|@사용여부|bit|1
+PRM|USP_HC_자체휴무일_수정|5|@비고|nvarchar|1000
 PRM|USP_HC_접수_완료|1|@업무ID|bigint|8
 PRM|USP_HC_접수_완료|2|@행버전|binary|8
 PRM|USP_HC_접수_완료|3|@조작자명|nvarchar|100
@@ -429,6 +473,9 @@ PRM|USP_HC_접수추가검사_변경|7|@추가검사05선택여부|bit|1
 PRM|USP_HC_접수추가검사_변경|8|@추가검사06선택여부|bit|1
 PRM|USP_HC_접수추가검사_변경|9|@추가검사07선택여부|bit|1
 PRM|USP_HC_접수추가검사_변경|10|@조작자명|nvarchar|100
+PRM|USP_HC_휴무일목록_조회|1|@시작일자|date|3
+PRM|USP_HC_휴무일목록_조회|2|@종료일자|date|3
+PRM|USP_HC_휴무일목록_조회|3|@휴무구분|nvarchar|20
 --- GRANTS ---
 --- SEED ---
 SEED|EXAM|EX001|문진/진찰|NEX-01|-|-|0
@@ -450,6 +497,45 @@ SEED|EXAM|EX016|유방초음파|-|OPT03|F|1
 SEED|EXAM|EX017|PSA|-|OPT05|M|1
 SEED|EXAM|EX018|HbA1c|-|OPT06|A|1
 SEED|EXAM|EX019|HPV 검사|-|OPT07|F|1
+SEED|HOL|2026-01-01|신정|1
+SEED|HOL|2026-02-16|설날 연휴|1
+SEED|HOL|2026-02-17|설날|1
+SEED|HOL|2026-02-18|설날 연휴|1
+SEED|HOL|2026-03-02|삼일절 대체공휴일|1
+SEED|HOL|2026-05-01|노동절|1
+SEED|HOL|2026-05-05|어린이날|1
+SEED|HOL|2026-05-25|부처님오신날 대체공휴일|1
+SEED|HOL|2026-06-03|제9회 전국동시지방선거일|1
+SEED|HOL|2026-06-06|현충일|1
+SEED|HOL|2026-07-17|제헌절|1
+SEED|HOL|2026-08-15|광복절|1
+SEED|HOL|2026-08-17|광복절 대체공휴일|1
+SEED|HOL|2026-09-24|추석 연휴|1
+SEED|HOL|2026-09-25|추석|1
+SEED|HOL|2026-09-26|추석 연휴|1
+SEED|HOL|2026-10-03|개천절|1
+SEED|HOL|2026-10-05|개천절 대체공휴일|1
+SEED|HOL|2026-10-09|한글날|1
 SEED|HOL|2026-12-25|성탄절|1
 SEED|HOL|2026-12-26|센터 휴진일|1
+SEED|HOL|2027-01-01|신정|1
+SEED|HOL|2027-02-06|설날 연휴|1
+SEED|HOL|2027-02-08|설날 연휴|1
+SEED|HOL|2027-02-09|설날 대체공휴일|1
+SEED|HOL|2027-03-01|삼일절|1
+SEED|HOL|2027-05-01|노동절|1
+SEED|HOL|2027-05-03|노동절 대체공휴일|1
+SEED|HOL|2027-05-05|어린이날|1
+SEED|HOL|2027-05-13|부처님오신날|1
+SEED|HOL|2027-07-17|제헌절|1
+SEED|HOL|2027-07-19|제헌절 대체공휴일|1
+SEED|HOL|2027-08-16|광복절 대체공휴일|1
+SEED|HOL|2027-09-14|추석 연휴|1
+SEED|HOL|2027-09-15|추석|1
+SEED|HOL|2027-09-16|추석 연휴|1
+SEED|HOL|2027-10-04|개천절 대체공휴일|1
+SEED|HOL|2027-10-09|한글날|1
+SEED|HOL|2027-10-11|한글날 대체공휴일|1
+SEED|HOL|2027-12-25|성탄절|1
+SEED|HOL|2027-12-27|성탄절 대체공휴일|1
 === 14_Clean_Rebuild_Verify 완료 ===

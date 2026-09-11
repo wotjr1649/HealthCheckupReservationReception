@@ -391,9 +391,11 @@ function splitFences(src) {
     // 04 뒷부분(§4·§5·§13~§17)·05 §1·06 §12·plans/01·07·08 이 이 부류로 통째로 남아 있었고
     // 어느 게이트도 보지 않았다 — V08 은 CHECK/DEFAULT 만, 위 목록은 R2 55컬럼 계열만 봤다.
     // `7개 Table` 처럼 한글 수량사 + 영문 명사가 섞인 형태를 초판이 놓쳤다(06 §11 제목).
-    ['테이블 7',      /7\s*개\s*(?:테이블|Table)|(?:테이블|Table)\s*7(?![0-9])/i],
+    // [!] `테이블 7` 과 `PK 7` 을 뺐다 — **R13 이 7 을 참값으로 만들어 R2/R3 짝이 깨졌다.**
+    //     운영기준(04 §8.7)이 더해져 Table 6 -> 7 · PK 6 -> 7 이다. 위 CHECK 22 · NCI 5 를
+    //     뺀 것과 정확히 같은 이유이고(되돌아온 수치는 짝이 아니다), 보호가 사라지지도 않는다 —
+    //     테이블 집합·개수는 SCH-001·SCH-002·VER-001·RBD-004 가 실행으로 고정한다.
     ['컬럼 47',       /47\s*컬럼|컬럼\s*47(?![0-9])|\b47\s*행\s*전건/],
-    ['PK 7',          /\bPK\s*7(?![0-9])|\bPK7\b/],
     ['FK 4',          /\bFK\s*4(?![0-9])|\bFK4\b/],
     // [!] 아래 두 패턴은 뺐다. **되돌아온 수치는 R2/R3 짝이 성립하지 않는다.**
     //   CHECK  22(R2) -> 23(R3) : CK_검사코드_CODE_FORMAT 신설로 23 이 최종값
@@ -901,6 +903,166 @@ function splitFences(src) {
   else if (n > 0) (bad.length || missing.length)
     ? F('V24', '기준선보다 뒤처진 하드코딩 생성기 ' + (bad.length + missing.length) + '건', [...bad, ...missing].join('\n'))
     : P('V24', '하드코딩 생성기 ' + n + '개가 기준선보다 뒤처지지 않았다 (파싱형은 다시 돌리면 따라오므로 대상 아님)');
+}
+
+// V25 봉인 문서가 자기 목록과 다른 개수를 본문에 적었는가.
+//
+// [X] R13 이 테이블을 7번째로 더했는데 04·05·06 본문 열세 곳이 그대로 "6개 테이블" 이었다.
+//     어떤 게이트도 그것을 보지 않았다 — G05 는 §8 의 컬럼·제약을 보고, 생성기는 §7 의 표를
+//     읽을 뿐 본문 산문은 아무도 읽지 않는다. 같은 실패가 공개본에서도 나왔다: 시트 제목이
+//     "Stored Procedure 16개" 인 채 20행을 담고 있었고 **R7 부터 그랬다**.
+//     생성기 쪽은 제목을 세서 넣는 것으로 구조적으로 닫았고, 문서 쪽을 이 검사가 닫는다.
+//
+// 수의 단일 출처는 04 §7(테이블)과 05 §1.3(SP)이다. 본문이 그와 다른 수를 말하면 FAIL 이다.
+// 날짜·회차가 박힌 역사 기록은 그때 그 값이 사실이므로 정확한 문자열로만 연다.
+{
+  const nTable = (sec04Summary.match(/^\|\s*\d+\s*\|/gm) || []).length;
+  const base05 = read(BASE05);
+  // § 1.3 표의 행 모양은 문서 안에서 유일하다 — 다른 표는 SP-ID 와 [dbo].[USP_ 를 한 줄에 함께 두지 않는다.
+  const nSp = (base05.match(/^\| *SP-[A-Z]{3}-\d{2} *\| *`\[dbo\]\.\[USP_/gm) || []).length;
+
+  // 역사 기록 — 그 시점을 서술하므로 옛 값이 남는 것이 맞다.
+  const ALLOW = [
+    '6개 테이블 논리모델, 정·역방향 검수',      // 04 Phase 1.1 산출 기록
+    '테이블 6개·컬럼 48개',                     // 04 R4 재봉인 기록 (컬럼 48 도 그때 값이다)
+    '물리 테이블은 6개로 확정한다.',            // 04 Phase 1.1 판정 + 뒤에 R13 표기를 붙였다
+    '물리 테이블 6개로 축소하고',               // 04 리스크 CLOSED 기록
+    '`SEC-004` | 6개 테이블 직접',              // 06 폐기된 Security 계획 (§32)
+    '`SEC-005` | 6개 테이블 `INSERT`',          // 06 폐기된 Security 계획 (§32)
+    '최초 10개 테이블 후보 검토',                // 04 Phase 1 과거 검토안 (구현 금지)
+    '물리 테이블 5개를 한글 이름으로',           // 04 R4 재봉인 기록
+    '`변경이력` 1개 테이블로 확정',              // 04 총수가 아니라 테이블 하나를 세는 문장
+  ];
+
+  const PAT = [
+    [/물리 테이블 (\d+)개/g, () => nTable, '물리 테이블'],
+    [/(\d+)개 테이블/g, () => nTable, '테이블'],
+    // 'Write Stored Procedure 8개' 는 부분집합을 말하는 참인 문장이다. 총수 어구만 잡는다.
+    [/외부 호출 Stored Procedure (\d+)개/g, () => nSp, '외부 호출 SP'],
+  ];
+
+  const DOCS = [['04', base04], ['05', base05], ['06', spec]];
+  const bad = [];
+  let seen = 0;
+  if (nTable === 0 || nSp === 0) {
+    F('V25', '04 §7 또는 05 §1.3 을 못 읽었다 - 미실행은 PASS 가 아니다 (테이블 ' + nTable + ' · SP ' + nSp + ')');
+  } else {
+    for (const [name, src] of DOCS) {
+      src.split('\n').forEach((line, i) => {
+        if (ALLOW.some(a => line.includes(a))) return;
+        for (const [re, want, what] of PAT) {
+          re.lastIndex = 0;
+          let m;
+          while ((m = re.exec(line)) !== null) {
+            seen++;
+            if (Number(m[1]) !== want()) {
+              bad.push(name + ':' + (i + 1) + ' ' + what + ' ' + m[1] + ' (실측 ' + want() + ') — ' + line.trim().slice(0, 90));
+            }
+          }
+        }
+      });
+    }
+    bad.length
+      ? F('V25', '봉인 문서 본문이 자기 목록과 다른 개수를 말한다 ' + bad.length + '건', bad.join('\n'))
+      : P('V25', '봉인 문서의 개수 주장 ' + seen + '건이 04 §7(테이블 ' + nTable + ')·05 §1.3(SP ' + nSp + ')과 일치');
+  }
+}
+
+// V26 정책 시각값이 `00` 을 따라오는가.
+//
+// [X] `00` CP-04 의 운영시간과 §3장의 마감 넷은 사슬 아래 다섯 문서에 **되풀이 적혀 있다**
+//     (실측 45곳). R13 이 테이블 수를 바꿨을 때 본문 열여섯 곳이 조용히 낡았던 것과 같은 자리다.
+//     `OPR-G1~G4` 는 `00` ↔ Seed ↔ DB 만 보고 문서 본문은 보지 않는다.
+//
+// 잡는 방식은 둘이다.
+//   (a) 캡처형 — 정책을 말하는 문장 꼴에서 값을 **뽑아** `00` 과 견준다.
+//   (b) 존재형 — `00` 에서 만든 경계 문자열이 시험 기대표에 실제로 있는지 본다.
+//
+// [!] 꼴마다 **최소 히트 수**를 건다. 문장을 다시 써서 패턴이 안 걸리면 조용히 통과하는데,
+//     그것이 이 부류 게이트의 대표적 fail-open 이다 (`V25` 를 만들 때 같은 함정을 밟았다).
+{
+  const pol = read(path.join(ROOT, 'baseline', '00_Project_Policy.md'));
+  const mh = /CP-04[^\n]*운영시간[^\n]*`(\d{2}:\d{2}) *<= *현재시각 *< *(\d{2}:\d{2})`/.exec(pol);
+  const mam = /^\| *\*\*평일 오전\*\* *\| *(\d{2}:\d{2}) *\| *(\d{2}:\d{2}) *\|/m.exec(pol);
+  const mpm = /^\| *\*\*평일 오후\*\* *\| *(\d{2}:\d{2}) *\| *(\d{2}:\d{2}) *\|/m.exec(pol);
+  if (!mh || !mam || !mpm) {
+    F('V26', '00 CP-04 / §3 마감표를 못 읽었다 - 미실행은 PASS 가 아니다');
+  } else {
+    const OPEN = mh[1], CLOSE = mh[2];           // 운영시작 · 운영종료
+    const NAM = mam[1], RAM = mam[2];            // 일반 당일예약 AM · 접수 AM
+    const NPM = mpm[1], RPM = mpm[2];            // 일반 당일예약 PM · 접수 PM
+
+    const DOCS = ['01_Process_Definition.md', '03_Wireframe_Definition.md',
+                  '04_DB_Design.md', '05_DB_Rule_SP_Contract.md',
+                  '06_DB_Transaction_Security_Seed.md'];
+    const src = {};
+    for (const d of DOCS) src[d] = read(path.join(ROOT, 'baseline', d));
+    const all = DOCS.map(d => src[d]).join('\n');
+
+    const bad = [];
+    let checked = 0;
+
+    // (a) 캡처형. [정규식, 기대값 배열, 최소 히트, 이름]
+    const CAP = [
+      [/(\d{2}:\d{2})\s*<=\s*현재시각\s*<\s*(\d{2}:\d{2})/g, [OPEN, CLOSE], 5, '운영시간 부등식'],
+      [/운영시간[^\n]{0,12}?\((\d{2}:\d{2})~(\d{2}:\d{2})\)/g, [OPEN, CLOSE], 1, '운영시간 (시작~끝)'],
+      [/업무시간\(월~토 (\d{2}:\d{2})~(\d{2}:\d{2})\)/g, [OPEN, CLOSE], 1, '업무시간 월~토'],
+      [/운영시작시각=(\d{2}:\d{2})/g, [OPEN], 1, '운영시작시각='],
+      [/운영종료시각=(\d{2}:\d{2})/g, [CLOSE], 1, '운영종료시각='],
+      [/^\| 일반 당일예약 \| (\d{2}:\d{2}) \| (\d{2}:\d{2}) \|/gm, [NAM, NPM], 1, '05 §2.4 일반 당일예약'],
+      [/^\| WalkIn 당일예약 \| (\d{2}:\d{2}) \| (\d{2}:\d{2}) \|/gm, [RAM, RPM], 1, '05 §2.4 WalkIn'],
+      [/^\| 접수 \| (\d{2}:\d{2}) \| (\d{2}:\d{2}) \|/gm, [RAM, RPM], 1, '05 §2.4 접수'],
+      [/NORMAL (\d{2}:\d{2}) \/ (\d{2}:\d{2})/g, [NAM, NPM], 1, '05 §6.1.4 NORMAL'],
+      [/RECEPTION (\d{2}:\d{2}) \/ (\d{2}:\d{2})/g, [RAM, RPM], 1, '05 §6.1.4 RECEPTION'],
+      [/^\| Normal 평일 \| (\d{2}:\d{2}) 전 \| (\d{2}:\d{2}) 전 \|/gm, [NAM, NPM], 1, '03 §8.6 Normal 평일'],
+      [/^\| WalkIn 평일 \| (\d{2}:\d{2}) 전 \| (\d{2}:\d{2}) 전 \|/gm, [RAM, RPM], 1, '03 §8.6 WalkIn 평일'],
+      [/^\| Normal 토요일 \| (\d{2}:\d{2}) 전 \|/gm, [NAM], 1, '03 §8.6 Normal 토요일'],
+      [/^\| WalkIn 토요일 \| (\d{2}:\d{2}) 전 \|/gm, [RAM], 1, '03 §8.6 WalkIn 토요일'],
+      [/^\| `AM` \| (\d{2}:\d{2}) \| (\d{2}:\d{2}) \|/gm, [NAM, RAM], 1, '06 마감표 AM'],
+      [/^\| `PM` \| (\d{2}:\d{2}) \| (\d{2}:\d{2}) \|/gm, [NPM, RPM], 1, '06 마감표 PM'],
+      [/마감은 시간대 마다 다르다\(AM (\d{2}:\d{2}) · PM (\d{2}:\d{2})\)/g, [RAM, RPM], 1, '06 §44 AM·PM'],
+    ];
+    for (const [re, want, min, name] of CAP) {
+      let m, hits = 0;
+      re.lastIndex = 0;
+      while ((m = re.exec(all)) !== null) {
+        hits++; checked++;
+        for (let i = 0; i < want.length; i++) {
+          if (m[i + 1] !== want[i]) {
+            bad.push(name + ' — 문서 ' + m[i + 1] + ' vs 00 ' + want[i] + '  [' + m[0].trim().slice(0, 60) + ']');
+          }
+        }
+      }
+      if (hits < min) bad.push(name + ' — 꼴이 ' + hits + '건뿐이다 (최소 ' + min + '). 문장이 바뀌어 패턴이 죽었다');
+    }
+
+    // (b) 존재형. 경계 시험표는 `00` 값과 그 직전 시각으로만 이뤄진다.
+    const prev = t => {                       // 'HH:MM' -> 'HH:MM' 의 1초 전 표기 앞부분
+      const [h, mi] = t.split(':').map(Number);
+      const d = new Date(2000, 0, 1, h, mi, 0);
+      d.setSeconds(d.getSeconds() - 1);
+      return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
+    };
+    const MUST = [
+      [OPEN + ':00.0000000', '05·06 경계표 운영시작'],
+      [prev(OPEN) + '.9999999', '05 §17.1 운영시작 직전'],
+      [CLOSE + ':00.0000000', '05·06 경계표 운영종료'],
+      [prev(CLOSE) + '.9999999', '05 §17.1 운영종료 직전'],
+      [NAM + ':00.0000000', '05 §17.1 AM 일반예약 마감'],
+      [RAM + ':00.0000000', '05 §17.1 AM 접수 마감'],
+      [NPM + ':00.0000000', '05 §17.1 PM 일반예약 마감'],
+      [RPM + ':00.0000000', '05 §17.1 PM 접수 마감'],
+    ];
+    for (const [str, name] of MUST) {
+      checked++;
+      if (all.indexOf(str) < 0) bad.push(name + ' — `' + str + '` 이 어느 문서에도 없다');
+    }
+
+    bad.length
+      ? F('V26', '정책 시각값이 00 과 어긋나거나 사라졌다 ' + bad.length + '건', bad.join('\n'))
+      : P('V26', '정책 시각값 주장 ' + checked + '건이 00 CP-04(' + OPEN + '~' + CLOSE + ')·§3 마감(' +
+                 NAM + '/' + NPM + ' · ' + RAM + '/' + RPM + ')과 일치');
+  }
 }
 
 console.log('\n=== verify-docs: PASS ' + pass + ' / FAIL ' + fail + ' ===');

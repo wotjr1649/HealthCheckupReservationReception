@@ -1122,7 +1122,7 @@ Expected: exit **1**, `FAIL SCH-001`. 테스트 하네스가 실제로 실패를
 
   `[X 실측]` 검사는 16건이 아니라 19건이다 — `SCH-001`~`SCH-018` 에 `SCH-019`(SP 별 Parameter 전건 · 합계 99)가 더해졌고 기대값도 테이블 6 · NCI 5 · SP 16 · CHECK 24 로 바뀌었다.
 
-  `[X R7]` 계약 재설계로 다시 넓어졌다 — `SP 20` · `CHECK 26` · `Default 10` 이다. 휴무일이 `휴무구분`·감사·행버전을 얻어 CHECK 가 1 -> 3, Default 가 1 -> 3 이 되었고 휴무일 CRUD SP 4개가 늘었다 (`04` §8.4).
+  `[X R7]` 계약 재설계로 다시 넓어졌다 — `SP 20` · `CHECK 28` · `Default 10` 이다(`CHECK` 는 R7 에 26 이었고 R13 이 운영기준으로 28 이 되었다). 휴무일이 `휴무구분`·감사·행버전을 얻어 CHECK 가 1 -> 3, Default 가 1 -> 3 이 되었고 휴무일 CRUD SP 4개가 늘었다 (`04` §8.4).
 
 ```sql
 SET NOCOUNT ON;
@@ -1296,7 +1296,7 @@ BEGIN
     SET @Fail += 1;
 END
 
--- SCH-016 CHECK 제약 이름 26개 EXCEPT 양방향  (04 §8.1.3 7 + §8.2.3 5 + §8.3.3 8 + §8.4.3 3 + §8.5.3 1 + §8.6.3 2)
+-- SCH-016 CHECK 제약 이름 28개 EXCEPT 양방향  (04 §8.1.3 7 + §8.2.3 5 + §8.3.3 8 + §8.4.3 3 + §8.5.3 1 + §8.6.3 2)
 DECLARE @ExpCk TABLE (N SYSNAME PRIMARY KEY);
 INSERT INTO @ExpCk (N) VALUES
  (N'CK_수검자_CHART_NO_NOT_BLANK'), (N'CK_수검자_NAME_NOT_BLANK'),

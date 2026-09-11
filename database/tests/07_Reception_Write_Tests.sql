@@ -1,18 +1,37 @@
 ﻿SET NOCOUNT ON;
 DECLARE @Fail INT = 0;
 
+-- [R13] 업무 운영시간을 이 배치 동안만 넓힌다. 값이 04 §8.7 [운영기준] 에 있어서 가능해졌다 --
+--       R12 까지는 SP 안 리터럴이라 창 밖 회차가 성공 경로를 **한 번도** 재지 못했다 (NOT RUN).
+-- [!] 넓힌 것은 창뿐이다. 성공 경로가 판정하는 것(정원·중복·상태전이·감사)은 그대로다.
+--     창 자체의 계약(308/309 경계)은 이 파일이 아니라 tests/03 의 RUL-T01~T04 와
+--     tests/contract/OFF-* 가 **진짜 값으로** 잰다. 그래서 여기서 넓혀도 그 계약은 안 비어 있다.
+-- [X] 되돌리지 못한 채 끝나면 다음 회차가 다른 제품을 시험한 PASS 를 낸다 (06 §43-14).
+--     파일 끝에서 되돌리고, 되돌아왔는지는 scripts/verify-operating-baseline.sh OPR-G4 가
+--     회차마다 따로 판정한다 -- 여기서 THROW 로 빠져나가도 그 게이트는 red 가 된다.
+DECLARE @OprFrom TIME(0), @OprTo TIME(0);
+SELECT @OprFrom = [운영시작시각], @OprTo = [운영종료시각] FROM [dbo].[운영기준] WHERE [기준ID] = 1;
+UPDATE [dbo].[운영기준] SET [운영시작시각] = '00:00:00', [운영종료시각] = '23:59:59' WHERE [기준ID] = 1;
+
+-- [R13] 접수 PM 마감도 늦춘다. 이것이 없으면 CWR-006/007/050 은 15:50 이후 SKIP 이었다.
+--       마감 **경계** 자체는 RUL-T07·T08·T11·T12 가 TVF 에 시각을 주입해 진짜 값으로 잰다.
+--       여기서 재는 것은 마감이 아니라 '마감 전이면 RCP 로 전이하고 다른 컬럼은 안 건드린다' 다.
+DECLARE @OprPm TIME(0) = (SELECT [접수PM마감] FROM [dbo].[운영기준] WHERE [기준ID] = 1);
+UPDATE [dbo].[운영기준] SET [접수PM마감] = '23:59:59' WHERE [기준ID] = 1;
+
 -- 이 파일은 DB 상태 불변조건만 판정한다. RS0 결과코드 와 RS 형상은
 -- tests/contract/CWR-* + tools/verify-contract.js 가 판정한다 (스펙 §33.1a).
 --
--- 업무시간 가드 (스펙 §33.2a)
--- [!] 업무시간 밖이라고 건너뛰지 않는다. 창 밖에서 Write SP 가 308/309 를 내고 **아무것도
---     바꾸지 않는다** 는 것은 계약이지 시험 사정이 아니다 (05 §5 우선순위 9번).
---     SKIP 은 PASS 가 아니므로(CLAUDE.md §10) 창 밖에서는 그 계약을 실제로 판정한다.
---     아래 호출들은 **창 안이면 성공했을 인자**다. 그래서 "실패라 안 바뀌었다" 가 아니라
---     "업무시간 밖이라 성공 경로가 차단됐다" 를 본다. RS0 결과코드 판정은 tests/contract/OFF-* 가 한다.
+-- 업무일 가드 (스펙 §33.2a)
+-- [!] 업무일 밖이라고 건너뛰지 않는다. 밖에서 Write SP 가 308 을 내고 **아무것도 바꾸지
+--     않는다** 는 것은 계약이지 시험 사정이 아니다 (05 §5 우선순위 9번).
+--     SKIP 은 PASS 가 아니므로(CLAUDE.md §10) 밖에서는 그 계약을 실제로 판정한다.
+--     아래 호출들은 **안이면 성공했을 인자**다. 그래서 "실패라 안 바뀌었다" 가 아니라
+--     "업무일이 아니라 성공 경로가 차단됐다" 를 본다. RS0 결과코드 판정은 tests/contract/OFF-* 가 한다.
+-- [R13] 시각 조건이 빠졌다 -- 위에서 창을 넓혔으므로 언제나 참이다. 남은 것은 요일과 휴무일이고
+--       이 둘은 00 이 **날짜로** 정한 것이라 넓힐 대상이 아니다. 일요일·휴무일에는 여전히
+--       NOT RUN 이며, 그때도 아래 분기가 "아무것도 바뀌지 않았다" 를 실제로 판정한다.
 DECLARE @BizOk BIT = CASE WHEN DATEPART(WEEKDAY, SYSDATETIME()) BETWEEN 2 AND 7
-                           AND CONVERT(TIME(0), SYSDATETIME()) >= '09:00:00'
-                           AND CONVERT(TIME(0), SYSDATETIME()) <  '18:00:00'
                            AND NOT EXISTS (SELECT 1 FROM [dbo].[휴무일]
                                             WHERE [휴무일자] = CONVERT(DATE, SYSDATETIME())
                                               AND [사용여부] = 1)
@@ -57,35 +76,34 @@ BEGIN
                      DATEDIFF(SECOND, '2020-01-01', [최종수정일시]))), 0) FROM [dbo].[예약접수]));
 
     IF @Off0 = @Off1 AND @@TRANCOUNT = 0
-        PRINT 'PASS CWR-OFF 업무시간 밖 Write SP 호출이 DB 를 바꾸지 않았다  ' + @Off1;
+        PRINT 'PASS CWR-OFF 업무일 밖 Write SP 호출이 DB 를 바꾸지 않았다  ' + @Off1;
     ELSE BEGIN PRINT 'FAIL CWR-OFF 창 밖 호출이 데이터를 바꿨다  ' + @Off0 + ' -> ' + @Off1;
                SET @Fail += 1; END
 
-    PRINT 'NOT RUN CWR-001~052 업무시간(월~토 09:00~18:00, 비휴무일) 밖 - 성공 경로는 창 안에서만 성립한다';
+    PRINT 'NOT RUN CWR-001~052 업무일(월~토, 비휴무일) 밖 - 요일·휴무일은 00 이 날짜로 정한 것이라 넓히지 않는다';
+    -- [R13] 넓힌 창을 되돌린다. OPR-G4 가 회차 끝에서 이 줄이 실제로 돌았는지 판정한다.
+    UPDATE [dbo].[운영기준] SET [운영시작시각] = @OprFrom, [운영종료시각] = @OprTo,
+                           [접수PM마감]   = @OprPm  WHERE [기준ID] = 1;
+
     IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;
     PRINT '=== 07_Reception_Write_Tests 완료 (창 밖 분기) ===';
     RETURN;
 END
 
--- [!] 접수완료는 업무시간 안에서도 **접수마감 전**이어야 성공한다 (AM 11:00 / PM 16:00, 05 §2.4).
---     production SP 에 시각 주입 뒷문을 두지 않으므로 판정 가능 여부는 실제 시각이 정한다.
---     그렇다고 006/007 과 009 가 배타적인 것은 **아니다** — 시간대 을 나누면 겹친다 (아래 참조).
---     SKIP 은 PASS 가 아니다 (CLAUDE.md §10). 마감 경계 자체는 RUL-T07·T08·T11·T12 가
---     TVF 수준에서 결정적으로 증명한다.
+-- [!] 접수완료는 업무일·운영시간 안에서도 **접수마감 전**이어야 성공한다 (05 §2.4).
+--     production SP 에 시각 주입 뒷문은 여전히 없다 -- 넣지 않는다. R13 이 바꾼 것은 그것이 아니라
+--     마감시각이 **어디에 사는가** 다: SP 안 리터럴이던 것이 04 §8.7 [운영기준] 으로 나왔고,
+--     그래서 시험이 시계를 기다리는 대신 값을 옮겨 두 경로를 다 밟을 수 있다.
+--     SKIP 은 PASS 가 아니다 (CLAUDE.md §10). 마감 **경계** 자체는 RUL-T07·T08·T11·T12 가
+--     TVF 에 시각을 주입해 진짜 값으로 증명한다 -- 이 파일은 경계가 아니라 전이를 잰다.
 DECLARE @Now  TIME(0) = CONVERT(TIME(0), SYSDATETIME());
 DECLARE @시간대코드 CHAR(2) = CASE WHEN @Now < '11:00:00' THEN 'AM' ELSE 'PM' END;
--- 마감 판정은 파일 진입 시 한 번만 재므로 경계에 10분 여유를 둔다.
 -- [X] 하나의 3상태 변수로 006 과 009 를 갈랐던 것이 "배타적" 의 원인이었다.
---     배타성은 Rule 이 아니라 **둘 다 같은 시간대 을 쓴 선택**의 결과다. 마감은 시간대 마다 다르다
---     (AM 11:00 · PM 16:00, 05 §2.4). TVF 에 시각을 주입해 실측했다:
---       13:00 · AM Work  마감시각 11:00  마감경과여부 1   -> 304
---       13:00 · PM Work  마감시각 16:00  마감경과여부 0   -> 성공
---     즉 11:10~15:50 에는 둘 다 성립한다. 이전 구성에서 CWR-009 는 16:00~18:00 에만
---     판정돼 일반 회귀가 한 번도 닿지 못했다.
---   @CutPm  PM Work 성공 경로   15:50 전이면 1
---   @CutAm  AM Work 마감경과 경로  11:10 이후면 1
-DECLARE @CutPm BIT = CASE WHEN @Now <  CONVERT(TIME(0), '15:50:00') THEN 1 ELSE 0 END;
-DECLARE @CutAm BIT = CASE WHEN @Now >= CONVERT(TIME(0), '11:10:00') THEN 1 ELSE 0 END;
+--     배타성은 Rule 이 아니라 **둘 다 같은 시간대 을 쓴 선택**의 결과다. 마감은 시간대 마다 다르다.
+--     그 뒤 시간대를 갈라 11:10~15:50 에는 둘 다 성립하게 했지만, 그 밖에서는 여전히 한쪽이 SKIP 이었다.
+-- [R13] 이제 시계가 아니라 [운영기준] 이 마감을 정하므로 둘 다 **언제나** 성립한다. PM 마감은 파일
+--       진입 시 늦췄고(성공 경로), AM 마감은 CWR-009 바로 앞에서만 앞당긴다(마감경과 경로).
+--       @CutPm·@CutAm 이 그래서 사라졌다 -- SKIP 을 없앤 것이지 판정을 없앤 것이 아니다.
 
 DECLARE @P10 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T010');
 DECLARE @P09 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T009');
@@ -200,9 +218,13 @@ IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @W) = 'R
     PRINT 'PASS CWR-003 stale RowVersion 이 접수를 막았다';
 ELSE BEGIN PRINT 'FAIL CWR-003 stale 요청이 접수됐다'; SET @Fail += 1; END
 
--- CWR-009  AM Work · 마감(11:00) 경과 → 304. 상태는 그대로다.
+-- CWR-009  AM Work · 접수마감 경과 → 304. 상태는 그대로다.
 --   @P09 는 CWR-011 이 쓰고 지운 뒤라 이 지점에서 유효업무가 없다.
-IF @CutAm = 1
+-- [R13] AM 마감을 이 블록 동안만 앞당긴다. 범위를 블록으로 좁힌 이유가 있다 -- 파일 전체에 걸면
+--       위쪽 CWR-011(@시간대코드 가 오전이면 'AM')이 701 대신 304 로 막혀, 지금 재고 있는
+--       '역할 불일치' 를 아침 회차에서 잃는다.
+DECLARE @OprAm TIME(0) = (SELECT [접수AM마감] FROM [dbo].[운영기준] WHERE [기준ID] = 1);
+UPDATE [dbo].[운영기준] SET [접수AM마감] = '00:00:01' WHERE [기준ID] = 1;
 BEGIN
     INSERT INTO [dbo].[예약접수] ([수검자ID], [예약일], [시간대코드], [상태코드], [국가검사항목], [추가검사항목])
     VALUES (@P09, CONVERT(DATE, SYSDATETIME()), 'AM', 'RSV', @Basic, NULL);
@@ -210,13 +232,12 @@ BEGIN
     DECLARE @Rvam BINARY(8)  = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wam);
     EXEC [dbo].[USP_HC_접수_완료] @Wam, @Rvam, N'TEST';
     IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @Wam) = 'RSV')
-        PRINT 'PASS CWR-009 접수마감(AM 11:00) 경과 후 접수가 막혔다';
+        PRINT 'PASS CWR-009 접수마감(AM) 경과 후 접수가 막혔다';
     ELSE BEGIN PRINT 'FAIL CWR-009 마감 후에 접수됐다'; SET @Fail += 1; END
     DELETE FROM [dbo].[예약접수] WHERE [업무ID] = @Wam;
 END
-ELSE PRINT 'SKIP CWR-009 11:10 이전 - AM 마감(11:00) 경과 경로는 그 뒤에만 성립한다';
+UPDATE [dbo].[운영기준] SET [접수AM마감] = @OprAm WHERE [기준ID] = 1;
 
-IF @CutPm = 1
 BEGIN
     -- CWR-006 / CWR-050  접수 성공 → RCP 전이. 예약일·시간대·검사구성은 바뀌지 않는다.
     SET @H0 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @W);
@@ -244,7 +265,6 @@ BEGIN
         PRINT 'PASS CWR-007 이미 RCP 인 Work 재접수가 아무것도 바꾸지 않았다';
     ELSE BEGIN PRINT 'FAIL CWR-007 재접수가 행을 갱신했다'; SET @Fail += 1; END
 END
-ELSE PRINT 'SKIP CWR-006/007/050 PM 마감(16:00) 10분 전을 지났다 - 성공 경로는 마감 전에만 성립한다';
 
 ----------------------------------------------------------------------------
 -- UPDATE_접수추가검사  (마감과 무관하다 — 05 §12.2 검증순서에 마감이 없다)
@@ -405,6 +425,10 @@ UPDATE [dbo].[예약접수] SET [상태코드] = 'RCP', [추가검사항목] = N
  WHERE [업무ID] = @W14;
 UPDATE [dbo].[예약접수] SET [추가검사항목] = NULL
  WHERE [업무ID] = @W11;
+
+-- [R13] 넓힌 창을 되돌린다. OPR-G4 가 회차 끝에서 이 줄이 실제로 돌았는지 판정한다.
+UPDATE [dbo].[운영기준] SET [운영시작시각] = @OprFrom, [운영종료시각] = @OprTo,
+                           [접수PM마감]   = @OprPm  WHERE [기준ID] = 1;
 
 -- @Fail 은 이 배치에서만 산다. GO 뒤로 넘기면 Msg 137 이다 (CLAUDE.md §11).
 IF @Fail > 0 THROW 51000, N'테스트 파일에 실패가 있습니다.', 1;

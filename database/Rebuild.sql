@@ -31,10 +31,11 @@ BEGIN
     FROM [HealthCheckupReservationReceptionDb].[sys].[tables] t
     WHERE t.is_ms_shipped = 0
       AND t.name IN (N'수검자', N'예약접수', N'검사코드',
-                     N'휴무일', N'완료이력', N'변경이력');
+                     N'휴무일', N'완료이력', N'변경이력',
+                     N'운영기준');   -- [R13] 04 §8.7
 
     -- 빈 DB(배포 실패 잔해) 또는 정확한 R3 집합만 허용한다
-    IF NOT (@Total = 0 OR (@Total = 6 AND @R3 = 6))
+    IF NOT (@Total = 0 OR (@Total = 7 AND @R3 = 7))
         THROW 50022, N'Rebuild: 대상 DB 가 Phase 4 계약 집합과 다릅니다. 동명 DB 를 삭제하려는 것일 수 있습니다.', 1;
     PRINT N'INFO 50022 가드 통과 — Total=' + CONVERT(NVARCHAR(5), @Total)
         + N' R3=' + CONVERT(NVARCHAR(5), @R3);

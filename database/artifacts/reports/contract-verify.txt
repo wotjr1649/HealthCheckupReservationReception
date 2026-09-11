@@ -1,6 +1,7 @@
 PASS SEL-025 조회 SP 의 Capacity = 20 (AM·PM 동일) — 저장 쪽은 CON-002·008 이 고정
 PASS 01_공통업무상태 Result Set 계약 일치 (2개 RS · RS0 Code=0)
-PASS 02_수검자목록_조건없음 Result Set 계약 일치 (1개 RS · RS0 Code=103)
+PASS 02_수검자목록_전체조회 Result Set 계약 일치 (2개 RS · RS0 Code=0)
+PASS 02b_수검자목록_차트번호_포함검색 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 03_수검자목록_ChartNo Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 04_수검자목록_0건 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 05_수검자목록_주민번호형식 Result Set 계약 일치 (1개 RS · RS0 Code=101)
@@ -14,7 +15,7 @@ PASS 12_예약접수목록_조건없음 Result Set 계약 일치 (1개 RS · RS0
 PASS 13_예약접수목록_날짜범위 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS 14_예약접수상세_미존재 Result Set 계약 일치 (1개 RS · RS0 Code=500)
 PASS 15_예약접수상세_NEX0행701 Result Set 계약 일치 (1개 RS · RS0 Code=701)
-PASS 16_예약접수상세_정상 Result Set 계약 일치 (5개 RS · RS0 Code=0)
+PASS 16_예약접수상세_정상 Result Set 계약 일치 (6개 RS · RS0 Code=0)
 PASS 17_예약가능정보_RowVersion단독 Result Set 계약 일치 (1개 RS · RS0 Code=102)
 PASS 18_예약가능정보_AEX_NULL Result Set 계약 일치 (1개 RS · RS0 Code=100)
 PASS 19_예약가능정보_WALKIN_날짜불일치 Result Set 계약 일치 (1개 RS · RS0 Code=102)
@@ -55,9 +56,8 @@ PASS HOL-004_휴무일목록_구분_허용밖 Result Set 계약 일치 (1개 RS 
 PASS HOL-005_자체휴무일_등록_날짜중복 Result Set 계약 일치 (1개 RS · RS0 Code=801)
 PASS HOL-006_자체휴무일_수정_법정공휴일 Result Set 계약 일치 (1개 RS · RS0 Code=802)
 PASS HOL-007_자체휴무일_삭제_미존재 Result Set 계약 일치 (1개 RS · RS0 Code=800)
-PASS OFF-308-01_업무일아님_수검자등록 Result Set 계약 일치 (1개 RS · RS0 Code=308)
-SKIP OFF-309-01_업무시간밖_수검자등록 업무시간 안이거나 업무일이 아님 — 309 는 업무일의 시간 밖에서만 나온다
-SKIP OFF-309-02_업무시간밖_예약등록 업무시간 안이거나 업무일이 아님 — 309 는 업무일의 시간 밖에서만 나온다
+PASS OFF-308-01_업무일아님_예약등록 Result Set 계약 일치 (1개 RS · RS0 Code=308)
+PASS OFF-309-02_업무시간밖_예약등록 Result Set 계약 일치 (1개 RS · RS0 Code=309)
 PASS PWR-000_fixture Result Set 계약 일치 (0개 RS · RS0 Code=undefined)
 PASS PWR-001_신규등록_자동차트 Result Set 계약 일치 (2개 RS · RS0 Code=0)
 PASS PWR-002_동일주민_동일이름 Result Set 계약 일치 (2개 RS · RS0 Code=2)

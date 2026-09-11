@@ -120,7 +120,9 @@ for (const r of t14.rows) {
 }
 
 const wb = M.workbook('검진 예약·접수 SP 계약서', [
-  { name: 'SP', title: '외부 호출 Stored Procedure 16개', ctr: [2],
+  // [R14] 제목의 수를 손으로 적지 않는다 — R7 이 휴무일 SP 4개를 더해 20개가 된 뒤에도
+  //       이 줄은 '16개' 였고 공개본이 그대로 나갔다 (ROOT AGENTS.md §6).
+  { name: 'SP', title: '외부 호출 Stored Procedure ' + S1.length + '개', ctr: [2],
     head: ['ID', '객체명', '구분', '책임', '허용 결과코드'],
     w: [12, 30, 8, 46, 52], rows: S1 },
 
@@ -136,7 +138,8 @@ const wb = M.workbook('검진 예약·접수 SP 계약서', [
     head: ['결과코드', 'C# Enum', '기본 결과메시지', '기본 오류항목'],
     w: [10, 26, 56, 22], rows: S4 },
 
-  { name: 'TVF', title: '내부 Inline TVF 4개', group: 0,
+  // [X] S5.length 는 TVF 수가 아니라 입력·반환까지 편 행 수다(실측 51). t14 가 TVF 목록표다.
+  { name: 'TVF', title: '내부 Inline TVF ' + t14.rows.length + '개', group: 0,
     head: ['TVF', 'ID', '구분', '이름', '타입', '비고'],
     w: [24, 12, 10, 22, 16, 52], rows: S5 },
 ]);
@@ -156,7 +159,8 @@ M.emit(wb, '05_검진_예약접수_SP계약서.xlsx', [
   ['SP 20개', S1.length, 20],
   ['SP Parameter 전건', spParams, 113],
   ['TVF Parameter 전건', tvfParams, 19],
-  ['Result Set 행 (RS0 100 + RS1~RS5 171)', S3.length, 271],
+  // [R18] SELECT_예약접수상세 가 RS5 추가검사구성 7행을 얻었다 (05 §8.2).
+  ['Result Set 행 (RS0 100 + RS1~RS5 178)', S3.length, 278],
   ['ResultCode 종수', S4.length, 40],
   ['TVF 시트 행 (책임 4 + 입력 19 + 반환 28)', S5.length, 51],
 ]).catch(e => { console.error(e); process.exit(1); });

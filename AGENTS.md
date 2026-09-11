@@ -20,10 +20,29 @@
 04_DB_Design.md                     DB 설계 — 테이블·컬럼·키·제약·인덱스
 05_DB_Rule_SP_Contract.md           Rule·SP 계약 — SP·TVF·Parameter·Result Set·ResultCode
 06_DB_Transaction_Security_Seed.md  DB 구현 계약 — Transaction·잠금·Seed·시험. Phase 4 실행검증 기록
-07_UI_DB_Matrix_Final_Validation.md 화면↔DB 최종 대조 — Phase 5 검증 기록. **아직 없다**
+07_UI_DB_Matrix_Final_Validation.md 화면↔DB 최종 대조 — Phase 5 검증 기록. `docs/phase5/` 에 있다
 ```
 
 충돌하면 **번호가 작은 쪽이 이긴다.** `00 → 07 → DB Script / C# Source` 순이다.
+
+**`03` 은 예외다 — UI 구현을 구속하지 않는다(§1.1).** DB 계열의 사슬은 그대로다.
+
+### 1.1 `03` 과 화면 구현 — 2026-09-10 사용자 결정
+
+**설계서·와이어프레임과 완벽히 일치시키며 개발하는 것을 중지한다.** UI 와 코드 방식이 대폭
+수정될 예정이고, 설계대로 세운 화면이 UX 로 맞지 않다고 판단했기 때문이다.
+
+```text
+03 → C# Source      더 이상 구속하지 않는다. 화면은 실제 UX 판단으로 만든다
+04 · 05 · 06 → SQL  그대로다. DB 계약은 동결이며 이 결정의 대상이 아니다
+00 · 01 · 02        업무정책·프로세스·기능은 그대로 상위다 — 바뀌는 것은 "어떻게 보이는가" 뿐이다
+```
+
+같은 결정으로 **문서일치도 게이트를 돌리지 않는다.** 중지 대상과 남는 것은
+`winforms/AGENTS.md` 가 갖는다 — 여기에 베끼지 않는다(§6).
+
+`[!]` **이 결정은 게이트가 아니라 문장이다.** §6 이 경계하는 바로 그 형태이므로, 되살릴 때는
+문장을 고치는 것만으로 끝내지 말고 중지했던 게이트를 실제로 돌려 red 를 확인한다.
 
 ## 2. `docs/baseline/` 은 폴더가 아니라 봉인이다
 
@@ -74,8 +93,15 @@ node tools/docgen/build_all.js
 공개본 전부를 만들고 **반드시** `tools/docgen/verify_output.js` 를 지난다. 하나씩 손으로 돌리면
 마지막 검사를 빼먹는다. **종수를 여기 적지 않는다** — `build_all.js` 의 `STEPS` 가 단일 출처다.
 
-- `output/` 은 `.gitignore` 대상이라 **어떤 커밋에도 남지 않는다.** 재현 수단은 `tools/docgen` 뿐이다.
+- `output/` 은 **커밋한다** (2026-09-09 사용자 지시). 예전에는 `.gitignore` 대상이었고 그 시절
+  문장이 여기 있었다 — 리뷰가 공개본을 볼 수 없다는 뜻이라 걷었다. PowerPoint 잠금 파일만 뺀다.
 - 바이너리를 손으로 만지지 않는다. 산출물을 고치려면 **생성기를 고쳐 다시 돌린다.**
+- **다시 돌리면 여섯 종이 전부 바뀐다.** 생성기가 결정적이지 않다 — `docProps` 에 생성 시각이
+  들어간다. 그중 **내용이 바뀐 것은 일부**이며, 무엇이 실제로 바뀌었는지는 `docProps` 를 뺀
+  파트 비교로 확인한다(R10 실측: `03` 의 슬라이드 한 장만 내용이 달랐고 나머지 다섯은 0건).
+- **`03` 화면설계서의 배치 원본은 `tools/docgen/wireframe/` 다.** `screens/*.js` 가 화면 ID 마다
+  한 파일이고 `kit.js` 가 공통 부품과 `NAV` 를, `spec.js` 가 규격을 갖는다. **공개본을 고칠 때
+  여는 곳이라는 뜻뿐이다** — §1.1 이후로 **화면을 이 파일에서 만들지 않는다.**
 - **`06` 은 공개본을 만들지 않는다.** 내부 어휘 비중이 크고 값이 표가 아니라 산문에 있어
   `verify_output.js` 를 지날 수 없다. 원본보다 공개본이 하나 적은 **비대칭은 의도한 것**이다.
   개수를 여기 적지 않는다 — 예전에 `원본 8종 · 공개본 7종` 이라 적어 두었는데 둘 다 틀렸다(§6).
@@ -85,9 +111,10 @@ node tools/docgen/build_all.js
 ## 4. 디렉터리 경계
 
 ```text
-docs/baseline/      봉인된 계약 00~06 (+ 07 예정) · output/
+docs/baseline/      봉인된 계약 00~06 · output/
 docs/phase4/        Phase 4 **기록** — plans/ · 재봉인 이력. 계약은 여기 없다
-docs/phase5/        Phase 5 작업 공간. 07 을 여기서 쓰고 완성되면 입주시킨다
+docs/phase5/        Phase 5 작업 공간. 07 이 여기 산다 — **입주 계획은 §1.1 로 보류**했다.
+                    갱신 의무도 없다. 지우지는 않는다 — Phase 5 전반부의 실측 기록이다
 docs/redesign/      계약 재설계 인계문서. Phase 4 도 5 도 아닌 작업이 여기 산다
 database/           Phase 4 DB 의 SQL·스크립트·테스트·증거   → database/AGENTS.md
 winforms/           C# WinForms. Phase 5 의 구현 대상

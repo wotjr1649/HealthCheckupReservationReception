@@ -33,11 +33,14 @@ BEGIN
                                WHEN 3 THEN N'목요일' WHEN 4 THEN N'금요일' WHEN 5 THEN N'토요일'
                                ELSE N'일요일' END AS NVARCHAR(10))
         , [휴무일명]   = CAST(s.[휴무일명] AS NVARCHAR(100))
-        , [운영시작시각]      = CAST('09:00:00' AS TIME(0))
-        , [운영종료시각]     = CAST('18:00:00' AS TIME(0))
+        -- [R13] 05 §7.1 이 이 둘을 Result Set 컬럼으로 정해 두었다 — 계약이 처음부터
+        --       "운영시각은 DB 가 쥐고 화면에 건네주는 값" 으로 모델링했다는 뜻이다.
+        --       지금까지는 SP 가 리터럴로 지어내서 돌려주고 있었다 (04 §8.7.1).
+        , [운영시작시각]      = CAST((SELECT o.[운영시작시각] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1) AS TIME(0))
+        , [운영종료시각]     = CAST((SELECT o.[운영종료시각] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1) AS TIME(0))
         , [업무일여부] = CAST(s.[업무일여부] AS BIT)
-        , [운영시간내여부]   = CAST(CASE WHEN CONVERT(TIME(7), @서버시각) >= CONVERT(TIME(7), '09:00:00')
-                                     AND CONVERT(TIME(7), @서버시각) <  CONVERT(TIME(7), '18:00:00')
+        , [운영시간내여부]   = CAST(CASE WHEN CONVERT(TIME(7), @서버시각) >= (SELECT o.[운영시작시각] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1)
+                                     AND CONVERT(TIME(7), @서버시각) <  (SELECT o.[운영종료시각] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1)
                                     THEN 1 ELSE 0 END AS BIT)
         , [현재업무가능]    = CAST(s.[현재업무가능] AS BIT)
         , [차단코드]     = CAST(s.[업무가능코드] AS INT)
@@ -61,12 +64,16 @@ BEGIN
     -- 1. 정규화 — 공백 제거, 빈 문자열은 NULL, 전화·주민번호의 '-' 제거
     SET @차트번호      = NULLIF(LTRIM(RTRIM(@차트번호)), N'');
     SET @성명         = NULLIF(LTRIM(RTRIM(@성명)), N'');
-    -- [X] @성명 을 LIKE 에 그대로 이어 붙이면 접두검색이 아니다. '%' 한 글자면 조건이 '있는'
-    --     것으로 103 가드를 통과하고 수검자 전건이 주민번호와 함께 반환된다 (실측).
-    --     04 §11.3 과 이 파일 머리 주석이 '조건 없는 전체조회는 금지' 라고 못박은 그 상태다.
-    --     메타문자 세 개를 대괄호로 이스케이프한다. '[' 를 먼저 바꿔야 뒤 치환이 낳는 괄호를 안 건드린다.
-    --     변수로 올려 IX_수검자_NAME_BIRTHDAY seek 을 잃지 않게 한다.
-    DECLARE @성명패턴 NVARCHAR(200) = CASE WHEN @성명 IS NULL THEN NULL ELSE REPLACE(REPLACE(REPLACE(@성명, N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%' END;
+    -- [X] 값을 LIKE 에 그대로 이어 붙이면 사용자가 친 '%' 가 패턴이 된다. 예전에는 그것이
+    --     103 가드까지 우회해 수검자 전건이 주민번호와 함께 반환됐다 (실측).
+    --     그 가드는 R16 이 걷었지만 **이스케이프는 남긴다** — 사용자가 친 '%' 는 글자 '%' 다.
+    --     메타문자 세 개를 대괄호로 감싼다. '[' 를 먼저 바꿔야 뒤 치환이 낳는 괄호를 안 건드린다.
+    -- [R17] 앞뒤로 '%' 를 붙여 **포함검색**한다 (03 §5.3 · 04 §11.3 · 05 §7.2).
+    --     [!] 앞의 '%' 때문에 UQ_수검자_CHART_NO 도 IX_수검자_NAME_BIRTHDAY 도 seek 하지 못한다.
+    --         알고 여는 비용이며 06 §43-32 에 등재했다.
+    --     주민번호·생년월일·휴대전화는 신원값이라 정확검색 그대로다.
+    DECLARE @차트번호패턴 NVARCHAR(300) = CASE WHEN @차트번호 IS NULL THEN NULL ELSE N'%' + REPLACE(REPLACE(REPLACE(@차트번호, N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%' END;
+    DECLARE @성명패턴 NVARCHAR(300) = CASE WHEN @성명 IS NULL THEN NULL ELSE N'%' + REPLACE(REPLACE(REPLACE(@성명, N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%' END;
     SET @주민번호 = NULLIF(REPLACE(LTRIM(RTRIM(@주민번호)), '-', ''), '');
     SET @생년월일     = NULLIF(LTRIM(RTRIM(@생년월일)), '');
     SET @휴대전화  = NULLIF(REPLACE(LTRIM(RTRIM(@휴대전화)), '-', ''), '');
@@ -97,18 +104,13 @@ BEGIN
         RETURN;
     END
 
-    -- 3. 조회조건 — 5개가 전부 NULL 이면 전체조회가 되므로 막는다
-    IF @차트번호 IS NULL AND @성명 IS NULL AND @주민번호 IS NULL
-       AND @생년월일 IS NULL AND @휴대전화 IS NULL
-    BEGIN
-        SELECT
-              CAST(0 AS BIT)                    AS [성공여부]
-            , CAST(103 AS INT)                  AS [결과코드]
-            , CAST(N'조회조건을 하나 이상 입력하십시오.' AS NVARCHAR(300)) AS [결과메시지]
-            , CAST(NULL AS NVARCHAR(50))         AS [오류항목]
-            , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-        RETURN;
-    END
+    -- 3. [R16] 조회조건이 하나도 없으면 **전체를 조회한다** (03 §5.3 · 04 §11.3 · 05 §7.2).
+    --    2026-09-10 사용자 결정 — 빈 Grid 가 무엇을 검색해야 하는지 알려 주지 않았다.
+    --    여기 있던 103 가드를 걷었다. 이 SP 는 이제 103 을 내지 않는다(05 §13).
+    -- [!] 걷은 것은 '조건 없는 전체조회 금지' 하나뿐이다. 위 @성명패턴 의 메타문자
+    --     이스케이프는 그대로 남는다 — 그것이 막는 것은 이름 포함검색('%검색어%')이고
+    --     별개 규칙이다 (04 §11.3). 04 §11.3 의 [X] 사고는 그 이스케이프가 막는다.
+    -- [!] 전체조회는 주민번호를 전건 내보낸다. 06 §43 에 한계로 등재했다.
 
     -- RS0
     SELECT
@@ -132,7 +134,7 @@ BEGIN
         , [우편번호]      = CAST(p.[우편번호]      AS VARCHAR(10))
         , [주소]      = CAST(p.[주소]      AS NVARCHAR(200))
     FROM [dbo].[수검자] p
-    WHERE (@차트번호      IS NULL OR p.[차트번호]      =  @차트번호)
+    WHERE (@차트번호      IS NULL OR p.[차트번호]      LIKE @차트번호패턴   )
       AND (@성명         IS NULL OR p.[성명]         LIKE @성명패턴       )
       AND (@주민번호 IS NULL OR p.[주민번호] =  @주민번호)
       AND (@생년월일     IS NULL OR p.[생년월일]     =  @생년월일)
@@ -515,6 +517,29 @@ BEGIN
           END) r
     WHERE w.[업무ID] = @업무ID
     ORDER BY a.[정렬순서];
+
+    -- RS5 추가검사구성 — 정확히 7행 (05 §8.2, R18).
+    --   RS3 은 **저장된** AEX 만 준다. 고치는 화면(DLG-RCP-02)은 안 고른 것까지 일곱을
+    --   모두 봐야 하고, 각각이 이 사람에게 가능한지도 알아야 한다.
+    --   [X] 요청선택여부에 0 을 넘긴다. 사유코드는 그 값에 의존하지 않으므로
+    --       (03_Functions.sql UFN_HC_추가검사확인 의 파생표 b) 판정이 같고, 이 Result Set 은
+    --       **고르기 전 상태**를 낸다.
+    --   [X] 저장검사사용여부=1 — 성별·중복 판정의 근거가 그 Work 에 **저장된 NEX** 여야 한다
+    --       (05 §6.4.3). 예약일 기준 TGT 재판정(400/401)도 그래서 건너뛴다.
+    SELECT
+          [추가검사코드] = CAST(x.[추가검사코드] AS VARCHAR(10))
+        , [검사항목코드]   = CAST(x.[검사항목코드] AS VARCHAR(10))
+        , [검사항목명]   = CAST(x.[검사항목명] AS NVARCHAR(100))
+        , [선택여부]     = CAST(CASE WHEN N',' + ISNULL(w.[추가검사항목], N'') + N','
+                                       LIKE N'%,' + x.[검사항목코드] + N',%' THEN 1 ELSE 0 END AS BIT)
+        , [선택가능]     = CAST(x.[선택가능] AS BIT)
+        , [사유코드]    = CAST(x.[사유코드] AS INT)
+        , [사유메시지] = CAST(x.[사유메시지] AS NVARCHAR(300))
+    FROM [dbo].[예약접수] w
+    CROSS APPLY [dbo].[UFN_HC_추가검사확인](w.[수검자ID], w.[예약일], w.[업무ID], 1,
+                   0, 0, 0, 0, 0, 0, 0) x
+    WHERE w.[업무ID] = @업무ID
+    ORDER BY x.[추가검사코드] ASC;
 END
 GO
 -- 허용 결과코드 0 / 100~102 / 200 / 500~502 / 601 / 700~701 (05 §9).

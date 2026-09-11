@@ -50,8 +50,8 @@ const pages = tablePages('부록 F.  구현 기준', [
     cols: [{ t: '원칙', flex: 1, align: 'left' }],
     rows: [
       ['고정 Pixel 중심 배치를 피하고 Layout / Dock / Splitter를 사용한다.'],
-      ['MainForm은 기본 Maximized로 연다.'],
-      ['최소 검증 해상도는 1366×768, 권장 기준은 1920×1080이다.'],
+      ['MainForm은 기본 크기를 권장 기준으로 열고 최대화를 지원한다. 화면이 그보다 작으면 작업 영역에 맞춘다.'],
+      ['최소 검증 해상도는 1366×768, 권장 기준은 1920×1080이다. 창의 최소 크기는 최소 검증 해상도다.'],
       ['Windows 배율 100%와 125%에서 Label · Grid Header · Modal 하단버튼 잘림을 확인한다.'],
       ['Ribbon과 별도 Main Menu Bar를 중복 구성하지 않는다.'],
       ['DevExpress 20.2에서 제공되지 않는 최신 API에 의존하지 않는다.'],

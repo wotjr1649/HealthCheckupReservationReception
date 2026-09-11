@@ -5,11 +5,12 @@ DECLARE @Expected TABLE ([객체명] SYSNAME PRIMARY KEY);
 INSERT INTO @Expected ([객체명]) VALUES
  ('수검자'),('예약접수'),
  ('검사코드'),('휴무일'),
- ('완료이력'),('변경이력');
+ ('완료이력'),('변경이력'),
+ ('운영기준');
 
 -- SCH-001 테이블 수
-IF ((SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0) = 6)
-    PRINT 'PASS SCH-001 사용자 테이블 6개';
+IF ((SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped = 0) = 7)
+    PRINT 'PASS SCH-001 사용자 테이블 7개';
 ELSE BEGIN PRINT 'FAIL SCH-001 사용자 테이블 수 불일치'; SET @Fail += 1; END
 
 -- SCH-002 테이블 이름 집합 정확 일치
@@ -23,9 +24,9 @@ IF ((SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[수�
     PRINT 'PASS SCH-003 수검자 17컬럼';
 ELSE BEGIN PRINT 'FAIL SCH-003 수검자 컬럼 수 불일치'; SET @Fail += 1; END
 
--- SCH-004 PK 6
-IF ((SELECT COUNT(*) FROM sys.key_constraints WHERE type = 'PK') = 6)
-    PRINT 'PASS SCH-004 PK 6개';
+-- SCH-004 PK 7   [R13] 운영기준 (04 §8.7.3)
+IF ((SELECT COUNT(*) FROM sys.key_constraints WHERE type = 'PK') = 7)
+    PRINT 'PASS SCH-004 PK 7개';
 ELSE BEGIN PRINT 'FAIL SCH-004 PK 수 불일치'; SET @Fail += 1; END
 
 -- SCH-005 FK 2 + 전부 NO ACTION. 검사항목이 사라져 FK 2개도 함께 사라졌다 (plans/10 §3)
@@ -84,10 +85,10 @@ IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 20)
     PRINT 'PASS SCH-014 Stored Procedure 20개';
 ELSE BEGIN PRINT 'FAIL SCH-014 SP 수 불일치 (T30 이전이면 정상)'; SET @Fail += 1; END
 
--- SCH-015 컬럼 53개 전건 EXCEPT 양방향  (04 §8)
+-- SCH-015 컬럼 60개 전건 EXCEPT 양방향  (04 §8)   [R13] 운영기준 7컬럼
 DECLARE @ExpCol TABLE (T SYSNAME, Col SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, Col));
 INSERT INTO @ExpCol (T, Col, Ty, Len, Nul) VALUES
- -- 53행 전건. 기준선 04 §8 의 컬럼 표에서 기계 생성했다(개수·타입·길이·NULL 모두 그 표가 출처다).
+ -- 60행 전건. 기준선 04 §8 의 컬럼 표에서 기계 생성했다(개수·타입·길이·NULL 모두 그 표가 출처다).
  -- Len 은 문자·이진형만 채운다. nvarchar/nchar 는 문자 수, MAX 는 -1, 그 밖은 NULL.
  -- 수검자 17행
  (N'수검자', N'수검자ID',                 N'bigint',      NULL,  0)
@@ -147,7 +148,15 @@ INSERT INTO @ExpCol (T, Col, Ty, Len, Nul) VALUES
 ,(N'변경이력', N'대상키',                   N'bigint',      NULL,  0)
 ,(N'변경이력', N'컬럼명',                   N'nvarchar',    30,    0)
 ,(N'변경이력', N'변경전',                   N'nvarchar',    4000,  1)
-,(N'변경이력', N'변경후',                   N'nvarchar',    4000,  1);
+,(N'변경이력', N'변경후',                   N'nvarchar',    4000,  1)
+ -- [R13] 운영기준 7행 (04 §8.7.2)
+,(N'운영기준', N'기준ID',                  N'tinyint',     NULL,  0)
+,(N'운영기준', N'운영시작시각',              N'time',        NULL,  0)
+,(N'운영기준', N'운영종료시각',              N'time',        NULL,  0)
+,(N'운영기준', N'일반예약AM마감',            N'time',        NULL,  0)
+,(N'운영기준', N'일반예약PM마감',            N'time',        NULL,  0)
+,(N'운영기준', N'접수AM마감',               N'time',        NULL,  0)
+,(N'운영기준', N'접수PM마감',               N'time',        NULL,  0);
 DECLARE @ActCol TABLE (T SYSNAME, Col SYSNAME, Ty SYSNAME, Len INT, Nul BIT, PRIMARY KEY (T, Col));
 INSERT INTO @ActCol (T, Col, Ty, Len, Nul)
 SELECT t.name, c.name, y.name
@@ -162,7 +171,7 @@ WHERE t.is_ms_shipped = 0;
 
 IF NOT EXISTS (SELECT T,Col,Ty,Len,Nul FROM @ExpCol EXCEPT SELECT T,Col,Ty,Len,Nul FROM @ActCol)
    AND NOT EXISTS (SELECT T,Col,Ty,Len,Nul FROM @ActCol EXCEPT SELECT T,Col,Ty,Len,Nul FROM @ExpCol)
-    PRINT 'PASS SCH-015 컬럼 53개 전건 일치';
+    PRINT 'PASS SCH-015 컬럼 60개 전건 일치';
 ELSE
 BEGIN
     PRINT 'FAIL SCH-015 컬럼 불일치';
@@ -171,7 +180,7 @@ BEGIN
     SET @Fail += 1;
 END
 
--- SCH-016 CHECK 제약 이름 26개 EXCEPT 양방향  (04 §8.1.3 7 + §8.2.3 5 + §8.3.3 8 + §8.4.3 3 + §8.5.3 1 + §8.6.3 2)
+-- SCH-016 CHECK 제약 이름 28개 EXCEPT 양방향  (04 §8.1.3 7 + §8.2.3 5 + §8.3.3 8 + §8.4.3 3 + §8.5.3 1 + §8.6.3 2 + §8.7.3 2)
 DECLARE @ExpCk TABLE (N SYSNAME PRIMARY KEY);
 INSERT INTO @ExpCk (N) VALUES
  (N'CK_수검자_CHART_NO_NOT_BLANK'), (N'CK_수검자_NAME_NOT_BLANK'),
@@ -188,7 +197,8 @@ INSERT INTO @ExpCk (N) VALUES
  (N'CK_검사코드_AEX_CODE'),         (N'CK_검사코드_AEX_GENDER'),
  (N'CK_검사코드_AEX_GROUP'),        (N'CK_휴무일_NAME_NOT_BLANK'),
  (N'CK_휴무일_TYPE'),               (N'CK_휴무일_EDIT_DATE'),
- (N'CK_변경이력_TARGET_TABLE'),     (N'CK_변경이력_COLUMN_NOT_BLANK');
+ (N'CK_변경이력_TARGET_TABLE'),     (N'CK_변경이력_COLUMN_NOT_BLANK'),
+ (N'CK_운영기준_SINGLETON'),        (N'CK_운영기준_HOURS');
 
 IF NOT EXISTS (SELECT N FROM @ExpCk EXCEPT SELECT name FROM sys.check_constraints)
    AND NOT EXISTS (SELECT name FROM sys.check_constraints EXCEPT SELECT N FROM @ExpCk)

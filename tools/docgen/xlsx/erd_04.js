@@ -6,7 +6,7 @@
  * 이미지와 달리 선택·검색·인쇄가 되고 파일이 커지지 않는다. md.js 의 그리기 킷을 쓴다.
  *
  * [!] **좌표만 손으로 둔다.** 상자 안의 내용은 전부 기준선 04 에서 뽑지만 상자의 위치는
- *     6개 테이블을 전제로 배치했다. §7 이 바뀌면 그림이 조용히 깨지므로 guard() 가 먼저 멈춘다.
+ *     §7 의 테이블 전건을 전제로 배치했다. §7 이 바뀌면 그림이 조용히 깨지므로 guard() 가 먼저 멈춘다.
  */
 'use strict';
 const M = require('./md.js');
@@ -74,10 +74,10 @@ function build(ctx) {
   const colsOf = t => S2.filter(r => r[0] === t);
 
   /* ---- guard ---- */
-  const EXPECT = ['수검자', '예약접수', '검사코드', '휴무일', '완료이력', '변경이력'];
+  const EXPECT = ['수검자', '예약접수', '검사코드', '휴무일', '완료이력', '변경이력', '운영기준'];
   const fail = [];
   if (TABLES.join(',') !== EXPECT.join(','))
-    fail.push('ERD 좌표는 다음 6개를 전제로 손으로 배치했다\n  기대: ' + EXPECT.join(', ')
+    fail.push('ERD 좌표는 다음 7개를 전제로 손으로 배치했다\n  기대: ' + EXPECT.join(', ')
               + '\n  실측: ' + TABLES.join(', ') + '\n  §7 이 바뀌었다 — erd_04.js 의 좌표를 함께 고쳐라');
   if (rel44.rows.length !== 2) fail.push('§4.4 관계가 2건이 아니다: ' + rel44.rows.length);
   if (mermaid.length !== 2) fail.push('§4.5 mermaid 관계선이 2건이 아니다: ' + mermaid.length);
@@ -109,6 +109,9 @@ function build(ctx) {
     mk('검사코드', 16, 2);
     mk('휴무일', 21, 1);
     mk('변경이력', 21, 3);
+    // [R13] 관계선이 없는 1행짜리 Master 다. 아래 한 칸에 따로 둔다 — 위 두 줄과 같은 줄에
+    //       놓으면 "관계선 없음" 주석(24행)이 셋 중 둘만 가리키는 것처럼 읽힌다.
+    mk('운영기준', 26, 2);
 
     // 수검자 1:N 예약접수 · 수검자 1:N 완료이력 — §4.4 · §4.5 의 두 줄이 이것이다.
     M.vline(ws, G[2], 7, 8);
@@ -130,9 +133,9 @@ function build(ctx) {
           { font: { size: 8, bold: true, color: { argb: 'FF8B6914' } }, align: CTR });
 
     M.merge(ws, 24, G[1], 24, G[3] + 1);
-    M.put(ws, 24, G[1], '휴무일 · 변경이력 은 관계선이 없다', { font: NOTE, align: CTR });
+    M.put(ws, 24, G[1], '휴무일 · 변경이력 · 운영기준 은 관계선이 없다', { font: NOTE, align: CTR });
 
-    let y = table(ws, 27, 2, '관계 (04)', ['부모', '자식', '관계', '의미'], rel44.rows);
+    let y = table(ws, 31, 2, '관계 (04)', ['부모', '자식', '관계', '의미'], rel44.rows);
     y = table(ws, y, 2, 'Entity (04)', ['테이블', '구분', 'PK', '책임'],
               TABLES.map(t => [t, meta[t].kind, meta[t].pk, meta[t].duty]));
     // mermaid 원문 표는 넣지 않는다 — 독자에게 필요한 것은 그림이지 그림의 소스가 아니다.
@@ -215,8 +218,10 @@ function build(ctx) {
 
   return {
     sheets: [
-      { name: '논리ERD', title: '논리 ERD — Entity 6 · 관계 2', w: LG, rowHeight: 17, draw: drawLogical },
-      { name: '물리ERD', title: '물리 ERD — Table 6 · Foreign Key 2', w: PG, rowHeight: 15, draw: drawPhysical },
+      // [R14] 여기도 수를 세서 넣는다. 위 guard() 가 EXPECT 와 §7 을 이미 맞췄으므로
+      //       이 값들은 §7 을 그대로 따라온다.
+      { name: '논리ERD', title: '논리 ERD — Entity ' + TABLES.length + ' · 관계 ' + rel44.rows.length, w: LG, rowHeight: 17, draw: drawLogical },
+      { name: '물리ERD', title: '물리 ERD — Table ' + TABLES.length + ' · Foreign Key ' + nFk, w: PG, rowHeight: 15, draw: drawPhysical },
     ],
     stat: { tables: TABLES.length, rel: rel44.rows.length, mermaid: mermaid.length, fk: nFk },
   };

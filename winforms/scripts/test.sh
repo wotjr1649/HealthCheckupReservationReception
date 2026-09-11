@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# winforms 계열 회귀. DB 서버도 MSBuild 도 필요 없는 것만 모은다 — 어디서나 같은 판정이 나온다.
+#
+# database/scripts/test.sh 와 층이 다르다. 저쪽은 SQLEXPRESS 에 붙어 SP·Rule 을 돌린다.
+# ../database/scripts/verify-winforms-unchanged.sh 는 여기서 부르지 않는다 — 그것은
+# "database 계열이 winforms 를 안 건드렸는가" 를 보는 database 쪽 게이트라, winforms 를
+# 정당하게 고치는 커밋에서는 red 가 되는 것이 정상이다 (winforms/AGENTS.md).
+# [X] **게이트가 간헐적으로 멈춘다. 원인은 아직 모른다** (2026-09-09, 07 §12.5).
+#     세 번 관측했고 전부 verify-screen-design.js 였다 — 두 번은 `selftest`, 한 번은 그냥
+#     `check` 다. 배경 실행에서도 전경 실행에서도 났다. 실측: CPU 시간이 멈춘 채
+#     state=S(sleeping) 이므로 도는 것이 아니라 **I/O 에서 잠들어 있다.** 같은 명령이
+#     대개는 1초에 끝난다.
+#
+#     원인을 못 짚었으므로 **증상에 경계를 둔다.** 경계가 없으면 멈춘 게이트 하나가 회귀
+#     전체를 영원히 잡고, 그 사이 아무 판정도 나오지 않는다.
+#
+# [X] 배경으로 돌린 "통과" 는 아무것도 증명하지 않는다. `./scripts/test.sh | tail -60` 로
+#     감싸면 파이프라인의 종료코드는 tail 것이고 tail 은 stdin 이 닫히면 0 을 낸다 —
+#     **출력 0바이트에 exit 0** 이 나온다. 실제로 두 번 그렇게 보고됐다. 판정은 출력을 본다.
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+# 게이트 하나가 쓸 수 있는 시간. 가장 느린 것이 selftest 이고 대개 20초 안이다.
+GATE_TIMEOUT=${GATE_TIMEOUT:-300}
+
+FAIL=0
+run() {
+  echo
+  echo "── $*"
+  # -k: TERM 을 무시하면 10초 뒤 KILL 한다. I/O 에 잠든 프로세스는 TERM 을 못 받기도 한다.
+  timeout -k 10 "$GATE_TIMEOUT" "$@"
+  rc=$?
+  if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
+    echo "FAIL 시간 초과 — ${GATE_TIMEOUT}초 안에 끝나지 않았다: $*"
+    FAIL=1
+  elif [ "$rc" -ne 0 ]; then
+    FAIL=1
+  fi
+}
+
+# Phase 5 동결 (사용자 확정 2026-09-10) — 계약·DB 배포본을 더 고치지 않는다.
+# [!] 선언은 썩으므로 게이트로 둔다. red 는 "고치지 마라" 가 아니라 "회차를 붙여라" 다.
+run ./scripts/verify-db-frozen.sh selftest
+run ./scripts/verify-db-frozen.sh
+run ./scripts/verify-no-secret.sh selftest
+run ./scripts/verify-no-secret.sh
+run ./scripts/verify-contract-names.sh selftest
+run ./scripts/verify-contract-names.sh
+run ./scripts/verify-ui-baseline.sh selftest
+run ./scripts/verify-ui-baseline.sh
+run ./scripts/verify-dbcode.sh selftest
+run ./scripts/verify-dbcode.sh
+run ./scripts/verify-work-actions.sh selftest
+run ./scripts/verify-work-actions.sh
+
+run ./scripts/verify-work-status.sh selftest
+run ./scripts/verify-work-status.sh
+
+# 같은 모양의 검사가 둘이다 — 스크립트를 복사하지 않고 환경변수로 대상을 바꿔 두 번 돌린다.
+run ./scripts/verify-check-values.sh selftest
+run ./scripts/verify-check-values.sh
+CONSTRAINT=CK_변경이력_TARGET_TABLE LABEL=대상테이블   CODE=src/HealthCheckupReservationReception.WinForms/Common/DbLogTarget.cs   run ./scripts/verify-check-values.sh
+run ./scripts/verify-social-century.sh selftest
+run ./scripts/verify-social-century.sh
+run ./scripts/verify-layering.sh selftest
+run ./scripts/verify-layering.sh
+run ./scripts/verify-rs-columns.sh selftest
+run ./scripts/verify-rs-columns.sh
+# [X] `source` 모드만 돈다 — SCR-000·001(설계 소스 ↔ 03)이다. SCR-002·003·004 는
+#     ROOT AGENTS.md §1.1 이 놓아 준 *구현 ↔ 03* 이라 의도된 red 이고, 회귀에 두면
+#     다음 사람이 red 에 무뎌진다 (2026-09-11 사용자 결정). 되살릴 때는 인자를 뺀다.
+run node tools/verify-screen-design.js selftest source
+run node tools/verify-screen-design.js source
+run ./scripts/verify-ui-db-matrix.sh selftest
+run ./scripts/verify-ui-db-matrix.sh
+
+echo
+if [ "$FAIL" -eq 0 ]; then
+  echo "=== winforms 회귀 PASS ==="
+else
+  echo "=== winforms 회귀 FAIL ==="
+fi
+exit $FAIL

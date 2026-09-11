@@ -9,6 +9,31 @@ NOTRUN=0
 
 ./scripts/rebuild.sh || { echo "rebuild 실패"; exit 1; }
 
+# 라이브 DB ↔ deploy/ 동기화 (G17). **rebuild 바로 뒤**가 자리다 — 방금 배포한 것이
+# 실제로 그대로 들어갔는지, 그리고 지금 붙어 있는 DB 가 배포 원본과 같은지를 함께 본다.
+# [!] 이 축은 회귀 전체에서 비어 있었다. winforms 의 TestCategory=Db 통합시험은 rebuild 없이
+#     살아 있는 DB 에 붙으므로, 누가 SSMS 에서 SP 를 고치면 그 시험이 다른 제품을 재게 된다.
+if ./scripts/verify-live-sync.sh selftest > /dev/null; then
+  echo "PASS SYNC-SELFTEST 배포목록 게이트가 누락·유령 참조를 실제로 잡는다"
+else ./scripts/verify-live-sync.sh selftest; FAILED=1; fi
+./scripts/verify-live-sync.sh || FAILED=1
+
+# 운영기준(04 §8.7) 게이트. R13 이 운영시간·마감시각을 SP 안 리터럴에서 테이블로 옮겼고,
+# 그래서 시험이 창을 옮겨 성공 경로를 24시간 판정할 수 있게 됐다. 그 대가로 새 실패 방식이
+# 하나 생긴다 — **넓힌 창을 되돌리지 않은 회차**. 그러면 다음 회차가 다른 제품을 시험한다.
+#   OPR-G1·G2  값의 소유자는 00 이다 (CP-04 · §3 마감표)
+#   OPR-G3     02_Seed.sql 이 그 값과 같다        → "설정" 이 아니라 정책이다 (06 §43-21)
+#   OPR-G4     실물 [운영기준] 이 그 값과 같다    → 넓힌 창이 되돌아왔다
+# 자체시험을 먼저 돌린다. 게이트가 변조를 못 잡으면 아래 두 판정은 아무 뜻이 없다.
+if ./scripts/verify-operating-baseline.sh selftest > /dev/null; then
+  echo "PASS OPR-SELFTEST 운영기준 게이트가 Seed·00 변조를 실제로 잡는다"
+else ./scripts/verify-operating-baseline.sh selftest; FAILED=1; fi
+opr() {                       # opr <어디까지 돌았는지>
+  if ./scripts/verify-operating-baseline.sh > /dev/null; then
+    echo "PASS OPR-G1~G4 운영기준 = 00 ($1 뒤) — 넓힌 창이 되돌아왔다"
+  else ./scripts/verify-operating-baseline.sh; FAILED=1; fi
+}
+
 # 이 회차가 쓴 로그만 목록에 남긴다. artifacts/logs/ 는 누적되고 옛 RED 회차의
 # test_01_red.log 같은 파일이 섞이면 요약에 이 회차와 무관한 FAIL 이 들어온다 (실측).
 : > artifacts/logs/_manifest.txt
@@ -46,6 +71,10 @@ run tests/14_Clean_Rebuild_Verify.sql     14
 # 계약 검증 (G09) — 스펙 §8.4 가 test.sh 범위로 지정했다
 ./scripts/verify-contract-all.sh || FAILED=1
 
+# tests/05~08 과 계약 게이트가 넓힌 창을 되돌렸는가. **여기서** 한 번 물어야 한다 —
+# 뒤의 동시성 루프가 시나리오마다 rebuild 를 돌려 잔여를 지워 버리기 때문이다.
+opr "쓰기 시험·계약 게이트"
+
 # R4-3 C# 호출 (06 §46.3). 여기 두는 이유는 DB 에 Fixture 가 살아 있는 마지막 지점이기
 # 때문이다 — 뒤의 verify-red·clean-rebuild 가 DB 를 다시 만든다.
 # csc.exe 가 없는 환경에서는 exit 3 = NOT RUN 이다. SKIP 을 PASS 로 쓰지 않는다.
@@ -72,6 +101,9 @@ for s in 1 2 3 4 5 6 7 8; do
   if [ "$crc" -eq 3 ]; then NOTRUN=$((NOTRUN+1)); elif [ "$crc" -ne 0 ]; then FAILED=1; fi
 done
 fi
+
+# 동시성도 창을 넓힌다. 뒤의 verify-red·clean-rebuild 가 DB 를 다시 만들기 전에 묻는다.
+opr "동시성"
 
 # RED 음성시험 (G15) — "시험이 실제로 실패를 잡는가" 를 폐기용 DB 에서 판정한다 (스펙 §40a).
 # clean-rebuild 보다 **먼저** 돌린다. 폐기용 DB 가 남아 있으면 RBD-009(타 DB 무사)를 깨뜨리는데,

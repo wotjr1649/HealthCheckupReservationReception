@@ -54,8 +54,11 @@ RETURN
         (
             SELECT b.*
                  , [오늘업무일]   = CASE WHEN b.[오늘요일] <> 6 AND b.[오늘휴무일명] IS NULL THEN 1 ELSE 0 END
-                 , [운영시간내여부]= CASE WHEN b.[현재시각] >= CONVERT(TIME(7), '09:00:00')
-                                      AND b.[현재시각] <  CONVERT(TIME(7), '18:00:00') THEN 1 ELSE 0 END
+                 -- [R13] 값은 04 §8.7 의 운영기준이 갖는다. 리터럴이면 시험이 창을 만들 수 없다.
+                 --       b.[운영시작시각] 이 NULL(행 없음)이면 비교가 UNKNOWN 이라 0 으로 떨어진다 —
+                 --       Seed 누락은 **열리는 쪽이 아니라 닫히는 쪽**으로 무너진다.
+                 , [운영시간내여부]= CASE WHEN b.[현재시각] >= CONVERT(TIME(7), b.[운영시작시각])
+                                      AND b.[현재시각] <  CONVERT(TIME(7), b.[운영종료시각]) THEN 1 ELSE 0 END
                  , [요청업무일]     = CASE WHEN b.[요청요일] <> 6 AND b.[요청휴무일명] IS NULL THEN 1 ELSE 0 END
                  , [시간대운영]   = CASE WHEN b.[요청요일] = 5 AND @시간대코드 = 'PM' THEN 0 ELSE 1 END
                  , [적용마감시각]     = CASE WHEN @예약일 = b.[오늘날짜] THEN b.[기본마감시각] ELSE NULL END
@@ -72,10 +75,14 @@ RETURN
                                        WHERE h.[휴무일자] = @예약일 AND h.[사용여부] = 1)
                     -- 토요일 오후는 00 §3장이 마감을 "해당 없음" 으로 확정했다.
                     -- 기본마감시각 는 요일을 보지 않으므로 마감시각 을 시간대운영=0 에서 NULL 로 덮는다.
-                    , [기본마감시각]    = CASE WHEN @마감구분 = 'NORMAL'    AND @시간대코드 = 'AM' THEN CONVERT(TIME(0), '10:00:00')
-                                          WHEN @마감구분 = 'NORMAL'    AND @시간대코드 = 'PM' THEN CONVERT(TIME(0), '15:00:00')
-                                          WHEN @마감구분 = 'RECEPTION' AND @시간대코드 = 'AM' THEN CONVERT(TIME(0), '11:00:00')
-                                          WHEN @마감구분 = 'RECEPTION' AND @시간대코드 = 'PM' THEN CONVERT(TIME(0), '16:00:00')
+                    -- [R13] 네 값도 운영기준이 갖는다 (04 §8.7). WalkIn 당일예약은 접수와 같은 값을 쓰므로
+                    --       @마감구분 이 NORMAL·RECEPTION 둘뿐인 것과 컬럼 넷이 정확히 맞물린다.
+                    , [운영시작시각]  = (SELECT o.[운영시작시각] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1)
+                    , [운영종료시각] = (SELECT o.[운영종료시각] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1)
+                    , [기본마감시각]    = CASE WHEN @마감구분 = 'NORMAL'    AND @시간대코드 = 'AM' THEN (SELECT o.[일반예약AM마감] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1)
+                                          WHEN @마감구분 = 'NORMAL'    AND @시간대코드 = 'PM' THEN (SELECT o.[일반예약PM마감] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1)
+                                          WHEN @마감구분 = 'RECEPTION' AND @시간대코드 = 'AM' THEN (SELECT o.[접수AM마감] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1)
+                                          WHEN @마감구분 = 'RECEPTION' AND @시간대코드 = 'PM' THEN (SELECT o.[접수PM마감] FROM [dbo].[운영기준] o WHERE o.[기준ID] = 1)
                                           ELSE NULL END
             ) b
         ) c

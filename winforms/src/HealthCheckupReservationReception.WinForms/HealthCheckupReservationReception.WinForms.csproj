@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4D1F2A70-8C33-4B21-9E0A-1A2B3C4D5E01}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>HealthCheckupReservationReception.WinForms</RootNamespace>
+    <RootNamespace>HealthCheckupReservationReception</RootNamespace>
     <AssemblyName>HealthCheckupReservationReception.WinForms</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -40,17 +40,227 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
+  <!-- DevExpress 20.2. 설치된 20.2 어셈블리가 Source of Truth 다 (킷 §1).
+       화면이 요구할 때마다 필요한 것만 더한다 — 전부 미리 걸지 않는다. -->
   <ItemGroup>
+    <Reference Include="DevExpress.Data.v20.2" />
+    <Reference Include="DevExpress.Data.Desktop.v20.2" />
+    <Reference Include="DevExpress.Printing.v20.2.Core" />
+    <Reference Include="DevExpress.Utils.v20.2" />
+    <Reference Include="DevExpress.XtraBars.v20.2" />
+    <Reference Include="DevExpress.XtraEditors.v20.2" />
+    <Reference Include="DevExpress.XtraGrid.v20.2" />
+    <Reference Include="DevExpress.XtraLayout.v20.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Common\DbCode.cs" />
+    <Compile Include="Common\DbReserveType.cs" />
+    <Compile Include="Common\DbWorkAction.cs" />
+    <Compile Include="Common\DbWorkStatus.cs" />
+    <Compile Include="Common\DbHolidayType.cs" />
+    <Compile Include="Common\DbLogTarget.cs" />
+    <Compile Include="Common\OperationResult.cs" />
+    <Compile Include="Common\WorkAction.cs" />
+    <Compile Include="Common\clsPatientText.cs" />
+    <Compile Include="Common\clsWorkText.cs" />
+    <Compile Include="Models\CommonWorkStatusDto.cs" />
+    <Compile Include="Models\CommonWorkStatusReadDto.cs" />
+    <Compile Include="Models\DbResult.cs" />
+    <Compile Include="Models\PatientDetailDto.cs" />
+    <Compile Include="Models\PatientDetailReadDto.cs" />
+    <Compile Include="Models\PatientListItemDto.cs" />
+    <Compile Include="Models\PatientListReadDto.cs" />
+    <Compile Include="Models\PatientSearchRequest.cs" />
+    <Compile Include="Models\PatientSaveReadDto.cs" />
+    <Compile Include="Models\PatientSaveRequest.cs" />
+    <Compile Include="Models\PatientSaveResultDto.cs" />
+    <Compile Include="Models\PatientValidWorkDto.cs" />
+    <Compile Include="Models\PatientValidWorkReadDto.cs" />
+    <Compile Include="Models\ExamTargetDto.cs" />
+    <Compile Include="Models\ReservationAexItemDto.cs" />
+    <Compile Include="Models\ReservationChangeRequest.cs" />
+    <Compile Include="Models\ExtraExamChangeRequest.cs" />
+    <Compile Include="Models\ReservationAvailabilityReadDto.cs" />
+    <Compile Include="Models\ReservationAvailabilityRequest.cs" />
+    <Compile Include="Models\ReservationSaveRequest.cs" />
+    <Compile Include="Models\ReservationSummaryDto.cs" />
+    <Compile Include="Models\SlotInfoDto.cs" />
+    <Compile Include="Models\WorkSaveReadDto.cs" />
+    <Compile Include="Models\WorkSaveResultDto.cs" />
+    <Compile Include="Models\WorkActionDto.cs" />
+    <Compile Include="Models\WorkActionRequest.cs" />
+    <Compile Include="Models\WorkActionState.cs" />
+    <Compile Include="Models\PatientActionState.cs" />
+    <Compile Include="Models\WorkDetailDto.cs" />
+    <Compile Include="Models\WorkDetailReadDto.cs" />
+    <Compile Include="Models\WorkExamItemDto.cs" />
+    <Compile Include="Models\WorkListItemDto.cs" />
+    <Compile Include="Models\WorkListReadDto.cs" />
+    <Compile Include="Models\WorkSearchRequest.cs" />
+    <Compile Include="Presenters\MainPresenter.cs" />
+    <Compile Include="Presenters\PatientManagementPresenter.cs" />
+    <Compile Include="Presenters\PatientEditorPresenter.cs" />
+    <Compile Include="Presenters\WorkbenchPresenter.cs" />
+    <Compile Include="Presenters\ReservationPresenter.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="Repositories\CommonStatusRepository.cs" />
+    <Compile Include="Repositories\DbResultReader.cs" />
+    <Compile Include="Repositories\IPatientRepository.cs" />
+    <Compile Include="Repositories\PatientRepository.cs" />
+    <Compile Include="Repositories\ICommonStatusRepository.cs" />
+    <Compile Include="Repositories\IWorkRepository.cs" />
+    <Compile Include="Repositories\IReservationRepository.cs" />
+    <Compile Include="Repositories\ReservationRepository.cs" />
+    <Compile Include="Repositories\WorkRepository.cs" />
+    <Compile Include="Services\CommonStatusService.cs" />
+    <Compile Include="Services\ICommonStatusService.cs" />
+    <Compile Include="Services\IPatientService.cs" />
+    <Compile Include="Services\PatientService.cs" />
+    <Compile Include="Services\IWorkService.cs" />
+    <Compile Include="Services\IReservationService.cs" />
+    <Compile Include="Services\ReservationService.cs" />
+    <Compile Include="Services\WorkService.cs" />
+    <Compile Include="Views\FrmExtraExam.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\FrmExtraExam.Designer.cs">
+      <DependentUpon>FrmExtraExam.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FrmExtraExam.UI.cs">
+      <DependentUpon>FrmExtraExam.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Views\FrmReception.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\FrmReception.Designer.cs">
+      <DependentUpon>FrmReception.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FrmReception.UI.cs">
+      <DependentUpon>FrmReception.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Views\FrmChangeLog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\FrmChangeLog.Designer.cs">
+      <DependentUpon>FrmChangeLog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FrmChangeLog.UI.cs">
+      <DependentUpon>FrmChangeLog.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Views\FrmPatientDuplicate.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\FrmPatientDuplicate.Designer.cs">
+      <DependentUpon>FrmPatientDuplicate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FrmPatientDuplicate.UI.cs">
+      <DependentUpon>FrmPatientDuplicate.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Views\FrmPatientEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\FrmPatientEditor.Designer.cs">
+      <DependentUpon>FrmPatientEditor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FrmPatientEditor.UI.cs">
+      <DependentUpon>FrmPatientEditor.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Views\IMainView.cs" />
+    <Compile Include="Views\IPatientManagementView.cs" />
+    <Compile Include="Views\IPatientEditorView.cs" />
+    <Compile Include="Views\IWorkbenchView.cs" />
+    <Compile Include="Views\IReservationView.cs" />
+    <Compile Include="Views\clsBusyScope.cs" />
+    <Compile Include="Views\clsGridColumns.cs" />
+    <Compile Include="Views\clsColumnChooser.cs" />
+    <Compile Include="Views\clsGridRowPicker.cs" />
+    <Compile Include="Views\clsSearchConditions.cs" />
     <Compile Include="Views\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Views\MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Views\UcPatientManagement.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\UcPatientManagement.Designer.cs">
+      <DependentUpon>UcPatientManagement.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UcPatientManagement.UI.cs">
+      <DependentUpon>UcPatientManagement.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Views\UcWorkbench.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\UcWorkbench.Designer.cs">
+      <DependentUpon>UcWorkbench.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UcWorkbench.UI.cs">
+      <DependentUpon>UcWorkbench.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\ChangeLogItemDto.cs" />
+    <Compile Include="Models\ChangeLogTarget.cs" />
+    <Compile Include="Models\ChangeLogReadDto.cs" />
+    <Compile Include="Models\HolidayListItemDto.cs" />
+    <Compile Include="Models\HolidayRegistryDto.cs" />
+    <Compile Include="Models\HolidayListReadDto.cs" />
+    <Compile Include="Models\HolidaySearchRequest.cs" />
+    <Compile Include="Models\HolidaySaveRequest.cs" />
+    <Compile Include="Models\HolidaySaveReadDto.cs" />
+    <Compile Include="Repositories\IChangeLogRepository.cs" />
+    <Compile Include="Repositories\ChangeLogRepository.cs" />
+    <Compile Include="Repositories\IHolidayRepository.cs" />
+    <Compile Include="Repositories\HolidayRepository.cs" />
+    <Compile Include="Presenters\ChangeLogPresenter.cs" />
+    <Compile Include="Presenters\ReceptionPresenter.cs" />
+    <Compile Include="Presenters\ExtraExamPresenter.cs" />
+    <Compile Include="Views\IChangeLogView.cs" />
+    <Compile Include="Views\IReceptionView.cs" />
+    <Compile Include="Views\IExtraExamView.cs" />
+    <Compile Include="Services\IChangeLogService.cs" />
+    <Compile Include="Services\ChangeLogService.cs" />
+    <Compile Include="Services\IHolidayService.cs" />
+    <Compile Include="Services\HolidayService.cs" />
+    <Compile Include="Presenters\HolidayPresenter.cs" />
+    <Compile Include="Views\IHolidayView.cs" />
+    <Compile Include="Views\UcHoliday.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\UcHoliday.Designer.cs">
+      <DependentUpon>UcHoliday.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UcHoliday.UI.cs">
+      <DependentUpon>UcHoliday.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Views\FrmReservation.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\FrmReservation.Designer.cs">
+      <DependentUpon>FrmReservation.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FrmReservation.UI.cs">
+      <DependentUpon>FrmReservation.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <!-- licenses.licx 는 VS 디자이너가 쓴다. 항목을 손으로 적지 않는다
+       (references/designer.md 함정 11). 디자이너 세션이 아직 없는 프로젝트에서는
+       빈 파일을 만들어 등재해 둔다 — 등재되지 않은 파일은 어떻게 만들어도 라이선스를
+       심지 않고, 첫 디자이너 세션이 항목을 채운다. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\licenses.licx" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

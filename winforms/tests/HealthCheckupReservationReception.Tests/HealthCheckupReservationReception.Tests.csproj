@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -34,15 +34,51 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+  <!-- MainForm 이 RibbonForm 이므로 그 멤버를 해석하려면 시험 프로젝트에도 참조가 필요하다. -->
+  <ItemGroup>
+    <Reference Include="DevExpress.Data.v20.2" />
+    <Reference Include="DevExpress.Utils.v20.2" />
+    <Reference Include="DevExpress.XtraBars.v20.2" />
+    <Reference Include="DevExpress.XtraEditors.v20.2" />
+    <Reference Include="DevExpress.XtraGrid.v20.2" />
+    <Reference Include="DevExpress.XtraLayout.v20.2" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
     <PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\clsPatientTextTests.cs" />
+    <Compile Include="Common\clsWorkTextTests.cs" />
+    <Compile Include="Integration\PatientRepositoryDbTests.cs" />
+    <Compile Include="Integration\SelectRepositoryDbTests.cs" />
     <Compile Include="MainFormTests.cs" />
+    <Compile Include="Presenters\ChangeLogPresenterTests.cs" />
+    <Compile Include="Presenters\ReceptionPresenterTests.cs" />
+    <Compile Include="Presenters\ExtraExamPresenterTests.cs" />
+    <Compile Include="Presenters\HolidayPresenterTests.cs" />
+    <Compile Include="Presenters\MainPresenterTests.cs" />
+    <Compile Include="Presenters\PatientManagementPresenterTests.cs" />
+    <Compile Include="Presenters\PatientEditorPresenterTests.cs" />
+    <Compile Include="Presenters\WorkbenchPresenterTests.cs" />
+    <Compile Include="Presenters\ReservationPresenterTests.cs" />
+    <Compile Include="Services\ChangeLogServiceTests.cs" />
+    <Compile Include="Services\CommonStatusServiceTests.cs" />
+    <Compile Include="Services\PatientServiceTests.cs" />
+    <Compile Include="Services\ReservationServiceTests.cs" />
+    <Compile Include="Services\WorkServiceTests.cs" />
+    <Compile Include="Views\LayoutBaselineTests.cs" />
+    <Compile Include="Views\UcPatientManagementTests.cs" />
+    <Compile Include="Views\UcWorkbenchTests.cs" />
+    <Compile Include="Views\FrmPatientEditorTests.cs" />
+    <Compile Include="Views\FrmReservationTests.cs" />
+    <Compile Include="Visual\ShellCaptureTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\HealthCheckupReservationReception.WinForms\HealthCheckupReservationReception.WinForms.csproj">

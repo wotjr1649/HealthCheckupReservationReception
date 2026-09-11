@@ -36,8 +36,11 @@ DECLARE @FP VARCHAR(200) = 'INVENTORY|'
      + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[검사코드]))                                        + '|'
      + CONVERT(VARCHAR(5), (SELECT COUNT(*) FROM [dbo].[휴무일]));
 
--- Table 6 | TVF 4 | SP 16 | 순번값 1 | PK 6 | FK 2 | UQ 2 | UX 1 | NCI 5 | CK 24 | DF 8 | Trg 0 | TVP 0 | Exam 19 | Hol 2
-IF @FP = 'INVENTORY|6|4|20|1|6|2|2|1|5|26|10|0|0|19|41'
+-- 자리: Table | TVF | SP | 순번값 | PK | FK | UQ | UX | NCI | CK | DF | Trg | TVP | Exam | Hol
+-- [X] 위 주석이 값을 한 벌 더 갖고 있었고 R7 이후 CK 24 · DF 8 · SP 16 · Hol 2 로 썩어 있었다.
+--     아무도 그것을 보지 않았다. 자리 이름만 남기고 값은 아래 지문 하나가 갖는다 (ROOT AGENTS.md §6).
+-- [R13] 운영기준이 더해져 Table 6->7 · PK 6->7 · CK 26->28 이다 (04 §8.7).
+IF @FP = 'INVENTORY|7|4|20|1|7|2|2|1|5|28|10|0|0|19|41'
     PRINT 'PASS RBD-004 인벤토리 지문 일치  ' + @FP;
 ELSE BEGIN PRINT 'FAIL RBD-004 인벤토리 지문 불일치  ' + @FP; SET @Fail += 1; END
 
