@@ -16,7 +16,6 @@ namespace HealthCheckupReservationReception.Models
         public DateTime ReserveDate { get; set; }  // [예약일]
         public string SlotCode { get; set; }       // [시간대코드]
         public string StatusCode { get; set; }     // [상태코드]
-        public string StatusName { get; set; }     // [상태명]
         public bool IsToday { get; set; }          // [오늘여부]
         public byte[] RowVersion { get; set; }     // [행버전]
     }

@@ -20,7 +20,6 @@ namespace HealthCheckupReservationReception.Models
         public DateTime ReserveDate { get; set; }  // [예약일]
         public string SlotCode { get; set; }       // [시간대코드]
         public string StatusCode { get; set; }     // [상태코드]
-        public string StatusName { get; set; }     // [상태명]
         public int Capacity { get; set; }          // [정원]
         public int CurrentCount { get; set; }      // [현재인원]
         public int RemainingSeats { get; set; }    // [잔여자리]

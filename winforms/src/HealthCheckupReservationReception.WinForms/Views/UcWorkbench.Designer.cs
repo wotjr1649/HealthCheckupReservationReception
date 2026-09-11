@@ -32,7 +32,7 @@ namespace HealthCheckupReservationReception.Views
             this.gvWorkList = new DevExpress.XtraGrid.Views.Grid.GridView();
             this.colReserveDate = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colSlot = new DevExpress.XtraGrid.Columns.GridColumn();
-            this.colStatusName = new DevExpress.XtraGrid.Columns.GridColumn();
+            this.colStatus = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colName = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colChartNo = new DevExpress.XtraGrid.Columns.GridColumn();
             this.colGender = new DevExpress.XtraGrid.Columns.GridColumn();
@@ -306,7 +306,7 @@ namespace HealthCheckupReservationReception.Views
             this.gvWorkList.Columns.AddRange(new DevExpress.XtraGrid.Columns.GridColumn[] {
             this.colReserveDate,
             this.colSlot,
-            this.colStatusName,
+            this.colStatus,
             this.colName,
             this.colChartNo,
             this.colGender,
@@ -345,16 +345,16 @@ namespace HealthCheckupReservationReception.Views
             this.colSlot.VisibleIndex = 1;
             this.colSlot.Width = 80;
             //
-            // colStatusName
+            // colStatus
             //
             // DB 가 준 상태명을 그대로 쓴다 (05 §8.1 RS1) — 코드를 화면에서 이름으로 바꾸지 않는다.
-            this.colStatusName.Caption = "상태";
-            this.colStatusName.FieldName = "StatusName";
-            this.colStatusName.Name = "colStatusName";
-            this.colStatusName.MinWidth = 80;
-            this.colStatusName.Visible = true;
-            this.colStatusName.VisibleIndex = 2;
-            this.colStatusName.Width = 90;
+            this.colStatus.Caption = "상태";
+            this.colStatus.FieldName = "StatusCode";
+            this.colStatus.Name = "colStatus";
+            this.colStatus.MinWidth = 80;
+            this.colStatus.Visible = true;
+            this.colStatus.VisibleIndex = 2;
+            this.colStatus.Width = 90;
             //
             // colName
             //
@@ -1034,7 +1034,7 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraGrid.Views.Grid.GridView gvWorkList;
         private DevExpress.XtraGrid.Columns.GridColumn colReserveDate;
         private DevExpress.XtraGrid.Columns.GridColumn colSlot;
-        private DevExpress.XtraGrid.Columns.GridColumn colStatusName;
+        private DevExpress.XtraGrid.Columns.GridColumn colStatus;
         private DevExpress.XtraGrid.Columns.GridColumn colName;
         private DevExpress.XtraGrid.Columns.GridColumn colChartNo;
         private DevExpress.XtraGrid.Columns.GridColumn colGender;

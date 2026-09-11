@@ -186,9 +186,9 @@ namespace HealthCheckupReservationReception.Tests.Visual
         {
             return new List<WorkListItemDto>
             {
-                new WorkListItemDto { WorkId = 1, PatientId = 1000, ReserveDate = new DateTime(2026, 9, 11), SlotCode = "AM", StatusCode = "RSV", StatusName = "예약", Name = "홍길동", ChartNo = "C000001", Gender = "M", Birthday = "19800101", MobilePhone = "01012345678" },
-                new WorkListItemDto { WorkId = 2, PatientId = 1003, ReserveDate = new DateTime(2026, 9, 11), SlotCode = "PM", StatusCode = "RCP", StatusName = "접수완료", Name = "테스트01", ChartNo = "C000006", Gender = "F", Birthday = "19560819", MobilePhone = "01098765432" },
-                new WorkListItemDto { WorkId = 3, PatientId = 1004, ReserveDate = new DateTime(2026, 9, 14), SlotCode = "PM", StatusCode = "CNR", StatusName = "예약취소", Name = "시험수검자960553", ChartNo = "C000008", Gender = "F", Birthday = "19990707", MobilePhone = null },
+                new WorkListItemDto { WorkId = 1, PatientId = 1000, ReserveDate = new DateTime(2026, 9, 11), SlotCode = "AM", StatusCode = "RSV", Name = "홍길동", ChartNo = "C000001", Gender = "M", Birthday = "19800101", MobilePhone = "01012345678" },
+                new WorkListItemDto { WorkId = 2, PatientId = 1003, ReserveDate = new DateTime(2026, 9, 11), SlotCode = "PM", StatusCode = "RCP", Name = "테스트01", ChartNo = "C000006", Gender = "F", Birthday = "19560819", MobilePhone = "01098765432" },
+                new WorkListItemDto { WorkId = 3, PatientId = 1004, ReserveDate = new DateTime(2026, 9, 14), SlotCode = "PM", StatusCode = "CNR", Name = "시험수검자960553", ChartNo = "C000008", Gender = "F", Birthday = "19990707", MobilePhone = null },
             };
         }
 
@@ -206,7 +206,6 @@ namespace HealthCheckupReservationReception.Tests.Visual
                 ReserveDate = new DateTime(2026, 9, 11),
                 SlotCode = "AM",
                 StatusCode = "RSV",
-                StatusName = "예약",
                 Capacity = 20,
                 CurrentCount = 12,
                 RemainingSeats = 8,

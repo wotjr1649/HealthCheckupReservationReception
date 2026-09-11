@@ -15,7 +15,7 @@ namespace HealthCheckupReservationReception.Models
         public DateTime ReserveDate { get; set; }// [예약일]
         public string SlotCode { get; set; }     // [시간대코드] AM/PM
         public string StatusCode { get; set; }   // [상태코드]   RSV/RCP/CNR/CNC
-        public string StatusName { get; set; }   // [상태명]     DB 가 준 표시명을 그대로 쓴다
+        // [상태명] 은 읽지 않는다 — 표시명은 clsWorkText.FormatStatus 가 갖는다 (2026-09-11).
         public string Name { get; set; }         // [성명]
         public string ChartNo { get; set; }      // [차트번호]
         public string Gender { get; set; }       // [성별]       M/F 계산열

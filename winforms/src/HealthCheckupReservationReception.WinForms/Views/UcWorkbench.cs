@@ -125,7 +125,9 @@ namespace HealthCheckupReservationReception.Views
                 txtDetailCapacity.Text = value == null
                     ? string.Empty
                     : clsWorkText.FormatCapacity(value.CurrentCount, value.Capacity, value.RemainingSeats);
-                txtDetailStatus.Text = value == null ? string.Empty : value.StatusName;
+                txtDetailStatus.Text = value == null
+                    ? string.Empty
+                    : clsWorkText.FormatStatus(value.StatusCode);
             }
         }
 

@@ -369,7 +369,6 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 ReserveDate = Day,
                 SlotCode = "AM",
                 StatusCode = "RSV",
-                StatusName = "예약",
                 RowVersion = new byte[8],
             });
             var presenter = new ReservationPresenter(

@@ -273,7 +273,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                     new WorkListItemDto
                     {
                         WorkId = 91, PatientId = 11, ReserveDate = Today.AddDays(3),
-                        SlotCode = "AM", StatusCode = DbWorkStatus.Reserved, StatusName = "예약",
+                        SlotCode = "AM", StatusCode = DbWorkStatus.Reserved,
                     },
                 }),
             };
@@ -302,7 +302,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                     new WorkListItemDto
                     {
                         WorkId = 91, PatientId = 11, ReserveDate = Today.AddDays(-6),
-                        SlotCode = "AM", StatusCode = DbWorkStatus.Reserved, StatusName = "예약",
+                        SlotCode = "AM", StatusCode = DbWorkStatus.Reserved,
                     },
                 }),
             };
@@ -327,7 +327,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                     new WorkListItemDto
                     {
                         WorkId = 91, PatientId = 11, ReserveDate = Today,
-                        SlotCode = "AM", StatusCode = DbWorkStatus.Received, StatusName = "접수완료",
+                        SlotCode = "AM", StatusCode = DbWorkStatus.Received,
                     },
                 }),
             };
@@ -373,7 +373,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                     new WorkListItemDto
                     {
                         WorkId = 91, PatientId = 11, ReserveDate = Today.AddDays(3),
-                        SlotCode = "AM", StatusCode = DbWorkStatus.Reserved, StatusName = "예약",
+                        SlotCode = "AM", StatusCode = DbWorkStatus.Reserved,
                     },
                 }),
             };
@@ -418,7 +418,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                     new WorkListItemDto
                     {
                         WorkId = 91, PatientId = 11, ReserveDate = Today.AddDays(3),
-                        SlotCode = "PM", StatusCode = DbWorkStatus.Reserved, StatusName = "예약",
+                        SlotCode = "PM", StatusCode = DbWorkStatus.Reserved,
                     },
                 }),
             };

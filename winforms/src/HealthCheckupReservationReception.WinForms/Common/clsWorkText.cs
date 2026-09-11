@@ -77,6 +77,30 @@ namespace HealthCheckupReservationReception.Common
         }
 
         /// <summary>
+        /// 05 §2.2 `상태코드` 넷의 화면 표기 (2026-09-11 사용자 지시).
+        ///
+        /// [X] **DB 의 `상태명` 컬럼을 화면에 쓰지 않는다.** 그쪽은 `RSV` 를 `예약` 이라 적는데
+        ///     창구가 읽어야 하는 것은 `예약완료` 다 — `접수완료` 와 짝이 맞아야 두 값이 같은
+        ///     축의 두 눈금으로 읽힌다. 계약은 동결이라 DB 를 고칠 수 없으므로 화면이 표시명을
+        ///     갖는다. 그래서 `StatusName` 을 DTO 에서 걷었다: 남겨 두면 같은 뜻의 문자열이
+        ///     두 곳에 있게 된다 (ROOT AGENTS.md §6).
+        ///
+        /// [X] 이 표에는 게이트가 없다. `verify-work-status.sh` 가 지키는 것은 왼쪽의 **코드**
+        ///     넷이고, 오른쪽 표시명은 DB 와 **일부러 다르므로** 대조할 대상이 없다. 그래서
+        ///     한 곳에만 둔다 — 베끼는 순간 지킬 방법이 사라진다.
+        ///
+        /// 모르는 값은 그대로 낸다 — 화면이 값을 숨기면 사용자가 무엇을 본 것인지 알 수 없다.
+        /// </summary>
+        public static string FormatStatus(string value)
+        {
+            if (DbWorkStatus.Reserved.Equals(value, StringComparison.Ordinal)) { return "예약완료"; }
+            if (DbWorkStatus.Received.Equals(value, StringComparison.Ordinal)) { return "접수완료"; }
+            if (DbWorkStatus.CancelledReservation.Equals(value, StringComparison.Ordinal)) { return "예약취소"; }
+            if (DbWorkStatus.CancelledReception.Equals(value, StringComparison.Ordinal)) { return "접수취소"; }
+            return value ?? string.Empty;
+        }
+
+        /// <summary>
         /// 05 §9.6 RS1 `예약구분`. 조작자가 고른 값이 아니라 DB 가 시각으로 가른 값이므로
         /// (00 RP-05) 화면은 그것을 읽어 주기만 한다.
         /// </summary>

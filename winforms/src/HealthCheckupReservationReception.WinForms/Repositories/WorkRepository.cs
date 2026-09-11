@@ -105,7 +105,6 @@ namespace HealthCheckupReservationReception.Repositories
             int ordReserveDate = reader.GetOrdinal("예약일");
             int ordSlotCode = reader.GetOrdinal("시간대코드");
             int ordStatusCode = reader.GetOrdinal("상태코드");
-            int ordStatusName = reader.GetOrdinal("상태명");
             int ordName = reader.GetOrdinal("성명");
             int ordChartNo = reader.GetOrdinal("차트번호");
             int ordGender = reader.GetOrdinal("성별");
@@ -121,7 +120,6 @@ namespace HealthCheckupReservationReception.Repositories
                     ReserveDate = reader.GetDateTime(ordReserveDate),
                     SlotCode = reader.GetString(ordSlotCode),
                     StatusCode = reader.GetString(ordStatusCode),
-                    StatusName = reader.GetString(ordStatusName),
                     Name = reader.GetString(ordName),
                     ChartNo = reader.GetString(ordChartNo),
                     Gender = reader.GetString(ordGender),
@@ -151,7 +149,6 @@ namespace HealthCheckupReservationReception.Repositories
                 ReserveDate = reader.GetDateTime(reader.GetOrdinal("예약일")),
                 SlotCode = reader.GetString(reader.GetOrdinal("시간대코드")),
                 StatusCode = reader.GetString(reader.GetOrdinal("상태코드")),
-                StatusName = reader.GetString(reader.GetOrdinal("상태명")),
                 Capacity = reader.GetInt32(reader.GetOrdinal("정원")),
                 CurrentCount = reader.GetInt32(reader.GetOrdinal("현재인원")),
                 RemainingSeats = reader.GetInt32(reader.GetOrdinal("잔여자리")),

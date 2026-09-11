@@ -188,7 +188,8 @@ namespace HealthCheckupReservationReception.Presenters
                 if (latestValid.TryGetValue(row.PatientId, out valid))
                 {
                     row.ReserveStatus = Blocked;
-                    row.ReserveStatusDetail = "예약 불가 — " + Schedule(valid) + " " + valid.StatusName;
+                    row.ReserveStatusDetail = "예약 불가 — " + Schedule(valid)
+                        + " " + clsWorkText.FormatStatus(valid.StatusCode);
                 }
                 else
                 {

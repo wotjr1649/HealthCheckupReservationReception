@@ -55,6 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common\clsPatientTextTests.cs" />
+    <Compile Include="Common\clsWorkTextTests.cs" />
     <Compile Include="Integration\PatientRepositoryDbTests.cs" />
     <Compile Include="MainFormTests.cs" />
     <Compile Include="Presenters\HolidayPresenterTests.cs" />

@@ -3,6 +3,7 @@ using System;
 using System.Drawing;
 using DevExpress.Utils;
 using DevExpress.XtraEditors.Controls;
+using DevExpress.XtraGrid.Views.Base;
 using HealthCheckupReservationReception.Common;
 
 namespace HealthCheckupReservationReception.Views
@@ -15,7 +16,13 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         partial void ConfigureUI()
         {
-            LoadStatusItems();
+            LoadStatusItems(new[]
+            {
+                DbWorkStatus.Reserved, DbWorkStatus.Received,
+                DbWorkStatus.CancelledReservation, DbWorkStatus.CancelledReception,
+            });
+
+            gvWorkList.CustomColumnDisplayText += GvWorkList_CustomColumnDisplayText;
 
             // 03 §9.3 은 기본 기간을 정하지 않는다. 시작일만 오늘로 세우고 종료일은 비운다 —
             // §9.3 의 `From만 있으면 이후` 라서 오늘과 앞으로의 예약이 한꺼번에 보이고,
@@ -32,7 +39,7 @@ namespace HealthCheckupReservationReception.Views
 
             clsGridColumns.Align(colReserveDate, HorzAlignment.Center);
             clsGridColumns.Align(colSlot, HorzAlignment.Center);
-            clsGridColumns.Align(colStatusName, HorzAlignment.Center);
+            clsGridColumns.Align(colStatus, HorzAlignment.Center);
             clsGridColumns.Align(colName, HorzAlignment.Center);
             clsGridColumns.Align(colChartNo, HorzAlignment.Near);
             clsGridColumns.Align(colGender, HorzAlignment.Center);
@@ -74,23 +81,37 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// 03 §9.3 상태 드롭다운. `전체` 만 값이 없고 (null) 나머지 넷은 04 §1.1 의 상태코드다.
+        /// 03 §9.3 상태 드롭다운. `전체` 만 값이 없고 (null) 나머지는 05 §2.2 의 상태코드다.
         ///
-        /// 값과 표시글이 여기 한 곳에만 있다. 상태명을 Grid 에도 적지 않는다 — 목록의 `상태`
-        /// 컬럼은 DB 가 준 `상태명` 을 그대로 쓴다 (05 §8.1 RS1 · ROOT AGENTS.md §6).
+        /// **어느 코드가 들어가는지는 Context 가 정한다** (2026-09-11 사용자 지시) — 예약
+        /// 창구는 `예약완료·예약취소` 를, 접수 창구는 `예약완료·접수완료·접수취소` 를 고른다.
+        /// 탭이 이미 상태로 갈렸으므로 드롭다운은 그 탭 안에서만 좁힌다.
+        ///
+        /// 표시명은 `clsWorkText.FormatStatus` 한 곳에서 나온다 — Grid 의 `상태` 컬럼도
+        /// 같은 함수를 쓴다 (ROOT AGENTS.md §6).
         /// </summary>
-        private void LoadStatusItems()
+        private void LoadStatusItems(string[] codes)
         {
-            cboStatus.Properties.Items.AddRange(new[]
+            cboStatus.Properties.Items.Clear();
+            cboStatus.Properties.Items.Add(new ImageComboBoxItem("전체", null));
+            foreach (string code in codes)
             {
-                new ImageComboBoxItem("전체", null),
-                new ImageComboBoxItem("예약", DbWorkStatus.Reserved),
-                new ImageComboBoxItem("접수완료", DbWorkStatus.Received),
-                new ImageComboBoxItem("예약취소", DbWorkStatus.CancelledReservation),
-                new ImageComboBoxItem("접수취소", DbWorkStatus.CancelledReception),
-            });
+                cboStatus.Properties.Items.Add(new ImageComboBoxItem(clsWorkText.FormatStatus(code), code));
+            }
 
             cboStatus.EditValue = null;
+        }
+
+        /// <summary>
+        /// Grid 의 `상태` 컬럼은 `상태코드` 를 담고 화면에서 글로 바꾼다 — DB 의 `상태명` 이
+        /// 아니라 `clsWorkText.FormatStatus` 가 표시명의 단일 출처다 (2026-09-11).
+        /// </summary>
+        private void GvWorkList_CustomColumnDisplayText(object sender, CustomColumnDisplayTextEventArgs e)
+        {
+            if (e.Column == colStatus)
+            {
+                e.DisplayText = clsWorkText.FormatStatus(e.Value as string);
+            }
         }
     }
 }

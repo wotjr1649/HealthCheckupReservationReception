@@ -250,7 +250,6 @@ namespace HealthCheckupReservationReception.Repositories
             int ordReserveDate = reader.GetOrdinal("예약일");
             int ordSlotCode = reader.GetOrdinal("시간대코드");
             int ordStatusCode = reader.GetOrdinal("상태코드");
-            int ordStatusName = reader.GetOrdinal("상태명");
             int ordIsToday = reader.GetOrdinal("오늘여부");
             int ordRowVersion = reader.GetOrdinal("행버전");
 
@@ -268,7 +267,6 @@ namespace HealthCheckupReservationReception.Repositories
                 ReserveDate = reader.GetDateTime(ordReserveDate),
                 SlotCode = reader.GetString(ordSlotCode),
                 StatusCode = reader.GetString(ordStatusCode),
-                StatusName = reader.GetString(ordStatusName),
                 IsToday = reader.GetBoolean(ordIsToday),
                 RowVersion = rowVersion,
             };
