@@ -530,6 +530,12 @@ namespace HealthCheckupReservationReception.Views
                 return;
             }
 
+            if (e.Item == barBtnRsvEdit)
+            {
+                BeginReservationChange();
+                return;
+            }
+
             _workView.RequestAction(ActionOf(e.Item));
         }
 
@@ -537,6 +543,29 @@ namespace HealthCheckupReservationReception.Views
         /// DLG-RCP-01 접수 처리 (03 §11). 모달이 스스로 상세를 다시 읽으므로 여기서 넘기는
         /// 것은 업무ID 하나다 — 목록이 들고 있던 `행버전` 은 그 사이 낡을 수 있다 (§11.3).
         /// </summary>
+        /// <summary>
+        /// DLG-RSV-01 예약 변경 (03 §10). `FrmReservation` 을 변경 모드로 연다 — 새 화면이
+        /// 아니라 같은 모달의 분기다.
+        /// </summary>
+        private void BeginReservationChange()
+        {
+            WorkDetailDto detail = _workView.CurrentDetail;
+            if (detail == null)
+            {
+                ShowMessage("먼저 목록에서 행을 선택하십시오.");
+                return;
+            }
+
+            using (var reservation = new FrmReservation(
+                _reservationService, _patientService, _operatorName, detail))
+            {
+                if (reservation.ShowDialog(this) == DialogResult.OK && reservation.Result != null)
+                {
+                    _workView.OpenContext(reservation.Result.Context, reservation.Result.WorkId);
+                }
+            }
+        }
+
         private void BeginReception()
         {
             WorkDetailDto detail = _workView.CurrentDetail;

@@ -36,6 +36,9 @@ namespace HealthCheckupReservationReception.Views
         // OnLoad 까지 들고 있는 진입 인자다 (03 §3 BeginNewReservation).
         private long _patientId;
 
+        // DLG-RSV-01 예약변경 (03 §10). 이것이 있으면 변경 모드다.
+        private WorkDetailDto _work;
+
         partial void ConfigureUI();
 
         /// <summary>
@@ -63,6 +66,18 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
+        /// DLG-RSV-01 예약 변경 (03 §10). **같은 화면이다** — 모드를 가르는 것은 진입값뿐이고
+        /// 03 §10.2 가 요구하는 편집 범위(예약일·시간대·AEX)가 신규예약과 같기 때문이다.
+        /// </summary>
+        public FrmReservation(IReservationService service, IPatientService patientService,
+            string operatorName, WorkDetailDto work)
+            : this()
+        {
+            _presenter = new ReservationPresenter(this, service, patientService, operatorName);
+            _work = work;
+        }
+
+        /// <summary>
         /// [X] **진입 조회를 생성자에서 돌리면 안 된다.** 03 §8.5 는 기존 유효예약이 있으면
         ///     신규예약을 중단하라고 한다 — 그 길은 <see cref="GoToWorkbench"/> 이고 창을
         ///     닫는다. 아직 뜨지도 않은 폼을 닫으면 그대로 Dispose 되어, 부른 쪽의
@@ -82,7 +97,8 @@ namespace HealthCheckupReservationReception.Views
 
             using (new clsBusyScope(this))
             {
-                _presenter.Begin(_patientId);
+                if (_work != null) { _presenter.BeginChange(_work); }
+                else { _presenter.Begin(_patientId); }
             }
         }
 
@@ -262,6 +278,11 @@ namespace HealthCheckupReservationReception.Views
             _saved = true;
             DialogResult = DialogResult.Cancel;
             Close();
+        }
+
+        public string Title
+        {
+            set { Text = string.IsNullOrWhiteSpace(value) ? "신규 예약" : value; }
         }
 
         public void ShowMessage(string message)

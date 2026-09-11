@@ -26,6 +26,12 @@ namespace HealthCheckupReservationReception.Views
         // ── 수검자 (03 §8.3)
 
         /// <summary>null 이면 비운다.</summary>
+        /// <summary>
+        /// 창 이름. 같은 화면이 신규예약(03 §8)과 예약변경(§10) 둘을 맡으므로 어느 쪽인지
+        /// 창이 말한다 (2026-09-11).
+        /// </summary>
+        string Title { set; }
+
         PatientDetailDto Patient { set; }
 
         // ── 일정 (03 §8.5 — 수검자 확정 전에는 Disabled)

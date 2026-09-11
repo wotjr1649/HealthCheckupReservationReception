@@ -654,9 +654,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             return UpdateResult;
         }
 
+        public int ValidWorkCalls { get; private set; }
+
         public OperationResult<PatientValidWorkDto> GetValidWork(long patientId)
         {
             if (Failure != null) { throw Failure; }
+            ValidWorkCalls++;
             LastValidWorkPatientId = patientId;
             return ValidWorkResult ?? OperationResult<PatientValidWorkDto>.Success(null);
         }

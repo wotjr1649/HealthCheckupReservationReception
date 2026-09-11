@@ -143,7 +143,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnRsvEdit.Id = 10;
             this.barBtnRsvEdit.Name = "barBtnRsvEdit";
             this.barBtnRsvEdit.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnRsvEdit.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
+            this.barBtnRsvEdit.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnWorkAction_ItemClick);
             //
             // barBtnRsvCancel
             //

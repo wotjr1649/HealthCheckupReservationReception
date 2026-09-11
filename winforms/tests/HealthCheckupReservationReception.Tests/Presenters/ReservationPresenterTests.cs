@@ -74,6 +74,73 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(1, service.AvailabilityCalls);
         }
 
+        // ── 2026-09-11: DLG-RSV-01 예약 변경 (03 §10)
+
+        /// <summary>
+        /// **같은 화면이 모드만 바꾼다.** 진입값이 업무 상세면 변경이고, `SP-PAT-05` 기존
+        /// 유효예약 확인을 거치지 않는다 — 그 판정은 *"새 예약을 만들 수 있는가"* 이고
+        /// 변경은 이미 있는 그 예약을 고치는 일이다 (중복은 SP 가 현재 Work 를 빼고 본다).
+        /// </summary>
+        [TestMethod]
+        public void 변경으로_열면_업무ID_와_행버전을_실어_묻는다()
+        {
+            var view = new FakeReservationView();
+            var patients = Patients();
+            var service = new FakeReservationService { Availability = Availability() };
+            var presenter = new ReservationPresenter(view, service, patients, "창구");
+
+            presenter.BeginChange(Work());
+
+            Assert.AreEqual("예약 변경", view.Title);
+            Assert.AreEqual("C000001", view.Patient.ChartNo, "수검자를 상세에서 채우지 않았다");
+            Assert.IsTrue(view.ScheduleEnabled);
+            Assert.AreEqual(55L, service.LastAvailability.WorkId);
+            Assert.IsNotNull(service.LastAvailability.RowVersion, "행버전을 안 실었다");
+            Assert.AreEqual(0, patients.ValidWorkCalls, "변경인데 기존 유효예약을 물었다");
+        }
+
+        /// <summary>05 §11.2 — 원하는 최종 상태를 통째로 보낸다. 변경범위는 DB 가 잰다.</summary>
+        [TestMethod]
+        public void 변경_저장은_예약변경_SP_로_간다()
+        {
+            var view = new FakeReservationView();
+            var service = new FakeReservationService
+            {
+                Availability = Availability(),
+                Save = OperationResult<WorkSaveReadDto>.Success(new WorkSaveReadDto
+                {
+                    Result = new DbResult { Success = true, Code = 0, Message = "정상 처리되었습니다." },
+                    Row = new WorkSaveResultDto { WorkId = 55, StatusCode = "RSV", RowVersion = new byte[8] },
+                }),
+            };
+            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            presenter.BeginChange(Work());
+
+            view.RaiseSaveRequested();
+
+            Assert.IsNull(service.LastSave, "변경인데 신규등록 SP 를 불렀다");
+            Assert.IsNotNull(service.LastChange);
+            Assert.AreEqual(55L, service.LastChange.WorkId);
+            Assert.AreEqual("창구", service.LastChange.OperatorName);
+        }
+
+        private static WorkDetailDto Work()
+        {
+            return new WorkDetailDto
+            {
+                WorkId = 55,
+                PatientId = PatientId,
+                ChartNo = "C000001",
+                Name = "홍길동",
+                Birthday = "19800101",
+                Gender = "M",
+                ReserveDate = Day,
+                SlotCode = "AM",
+                StatusCode = "RSV",
+                RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 },
+            };
+        }
+
         // 03 §8.5 — 기존 유효예약이 있으면 신규예약을 중단하고 그 WorkId 로 Workbench 로 간다.
         [TestMethod]
         public void 기존_유효예약이_있으면_신규예약을_접고_Workbench_로_간다()
@@ -626,6 +693,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             ConfirmAnswer = true;
         }
 
+        public string Title { get; set; }
         public PatientDetailDto Patient { get; set; }
         public bool ScheduleEnabled { get; set; }
         public DateTime ReserveDate { get; set; }

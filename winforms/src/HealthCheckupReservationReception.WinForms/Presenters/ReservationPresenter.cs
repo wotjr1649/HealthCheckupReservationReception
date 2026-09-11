@@ -33,6 +33,11 @@ namespace HealthCheckupReservationReception.Presenters
         private string _reserveType = DbReserveType.Normal;
         private long? _patientId;
 
+        // DLG-RSV-01 예약변경 (03 §10). 신규예약이면 둘 다 null 이고, 그 둘이 있는 것이 곧
+        // 「변경 모드」다 — 05 §9.3 조합표가 `업무ID`·`행버전` 을 그렇게 짝지어 놓았다.
+        private long? _workId;
+        private byte[] _rowVersion;
+
         // 마지막 조회의 시간대정보. 저장 뒤 어디로 갈지가 여기서 나온다 (IsToday).
         private IList<SlotInfoDto> _slots;
 
@@ -72,6 +77,49 @@ namespace HealthCheckupReservationReception.Presenters
         }
 
         /// <summary>
+        /// DLG-RSV-01 예약 변경 (03 §10). **같은 화면이 모드만 바꾼다** — 수검자는 ReadOnly,
+        /// 예약일·시간대·AEX 는 Editable 이라는 것이 §10.2 이고 그것은 신규예약과 같다.
+        ///
+        /// 진입값은 Workbench 가 방금 읽은 상세다. 수검자 조회(`SP-PAT-02`)를 다시 하지
+        /// 않는다 — 05 §8.2 RS1 이 차트번호·성명·생년월일·성별·휴대전화를 이미 싣고 있다.
+        ///
+        /// [X] **기존 유효예약 확인(`SP-PAT-05`)을 하지 않는다.** 그 판정은 *"이 수검자로
+        ///     새 예약을 만들 수 있는가"* 이고, 변경은 이미 있는 그 예약을 고치는 일이다.
+        ///     중복은 `SP-RSV-03` 이 **현재 Work 를 제외하고** 다시 본다 (05 §11.2).
+        /// </summary>
+        public void BeginChange(WorkDetailDto detail)
+        {
+            Reset();
+            if (detail == null)
+            {
+                _view.BlockMessage = "변경할 업무를 알 수 없습니다.";
+                return;
+            }
+
+            _workId = detail.WorkId;
+            _rowVersion = detail.RowVersion;
+            _patientId = detail.PatientId;
+
+            _view.Title = "예약 변경";
+            _view.Patient = new PatientDetailDto
+            {
+                PatientId = detail.PatientId,
+                ChartNo = detail.ChartNo,
+                Name = detail.Name,
+                Birthday = detail.Birthday,
+                Gender = detail.Gender,
+                MobilePhone = detail.MobilePhone,
+            };
+
+            // 03 §10.3 — 지금 일정으로 한 번 묻는다. 사용자가 아무것도 건드리지 않아도
+            // 정원·대상판정·검사구성이 서 있어야 무엇이 바뀌는지 견줄 수 있다.
+            _view.ReserveDate = detail.ReserveDate;
+            _view.SlotCode = detail.SlotCode;
+            _view.ScheduleEnabled = true;
+            Ask(true);
+        }
+
+        /// <summary>
         /// 03 §8.10 폐기 확인 — 닫을 때 물어야 하는가.
         ///
         /// 수검자가 확정된 순간부터 화면에는 사용자가 들인 것이 있다(일정·AEX 선택). 저장이
@@ -89,6 +137,8 @@ namespace HealthCheckupReservationReception.Presenters
             _askedDate = null;
             _askedSlot = null;
             _reserveType = DbReserveType.Normal;
+            _workId = null;
+            _rowVersion = null;
             _slots = null;
 
             _view.Patient = null;
@@ -231,6 +281,8 @@ namespace HealthCheckupReservationReception.Presenters
             var request = new ReservationAvailabilityRequest
             {
                 PatientId = _patientId.Value,
+                WorkId = _workId,
+                RowVersion = _rowVersion,
                 ReserveType = reserveType,
                 ReserveDate = date,
                 SlotCode = slot,
@@ -402,14 +454,9 @@ namespace HealthCheckupReservationReception.Presenters
         /// 03 §8.11 2단계 저장. 화면 준비상태는 이미 `저장가능` 이 판정했고, 저장 클릭 뒤에는
         /// DB 가 상태·마감·정원·중복·TGT·NEX·AEX 를 **처음부터 다시** 검증한다 (05 §11.1).
         /// </summary>
-        private void OnSaveRequested(object sender, EventArgs e)
+        private ReservationSaveRequest SaveRequest()
         {
-            if (_patientId == null)
-            {
-                return;
-            }
-
-            var request = new ReservationSaveRequest
+            return new ReservationSaveRequest
             {
                 PatientId = _patientId.Value,
                 ReserveType = _reserveType,
@@ -418,21 +465,49 @@ namespace HealthCheckupReservationReception.Presenters
                 AexSelected = _view.AexSelection,
                 OperatorName = _operatorName,
             };
+        }
+
+        /// <summary>
+        /// 05 §11.2 — **원하는 최종 상태를 통째로 보낸다.** 무엇이 바뀌었는지는 DB 가 현재
+        /// 행과 견주어 잰다 (§9.4 변경범위). 화면이 미리 가르면 그 규칙이 두 곳에 생긴다.
+        /// </summary>
+        private ReservationChangeRequest ChangeRequest()
+        {
+            return new ReservationChangeRequest
+            {
+                WorkId = _workId.Value,
+                RowVersion = _rowVersion,
+                ReserveDate = _view.ReserveDate.Date,
+                SlotCode = _view.SlotCode,
+                AexSelected = _view.AexSelection,
+                OperatorName = _operatorName,
+            };
+        }
+
+        private void OnSaveRequested(object sender, EventArgs e)
+        {
+            if (_patientId == null)
+            {
+                return;
+            }
+
+            bool changing = _workId != null;
+            string failure = changing ? "예약을 변경하지 못했습니다." : "예약을 저장하지 못했습니다.";
 
             OperationResult<WorkSaveReadDto> result;
             try
             {
-                result = _service.Register(request);
+                result = changing ? _service.Change(ChangeRequest()) : _service.Register(SaveRequest());
             }
             catch (Exception)
             {
-                _view.BlockMessage = "예약을 저장하지 못했습니다.";
+                _view.BlockMessage = failure;
                 return;
             }
 
             if (result == null || !result.IsSuccess)
             {
-                _view.BlockMessage = result == null ? "예약을 저장하지 못했습니다." : result.Message;
+                _view.BlockMessage = result == null ? failure : result.Message;
                 return;
             }
 
