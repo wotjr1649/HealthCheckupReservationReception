@@ -31,9 +31,9 @@ namespace HealthCheckupReservationReception.Views
         // Presenter 가 시킨 변경이 다시 event 로 돌아와 무한 왕복하는 것을 막는다.
         private bool _suppressEvents;
 
-        // 03 §5.2 의 Action 상태는 행 선택 여부 하나로 정해진다. 판정은
-        // PatientManagementPresenter 가 하고 그리는 자리는 Ribbon 을 가진 여기다.
-        private bool _patientRowSelected;
+        // 03 §5.2 의 Action 상태. 판정은 PatientManagementPresenter 가 하고 그리는 자리는
+        // Ribbon 을 가진 여기다.
+        private PatientActionState _patientActions = PatientActionState.None();
 
         private UcPatientManagement _patientView;
         private UcWorkbench _workView;
@@ -114,11 +114,11 @@ namespace HealthCheckupReservationReception.Views
         /// 03 §5.2 — 수검자 목록의 행 선택 여부. 판정은 PatientManagementPresenter 가 하고
         /// 어느 버튼이 열리는지는 Ribbon 을 가진 이 화면이 그린다.
         /// </summary>
-        public bool PatientRowSelected
+        public PatientActionState PatientActions
         {
             set
             {
-                _patientRowSelected = value;
+                _patientActions = value ?? PatientActionState.None();
                 ApplyPatientRowActions();
             }
         }
@@ -132,9 +132,13 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         private void ApplyPatientRowActions()
         {
-            barBtnPatientEdit.Enabled = _patientRowSelected;
-            barBtnPatientReserve.Enabled = _patientRowSelected;
-            barBtnPatientLog.Enabled = _patientRowSelected;
+            barBtnPatientEdit.Enabled = _patientActions.RowSelected;
+            barBtnPatientLog.Enabled = _patientActions.RowSelected;
+
+            // 03 §5.2 에 축이 하나 더 있다 — 이미 예약이 있는 수검자는 [예약] 이 닫힌다
+            // (2026-09-11 사용자 지시). 목록이 `불가` 라고 적어 두고 버튼을 열어 두면
+            // 화면이 스스로 모순된다.
+            barBtnPatientReserve.Enabled = _patientActions.Reserve;
         }
 
         /// <summary>
@@ -243,7 +247,8 @@ namespace HealthCheckupReservationReception.Views
         /// 보인다. 그래서 상태 하나를 두 Page 에 그대로 바른다 — Page 마다 다시 판정하면
         /// 같은 규칙이 두 곳에 생긴다 (ROOT AGENTS.md §6).
         ///
-        /// `[현장 당일예약]` 은 여기 없다. 선택행과 무관한 독립 Action 이라 늘 열려 있다 (§9.7).
+        /// 접수 Page 에는 `RSV` 건을 다루는 Action 이 없다 (2026-09-11 사용자 지시) —
+        /// `[예약변경]`·`[접수]` 는 예약 Page 에만 있다. 탭이 상태로 갈린다.
         /// </summary>
         private void ApplyWorkActions(WorkActionState state)
         {
@@ -252,8 +257,6 @@ namespace HealthCheckupReservationReception.Views
             barBtnRsvReception.Enabled = state.StartReception;
             barBtnRsvLog.Enabled = state.ChangeLog;
 
-            barBtnRcpRsvEdit.Enabled = state.EditReservation;
-            barBtnRcpStart.Enabled = state.StartReception;
             barBtnRcpExtra.Enabled = state.EditExtra;
             barBtnRcpCancel.Enabled = state.CancelReception;
             barBtnRcpLog.Enabled = state.ChangeLog;
@@ -307,9 +310,9 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
-        private void PatientView_RowActionsChanged(object sender, bool rowSelected)
+        private void PatientView_RowActionsChanged(object sender, PatientActionState state)
         {
-            PatientRowSelected = rowSelected;
+            PatientActions = state;
         }
 
         private void WorkView_WorkActionsChanged(object sender, WorkActionState state)

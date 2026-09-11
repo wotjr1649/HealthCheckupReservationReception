@@ -76,7 +76,7 @@ namespace HealthCheckupReservationReception.Views
         /// 03 §5.2 의 Context Ribbon 은 MainForm 이 갖는다. 행 선택 판정은 Presenter 가 하고
         /// 여기서는 그 판정을 Ribbon 을 가진 쪽으로 넘기기만 한다.
         /// </summary>
-        public event EventHandler<bool> RowActionsChanged;
+        public event EventHandler<PatientActionState> RowActionsChanged;
 
         public string ChartNo { get { return txtChartNo.Text; } }
 
@@ -168,14 +168,14 @@ namespace HealthCheckupReservationReception.Views
             NoticeText = notice;
         }
 
-        public bool RowSelected
+        public PatientActionState RowActions
         {
             set
             {
-                EventHandler<bool> handler = RowActionsChanged;
+                EventHandler<PatientActionState> handler = RowActionsChanged;
                 if (handler != null)
                 {
-                    handler(this, value);
+                    handler(this, value ?? PatientActionState.None());
                 }
             }
         }

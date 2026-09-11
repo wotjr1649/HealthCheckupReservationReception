@@ -50,8 +50,11 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         string ReserveStatusText { set; }
 
-        /// <summary>행 선택 여부에 따르는 Ribbon Action (03 §5.2).</summary>
-        bool RowSelected { set; }
+        /// <summary>
+        /// 03 §5.2 Ribbon Action. 행 선택 여부와 **그 수검자가 예약 가능한가** 둘이 실린다
+        /// (2026-09-11 사용자 지시).
+        /// </summary>
+        PatientActionState RowActions { set; }
 
         /// <summary>
         /// 조회 결과 옆 한 줄. 저장 뒤 화면을 옮기지 않을 때 무슨 일이 있었는지 여기서 말한다

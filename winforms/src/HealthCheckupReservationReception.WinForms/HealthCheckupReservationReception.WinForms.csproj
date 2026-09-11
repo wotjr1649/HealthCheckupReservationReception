@@ -85,6 +85,7 @@
     <Compile Include="Models\WorkSaveResultDto.cs" />
     <Compile Include="Models\WorkActionDto.cs" />
     <Compile Include="Models\WorkActionState.cs" />
+    <Compile Include="Models\PatientActionState.cs" />
     <Compile Include="Models\WorkDetailDto.cs" />
     <Compile Include="Models\WorkDetailReadDto.cs" />
     <Compile Include="Models\WorkExamItemDto.cs" />

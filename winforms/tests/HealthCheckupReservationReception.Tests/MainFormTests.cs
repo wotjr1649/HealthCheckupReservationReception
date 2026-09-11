@@ -159,7 +159,7 @@ namespace HealthCheckupReservationReception.Tests
                     form.Location = new Point(-32000, -32000);
                     form.Show();
                     Application.DoEvents();
-                    form.PatientRowSelected = true;
+                    form.PatientActions = new PatientActionState { RowSelected = true, Reserve = true };
 
                     // [X] "모든 버튼이 열려 있다" 로 재지 않는다. R12 가 요구하는 것은
                     //     "공통 업무불가가 닫지 않는다" 뿐이고, 03 §9.6·§9.7 은 여전히
@@ -189,13 +189,13 @@ namespace HealthCheckupReservationReception.Tests
             {
                 using (MainForm form = NewShell())
                 {
-                    form.PatientRowSelected = false;
+                    form.PatientActions = PatientActionState.None();
                     Assert.IsFalse(Enabled(form, "정보수정"));
                     Assert.IsFalse(Enabled(form, "예약"));
                     Assert.IsFalse(PatientLogEnabled(form));
                     Assert.IsTrue(Enabled(form, "신규등록"), "신규등록은 행과 무관하다");
 
-                    form.PatientRowSelected = true;
+                    form.PatientActions = new PatientActionState { RowSelected = true, Reserve = true };
                     Assert.IsTrue(Enabled(form, "정보수정"));
                     Assert.IsTrue(Enabled(form, "예약"));
                     Assert.IsTrue(PatientLogEnabled(form));
@@ -264,7 +264,9 @@ namespace HealthCheckupReservationReception.Tests
                             "예약 관리 / " + caption);
                     }
 
-                    string[] rcpClosed = { "예약변경", "접수", "추가검사변경", "접수취소", "변경이력" };
+                    // [예약변경]·[접수] 는 2026-09-11 에 접수 Page 에서 사라졌다 — 둘 다 `RSV`
+                    // 건을 다루는 명령이라 예약 Page 에만 있다.
+                    string[] rcpClosed = { "추가검사변경", "접수취소", "변경이력" };
                     foreach (string caption in rcpClosed)
                     {
                         Assert.IsFalse(PageItemEnabled(form, "접수 관리", caption),

@@ -371,7 +371,7 @@ namespace HealthCheckupReservationReception.Views
         private static string DescriptionOf(SlotInfoDto slot)
         {
             string text = slot.SlotName + "    "
-                + clsWorkText.FormatCapacity(slot.CurrentCount, slot.Capacity, slot.RemainingSeats);
+                + clsWorkText.FormatCapacityAfterBooking(slot.CurrentCount, slot.Capacity, slot.RemainingSeats);
 
             if (!slot.Selectable && !string.IsNullOrWhiteSpace(slot.BlockMessage))
             {

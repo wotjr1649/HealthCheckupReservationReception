@@ -25,8 +25,9 @@ namespace HealthCheckupReservationReception.Presenters
         private readonly IWorkService _workService;
         private readonly ICommonStatusService _statusService;
 
-        // 마지막 조회의 예약 상태. 행을 고를 때 상세 한 줄이 여기서 나온다.
+        // 마지막 조회의 예약 상태. 행을 고를 때 상세 한 줄과 `[예약]` 의 여닫음이 여기서 나온다.
         private readonly Dictionary<long, string> _reserveDetail = new Dictionary<long, string>();
+        private readonly Dictionary<long, string> _reserveBlocked = new Dictionary<long, string>();
 
         public PatientManagementPresenter(
             IPatientManagementView view,
@@ -42,7 +43,7 @@ namespace HealthCheckupReservationReception.Presenters
             _view.SearchRequested += OnSearchRequested;
             _view.SelectionChanged += OnSelectionChanged;
 
-            _view.RowSelected = false;
+            _view.RowActions = PatientActionState.None();
         }
 
         private void OnSearchRequested(object sender, EventArgs e)
@@ -130,7 +131,7 @@ namespace HealthCheckupReservationReception.Presenters
             _view.Detail = null;
             _view.ReserveStatusText = string.Empty;
             _view.NoticeText = string.Empty;
-            _view.RowSelected = false;
+            _view.RowActions = PatientActionState.None();
         }
 
         /// <summary>
@@ -152,6 +153,7 @@ namespace HealthCheckupReservationReception.Presenters
         private IList<PatientListItemDto> Annotate(IList<PatientListItemDto> rows)
         {
             _reserveDetail.Clear();
+            _reserveBlocked.Clear();
             if (rows == null)
             {
                 return new List<PatientListItemDto>();
@@ -198,6 +200,7 @@ namespace HealthCheckupReservationReception.Presenters
                 }
 
                 _reserveDetail[row.PatientId] = row.ReserveStatusDetail;
+                _reserveBlocked[row.PatientId] = row.ReserveStatus;
             }
 
             return rows;
@@ -277,11 +280,20 @@ namespace HealthCheckupReservationReception.Presenters
             {
                 _view.Detail = null;
                 _view.ReserveStatusText = string.Empty;
-                _view.RowSelected = false;
+                _view.RowActions = PatientActionState.None();
                 return;
             }
 
-            _view.RowSelected = true;
+            // 03 §5.2 — 행이 잡혔다. `[예약]` 만 축이 하나 더 있다: 그 사람이 예약 가능한가.
+            //
+            // [X] **모르는 것은 불가가 아니다** — 업무 조회가 실패해 칸이 비었으면 열어 둔다.
+            string status;
+            _view.RowActions = new PatientActionState
+            {
+                RowSelected = true,
+                Reserve = !_reserveBlocked.TryGetValue(patientId.Value, out status)
+                    || !Blocked.Equals(status, StringComparison.Ordinal),
+            };
 
             string detail;
             _view.ReserveStatusText = _reserveDetail.TryGetValue(patientId.Value, out detail)

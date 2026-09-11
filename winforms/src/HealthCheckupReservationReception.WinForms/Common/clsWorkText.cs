@@ -42,12 +42,38 @@ namespace HealthCheckupReservationReception.Common
         /// <summary>
         /// 03 §9.5 — 정원현황은 **현재 조회값**이며 Work 저장 Snapshot 이 아니다.
         /// 수치는 전부 DB 가 준 것을 그대로 쓴다 (05 §8.2 RS1).
+        ///
+        /// [X] **`잔여자리` 는 SP 마다 뜻이 다르다.** 여기(SP-WRK-02 RS1)는
+        ///     `MAX(0, 정원 - 현재인원)` 이라 `2 / 20 (잔여 18)` 이 그대로 맞는다.
+        ///     예약 화면의 것은 `MAX(0, 정원 - **적용후인원**)` 이고 신규는 적용후인원이
+        ///     현재인원+1 이라 `2 / 20 (잔여 17)` 이 된다 — 같은 문구를 쓰면 숫자가 안 맞는
+        ///     것처럼 읽힌다(실측 2026-09-11 사용자 보고). 그래서 함수를 둘로 갈랐다.
         /// </summary>
         public static string FormatCapacity(int current, int capacity, int remaining)
         {
-            return current.ToString(CultureInfo.InvariantCulture)
-                + " / " + capacity.ToString(CultureInfo.InvariantCulture)
-                + " (잔여 " + remaining.ToString(CultureInfo.InvariantCulture) + ")";
+            return Counts(current, capacity) + " (잔여 " + Number(remaining) + ")";
+        }
+
+        /// <summary>
+        /// 03 §8.3 예약 화면의 시간대 줄. `잔여자리` 가 **이 예약을 넣은 뒤**의 수다
+        /// (05 §9.7 `잔여자리 = MAX(0, 정원 - 적용후인원)`, 신규는 `적용후인원 = 현재인원 + 1`).
+        ///
+        /// 앞의 `현재인원 / 정원` 과 기준이 다르므로 그 사실을 글자로 적는다 — 숫자를 화면이
+        /// 고쳐 계산하지 않는다.
+        /// </summary>
+        public static string FormatCapacityAfterBooking(int current, int capacity, int remainingAfter)
+        {
+            return Counts(current, capacity) + " (예약 후 잔여 " + Number(remainingAfter) + ")";
+        }
+
+        private static string Counts(int current, int capacity)
+        {
+            return Number(current) + " / " + Number(capacity);
+        }
+
+        private static string Number(int value)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
         }
 
         /// <summary>

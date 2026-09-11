@@ -124,7 +124,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
             Assert.AreEqual(1, view.Rows.Count);
             Assert.IsNull(view.Detail);
-            Assert.IsFalse(view.RowSelected);
+            Assert.IsFalse(view.RowActions.RowSelected);
         }
 
         // 조회 0건은 성공이다 (05 §3.4). 안내창을 띄우지 않는다.
@@ -185,7 +185,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
             Assert.AreEqual(11L, service.LastPatientId);
             Assert.AreEqual("홍길동", view.Detail.Name);
-            Assert.IsTrue(view.RowSelected);
+            Assert.IsTrue(view.RowActions.RowSelected);
         }
 
         [TestMethod]
@@ -199,7 +199,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             view.RaiseSelectionChanged(null);
 
             Assert.IsNull(view.Detail);
-            Assert.IsFalse(view.RowSelected);
+            Assert.IsFalse(view.RowActions.RowSelected);
         }
 
         [TestMethod]
@@ -356,6 +356,55 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.Rows[0].ReserveStatus);
         }
 
+        /// <summary>
+        /// 03 §5.2 에 축이 하나 더 있다 — **이미 예약이 있는 수검자는 `[예약]` 이 닫힌다**
+        /// (2026-09-11 사용자 지시). 목록이 `불가` 라고 적어 두고 버튼을 열어 두면 화면이
+        /// 스스로 모순되고, 눌러 봐야 모달이 그 사실을 다시 말한다.
+        /// </summary>
+        [TestMethod]
+        public void 예약이_있는_행을_고르면_예약_버튼이_닫힌다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService { SearchResult = Rows(), DetailResult = Detail() };
+            var works = new FakeWorkService
+            {
+                SearchResult = OperationResult<IList<WorkListItemDto>>.Success(new List<WorkListItemDto>
+                {
+                    new WorkListItemDto
+                    {
+                        WorkId = 91, PatientId = 11, ReserveDate = Today.AddDays(3),
+                        SlotCode = "AM", StatusCode = DbWorkStatus.Reserved, StatusName = "예약",
+                    },
+                }),
+            };
+            new PatientManagementPresenter(view, service, works, Status(Today));
+            view.RaiseSearchRequested();
+
+            view.RaiseSelectionChanged(11);
+
+            Assert.IsTrue(view.RowActions.RowSelected, "행은 잡혔다");
+            Assert.IsFalse(view.RowActions.Reserve, "예약 불가인데 [예약] 이 열려 있다");
+        }
+
+        /// <summary>
+        /// [X] **모르는 것은 불가가 아니다.** 업무 조회가 실패해 `예약` 칸이 비었을 때 닫아
+        ///     버리면 DB 한 번 끊긴 것으로 예약이 통째로 막힌다 — 그때는 열어 두고 DB 가
+        ///     판정하게 한다 (R12 가 지키려던 것이 이것이다).
+        /// </summary>
+        [TestMethod]
+        public void 예약_여부를_모르면_예약_버튼을_닫지_않는다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService { SearchResult = Rows(), DetailResult = Detail() };
+            var works = new FakeWorkService { SearchFailure = new InvalidOperationException("끊겼다") };
+            new PatientManagementPresenter(view, service, works, Status(Today));
+            view.RaiseSearchRequested();
+
+            view.RaiseSelectionChanged(11);
+
+            Assert.IsTrue(view.RowActions.Reserve, "모르는데 닫았다");
+        }
+
         // 행을 고르면 상세가 날짜까지 말해 준다 — 목록의 두 값이 못 하는 일이다.
         [TestMethod]
         public void 행을_고르면_상세에_예약_일정이_선다()
@@ -416,7 +465,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public long? SelectedPatientId { get; private set; }
 
         public void SelectPatient(long patientId) { SelectedPatientId = patientId; }
-        public bool RowSelected { get; set; }
+        public PatientActionState RowActions { get; set; }
         public string LastMessage { get; private set; }
 
         public void ShowMessage(string message) { LastMessage = message; }
