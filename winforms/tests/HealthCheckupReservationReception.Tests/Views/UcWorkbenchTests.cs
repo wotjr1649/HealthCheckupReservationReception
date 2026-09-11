@@ -8,6 +8,7 @@ using DevExpress.XtraGrid.Columns;
 using DevExpress.XtraGrid.Views.Grid;
 using DevExpress.XtraLayout;
 using DevExpress.XtraLayout.Utils;
+using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Views;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -135,17 +136,25 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // 03 §9.3 — 상태 드롭다운은 `전체` 를 포함해 다섯이고 `전체` 만 값이 없다.
+        // 2026-09-11 — 드롭다운의 내용은 Context 가 정한다. 붙기 전에는 `전체` 하나이고,
+        // Context 가 상태를 주면 그만큼 늘어난다. `전체` 는 언제나 값이 없다.
         [TestMethod]
-        public void 상태_드롭다운은_전체를_포함해_다섯이고_전체는_값이_없다()
+        public void 상태_드롭다운은_Context_가_준_상태에_전체를_얹는다()
         {
             RunSta(() =>
             {
                 var screen = new UcWorkbench();
+                var view = (IWorkbenchView)screen;
                 var combo = Field<ImageComboBoxEdit>(screen, "cboStatus");
 
-                Assert.AreEqual(5, combo.Properties.Items.Count);
-                Assert.IsNull(((IWorkbenchView)screen).StatusCode, "기본이 `전체` 가 아니다");
+                Assert.AreEqual(1, combo.Properties.Items.Count, "붙기 전인데 `전체` 말고 뭔가 있다");
+
+                view.StatusChoices = new[] { DbWorkStatus.Reserved, DbWorkStatus.CancelledReservation };
+
+                Assert.AreEqual(3, combo.Properties.Items.Count);
+                Assert.IsNull(view.StatusCode, "기본이 `전체` 가 아니다");
+                Assert.AreEqual("예약완료", combo.Properties.Items[1].Description,
+                    "DB 의 `상태명` 이 아니라 clsWorkText 의 표시명이어야 한다");
             });
         }
 

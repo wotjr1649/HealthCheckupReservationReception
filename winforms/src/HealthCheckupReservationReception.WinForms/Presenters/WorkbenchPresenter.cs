@@ -18,21 +18,49 @@ namespace HealthCheckupReservationReception.Presenters
     /// </summary>
     public sealed class WorkbenchPresenter
     {
+        /// <summary>
+        /// 예약 창구가 다루는 상태 — 살아 있는 예약과 취소된 예약이다 (2026-09-11 사용자 지시).
+        /// `RCP` 는 없다: 접수된 건은 접수 창구의 것이다.
+        /// </summary>
+        private static readonly string[] ReservationStatuses =
+        {
+            DbWorkStatus.Reserved, DbWorkStatus.CancelledReservation,
+        };
+
+        /// <summary>
+        /// 접수 창구가 다루는 상태 — **받을 사람(`RSV`)과 받은 사람(`RCP`)과 무른 건(`CNC`)** 이다.
+        ///
+        /// [X] `RSV` 가 여기 있는 것이 이 회차의 핵심이다. 접수의 입력은 예약 건이므로 그것이
+        ///     보이지 않으면 접수 창구는 자기 탭에서 할 일이 없다 — 지난 회차에 `[접수]` 버튼을
+        ///     걷은 것이 그 증상이었고, 고쳤어야 하는 것은 버튼이 아니라 이 목록이다.
+        ///
+        /// 그래서 오늘의 `RSV` 한 행은 두 탭에 다 보인다. 중복이 아니라 두 창구가 같은 건을
+        /// 다른 이유로 보는 것이고, **명령은 여전히 한 탭에만 있다** (Ribbon UX Guide).
+        /// </summary>
+        private static readonly string[] ReceptionStatuses =
+        {
+            DbWorkStatus.Reserved, DbWorkStatus.Received, DbWorkStatus.CancelledReception,
+        };
+
         private readonly IWorkbenchView _view;
         private readonly IWorkService _service;
+        private readonly ICommonStatusService _statusService;
 
         // 03 §9.1 — 상단에서 [예약 관리] 로 들어오는 것이 기본이다.
         private WorkContext _context = WorkContext.Reservation;
+        private string[] _statuses = ReservationStatuses;
 
-        public WorkbenchPresenter(IWorkbenchView view, IWorkService service)
+        public WorkbenchPresenter(IWorkbenchView view, IWorkService service, ICommonStatusService statusService)
         {
             _view = view;
             _service = service;
+            _statusService = statusService;
 
             _view.SearchRequested += OnSearchRequested;
             _view.SelectionChanged += OnSelectionChanged;
 
             _view.ContextTitle = TitleOf(_context);
+            _view.StatusChoices = _statuses;
             ClearSelection();
         }
 
@@ -43,13 +71,66 @@ namespace HealthCheckupReservationReception.Presenters
         public void OpenContext(WorkContext context, long? workId)
         {
             _context = context;
+            _statuses = StatusesOf(context);
             _view.ContextTitle = TitleOf(context);
+            _view.StatusChoices = _statuses;
             ClearSelection();
 
             if (workId != null)
             {
                 Target(workId.Value);
+                return;
             }
+
+            // 2026-09-11 — 탭을 열 때마다 그 창구의 기간으로 세우고 다시 조회한다.
+            // 예전에는 목록을 그대로 두어 두 탭이 **같은 목록**이었다: 조회조건도 부르는 SP 도
+            // 같았고 다른 것은 제목과 Ribbon 뿐이었다.
+            // [X] 순서가 중요하다. `Search` 가 첫 줄에서 ValidationMessage 를 비우므로
+            //     기간 경고를 먼저 적으면 그대로 사라진다 — 조회 뒤에 다시 적는다.
+            string warning = ResetRange();
+            Search();
+            if (warning != null)
+            {
+                _view.ValidationMessage = warning;
+            }
+        }
+
+        /// <summary>
+        /// 그 창구의 기본 기간을 세운다.
+        ///
+        /// 접수는 당일 업무다 (05 §8.2 `START_RECEPTION` 이 `예약일=오늘`) — 오늘 하루로
+        /// 세운다. 예약은 앞으로의 일정이므로 오늘부터 열어 둔다. 둘 다 **기본값일 뿐**이고
+        /// 사용자가 바꿀 수 있다 (2026-09-11 사용자 결정): 어제 무른 접수를 되짚을 길이 남는다.
+        ///
+        /// [X] **오늘을 PC 시계에서 얻지 않는다.** 창구 PC 가 하루 어긋나면 접수 창구의 기본
+        ///     목록이 통째로 빈다. `SP-CMN-01` 이 DB 오늘날짜를 준다 — 읽지 못하면 기간을
+        ///     건드리지 않고 사유만 적는다. 잘못된 날로 세우느니 사용자가 고르게 둔다.
+        /// </summary>
+        private string ResetRange()
+        {
+            OperationResult<CommonWorkStatusDto> status;
+            try
+            {
+                status = _statusService.GetCurrent();
+            }
+            catch (Exception)
+            {
+                status = null;
+            }
+
+            if (status == null || !status.IsSuccess || status.Value == null)
+            {
+                return "오늘 날짜를 확인하지 못해 기간을 세우지 못했습니다.";
+            }
+
+            DateTime today = status.Value.Today.Date;
+            _view.ResetSearchRange(today, _context == WorkContext.Reception ? today : (DateTime?)null);
+            return null;
+        }
+
+        private static string[] StatusesOf(WorkContext context)
+        {
+            return context == WorkContext.Reception ? ReceptionStatuses : ReservationStatuses;
         }
 
         /// <summary>
@@ -164,8 +245,35 @@ namespace HealthCheckupReservationReception.Presenters
             }
 
             // 03 §9.4 — 재조회 시 선택·상세·Transaction Action 을 Clear 한다.
-            _view.Rows = result.Value;
+            _view.Rows = Narrow(result.Value);
             ClearSelection();
+        }
+
+        /// <summary>
+        /// 그 창구가 다루는 상태만 남긴다 (2026-09-11).
+        ///
+        /// [X] **SP 로 거르지 못한다.** `@상태코드` 는 한 번에 한 값이거나 NULL 이다
+        ///     (05 §8.1) — 「`RSV` 와 `RCP` 둘」을 물을 방법이 없다. 드롭다운에서 한 값을
+        ///     고르면 SP 가 이미 거른 뒤라 이 걸음은 통과만 하고, `전체` 일 때만 실제로 좁힌다.
+        ///     행 수가 하루치라 화면에서 거르는 비용은 작다.
+        /// </summary>
+        private IList<WorkListItemDto> Narrow(IList<WorkListItemDto> rows)
+        {
+            if (rows == null)
+            {
+                return new List<WorkListItemDto>();
+            }
+
+            var kept = new List<WorkListItemDto>();
+            foreach (WorkListItemDto row in rows)
+            {
+                if (Array.IndexOf(_statuses, row.StatusCode) >= 0)
+                {
+                    kept.Add(row);
+                }
+            }
+
+            return kept;
         }
 
         private static bool HasCondition(WorkSearchRequest request)

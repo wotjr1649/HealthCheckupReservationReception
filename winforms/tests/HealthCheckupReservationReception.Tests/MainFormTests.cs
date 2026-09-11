@@ -257,16 +257,17 @@ namespace HealthCheckupReservationReception.Tests
             {
                 using (MainForm form = NewShell())
                 {
-                    string[] rsvClosed = { "예약변경", "예약취소", "접수", "변경이력" };
+                    string[] rsvClosed = { "예약변경", "예약취소", "변경이력" };
                     foreach (string caption in rsvClosed)
                     {
                         Assert.IsFalse(PageItemEnabled(form, "예약 관리", caption),
                             "예약 관리 / " + caption);
                     }
 
-                    // [예약변경]·[접수] 는 2026-09-11 에 접수 Page 에서 사라졌다 — 둘 다 `RSV`
-                    // 건을 다루는 명령이라 예약 Page 에만 있다.
-                    string[] rcpClosed = { "추가검사변경", "접수취소", "변경이력" };
+                    // 2026-09-11 — 탭은 창구다. `[접수]` 는 접수 Page 에 있고 `[예약변경]` 은
+                    // 예약 Page 에 있다. 접수 Page 의 목록이 오늘의 `RSV` 를 담으므로 접수할
+                    // 대상이 그 탭에 있다.
+                    string[] rcpClosed = { "접수", "추가검사변경", "접수취소", "변경이력" };
                     foreach (string caption in rcpClosed)
                     {
                         Assert.IsFalse(PageItemEnabled(form, "접수 관리", caption),

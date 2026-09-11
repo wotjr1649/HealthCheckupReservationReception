@@ -26,7 +26,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientLog = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnRsvEdit = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnRsvCancel = new DevExpress.XtraBars.BarButtonItem();
-            this.barBtnRsvReception = new DevExpress.XtraBars.BarButtonItem();
+            this.barBtnRcpStart = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnRsvLog = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnRcpExtra = new DevExpress.XtraBars.BarButtonItem();
             this.barBtnRcpCancel = new DevExpress.XtraBars.BarButtonItem();
@@ -64,7 +64,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnPatientLog,
             this.barBtnRsvEdit,
             this.barBtnRsvCancel,
-            this.barBtnRsvReception,
+            this.barBtnRcpStart,
             this.barBtnRsvLog,
             this.barBtnRcpExtra,
             this.barBtnRcpCancel,
@@ -153,13 +153,13 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnRsvCancel.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             this.barBtnRsvCancel.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
             //
-            // barBtnRsvReception
+            // barBtnRcpStart
             //
-            this.barBtnRsvReception.Caption = "접수";
-            this.barBtnRsvReception.Id = 12;
-            this.barBtnRsvReception.Name = "barBtnRsvReception";
-            this.barBtnRsvReception.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnRsvReception.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
+            this.barBtnRcpStart.Caption = "접수";
+            this.barBtnRcpStart.Id = 12;
+            this.barBtnRcpStart.Name = "barBtnRcpStart";
+            this.barBtnRcpStart.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.barBtnRcpStart.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
             //
             // barBtnRsvLog
             //
@@ -241,7 +241,6 @@ namespace HealthCheckupReservationReception.Views
             //
             this.barGroupRsvWork.ItemLinks.Add(this.barBtnRsvEdit);
             this.barGroupRsvWork.ItemLinks.Add(this.barBtnRsvCancel);
-            this.barGroupRsvWork.ItemLinks.Add(this.barBtnRsvReception);
             this.barGroupRsvWork.Name = "barGroupRsvWork";
             this.barGroupRsvWork.Text = "예약 업무";
             //
@@ -267,6 +266,10 @@ namespace HealthCheckupReservationReception.Views
             // [예약변경]·[접수] 가 없다 — 2026-09-11 사용자 지시. 둘 다 `RSV` 건을 다루는
             // 명령이라 예약 관리에 있고(05 §8.2 허용조건이 `RSV`), 여기 두면 같은 명령이 두
             // 탭에 생긴다. 탭이 상태로 갈린다: **예약 관리 = 예약 건 · 접수 관리 = 접수 건.**
+            // [접수] 가 여기 있다 — 2026-09-11 사용자 지시. 접수 Page 의 목록이 오늘의
+            // `RSV` 를 담으므로 (WorkbenchPresenter.StatusesOf) 접수할 대상이 이 탭에 있다.
+            // 지난 회차에 이 버튼을 걷은 것은 판단이 틀렸다: 고쳤어야 하는 것은 목록이다.
+            this.barGroupRcpWork.ItemLinks.Add(this.barBtnRcpStart);
             this.barGroupRcpWork.ItemLinks.Add(this.barBtnRcpExtra);
             this.barGroupRcpWork.ItemLinks.Add(this.barBtnRcpCancel);
             this.barGroupRcpWork.Name = "barGroupRcpWork";
@@ -385,7 +388,7 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraBars.BarButtonItem barBtnPatientLog;
         private DevExpress.XtraBars.BarButtonItem barBtnRsvEdit;
         private DevExpress.XtraBars.BarButtonItem barBtnRsvCancel;
-        private DevExpress.XtraBars.BarButtonItem barBtnRsvReception;
+        private DevExpress.XtraBars.BarButtonItem barBtnRcpStart;
         private DevExpress.XtraBars.BarButtonItem barBtnRsvLog;
         private DevExpress.XtraBars.BarButtonItem barBtnRcpExtra;
         private DevExpress.XtraBars.BarButtonItem barBtnRcpCancel;

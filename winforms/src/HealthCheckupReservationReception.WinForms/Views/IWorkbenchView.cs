@@ -34,6 +34,18 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>지금 어느 Context 인가 (03 §9.1). Ribbon Page 와 별개로 화면에도 적는다.</summary>
         string ContextTitle { set; }
 
+        /// <summary>
+        /// 이 Context 가 다루는 상태코드 (2026-09-11 사용자 지시). 드롭다운이 이것으로 서고
+        /// `전체` 는 **이 집합 전부**를 뜻한다 — 탭이 이미 상태로 갈렸기 때문이다.
+        /// </summary>
+        IList<string> StatusChoices { set; }
+
+        /// <summary>
+        /// 조회 기간의 기본값을 세운다 (2026-09-11). Context 를 열 때마다 부른다 —
+        /// 접수 창구는 오늘 하루, 예약 창구는 오늘부터 앞이 기본이다.
+        /// </summary>
+        void ResetSearchRange(DateTime from, DateTime? to);
+
         /// <summary>03 §9.3 — From&gt;To 와 조건 없음은 Inline 오류다. null 이면 지운다.</summary>
         string ValidationMessage { set; }
 

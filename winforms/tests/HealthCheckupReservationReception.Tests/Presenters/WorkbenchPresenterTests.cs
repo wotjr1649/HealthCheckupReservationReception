@@ -21,7 +21,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView { FromDate = Today, ToDate = Today };
             var service = new FakeWorkService { SearchResult = Ok(OneRow()) };
-            var presenter = new WorkbenchPresenter(view, service);
+            var presenter = new WorkbenchPresenter(view, service, Status(Today));
 
             presenter.LoadInitial();
 
@@ -37,7 +37,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView { FromDate = Today.AddDays(1), ToDate = Today };
             var service = new FakeWorkService { SearchResult = Ok(OneRow()) };
-            new WorkbenchPresenter(view, service);
+            new WorkbenchPresenter(view, service, Status(Today));
 
             view.RaiseSearchRequested();
 
@@ -52,7 +52,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView { StatusCode = "RSV" };
             var service = new FakeWorkService { SearchResult = Ok(OneRow()) };
-            new WorkbenchPresenter(view, service);
+            new WorkbenchPresenter(view, service, Status(Today));
 
             view.RaiseSearchRequested();
 
@@ -65,7 +65,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView { ChartNo = "C-0001" };
             var service = new FakeWorkService { SearchResult = Ok(new List<WorkListItemDto>()) };
-            new WorkbenchPresenter(view, service);
+            new WorkbenchPresenter(view, service, Status(Today));
 
             view.RaiseSearchRequested();
 
@@ -84,7 +84,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 SearchResult = Ok(OneRow()),
                 DetailResult = OkDetail(Allowed(DbWorkAction.EditReservation)),
             };
-            new WorkbenchPresenter(view, service);
+            new WorkbenchPresenter(view, service, Status(Today));
             view.RaiseSelectionChanged(77);
             Assert.IsNotNull(view.Detail, "먼저 상세가 서 있어야 이 시험이 뜻을 갖는다");
 
@@ -107,7 +107,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             {
                 DetailResult = OkDetail(Allowed(DbWorkAction.EditReservation, DbWorkAction.CancelReservation)),
             };
-            new WorkbenchPresenter(view, service);
+            new WorkbenchPresenter(view, service, Status(Today));
 
             view.RaiseSelectionChanged(77);
 
@@ -129,7 +129,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView();
             var service = new FakeWorkService { DetailResult = OkDetail(Allowed()) };
-            new WorkbenchPresenter(view, service);
+            new WorkbenchPresenter(view, service, Status(Today));
 
             view.RaiseSelectionChanged(77);
 
@@ -152,7 +152,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 DetailResult = OkDetail(Allowed(
                     DbWorkAction.StartReception, DbWorkAction.EditExtra, DbWorkAction.CancelReception)),
             };
-            new WorkbenchPresenter(view, service);
+            new WorkbenchPresenter(view, service, Status(Today));
 
             view.RaiseSelectionChanged(77);
 
@@ -167,7 +167,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView();
             var service = new FakeWorkService { DetailResult = OkDetail(Allowed(DbWorkAction.EditReservation)) };
-            new WorkbenchPresenter(view, service);
+            new WorkbenchPresenter(view, service, Status(Today));
             view.RaiseSelectionChanged(77);
 
             view.RaiseSelectionChanged(null);
@@ -185,7 +185,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             {
                 DetailResult = OperationResult<WorkDetailReadDto>.Failure("대상 업무를 찾을 수 없습니다."),
             };
-            new WorkbenchPresenter(view, service);
+            new WorkbenchPresenter(view, service, Status(Today));
 
             view.RaiseSelectionChanged(77);
 
@@ -203,7 +203,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             {
                 SearchFailure = new InvalidOperationException("서버 DESKTOP-XYZ 의 로그인에 실패했습니다"),
             };
-            new WorkbenchPresenter(view, service);
+            new WorkbenchPresenter(view, service, Status(Today));
 
             view.RaiseSearchRequested();
 
@@ -222,7 +222,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             {
                 SearchResult = OperationResult<IList<WorkListItemDto>>.Failure("읽지 못했습니다."),
             };
-            var presenter = new WorkbenchPresenter(view, service);
+            var presenter = new WorkbenchPresenter(view, service, Status(Today));
 
             presenter.LoadInitial();
 
@@ -236,7 +236,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public void 기본_Context_는_예약_관리다()
         {
             var view = new FakeWorkbenchView();
-            new WorkbenchPresenter(view, new FakeWorkService());
+            new WorkbenchPresenter(view, new FakeWorkService(), Status(Today));
 
             Assert.AreEqual("예약 관리", view.ContextTitle);
         }
@@ -248,7 +248,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeWorkbenchView();
             var service = new FakeWorkService { DetailResult = OkDetail(Allowed(DbWorkAction.EditReservation)) };
-            var presenter = new WorkbenchPresenter(view, service);
+            var presenter = new WorkbenchPresenter(view, service, Status(Today));
             view.RaiseSelectionChanged(77);
 
             presenter.OpenContext(WorkContext.Reception, null);
@@ -272,7 +272,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 SearchResult = Ok(OneRow()),
                 DetailResult = OkDetail(Allowed(DbWorkAction.EditReservation)),
             };
-            var presenter = new WorkbenchPresenter(view, service);
+            var presenter = new WorkbenchPresenter(view, service, Status(Today));
 
             presenter.OpenContext(WorkContext.Reservation, 77);
 
@@ -293,24 +293,31 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 SearchResult = Ok(new List<WorkListItemDto>()),
                 DetailResult = OkDetail(Allowed()),
             };
-            var presenter = new WorkbenchPresenter(view, service);
+            var presenter = new WorkbenchPresenter(view, service, Status(Today));
 
             presenter.OpenContext(WorkContext.Reception, 77);
 
             Assert.AreEqual("방금 저장한 업무를 목록에서 찾지 못했습니다.", view.ValidationMessage);
         }
 
+        /// <summary>
+        /// 2026-09-11 — **뒤집힌 규칙이다.** 예전에는 상단 전환이 조회조건을 건드리지 않았고,
+        /// 그래서 두 탭이 같은 목록을 보고 있었다. 이제 탭을 열면 그 창구의 기간으로 세우고
+        /// 다시 조회한다. `FocusSearchOn` 은 여전히 안 쓴다 — 그쪽은 저장 뒤 한 건을 겨누는 길이다.
+        /// </summary>
         [TestMethod]
-        public void WorkId_가_없으면_조회조건을_건드리지_않는다()
+        public void WorkId_가_없으면_그_창구의_기간으로_세우고_다시_조회한다()
         {
             var view = new FakeWorkbenchView { FromDate = Today.AddDays(-30) };
-            var service = new FakeWorkService { DetailResult = OkDetail(Allowed()) };
-            var presenter = new WorkbenchPresenter(view, service);
+            var service = new FakeWorkService { SearchResult = Ok(OneRow()) };
+            var presenter = new WorkbenchPresenter(view, service, Status(Today));
 
             presenter.OpenContext(WorkContext.Reception, null);
 
             Assert.IsNull(view.FocusedDay);
-            Assert.AreEqual(Today.AddDays(-30), view.FromDate, "상단 전환이 조회조건을 갈아치웠다");
+            Assert.AreEqual(Today, view.FromDate);
+            Assert.AreEqual(Today, view.ToDate);
+            Assert.IsNotNull(service.LastSearch, "탭을 열었는데 조회하지 않았다");
         }
 
         // ── helpers
@@ -318,6 +325,126 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         private static OperationResult<IList<WorkListItemDto>> Ok(IList<WorkListItemDto> rows)
         {
             return OperationResult<IList<WorkListItemDto>>.Success(rows);
+        }
+
+        // ── 2026-09-11: 탭은 창구다
+
+        /// <summary>
+        /// 접수 창구의 목록에 **오늘의 `RSV`** 가 있어야 한다 — 접수의 입력이 예약 건이므로
+        /// 그것이 안 보이면 창구는 자기 탭에서 할 일이 없다. `CNR` 은 예약 창구의 것이다.
+        /// </summary>
+        [TestMethod]
+        public void 접수_창구는_예약완료와_접수완료와_접수취소만_본다()
+        {
+            var view = new FakeWorkbenchView();
+            var service = new FakeWorkService { SearchResult = Ok(AllStatuses()) };
+            var presenter = new WorkbenchPresenter(view, service, Status(Today));
+
+            presenter.OpenContext(WorkContext.Reception, null);
+
+            CollectionAssert.AreEquivalent(
+                new[] { DbWorkStatus.Reserved, DbWorkStatus.Received, DbWorkStatus.CancelledReception },
+                Codes(view.Rows));
+            CollectionAssert.AreEquivalent(
+                new[] { DbWorkStatus.Reserved, DbWorkStatus.Received, DbWorkStatus.CancelledReception },
+                new List<string>(view.StatusChoices));
+        }
+
+        [TestMethod]
+        public void 예약_창구는_예약완료와_예약취소만_본다()
+        {
+            var view = new FakeWorkbenchView();
+            var service = new FakeWorkService { SearchResult = Ok(AllStatuses()) };
+            var presenter = new WorkbenchPresenter(view, service, Status(Today));
+
+            presenter.OpenContext(WorkContext.Reservation, null);
+
+            CollectionAssert.AreEquivalent(
+                new[] { DbWorkStatus.Reserved, DbWorkStatus.CancelledReservation },
+                Codes(view.Rows));
+        }
+
+        /// <summary>
+        /// 접수는 당일 업무다 (05 §8.2 `START_RECEPTION` 이 `예약일=오늘`) — 오늘 하루로 선다.
+        /// 예약은 앞으로의 일정이라 종료일을 비워 둔다. 둘 다 기본값일 뿐 사용자가 바꾼다.
+        /// </summary>
+        [TestMethod]
+        public void 창구마다_기간_기본값이_다르다()
+        {
+            var view = new FakeWorkbenchView();
+            var service = new FakeWorkService { SearchResult = Ok(OneRow()) };
+            var presenter = new WorkbenchPresenter(view, service, Status(Today));
+
+            presenter.OpenContext(WorkContext.Reception, null);
+            Assert.AreEqual(Today, view.RangeFrom);
+            Assert.AreEqual(Today, view.RangeTo, "접수는 오늘 하루다");
+
+            presenter.OpenContext(WorkContext.Reservation, null);
+            Assert.AreEqual(Today, view.RangeFrom);
+            Assert.IsNull(view.RangeTo, "예약은 앞이 열려 있어야 한다");
+        }
+
+        /// <summary>
+        /// [X] **오늘을 PC 시계에서 얻지 않는다.** DB 오늘날짜를 못 읽으면 기간을 건드리지 않고
+        ///     사유만 적는다 — 잘못된 날로 세우느니 사용자가 고르게 둔다.
+        /// </summary>
+        [TestMethod]
+        public void 오늘_날짜를_못_읽으면_기간을_건드리지_않는다()
+        {
+            var view = new FakeWorkbenchView { FromDate = Today.AddDays(-3) };
+            var service = new FakeWorkService { SearchResult = Ok(OneRow()) };
+            var status = new FakeCommonStatusService { Failure = new InvalidOperationException("끊겼다") };
+            var presenter = new WorkbenchPresenter(view, service, status);
+
+            presenter.OpenContext(WorkContext.Reception, null);
+
+            Assert.IsNull(view.RangeFrom, "기간을 세웠다");
+            Assert.AreEqual("오늘 날짜를 확인하지 못해 기간을 세우지 못했습니다.", view.ValidationMessage);
+        }
+
+        private static FakeCommonStatusService Status(DateTime today)
+        {
+            return new FakeCommonStatusService
+            {
+                Result = OperationResult<CommonWorkStatusDto>.Success(new CommonWorkStatusDto
+                {
+                    Today = today,
+                    DayName = "목요일",
+                    IsBusinessDay = true,
+                    IsWithinHours = true,
+                    IsWorkAllowed = true,
+                    BlockMessage = string.Empty,
+                }),
+            };
+        }
+
+        private static string[] Codes(IList<WorkListItemDto> rows)
+        {
+            var codes = new List<string>();
+            foreach (WorkListItemDto row in rows) { codes.Add(row.StatusCode); }
+            return codes.ToArray();
+        }
+
+        private static IList<WorkListItemDto> AllStatuses()
+        {
+            var rows = new List<WorkListItemDto>();
+            long id = 1;
+            foreach (string code in new[]
+            {
+                DbWorkStatus.Reserved, DbWorkStatus.Received,
+                DbWorkStatus.CancelledReservation, DbWorkStatus.CancelledReception,
+            })
+            {
+                rows.Add(new WorkListItemDto
+                {
+                    WorkId = id, PatientId = id, ReserveDate = Today, SlotCode = "AM",
+                    StatusCode = code, Name = "홍길동", ChartNo = "C-000" + id,
+                    Gender = "M", Birthday = "19800101", MobilePhone = "01012345678",
+                });
+                id++;
+            }
+
+            return rows;
         }
 
         private static IList<WorkListItemDto> OneRow()
@@ -414,6 +541,9 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public string PatientName { get; set; }
 
         public string ContextTitle { get; set; }
+        public IList<string> StatusChoices { get; set; }
+        public DateTime? RangeFrom { get; private set; }
+        public DateTime? RangeTo { get; private set; }
         public string ValidationMessage { get; set; }
         public IList<WorkListItemDto> Rows { get; set; }
         public WorkDetailDto Detail { get; set; }
@@ -426,6 +556,14 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public DateTime? FocusedDay { get; private set; }
         public long? SelectedWorkId { get; private set; }
         public bool SelectFound { get; set; }
+
+        public void ResetSearchRange(DateTime from, DateTime? to)
+        {
+            RangeFrom = from;
+            RangeTo = to;
+            FromDate = from;
+            ToDate = to;
+        }
 
         public void FocusSearchOn(DateTime day)
         {

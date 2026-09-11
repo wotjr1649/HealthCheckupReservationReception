@@ -147,7 +147,7 @@ namespace HealthCheckupReservationReception.Tests.Visual
                 WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
 
                 var screen = new UcWorkbench();
-                screen.Attach(new FakeWorkService());
+                screen.Attach(new FakeWorkService(), new FakeCommonStatusService());
 
                 using (var host = new Form())
                 {

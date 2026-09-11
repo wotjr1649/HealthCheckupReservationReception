@@ -254,8 +254,11 @@ namespace HealthCheckupReservationReception.Views
         {
             barBtnRsvEdit.Enabled = state.EditReservation;
             barBtnRsvCancel.Enabled = state.CancelReservation;
-            barBtnRsvReception.Enabled = state.StartReception;
             barBtnRsvLog.Enabled = state.ChangeLog;
+
+            // [접수] 는 접수 Page 에 있다 (2026-09-11) — 접수 Page 의 목록이 오늘의 `RSV` 를
+            // 담으므로 접수할 대상이 그 탭에 있다.
+            barBtnRcpStart.Enabled = state.StartReception;
 
             barBtnRcpExtra.Enabled = state.EditExtra;
             barBtnRcpCancel.Enabled = state.CancelReception;
@@ -289,7 +292,7 @@ namespace HealthCheckupReservationReception.Views
             {
                 var workbench = new UcWorkbench();
                 workbench.WorkActionsChanged += WorkView_WorkActionsChanged;
-                workbench.Attach(_workService);
+                workbench.Attach(_workService, _statusService);
                 _workView = workbench;
                 return workbench;
             }

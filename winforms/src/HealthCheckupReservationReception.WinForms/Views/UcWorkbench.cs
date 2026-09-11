@@ -46,9 +46,9 @@ namespace HealthCheckupReservationReception.Views
         /// Presenter 를 붙인다. UserControl 은 디자이너가 만들어야 하므로 생성자로 받지 않는다
         /// (킷 `references/mvp-wiring.md`).
         /// </summary>
-        public void Attach(IWorkService service)
+        public void Attach(IWorkService service, ICommonStatusService statusService)
         {
-            _presenter = new WorkbenchPresenter(this, service);
+            _presenter = new WorkbenchPresenter(this, service, statusService);
         }
 
         /// <summary>
@@ -90,6 +90,17 @@ namespace HealthCheckupReservationReception.Views
 
         /// <summary>03 §9.3 — `전체` 는 EditValue 가 null 이다.</summary>
         public string StatusCode { get { return cboStatus.EditValue as string; } }
+
+        public IList<string> StatusChoices
+        {
+            set { LoadStatusItems(value); }
+        }
+
+        public void ResetSearchRange(DateTime from, DateTime? to)
+        {
+            deFrom.EditValue = from;
+            deTo.EditValue = to;
+        }
 
         public string ChartNo { get { return txtChartNo.Text; } }
         public string PatientName { get { return txtName.Text; } }

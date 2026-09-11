@@ -1,5 +1,6 @@
 ﻿// 화면 ID: WF-WRK-01 — 예약/접수 공통 Workbench (03 §9)
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using DevExpress.Utils;
 using DevExpress.XtraEditors.Controls;
@@ -16,11 +17,9 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         partial void ConfigureUI()
         {
-            LoadStatusItems(new[]
-            {
-                DbWorkStatus.Reserved, DbWorkStatus.Received,
-                DbWorkStatus.CancelledReservation, DbWorkStatus.CancelledReception,
-            });
+            // 드롭다운의 내용은 Context 가 정한다 (IWorkbenchView.StatusChoices) — 여기서는
+            // `전체` 하나로 세워 둔다. Presenter 가 붙기 전에도 칸이 비어 보이지 않아야 한다.
+            LoadStatusItems(new string[0]);
 
             gvWorkList.CustomColumnDisplayText += GvWorkList_CustomColumnDisplayText;
 
@@ -90,11 +89,11 @@ namespace HealthCheckupReservationReception.Views
         /// 표시명은 `clsWorkText.FormatStatus` 한 곳에서 나온다 — Grid 의 `상태` 컬럼도
         /// 같은 함수를 쓴다 (ROOT AGENTS.md §6).
         /// </summary>
-        private void LoadStatusItems(string[] codes)
+        private void LoadStatusItems(IList<string> codes)
         {
             cboStatus.Properties.Items.Clear();
             cboStatus.Properties.Items.Add(new ImageComboBoxItem("전체", null));
-            foreach (string code in codes)
+            foreach (string code in codes ?? new string[0])
             {
                 cboStatus.Properties.Items.Add(new ImageComboBoxItem(clsWorkText.FormatStatus(code), code));
             }
