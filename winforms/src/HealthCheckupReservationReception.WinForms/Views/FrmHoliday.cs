@@ -13,45 +13,44 @@ namespace HealthCheckupReservationReception.Views
     /// <summary>
     /// DLG-HOL-01 휴무일 관리 (03 §24). 판정은 하지 않는다: 그리고 이벤트만 올린다 (킷 §2).
     ///
-    /// 03 §24 는 Modal 로 적었지만 2026-09-11 사용자 결정으로 **업무 화면**이 되었다.
-    /// 리본 탭이 「가는 곳」만 갖게 되면서 `접수 관리` 오른쪽에 자리가 생겼고, 목록 조회·추가·
-    /// 수정·삭제는 원래 목록 화면 성격이다 (ROOT AGENTS.md §1.1 이 배치·내비게이션을 풀었다).
+    /// `[X]` **업무 Tab 이었다가 Modal 로 되돌렸다** — 2026-09-11 사용자 결정, 같은 날 두 번째다.
+    /// `03` §2 와 §24.2 는 처음부터 Modal 이라고 적고 있었다. 탭으로 두는 동안 **초기화 경로가
+    /// 통째로 끊겨 이 화면의 CRUD 가 전부 죽어 있었다** — 경위는 `HolidayPresenter.LoadInitial`
+    /// 의 `[X]` 가 갖는다. 모달이 되면서 `OnLoad` 하나로 그 길이 이어진다.
+    ///
+    /// `[!]` **공통 업무 가능조건으로 이 화면을 닫지 않는다** (`03` §24.2). 정비를 운영시간
+    /// 안으로 묶으면 *내일이 휴무가 되었다* 를 오늘 18:00 이후에 넣을 수 없다 — 정비가 필요한
+    /// 바로 그 시각에 막히는 셈이다.
     /// </summary>
-    public partial class UcHoliday : XtraUserControl, IHolidayView
+    public partial class FrmHoliday : XtraForm, IHolidayView
     {
         private HolidayPresenter _presenter;
         private clsGridRowPicker _picker;
 
         partial void ConfigureUI();
 
-        public UcHoliday()
+        public FrmHoliday()
         {
             InitializeComponent();
             ConfigureUI();
         }
 
-        /// <summary>
-        /// Presenter 를 붙인다. UserControl 은 디자이너가 만들어야 하므로 생성자로 받지 않는다
-        /// (킷 `references/mvp-wiring.md`).
-        /// </summary>
-        public void Attach(IHolidayService service, ICommonStatusService statusService)
+        /// <summary>모달이므로 생성자가 곧 진입점이다 (킷 `references/mvp-wiring.md`).</summary>
+        public FrmHoliday(IHolidayService service, ICommonStatusService statusService)
+            : this()
         {
             _presenter = new HolidayPresenter(this, service, statusService);
         }
 
         /// <summary>
-        /// 03 §24.4 조회기간 기본값은 오늘부터 두 해다.
-        ///
-        /// [X] `00` §7.4 가 정한 등재 범위(달력 날짜 둘)를 여기 옮겨 적지 않는다 — 같은 값이 두
-        ///     곳에 생기고 이 자리에는 그것을 지킬 게이트가 없다 (ROOT AGENTS.md §6). 화면
-        ///     기본값은 「오늘부터 두 해」라는 상대 범위이고, 등재가 언제 끝나는지는 SP 가
-        ///     RS2 로 말해 준다(§24.6).
+        /// `[X]` **이 자리가 없어서 화면이 죽어 있었다.** 형제 둘(`UcPatientManagement`·
+        ///      `UcWorkbench`)은 `OnLoad` 에서 최초 조회를 걸고 있었는데 휴무일 화면만 빠져
+        ///      있었고, 어떤 검사도 그것을 보지 않았다 (2026-09-11 실측). 그래서 이제
+        ///      `ScreenInitializationTests` 가 화면마다 이 한 줄을 재는다.
         /// </summary>
-        public void Begin(DateTime today)
+        protected override void OnLoad(EventArgs e)
         {
-            deFrom.EditValue = today.Date;
-            deTo.EditValue = today.Date.AddYears(2);
-
+            base.OnLoad(e);
             if (_presenter != null)
             {
                 using (new clsBusyScope(this))
@@ -61,12 +60,17 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
-        /// <summary>Ribbon 의 `[휴무일추가]`·`[휴무일수정]`·`[휴무일삭제]` 가 부른다.</summary>
-        public void RequestRegister() { Run(Register); }
+        private void btnAdd_Click(object sender, EventArgs e) { Run(Register); }
 
-        public void RequestUpdate() { Run(Update); }
+        private void btnEdit_Click(object sender, EventArgs e) { Run(Update); }
 
-        public void RequestDelete() { Run(Delete); }
+        private void btnDelete_Click(object sender, EventArgs e) { Run(Delete); }
+
+        /// <summary>
+        /// Action 마다 즉시 저장하므로 지킬 Dirty 가 없다 — 폐기 확인을 묻지 않는다
+        /// (2026-09-11 사용자 결정). 예약 모달과 다른 점이 이것이다.
+        /// </summary>
+        private void btnClose_Click(object sender, EventArgs e) { Close(); }
 
         private void Register() { _presenter.Register(); }
 
@@ -74,20 +78,20 @@ namespace HealthCheckupReservationReception.Views
 
         private void Delete() { _presenter.Delete(); }
 
-        /// <summary>03 §24.5 — 자체휴무일 행이 잡혀 있는지. Ribbon 이 그것으로 Action 을 여닫는다.</summary>
-        public event EventHandler<bool> RowActionsChanged;
-
         public event EventHandler SearchRequested;
         public event EventHandler<HolidayListItemDto> SelectionChanged;
 
+        /// <summary>Presenter 가 03 §24.4 기본값(DB 오늘부터 두 해)으로 채운다.</summary>
         public DateTime? FromDate
         {
             get { return DateOf(deFrom); }
+            set { deFrom.EditValue = value; }
         }
 
         public DateTime? ToDate
         {
             get { return DateOf(deTo); }
+            set { deTo.EditValue = value; }
         }
 
         public string HolidayTypeFilter
@@ -153,15 +157,13 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
+        /// <summary>03 §24.5 — `[수정]`·`[삭제]` 는 자체휴무일 행이 잡혔을 때만 열린다.</summary>
         public bool RowActionsEnabled
         {
             set
             {
-                EventHandler<bool> handler = RowActionsChanged;
-                if (handler != null)
-                {
-                    handler(this, value);
-                }
+                btnEdit.Enabled = value;
+                btnDelete.Enabled = value;
             }
         }
 

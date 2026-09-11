@@ -34,7 +34,10 @@ namespace HealthCheckupReservationReception.Views
             {
                 if (e.Column == column)
                 {
-                    e.DisplayText = format(e.Value as string);
+                    // [X] `e.Value as string` 이었다. 컬럼이 문자열이 아니면 **조용히 null** 이
+                    //     되어 어떤 포맷도 걸리지 않는다 — `사용여부` 가 BIT 라 전부 `미사용` 으로
+                    //     그려졌다 (2026-09-11 실측). 값 쪽에서 끊는다.
+                    e.DisplayText = format(e.Value == null ? null : e.Value.ToString());
                 }
             };
         }

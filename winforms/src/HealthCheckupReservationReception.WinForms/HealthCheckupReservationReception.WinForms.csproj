@@ -231,14 +231,14 @@
     <Compile Include="Services\HolidayService.cs" />
     <Compile Include="Presenters\HolidayPresenter.cs" />
     <Compile Include="Views\IHolidayView.cs" />
-    <Compile Include="Views\UcHoliday.cs">
-      <SubType>UserControl</SubType>
+    <Compile Include="Views\FrmHoliday.cs">
+      <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Views\UcHoliday.Designer.cs">
-      <DependentUpon>UcHoliday.cs</DependentUpon>
+    <Compile Include="Views\FrmHoliday.Designer.cs">
+      <DependentUpon>FrmHoliday.cs</DependentUpon>
     </Compile>
-    <Compile Include="Views\UcHoliday.UI.cs">
-      <DependentUpon>UcHoliday.cs</DependentUpon>
+    <Compile Include="Views\FrmHoliday.UI.cs">
+      <DependentUpon>FrmHoliday.cs</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Views\FrmReservation.cs">

@@ -246,29 +246,26 @@ namespace HealthCheckupReservationReception.Tests.Visual
                 WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
                 WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
 
-                var screen = new UcHoliday();
-                screen.Attach(new FakeHolidayService(), new FakeCommonStatusService());
-
-                using (var host = new Form())
+                // [X] **행을 직접 물리지 않는다.** 예전 캡처는 `view.Rows = ...` 로 채워
+                //     넣었고, 그래서 초기화가 통째로 끊겨 있던 화면이 사진에서는 멀쩡해
+                //     보였다 (2026-09-11). 이제 fake 를 물려 두고 화면이 **스스로 조회하게**
+                //     둔다 — 목록이 비면 그 자체가 결함이다.
+                using (var screen = new FrmHoliday(
+                    new FakeHolidayService { SearchResult = SampleHolidayRead() },
+                    new FakeCommonStatusService { Result = SampleTodayStatus() }))
                 {
-                    host.StartPosition = FormStartPosition.Manual;
-                    host.Location = new Point(-32000, -32000);
-                    host.ClientSize = new Size(1916, 887);
-                    screen.Dock = DockStyle.Fill;
-                    host.Controls.Add(screen);
-                    host.Show();
+                    screen.StartPosition = FormStartPosition.Manual;
+                    screen.Location = new Point(-32000, -32000);
+                    screen.Show();
                     Application.DoEvents();
 
-                    IHolidayView view = screen;
-                    view.Rows = SampleHolidays();
-                    view.RegistryWarning = string.Empty;
-                    Application.DoEvents();
-
-                    using (var bmp = new Bitmap(host.ClientSize.Width, host.ClientSize.Height))
+                    using (var bmp = new Bitmap(screen.Width, screen.Height))
                     {
-                        host.DrawToBitmap(bmp, new Rectangle(Point.Empty, bmp.Size));
+                        screen.DrawToBitmap(bmp, new Rectangle(Point.Empty, bmp.Size));
                         path = Save(bmp, "dlg_hol_01.png");
                     }
+
+                    screen.Close();
                 }
             });
 
@@ -276,6 +273,38 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Assert.IsTrue(info.Exists && info.Length > 10 * 1024,
                 "PNG 가 비었거나 너무 작다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
             Console.WriteLine("캡처: " + path);
+        }
+
+        private static OperationResult<HolidayListReadDto> SampleHolidayRead()
+        {
+            return OperationResult<HolidayListReadDto>.Success(new HolidayListReadDto
+            {
+                Result = new DbResult { Success = true, Code = 0, Message = "정상 처리되었습니다." },
+                Rows = SampleHolidays(),
+                // 03 §24.6 — 잔여일수 < 경고임계일수 이면 화면이 만료 경고를 그린다.
+                Registry = new HolidayRegistryDto
+                {
+                    LastHolidayDate = new DateTime(2027, 12, 27),
+                    RemainingDays = 120,
+                    WarningThresholdDays = 180,
+                },
+            });
+        }
+
+        private static OperationResult<CommonWorkStatusDto> SampleTodayStatus()
+        {
+            return OperationResult<CommonWorkStatusDto>.Success(new CommonWorkStatusDto
+            {
+                Today = new DateTime(2026, 9, 11),
+                DayName = "금요일",
+                OpenTime = new TimeSpan(9, 0, 0),
+                CloseTime = new TimeSpan(18, 0, 0),
+                IsBusinessDay = true,
+                IsWithinHours = true,
+                IsWorkAllowed = true,
+                BlockCode = (int)DbCode.Ok,
+                BlockMessage = string.Empty,
+            });
         }
 
         private static IList<HolidayListItemDto> SampleHolidays()

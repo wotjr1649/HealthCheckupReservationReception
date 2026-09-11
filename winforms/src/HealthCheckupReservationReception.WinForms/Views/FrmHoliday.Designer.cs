@@ -1,7 +1,7 @@
 ﻿// 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
 namespace HealthCheckupReservationReception.Views
 {
-    partial class UcHoliday
+    partial class FrmHoliday
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -36,6 +36,17 @@ namespace HealthCheckupReservationReception.Views
             this.chkInputActive = new DevExpress.XtraEditors.CheckEdit();
             this.txtInputMemo = new DevExpress.XtraEditors.TextEdit();
             this.lblBlock = new DevExpress.XtraEditors.LabelControl();
+            this.btnAdd = new DevExpress.XtraEditors.SimpleButton();
+            this.btnEdit = new DevExpress.XtraEditors.SimpleButton();
+            this.btnDelete = new DevExpress.XtraEditors.SimpleButton();
+            this.btnClose = new DevExpress.XtraEditors.SimpleButton();
+            this.riTextIsActive = new DevExpress.XtraEditors.Repository.RepositoryItemTextEdit();
+            this.lcgButtons = new DevExpress.XtraLayout.LayoutControlGroup();
+            this.emptyButtons = new DevExpress.XtraLayout.EmptySpaceItem();
+            this.lciAdd = new DevExpress.XtraLayout.LayoutControlItem();
+            this.lciEdit = new DevExpress.XtraLayout.LayoutControlItem();
+            this.lciDelete = new DevExpress.XtraLayout.LayoutControlItem();
+            this.lciClose = new DevExpress.XtraLayout.LayoutControlItem();
             this.Root = new DevExpress.XtraLayout.LayoutControlGroup();
             this.lcgSearch = new DevExpress.XtraLayout.LayoutControlGroup();
             this.lciFrom = new DevExpress.XtraLayout.LayoutControlItem();
@@ -52,6 +63,13 @@ namespace HealthCheckupReservationReception.Views
             this.lciInputActive = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciInputMemo = new DevExpress.XtraLayout.LayoutControlItem();
             this.lciBlock = new DevExpress.XtraLayout.LayoutControlItem();
+            ((System.ComponentModel.ISupportInitialize)(this.riTextIsActive)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lcgButtons)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.emptyButtons)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciAdd)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciEdit)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciDelete)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciClose)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcMain)).BeginInit();
             this.lcMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.deFrom.Properties.CalendarTimeProperties)).BeginInit();
@@ -97,6 +115,10 @@ namespace HealthCheckupReservationReception.Views
             this.lcMain.Controls.Add(this.chkInputActive);
             this.lcMain.Controls.Add(this.txtInputMemo);
             this.lcMain.Controls.Add(this.lblBlock);
+            this.lcMain.Controls.Add(this.btnAdd);
+            this.lcMain.Controls.Add(this.btnEdit);
+            this.lcMain.Controls.Add(this.btnDelete);
+            this.lcMain.Controls.Add(this.btnClose);
             this.lcMain.AllowCustomization = false;
             this.lcMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lcMain.Location = new System.Drawing.Point(0, 0);
@@ -230,6 +252,10 @@ namespace HealthCheckupReservationReception.Views
             this.colIsActive.Visible = true;
             this.colIsActive.VisibleIndex = 3;
             this.colIsActive.Width = 100;
+            // [X] `사용여부` 는 BIT 다. 편집기를 물리지 않으면 DevExpress 가 CheckEdit 을
+            //     자동으로 붙여 CustomColumnDisplayText 가 무시되고, 읽는 자리인 목록에
+            //     눌릴 것 같은 체크박스가 그려졌다 (2026-09-11 실측).
+            this.colIsActive.ColumnEdit = this.riTextIsActive;
             //
             // colMemo
             //
@@ -300,7 +326,8 @@ namespace HealthCheckupReservationReception.Views
             this.lciRegistry,
             this.lcgList,
             this.lcgInput,
-            this.lciBlock});
+            this.lciBlock,
+            this.lcgButtons});
             this.Root.Name = "Root";
             this.Root.Size = new System.Drawing.Size(1916, 887);
             this.Root.TextVisible = false;
@@ -486,14 +513,133 @@ namespace HealthCheckupReservationReception.Views
             this.lciBlock.TextSize = new System.Drawing.Size(0, 0);
             this.lciBlock.TextVisible = false;
             //
-            // UcHoliday
+            // FrmHoliday
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            //
+            // riTextIsActive
+            //
+            this.riTextIsActive.AutoHeight = false;
+            this.riTextIsActive.Name = "riTextIsActive";
+            this.riTextIsActive.ReadOnly = true;
+            //
+            // btnAdd
+            //
+            this.btnAdd.Name = "btnAdd";
+            this.btnAdd.StyleController = this.lcMain;
+            this.btnAdd.Text = "추가";
+            this.btnAdd.Click += new System.EventHandler(this.btnAdd_Click);
+            //
+            // btnEdit
+            //
+            this.btnEdit.Name = "btnEdit";
+            this.btnEdit.StyleController = this.lcMain;
+            this.btnEdit.Text = "수정";
+            this.btnEdit.Click += new System.EventHandler(this.btnEdit_Click);
+            //
+            // btnDelete
+            //
+            this.btnDelete.Name = "btnDelete";
+            this.btnDelete.StyleController = this.lcMain;
+            this.btnDelete.Text = "삭제";
+            this.btnDelete.Click += new System.EventHandler(this.btnDelete_Click);
+            //
+            // btnClose
+            //
+            this.btnClose.Name = "btnClose";
+            this.btnClose.StyleController = this.lcMain;
+            this.btnClose.Text = "닫기";
+            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
+            this.btnEdit.Enabled = false;
+            this.btnDelete.Enabled = false;
+            //
+            // lcgButtons
+            //
+            // [X] **절대좌표로 놓지 않는다.** 처음엔 LayoutControl 밖에 PanelControl 로
+            //     달았는데 `LayoutBaselineTests` 가 잡았다 — 배율이 바뀜면 버튼이 제자리를
+            //     잃는다 (킷 §1). 다른 모달과 같은 길로 맞춘다.
+            this.lcgButtons.GroupBordersVisible = false;
+            this.lcgButtons.Items.AddRange(new DevExpress.XtraLayout.BaseLayoutItem[] {
+            this.emptyButtons,
+            this.lciAdd,
+            this.lciEdit,
+            this.lciDelete,
+            this.lciClose});
+            this.lcgButtons.Location = new System.Drawing.Point(0, 847);
+            this.lcgButtons.Name = "lcgButtons";
+            this.lcgButtons.Size = new System.Drawing.Size(1916, 40);
+            this.lcgButtons.TextVisible = false;
+            //
+            // emptyButtons
+            //
+            this.emptyButtons.AllowHotTrack = false;
+            this.emptyButtons.Location = new System.Drawing.Point(0, 0);
+            this.emptyButtons.Name = "emptyButtons";
+            this.emptyButtons.Size = new System.Drawing.Size(1516, 34);
+            this.emptyButtons.TextSize = new System.Drawing.Size(0, 0);
+            //
+            // lciAdd
+            //
+            this.lciAdd.Control = this.btnAdd;
+            this.lciAdd.Location = new System.Drawing.Point(1516, 0);
+            this.lciAdd.MaxSize = new System.Drawing.Size(100, 34);
+            this.lciAdd.MinSize = new System.Drawing.Size(100, 34);
+            this.lciAdd.Name = "lciAdd";
+            this.lciAdd.Size = new System.Drawing.Size(100, 34);
+            this.lciAdd.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            this.lciAdd.TextVisible = false;
+            //
+            // lciEdit
+            //
+            this.lciEdit.Control = this.btnEdit;
+            this.lciEdit.Location = new System.Drawing.Point(1616, 0);
+            this.lciEdit.MaxSize = new System.Drawing.Size(100, 34);
+            this.lciEdit.MinSize = new System.Drawing.Size(100, 34);
+            this.lciEdit.Name = "lciEdit";
+            this.lciEdit.Size = new System.Drawing.Size(100, 34);
+            this.lciEdit.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            this.lciEdit.TextVisible = false;
+            //
+            // lciDelete
+            //
+            this.lciDelete.Control = this.btnDelete;
+            this.lciDelete.Location = new System.Drawing.Point(1716, 0);
+            this.lciDelete.MaxSize = new System.Drawing.Size(100, 34);
+            this.lciDelete.MinSize = new System.Drawing.Size(100, 34);
+            this.lciDelete.Name = "lciDelete";
+            this.lciDelete.Size = new System.Drawing.Size(100, 34);
+            this.lciDelete.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            this.lciDelete.TextVisible = false;
+            //
+            // lciClose
+            //
+            this.lciClose.Control = this.btnClose;
+            this.lciClose.Location = new System.Drawing.Point(1816, 0);
+            this.lciClose.MaxSize = new System.Drawing.Size(100, 34);
+            this.lciClose.MinSize = new System.Drawing.Size(100, 34);
+            this.lciClose.Name = "lciClose";
+            this.lciClose.Size = new System.Drawing.Size(100, 34);
+            this.lciClose.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
+            this.lciClose.TextVisible = false;
+            //
+            // FrmHoliday
+            //
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(1084, 702);
             this.Controls.Add(this.lcMain);
-            this.Name = "UcHoliday";
-            this.Size = new System.Drawing.Size(1916, 887);
+            this.MinimizeBox = false;
+            this.MinimumSize = new System.Drawing.Size(900, 560);
+            this.Name = "FrmHoliday";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.Text = "휴무일 관리";
+            ((System.ComponentModel.ISupportInitialize)(this.riTextIsActive)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lcgButtons)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.emptyButtons)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciAdd)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciEdit)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciDelete)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.lciClose)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.lcMain)).EndInit();
             this.lcMain.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.deFrom.Properties.CalendarTimeProperties)).EndInit();
@@ -563,5 +709,16 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraLayout.LayoutControlItem lciInputMemo;
         private DevExpress.XtraEditors.LabelControl lblBlock;
         private DevExpress.XtraLayout.LayoutControlItem lciBlock;
+        private DevExpress.XtraEditors.SimpleButton btnAdd;
+        private DevExpress.XtraEditors.SimpleButton btnEdit;
+        private DevExpress.XtraEditors.SimpleButton btnDelete;
+        private DevExpress.XtraEditors.SimpleButton btnClose;
+        private DevExpress.XtraEditors.Repository.RepositoryItemTextEdit riTextIsActive;
+        private DevExpress.XtraLayout.LayoutControlGroup lcgButtons;
+        private DevExpress.XtraLayout.EmptySpaceItem emptyButtons;
+        private DevExpress.XtraLayout.LayoutControlItem lciAdd;
+        private DevExpress.XtraLayout.LayoutControlItem lciEdit;
+        private DevExpress.XtraLayout.LayoutControlItem lciDelete;
+        private DevExpress.XtraLayout.LayoutControlItem lciClose;
     }
 }

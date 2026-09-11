@@ -39,7 +39,6 @@ namespace HealthCheckupReservationReception.Views
 
         private UcPatientManagement _patientView;
         private UcWorkbench _workView;
-        private UcHoliday _holidayView;
 
         /// <summary>
         /// [X] **VS 디자이너 전용이다.** 디자이너는 설계 대상 타입을 매개변수 없는 생성자로
@@ -79,8 +78,6 @@ namespace HealthCheckupReservationReception.Views
             // 초기 상태(행 미선택)로 맞춘다.
             ApplyPatientRowActions();
             ApplyWorkActions(WorkActionState.None());
-            ApplyHolidayRowActions(false);
-
             _presenter = new MainPresenter(this, statusService, operatorName);
         }
 
@@ -283,15 +280,6 @@ namespace HealthCheckupReservationReception.Views
                 return patient;
             }
 
-            if (tab == BusinessTab.Holiday)
-            {
-                var holiday = new UcHoliday();
-                holiday.RowActionsChanged += HolidayView_RowActionsChanged;
-                holiday.Attach(_holidayService, _statusService);
-                _holidayView = holiday;
-                return holiday;
-            }
-
             if (tab == BusinessTab.Workbench)
             {
                 var workbench = new UcWorkbench();
@@ -327,34 +315,20 @@ namespace HealthCheckupReservationReception.Views
             ApplyWorkActions(state);
         }
 
-        private void HolidayView_RowActionsChanged(object sender, bool ownRowPicked)
-        {
-            ApplyHolidayRowActions(ownRowPicked);
-        }
-
         /// <summary>
-        /// 03 §24.5 — `[휴무일수정]`·`[휴무일삭제]` 는 **자체휴무일 행이 잡혔을 때만** 열린다.
-        /// `[휴무일추가]` 는 선택행과 무관한 독립 Action 이라 늘 열려 있다.
+        /// 03 §24.2 — `[휴무일 관리]` 는 **업무 Tab 을 열지 않고** DLG-HOL-01 Modal 을 직접 연다.
+        /// 기준정보 정비이므로 열려 있는 업무 Tab 의 상태·Dirty·Single Instance 계약에 관여하지
+        /// 않는다. 그래서 페이지가 아니라 페이지 머리줄의 버튼 하나다.
+        ///
+        /// `[!]` **공통 업무불가로 이 버튼을 닫지 않는다** (03 §24.2). 정비가 필요한 바로 그
+        ///      시각(운영시간 밖)에 막히면 안 된다.
         /// </summary>
-        private void ApplyHolidayRowActions(bool ownRowPicked)
+        private void barBtnHolidayManage_ItemClick(object sender, ItemClickEventArgs e)
         {
-            barBtnHolidayEdit.Enabled = ownRowPicked;
-            barBtnHolidayDelete.Enabled = ownRowPicked;
-        }
-
-        private void barBtnHolidayNew_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            if (_holidayView != null) { _holidayView.RequestRegister(); }
-        }
-
-        private void barBtnHolidayEdit_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            if (_holidayView != null) { _holidayView.RequestUpdate(); }
-        }
-
-        private void barBtnHolidayDelete_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            if (_holidayView != null) { _holidayView.RequestDelete(); }
+            using (var dialog = new FrmHoliday(_holidayService, _statusService))
+            {
+                dialog.ShowDialog(this);
+            }
         }
 
         public void SelectNavigationPage(BusinessNavigation page)
@@ -399,7 +373,6 @@ namespace HealthCheckupReservationReception.Views
                 case BusinessNavigation.PatientManagement: return barPagePatient;
                 case BusinessNavigation.ReservationDesk: return barPageRsvDesk;
                 case BusinessNavigation.ReceptionDesk: return barPageRcpDesk;
-                case BusinessNavigation.HolidayManagement: return barPageHoliday;
                 default: return null;
             }
         }
@@ -429,10 +402,6 @@ namespace HealthCheckupReservationReception.Views
             else if (selected == barPageRcpDesk)
             {
                 handler(this, BusinessNavigation.ReceptionDesk);
-            }
-            else if (selected == barPageHoliday)
-            {
-                handler(this, BusinessNavigation.HolidayManagement);
             }
         }
 

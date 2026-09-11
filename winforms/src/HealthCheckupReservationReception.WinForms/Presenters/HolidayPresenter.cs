@@ -50,6 +50,36 @@ namespace HealthCheckupReservationReception.Presenters
         /// </summary>
         public void LoadInitial()
         {
+            // 03 §24.4 — 조회기간 기본값은 오늘부터 두 해다.
+            //
+            // [X] **오늘을 PC 시계에서 얻지 않는다.** 창구 PC 가 하루 어긋나면 목록도 등재
+            //     경고도 통째로 어긋난다. WF-WRK-01 이 가는 길과 같다 — 공통 업무상태가 준다.
+            //
+            // [X] **이 자리가 통째로 비어 있었다** (2026-09-11 실측). `_statusService` 는
+            //     생성자가 받아 두기만 하고 한 번도 쓰이지 않았고, 조회기간을 채우는 길은
+            //     아무도 부르지 않는 `UcHoliday.Begin(today)` 뿐이었다. 그래서 두 칸이 빈 채로
+            //     남아 `[조회]` 가 `100 시작일자 필수` 로 막히고, 목록이 비어 행을 못 고르니
+            //     `[수정]`·`[삭제]` 도 영영 열리지 않았다 — 화면의 CRUD 가 전부 죽어 있었다.
+            OperationResult<CommonWorkStatusDto> status;
+            try
+            {
+                status = _statusService.GetCurrent();
+            }
+            catch (Exception)
+            {
+                status = null;
+            }
+
+            if (status == null || !status.IsSuccess || status.Value == null)
+            {
+                _view.BlockMessage = "오늘 날짜를 확인하지 못해 조회기간을 세우지 못했습니다.";
+                return;
+            }
+
+            DateTime today = status.Value.Today.Date;
+            _view.FromDate = today;
+            _view.ToDate = today.AddYears(2);
+
             Search();
         }
 

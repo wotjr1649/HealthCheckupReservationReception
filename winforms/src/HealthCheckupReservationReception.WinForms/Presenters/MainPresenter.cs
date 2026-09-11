@@ -138,12 +138,6 @@ namespace HealthCheckupReservationReception.Presenters
                     // 03 §9.1 — 화면은 예약 관리와 같은 하나다. 가르는 것은 이 Context 뿐이다.
                     _view.OpenWorkbench(WorkContext.Reception, null);
                     break;
-                case BusinessNavigation.HolidayManagement:
-                    // 03 §24 는 Modal 로 적었지만 2026-09-11 사용자 결정으로 업무 화면이다.
-                    // §24.2 의 「업무 Tab 의 상태·Dirty 계약에 관여하지 않는다」는 그대로다 —
-                    // 이 화면은 기준정보라 예약·접수와 아무것도 나눠 쓰지 않는다.
-                    _view.ShowBusinessScreen(BusinessTab.Holiday);
-                    break;
                 default:
                     _view.ShowBusinessScreen(BusinessTab.PatientManagement);
                     break;
