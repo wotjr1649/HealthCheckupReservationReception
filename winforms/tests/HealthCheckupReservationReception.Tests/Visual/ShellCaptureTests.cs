@@ -209,8 +209,8 @@ namespace HealthCheckupReservationReception.Tests.Visual
                 WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
 
                 using (var screen = new SilentReservationForm(
-                    new FakeReservationService { Availability = SampleAvailability() },
-                    new FakePatientService(), "접수1번창구", SampleWorkDetail(), true))
+                    new FakeReservationService { Availability = SampleChangeAvailability() },
+                    new FakePatientService(), SampleWorkDetailService(), "접수1번창구", 1, true, true))
                 {
                     screen.StartPosition = FormStartPosition.Manual;
                     screen.Location = new Point(-32000, -32000);
@@ -320,6 +320,47 @@ namespace HealthCheckupReservationReception.Tests.Visual
             };
         }
 
+        /// <summary>
+        /// 05 §8.2 `SP-WRK-02`. 예약 변경 진입은 이 조회로 NEX·추가검사구성·정원을 세운다 —
+        /// 아무것도 바꾸지 않은 진입은 `SP-RSV-01` 이 `변경범위=NONE` 으로 RS2~RS5 를 0행으로
+        /// 주므로(05 §9.11), 이것이 없으면 화면이 통째로 빈다.
+        /// </summary>
+        private static FakeWorkService SampleWorkDetailService()
+        {
+            return new FakeWorkService
+            {
+                DetailResult = OperationResult<WorkDetailReadDto>.Success(new WorkDetailReadDto
+                {
+                    Result = new DbResult { Success = true, Code = 0, Message = "정상 처리되었습니다." },
+                    Detail = SampleWorkDetail(),
+                    NexItems = SampleAvailability().NexItems,
+                    AexItems = new List<WorkExamItemDto>(),
+                    Actions = new List<WorkActionDto>(),
+                    AexOptions = SampleAvailability().AexItems,
+                }),
+            };
+        }
+
+        /// <summary>
+        /// 변경 진입의 실제 응답이다 — 아무것도 바꾸지 않았으므로 `변경범위=NONE` 이고
+        /// RS2~RS5 가 전부 0행이다 (05 §9.11). 화면이 그래도 차 있어야 한다.
+        /// </summary>
+        private static ReservationAvailabilityReadDto SampleChangeAvailability()
+        {
+            ReservationAvailabilityReadDto read = SampleAvailability();
+            read.Summary.WorkId = 1;
+            read.Summary.DateChanged = false;
+            read.Summary.SlotChanged = false;
+            read.Summary.AexChanged = false;
+            read.Summary.CanSave = false;
+            read.Summary.BlockMessage = string.Empty;
+            read.Slots = new List<SlotInfoDto>();
+            read.Target = null;
+            read.NexItems = new List<WorkExamItemDto>();
+            read.AexItems = new List<ReservationAexItemDto>();
+            return read;
+        }
+
         private static WorkDetailDto SampleWorkDetail()
         {
             return new WorkDetailDto
@@ -392,7 +433,7 @@ namespace HealthCheckupReservationReception.Tests.Visual
                 //     캡처가 **사람이 Yes 를 누를 때까지 멈춘다** (2026-09-11 사용자 보고).
                 using (var screen = new SilentReservationForm(
                     new FakeReservationService { Availability = SampleAvailability() },
-                    patients, "접수1번창구", 1000, true))
+                    patients, new FakeWorkService(), "접수1번창구", 1000, true))
                 {
                     screen.StartPosition = FormStartPosition.Manual;
                     screen.Location = new Point(-32000, -32000);

@@ -27,7 +27,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public void 최초에는_일정과_AEX_와_저장이_닫혀_있다()
         {
             var view = new FakeReservationView();
-            new ReservationPresenter(view, new FakeReservationService(), new FakePatientService(), "창구");
+            new ReservationPresenter(view, new FakeReservationService(), new FakePatientService(), Works(), "창구");
 
             Assert.IsFalse(view.ScheduleEnabled, "수검자 확정 전에는 일정영역이 닫혀 있다");
             Assert.IsFalse(view.AexEnabled);
@@ -41,7 +41,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakeReservationView();
             var patients = Patients();
             var service = new FakeReservationService { Availability = Availability() };
-            var presenter = new ReservationPresenter(view, service, patients, "창구");
+            var presenter = new ReservationPresenter(view, service, patients, Works(), "창구");
 
             presenter.Begin(PatientId);
 
@@ -65,7 +65,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var patients = Patients();
             patients.ValidWorkResult = OperationResult<PatientValidWorkDto>.Success(null);
             var service = new FakeReservationService { Availability = Availability() };
-            var presenter = new ReservationPresenter(view, service, patients, "창구");
+            var presenter = new ReservationPresenter(view, service, patients, Works(), "창구");
 
             presenter.Begin(PatientId);
 
@@ -87,9 +87,9 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakeReservationView();
             var patients = Patients();
             var service = new FakeReservationService { Availability = Availability() };
-            var presenter = new ReservationPresenter(view, service, patients, "창구");
+            var presenter = new ReservationPresenter(view, service, patients, Works(), "창구");
 
-            presenter.BeginChange(Work());
+            presenter.BeginChange(55);
 
             Assert.AreEqual("예약 변경", view.Title);
             Assert.AreEqual("C000001", view.Patient.ChartNo, "수검자를 상세에서 채우지 않았다");
@@ -113,8 +113,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                     Row = new WorkSaveResultDto { WorkId = 55, StatusCode = "RSV", RowVersion = new byte[8] },
                 }),
             };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
-            presenter.BeginChange(Work());
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
+            presenter.BeginChange(55);
 
             view.RaiseSaveRequested();
 
@@ -122,6 +122,243 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNotNull(service.LastChange);
             Assert.AreEqual(55L, service.LastChange.WorkId);
             Assert.AreEqual("창구", service.LastChange.OperatorName);
+        }
+
+        /// <summary>
+        /// **아무것도 바꾸지 않은 진입에서도 화면이 차 있어야 한다** (2026-09-12 사용자 보고).
+        ///
+        /// 변경 진입은 `변경범위=NONE` 이라 `SP-RSV-01` 이 RS2~RS5 를 **전부 0행**으로 준다
+        /// (05 §9.11). 그래서 시간대·NEX·AEX 가 통째로 비었고, AEX 목록이 없으니 「일정은
+        /// 그대로 두고 추가검사만 변경」(`변경범위=EXTRA`)에 닿을 길이 없었다. 이제 진입에서
+        /// `SP-WRK-02` 가 저장된 검사구성을 먼저 세운다.
+        /// </summary>
+        [TestMethod]
+        public void 변경으로_열면_저장된_검사구성이_먼저_선다()
+        {
+            var view = new FakeReservationView();
+            var works = Works();
+            var presenter = new ReservationPresenter(
+                view, new FakeReservationService { Availability = NoChange() }, Patients(), works, "창구");
+
+            presenter.BeginChange(55);
+
+            Assert.AreEqual(1, works.DetailCalls, "상세를 스스로 읽지 않았다");
+            Assert.AreEqual(55L, works.LastDetailWorkId);
+            Assert.IsNotNull(view.NexItems);
+            Assert.AreEqual(1, view.NexItems.Count, "NEX 가 비었다");
+            Assert.IsNotNull(view.AexItems);
+            Assert.AreEqual(2, view.AexItems.Count, "AEX 목록이 비어 고를 것이 없다");
+            Assert.IsTrue(view.AexEnabled, "AEX 가 닫혀 있어 추가검사만 변경할 수 없다");
+        }
+
+        /// <summary>
+        /// 03 §10.3 「TGT/NEX/AEX 유지」 — 0행은 「없음」이 아니라 「이번엔 재평가하지 않았다」다.
+        /// 예약일을 바꾸지 않은 응답은 RS2·RS3·RS4 가 0행으로 오는데(05 §9.11), 그것으로
+        /// 시간대와 NEX 를 지우면 화면이 다시 빈다.
+        /// </summary>
+        [TestMethod]
+        public void 시간대만_바꾼_응답이_NEX_를_지우지_않는다()
+        {
+            var view = new FakeReservationView();
+            var service = new FakeReservationService { Availability = NoChange() };
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
+            presenter.BeginChange(55);
+
+            int nexBefore = view.NexItems.Count;
+            Assert.AreEqual(1, nexBefore, "진입에서 NEX 가 서지 않았다");
+
+            // SLOT — RS2 만 차고 RS3·RS4·RS5 는 0행이다 (05 §9.11).
+            ReservationAvailabilityReadDto slotOnly = NoChange();
+            slotOnly.Summary.SlotChanged = true;
+            slotOnly.Summary.SlotCode = "PM";
+            slotOnly.Summary.CanSave = true;
+            slotOnly.Slots = Availability().Slots;
+            service.Availability = slotOnly;
+
+            view.SlotCode = "PM";
+            view.RaiseScheduleChanged();
+
+            Assert.AreEqual(nexBefore, view.NexItems.Count, "NEX 가 지워졌다");
+            Assert.AreEqual(2, view.Slots.Count, "시간대는 새 응답으로 갱신돼야 한다");
+            Assert.IsTrue(view.SaveEnabled);
+        }
+
+        /// <summary>
+        /// **일정은 그대로 두고 추가검사만 바꾸는 길이 열려 있어야 한다** (2026-09-12 사용자).
+        ///
+        /// `[!]` AEX 체크는 SP 를 다시 부르지 않으므로(Ask) `저장가능` 이 진입 때의 0 에
+        ///      머문다. 버튼을 그 값에만 매어 두면 골라도 누를 수가 없다 — 03 §10.3 이 준
+        ///      두 길 중 「No-op 안내」를 골라, 막을 이유가 없으면 열고 SP 가 판정한다.
+        /// </summary>
+        [TestMethod]
+        public void 바꾼_것이_없어도_저장은_열려_있고_AEX_선택이_그대로_실린다()
+        {
+            var view = new FakeReservationView();
+            var service = new FakeReservationService
+            {
+                Availability = NoChange(),
+                Save = OperationResult<WorkSaveReadDto>.Success(new WorkSaveReadDto
+                {
+                    Result = Ok(),
+                    Row = new WorkSaveResultDto { WorkId = 55, StatusCode = "RSV", RowVersion = new byte[8] },
+                }),
+            };
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
+            presenter.BeginChange(55);
+
+            Assert.IsTrue(view.SaveEnabled, "AEX 를 고를 수 있는데 저장이 닫혀 있다");
+
+            // 조작자가 첫 추가검사를 켠다 — 화면은 SP 를 다시 부르지 않는다.
+            view.AexSelection = new[] { true, false, false, false, false, false, false };
+            view.RaiseSaveRequested();
+
+            Assert.IsNotNull(service.LastChange, "예약변경 SP 를 부르지 않았다");
+            Assert.IsTrue(service.LastChange.AexSelected[0], "고른 AEX 가 실리지 않았다");
+            Assert.AreEqual(Day, service.LastChange.ReserveDate, "일정을 건드리지 않았어야 한다");
+            Assert.AreEqual("AM", service.LastChange.SlotCode);
+        }
+
+        /// <summary>
+        /// 05 §11.2 — 정말로 바꾼 것이 없으면 SP 가 `결과코드=1` 로 돌려준다. 성공이지만
+        /// 저장이 아니므로 Workbench 로 넘기지 않고, 사유를 적고 창을 열어 둔다.
+        /// </summary>
+        [TestMethod]
+        public void 저장했는데_No_op_이면_데려가지_않고_사유를_적는다()
+        {
+            var view = new FakeReservationView();
+            var service = new FakeReservationService
+            {
+                Availability = NoChange(),
+                Save = OperationResult<WorkSaveReadDto>.Success(new WorkSaveReadDto
+                {
+                    Result = new DbResult { Success = true, Code = 1, Message = "변경된 내용이 없습니다." },
+                    Row = new WorkSaveResultDto { WorkId = 55, StatusCode = "RSV", RowVersion = new byte[8] },
+                }),
+            };
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
+            presenter.BeginChange(55);
+
+            view.RaiseSaveRequested();
+
+            Assert.IsNull(view.WorkbenchWorkId, "No-op 인데 Workbench 로 데려갔다");
+            StringAssert.Contains(view.BlockMessage, "변경된 내용이 없습니다");
+        }
+
+        /// <summary>
+        /// 05 §9.7 은 시간대를 AM/PM 정확히 2행으로 못박는다. 변경 진입에서는 SP 가 0행을
+        /// 주므로 화면이 두 줄을 세운다 — 지금 시간대의 정원은 `SP-WRK-02` RS1 이 주고,
+        /// 반대쪽은 아직 모르므로 정원 0(=모름)으로 둔다.
+        /// </summary>
+        [TestMethod]
+        public void 변경으로_열면_시간대가_두_줄_선다()
+        {
+            var view = new FakeReservationView();
+            var presenter = new ReservationPresenter(
+                view, new FakeReservationService { Availability = NoChange() }, Patients(), Works(), "창구");
+
+            presenter.BeginChange(55);
+
+            Assert.IsNotNull(view.Slots);
+            Assert.AreEqual(2, view.Slots.Count, "시간대를 고를 자리가 없다");
+            Assert.AreEqual("AM", view.Slots[0].SlotCode);
+            Assert.AreEqual("PM", view.Slots[1].SlotCode);
+            Assert.AreEqual(20, view.Slots[0].Capacity, "지금 시간대의 정원은 상세가 준다");
+            Assert.AreEqual(0, view.Slots[1].Capacity, "아직 모르는 정원은 0 이다");
+            Assert.IsTrue(view.Slots[1].Selectable, "반대쪽을 고를 수 없으면 시간대를 못 바꾼다");
+        }
+
+        /// <summary>
+        /// 03 §10.3 「없음 → 저장 Disabled **또는 No-op 안내**」. 05 §9.6 은 그 상태의
+        /// `차단메시지` 를 빈 문자열로 정했으므로, 비어 있으면 화면이 메운다 — 캡처에서
+        /// 저장이 왜 꺼져 있는지 알 수 없던 자리다 (2026-09-12 사용자 보고).
+        /// </summary>
+        [TestMethod]
+        public void 아직_바꾼_것이_없으면_그_사실을_적는다()
+        {
+            var view = new FakeReservationView();
+            var presenter = new ReservationPresenter(
+                view, new FakeReservationService { Availability = NoChange() }, Patients(), Works(), "창구");
+
+            presenter.BeginChange(55);
+
+            StringAssert.Contains(view.BlockMessage, "아직 바꾼 것이 없습니다");
+        }
+
+        /// <summary>
+        /// 예약일을 건드리지 않으면 TGT 는 오지 않는다 (RS3 0행). 「미판정」으로 적으면
+        /// 비대상처럼 읽히므로 언제 판정되는지를 적는다.
+        /// </summary>
+        [TestMethod]
+        public void 예약일을_안_바꾸면_대상판정_대신_언제_판정하는지_적는다()
+        {
+            var view = new FakeReservationView();
+            var presenter = new ReservationPresenter(
+                view, new FakeReservationService { Availability = NoChange() }, Patients(), Works(), "창구");
+
+            presenter.BeginChange(55);
+
+            StringAssert.Contains(view.TargetText, "예약일을 바꾸면");
+        }
+
+        /// <summary>상세 조회가 실패하면 진입을 접는다 — 예외 본문은 싣지 않는다 (킷 §6).</summary>
+        [TestMethod]
+        public void 상세를_못_읽으면_변경_진입을_접는다()
+        {
+            var view = new FakeReservationView();
+            var works = new FakeWorkService { DetailFailure = new InvalidOperationException("boom") };
+            var service = new FakeReservationService { Availability = NoChange() };
+            var presenter = new ReservationPresenter(view, service, Patients(), works, "창구");
+
+            presenter.BeginChange(55);
+
+            Assert.AreEqual(0, service.AvailabilityCalls, "상세도 없이 가용성을 물었다");
+            Assert.IsFalse(view.ScheduleEnabled);
+            StringAssert.Contains(view.BlockMessage, "업무 상세");
+            Assert.IsFalse(view.BlockMessage.Contains("boom"), "예외 본문이 화면에 실렸다");
+        }
+
+        /// <summary>변경 진입의 실제 응답 — `변경범위=NONE`, RS2~RS5 전부 0행 (05 §9.11).</summary>
+        private static ReservationAvailabilityReadDto NoChange()
+        {
+            ReservationAvailabilityReadDto read = Availability();
+            read.Summary.WorkId = 55;
+            read.Summary.DateChanged = false;
+            read.Summary.SlotChanged = false;
+            read.Summary.AexChanged = false;
+            read.Summary.CanSave = false;
+            read.Summary.BlockMessage = string.Empty;
+            read.Slots = new List<SlotInfoDto>();
+            read.Target = null;
+            read.NexItems = new List<WorkExamItemDto>();
+            read.AexItems = new List<ReservationAexItemDto>();
+            return read;
+        }
+
+        /// <summary>
+        /// `SP-WRK-02` 를 대신하는 fake. **예약 변경 진입은 이 조회로 화면을 채운다** —
+        /// 05 §8.2 RS2(NEX)·RS5(추가검사구성 7행)·RS1(정원)을 한 번에 준다.
+        /// </summary>
+        private static FakeWorkService Works()
+        {
+            return new FakeWorkService
+            {
+                DetailResult = OperationResult<WorkDetailReadDto>.Success(new WorkDetailReadDto
+                {
+                    Result = Ok(),
+                    Detail = Work(),
+                    NexItems = new List<WorkExamItemDto>
+                    {
+                        new WorkExamItemDto { ExamItemCode = "EX001", ExamItemName = "문진/진찰", NexType = "BASIC" },
+                    },
+                    AexItems = new List<WorkExamItemDto>(),
+                    Actions = new List<WorkActionDto>(),
+                    AexOptions = new List<ReservationAexItemDto>
+                    {
+                        new ReservationAexItemDto { AexCode = "OPT01", ExamItemName = "복부초음파", Selectable = true, Requested = false, ReasonMessage = string.Empty },
+                        new ReservationAexItemDto { AexCode = "OPT02", ExamItemName = "갑상선초음파", Selectable = true, Requested = false, ReasonMessage = string.Empty },
+                    },
+                }),
+            };
         }
 
         private static WorkDetailDto Work()
@@ -137,6 +374,9 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 ReserveDate = Day,
                 SlotCode = "AM",
                 StatusCode = "RSV",
+                Capacity = 20,
+                CurrentCount = 12,
+                RemainingSeats = 8,
                 RowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 },
             };
         }
@@ -150,7 +390,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             patients.ValidWorkResult = OperationResult<PatientValidWorkDto>.Success(
                 new PatientValidWorkDto { WorkId = 55, ReserveDate = Day, StatusCode = "RSV" });
             var service = new FakeReservationService { Availability = Availability() };
-            var presenter = new ReservationPresenter(view, service, patients, "창구");
+            var presenter = new ReservationPresenter(view, service, patients, Works(), "창구");
 
             presenter.Begin(PatientId);
 
@@ -168,7 +408,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             ReservationAvailabilityReadDto read = Availability();
             read.Summary.OtherWorkId = 77;
             var service = new FakeReservationService { Availability = read };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
             presenter.Begin(PatientId);
 
@@ -297,7 +537,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeReservationView();
             var service = new FakeReservationService { Availability = Availability() };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
             presenter.Begin(PatientId);
             Assert.AreEqual(1, service.AvailabilityCalls);
 
@@ -312,7 +552,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeReservationView();
             var service = new FakeReservationService { Availability = Availability() };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
             presenter.Begin(PatientId);
 
             view.SlotCode = "PM";
@@ -337,7 +577,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                     Row = new WorkSaveResultDto { WorkId = 91, StatusCode = "RSV", RowVersion = new byte[8] },
                 }),
             };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
             presenter.Begin(PatientId);
 
             view.RaiseSaveRequested();
@@ -370,7 +610,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                     Row = new WorkSaveResultDto { WorkId = 92, StatusCode = "RSV", RowVersion = new byte[8] },
                 }),
             };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
             presenter.Begin(PatientId);
 
@@ -388,7 +628,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeReservationView();
             var service = new FakeReservationService { Availability = TodayAvailability() };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
             presenter.Begin(PatientId);
 
@@ -415,7 +655,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                     Row = new WorkSaveResultDto { WorkId = 92, StatusCode = "RSV", RowVersion = new byte[8] },
                 }),
             };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
             presenter.Begin(PatientId);
 
             view.RaiseSaveRequested();
@@ -435,7 +675,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 Availability = CutoffAvailability(),
                 WalkInAvailability = TodayAvailability(DbReserveType.WalkIn),
             };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
             presenter.Begin(PatientId);
 
@@ -462,7 +702,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 Availability = normal,
                 WalkInAvailability = TodayAvailability(DbReserveType.WalkIn),
             };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
             presenter.Begin(PatientId);
 
@@ -488,7 +728,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 Availability = normal,
                 WalkInAvailability = TodayAvailability(DbReserveType.WalkIn),
             };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
             presenter.Begin(PatientId);
 
@@ -516,7 +756,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 Availability = normal,
                 WalkInAvailability = TodayAvailability(DbReserveType.WalkIn),
             };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
             presenter.Begin(PatientId);
 
@@ -560,7 +800,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 RowVersion = new byte[8],
             });
             var presenter = new ReservationPresenter(
-                view, new FakeReservationService { Availability = Availability() }, patients, "창구");
+                view, new FakeReservationService { Availability = Availability() }, patients, Works(), "창구");
 
             presenter.Begin(PatientId);
 
@@ -583,7 +823,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                     Row = new WorkSaveResultDto { WorkId = 91, StatusCode = "RSV", RowVersion = new byte[8] },
                 }),
             };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
             presenter.Begin(PatientId);
 
             view.RaiseSaveRequested();
@@ -598,7 +838,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeReservationView();
             var presenter = new ReservationPresenter(
-                view, new FakeReservationService(), new FakePatientService(), "창구");
+                view, new FakeReservationService(), new FakePatientService(), Works(), "창구");
 
             Assert.IsFalse(presenter.HasUnsavedInput);
         }
@@ -608,7 +848,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var view = new FakeReservationView();
             var presenter = new ReservationPresenter(
-                view, new FakeReservationService { Availability = Availability() }, Patients(), "창구");
+                view, new FakeReservationService { Availability = Availability() }, Patients(), Works(), "창구");
 
             presenter.Begin(PatientId);
 
@@ -633,7 +873,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                     },
                 }),
             };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
             presenter.Begin(PatientId);
             int before = service.AvailabilityCalls;
 
@@ -654,7 +894,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 Availability = Availability(),
                 Save = OperationResult<WorkSaveReadDto>.Success(new WorkSaveReadDto { Result = Ok() }),
             };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
             presenter.Begin(PatientId);
 
             view.RaiseSaveRequested();
@@ -671,7 +911,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             {
                 AvailabilityFailure = new InvalidOperationException("서버 DESKTOP-XYZ 의 로그인에 실패했습니다"),
             };
-            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+            var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
             presenter.Begin(PatientId);
 
@@ -684,7 +924,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         private static ReservationPresenter Loaded(FakeReservationView view, ReservationAvailabilityReadDto read)
         {
             var presenter = new ReservationPresenter(
-                view, new FakeReservationService { Availability = read }, Patients(), "창구");
+                view, new FakeReservationService { Availability = read }, Patients(), Works(), "창구");
             presenter.Begin(PatientId);
             return presenter;
         }

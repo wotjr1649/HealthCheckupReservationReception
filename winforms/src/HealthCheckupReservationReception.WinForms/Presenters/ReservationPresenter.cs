@@ -26,6 +26,9 @@ namespace HealthCheckupReservationReception.Presenters
         private readonly IReservationView _view;
         private readonly IReservationService _service;
         private readonly IPatientService _patientService;
+
+        // DLG-RSV-01 예약변경 진입에서만 쓴다 (BeginChange). 신규예약은 이 조회를 하지 않는다.
+        private readonly IWorkService _workService;
         private readonly string _operatorName;
 
         // 05 §9.2 `@예약구분`. **조작자가 고르지 않는다** — 00 RP-05 가 시각으로 가르고,
@@ -50,11 +53,13 @@ namespace HealthCheckupReservationReception.Presenters
             IReservationView view,
             IReservationService service,
             IPatientService patientService,
+            IWorkService workService,
             string operatorName)
         {
             _view = view;
             _service = service;
             _patientService = patientService;
+            _workService = workService;
             _operatorName = operatorName;
 
             _view.ScheduleChanged += OnScheduleChanged;
@@ -82,21 +87,48 @@ namespace HealthCheckupReservationReception.Presenters
         /// **같은 화면이 모드만 바꾼다** — 수검자는 ReadOnly,
         /// 예약일·시간대·AEX 는 Editable 이라는 것이 §10.2 이고 그것은 신규예약과 같다.
         ///
-        /// 진입값은 Workbench 가 방금 읽은 상세다. 수검자 조회(`SP-PAT-02`)를 다시 하지
-        /// 않는다 — 05 §8.2 RS1 이 차트번호·성명·생년월일·성별·휴대전화를 이미 싣고 있다.
+        /// **모달이 상세를 스스로 읽는다** (`SP-WRK-02`). `DLG-RCP-01`·`DLG-RCP-02` 와 같은
+        /// 방식이고, 목록이 들고 있던 `행버전` 은 그 사이 낡을 수 있다 (03 §11.3).
+        /// 수검자 조회(`SP-PAT-02`)는 하지 않는다 — 05 §8.2 RS1 이 차트번호·성명·생년월일·
+        /// 성별·휴대전화를 이미 싣고 있다.
+        ///
+        /// `[!]` **화면을 여기서 채우는 것이 핵심이다.** 예전에는 목록이 넘긴 RS1 만 받고
+        ///      곧장 `SP-RSV-01` 에 물었는데, 아무것도 바꾸지 않은 진입은 `변경범위=NONE`
+        ///      이라 RS2~RS5 가 **전부 0행**이다 (05 §9.11). 그래서 시간대·대상판정·NEX·AEX
+        ///      가 통째로 비었고, AEX 목록이 없으니 「일정은 그대로 두고 추가검사만 변경」
+        ///      (`변경범위=EXTRA`)에 닿을 길이 없었다 — 고를 대상이 화면에 없었다.
+        ///      `SP-WRK-02` 는 NEX(RS2)·추가검사구성 7행(RS5)·정원(RS1)을 한 번에 준다.
         ///
         /// [X] **기존 유효예약 확인(`SP-PAT-05`)을 하지 않는다.** 그 판정은 *"이 수검자로
         ///     새 예약을 만들 수 있는가"* 이고, 변경은 이미 있는 그 예약을 고치는 일이다.
         ///     중복은 `SP-RSV-03` 이 **현재 Work 를 제외하고** 다시 본다 (05 §11.2).
         /// </summary>
-        public void BeginChange(WorkDetailDto detail)
+        public void BeginChange(long workId)
         {
             Reset();
-            if (detail == null)
+
+            OperationResult<WorkDetailReadDto> result;
+            try
             {
-                _view.BlockMessage = "변경할 업무를 알 수 없습니다.";
+                result = _workService.GetDetail(workId);
+            }
+            catch (Exception)
+            {
+                // 예외 본문을 화면에 싣지 않는다 (킷 §6).
+                _view.BlockMessage = "업무 상세를 조회하지 못했습니다.";
                 return;
             }
+
+            if (result == null || !result.IsSuccess || result.Value == null || result.Value.Detail == null)
+            {
+                _view.BlockMessage = result == null || result.IsSuccess
+                    ? "업무 상세를 조회하지 못했습니다."
+                    : result.Message;
+                return;
+            }
+
+            WorkDetailReadDto read = result.Value;
+            WorkDetailDto detail = read.Detail;
 
             _workId = detail.WorkId;
             _rowVersion = detail.RowVersion;
@@ -113,12 +145,50 @@ namespace HealthCheckupReservationReception.Presenters
                 MobilePhone = detail.MobilePhone,
             };
 
-            // 03 §10.3 — 지금 일정으로 한 번 묻는다. 사용자가 아무것도 건드리지 않아도
-            // 정원·대상판정·검사구성이 서 있어야 무엇이 바뀌는지 견줄 수 있다.
+            // 저장된 검사구성을 먼저 세운다. 05 §8.2 RS5 는 **정확히 7행**이고 `요청선택여부`
+            // 가 지금 저장된 선택을 싣고 온다 — 그대로 체크 상태가 된다.
+            _view.NexItems = read.NexItems;
+            _view.AexItems = read.AexOptions;
+            _view.AexEnabled = true;
+
+            // 03 §10.3 — 시간대는 AM/PM 둘이다 (05 §9.7 「정확히 2행」). 지금 시간대의 정원은
+            // RS1 이 주고 반대쪽은 아직 모르므로 이름만 세운다 — 고르는 순간 `시간대변경여부=1`
+            // 이 되어 SP 가 두 행의 정원을 함께 준다.
+            _view.Slots = InitialSlots(detail);
+
             _view.ReserveDate = detail.ReserveDate;
             _view.SlotCode = detail.SlotCode;
             _view.ScheduleEnabled = true;
             Ask(true);
+        }
+
+        /// <summary>
+        /// 진입 시점의 시간대 두 줄. **판정값이 아니라 고를 자리**이므로 <see cref="_slots"/>
+        /// 에는 넣지 않는다 — 그쪽은 `마감시각` 으로 「오늘인가」를 가르는 자리이고(IsToday),
+        /// 여기 담을 마감시각이 없다. 지어낸 값을 판정에 쓰면 착지가 조용히 틀린다.
+        /// </summary>
+        private static IList<SlotInfoDto> InitialSlots(WorkDetailDto detail)
+        {
+            var slots = new List<SlotInfoDto>();
+            foreach (string code in new[] { clsWorkText.SlotMorning, clsWorkText.SlotAfternoon })
+            {
+                bool current = string.Equals(code, detail.SlotCode, StringComparison.Ordinal);
+                slots.Add(new SlotInfoDto
+                {
+                    SlotCode = code,
+                    SlotName = clsWorkText.FormatSlot(code),
+
+                    // 정원 0 은 「아직 모른다」는 뜻이다 — 05 §9.7 이 정원을 20 으로 못박아
+                    // 두었으므로 0 이 실제 값으로 올 수 없다. 화면은 그때 정원 문구를 뺀다.
+                    Capacity = current ? detail.Capacity : 0,
+                    CurrentCount = current ? detail.CurrentCount : 0,
+                    IsOperating = true,
+                    Selectable = true,
+                    BlockMessage = string.Empty,
+                });
+            }
+
+            return slots;
         }
 
         /// <summary>
@@ -426,30 +496,102 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
-            _slots = read.Slots;
-            _view.Slots = read.Slots;
+            // `[!]` **0행은 「없음」이 아니라 「이번엔 재평가하지 않았다」는 뜻이다** (03 §10.3
+            //      「TGT/NEX/AEX 유지」). 05 §9.11 이 변경범위마다 어느 Result Set 을 채울지
+            //      정해 두었고, 화면이 그것을 그대로 덮어쓰면 AEX 만 바꾸는 순간 시간대와
+            //      NEX 가 사라진다. 무엇을 재평가했는지는 RS1 의 변경여부 셋이 말한다 —
+            //      변경범위 문자열을 C# 에 옮겨 적지 않는다 (ROOT AGENTS.md §6).
+            //
+            //      신규예약은 셋 다 NULL 이고 늘 `ALL` 이다 (05 §9.6).
+            bool reevaluatedAll = summary.DateChanged == null || summary.DateChanged == true;
+            bool reevaluatedSlots = reevaluatedAll || summary.SlotChanged == true;
+            bool reevaluatedAex = reevaluatedAll || summary.AexChanged == true;
+
+            if (reevaluatedSlots)
+            {
+                _slots = read.Slots;
+                _view.Slots = read.Slots;
+            }
+
             _view.SlotCode = summary.SlotCode;
 
             // 05 §9.6 RS1 `예약구분` — DB 가 되돌려 준 값을 그대로 적는다. 화면이 든 값이 아니라
             // DB 의 답을 적는 이유는, 둘이 갈리면 사용자가 보는 쪽이 참이어야 해서다.
             _view.ReserveTypeText = clsWorkText.FormatReserveType(summary.ReserveType);
-            _view.TargetText = TargetTextOf(read.Target);
-            _view.NexItems = read.NexItems;
 
-            // 03 §8.10 — 예약일이 바뀌면 **유효 선택만 유지**한다. 무엇이 살아남았는지는
-            // DB 가 `유효선택여부` 로 알려 준다.
-            foreach (ReservationAexItemDto aex in read.AexItems)
+            if (reevaluatedAll)
             {
-                aex.Requested = aex.EffectiveSelected;
+                _view.TargetText = TargetTextOf(read.Target);
+                _view.NexItems = read.NexItems;
+
+                // 03 §8.5 비대상 — AEX Disabled.
+                _view.AexEnabled = read.Target != null && read.Target.IsTarget;
+            }
+            else if (_workId != null)
+            {
+                // 변경 모드에서 예약일을 건드리지 않으면 TGT 는 오지 않는다 (RS3 0행). 「미판정」
+                // 으로 적으면 비대상처럼 읽히므로, 언제 판정되는지를 적는다.
+                _view.TargetText = TargetPrefix + "예약일을 바꾸면 다시 판정합니다";
             }
 
-            _view.AexItems = read.AexItems;
+            if (reevaluatedAex)
+            {
+                // 03 §8.10 — 예약일이 바뀌면 **유효 선택만 유지**한다. 무엇이 살아남았는지는
+                // DB 가 `유효선택여부` 로 알려 준다.
+                foreach (ReservationAexItemDto aex in read.AexItems)
+                {
+                    aex.Requested = aex.EffectiveSelected;
+                }
 
-            // 03 §8.5 비대상 — AEX Disabled.
-            _view.AexEnabled = read.Target != null && read.Target.IsTarget;
+                _view.AexItems = read.AexItems;
+            }
 
-            _view.SaveEnabled = summary.CanSave;
-            _view.BlockMessage = summary.BlockMessage;
+            _view.SaveEnabled = summary.CanSave || SaveOpenForChange(summary);
+            _view.BlockMessage = BlockTextOf(summary);
+        }
+
+        /// <summary>
+        /// 03 §10.3 「없음 → 저장 Disabled **또는** No-op 안내」 — 변경 모드는 **후자**를 고른다.
+        ///
+        /// `[!]` **AEX 체크는 SP 를 다시 부르지 않는다** (<see cref="Ask"/> 의 판단: 클릭마다
+        ///      동기 SP 를 부르면 화면이 그때마다 얼어붙는다). 그래서 `저장가능` 은 진입 때
+        ///      값인 0 에 머물고, 버튼을 그 값에만 매어 두면 **추가검사를 골라도 저장을 누를
+        ///      수 없다** — 「일정은 그대로, AEX 만 변경」이 영영 막힌다.
+        ///
+        /// **판정을 화면이 대신 하는 것이 아니다.** 막을 이유가 있으면(`차단코드`) 그대로 닫고,
+        /// 막을 이유가 없을 때만 연다. 실제 판정은 `SP-RSV-03` 이 저장 시점에 하고, 바꾼 것이
+        /// 없으면 `결과코드=1` No-op 으로 돌려준다 (05 §11.2 검증순서).
+        /// </summary>
+        private bool SaveOpenForChange(ReservationSummaryDto summary)
+        {
+            return _workId != null
+                && summary.BlockCode == (int)DbCode.Ok
+                && summary.OtherWorkId == null
+                && !string.IsNullOrEmpty(summary.SlotCode);
+        }
+
+        /// <summary>
+        /// 03 §10.3 「없음 → 저장 Disabled **또는 No-op 안내**」.
+        ///
+        /// 05 §9.6 은 아직 고를 것이 남은 정상 상태를 `차단코드=0`·`차단메시지=''` 로 정했다.
+        /// 저장이 꺼져 있는데 칸이 비면 조작자는 왜 막혔는지 알 길이 없다 — **판정을 다시
+        /// 하는 것이 아니라 DB 가 비워 둔 자리를 화면이 메운다.**
+        /// </summary>
+        private string BlockTextOf(ReservationSummaryDto summary)
+        {
+            if (!string.IsNullOrWhiteSpace(summary.BlockMessage) || summary.CanSave)
+            {
+                return summary.BlockMessage;
+            }
+
+            if (string.IsNullOrEmpty(summary.SlotCode))
+            {
+                return "시간대를 고르십시오.";
+            }
+
+            return _workId == null
+                ? summary.BlockMessage
+                : "아직 바꾼 것이 없습니다. 예약일·시간대·추가검사 중 하나를 바꾸십시오.";
         }
 
         /// <summary>
@@ -551,6 +693,15 @@ namespace HealthCheckupReservationReception.Presenters
                 Ask(true);
                 _view.BlockMessage = db.Message;
                 _view.SaveEnabled = false;
+                return;
+            }
+
+            // 05 §11.2 — 바꾼 것이 없으면 `결과코드=1` 이고 UPDATE 가 없다. 성공이지만 저장이
+            // 아니므로 Workbench 로 넘기지 않는다 (03 §10.3 「No-op 안내」). 창은 열어 둔다 —
+            // 조작자가 이제 무엇을 바꾸면 되는지 알고 그 자리에서 고칠 수 있다.
+            if (db.Code == (int)DbCode.NoChange)
+            {
+                _view.BlockMessage = db.Message;
                 return;
             }
 

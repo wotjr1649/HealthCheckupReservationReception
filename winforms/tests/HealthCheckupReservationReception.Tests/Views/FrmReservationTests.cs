@@ -94,7 +94,7 @@ namespace HealthCheckupReservationReception.Tests.Views
 
             return new SilentReservationForm(
                 new FakeReservationService { Availability = Availability() },
-                patients, "접수1번창구", PatientId, answer);
+                patients, new FakeWorkService(), "접수1번창구", PatientId, answer);
         }
 
         private static ReservationAvailabilityReadDto Availability()
@@ -152,8 +152,8 @@ namespace HealthCheckupReservationReception.Tests.Views
 
         internal SilentReservationForm(
             IReservationService service, IPatientService patientService,
-            string operatorName, long patientId, bool answer)
-            : base(service, patientService, operatorName, patientId)
+            IWorkService workService, string operatorName, long patientId, bool answer)
+            : base(service, patientService, workService, operatorName, patientId)
         {
             _answer = answer;
         }
@@ -161,8 +161,8 @@ namespace HealthCheckupReservationReception.Tests.Views
         /// <summary>DLG-RSV-01(예약 변경) 갈래. 같은 폼이고 진입값만 다르다 (03 §10.2).</summary>
         internal SilentReservationForm(
             IReservationService service, IPatientService patientService,
-            string operatorName, WorkDetailDto work, bool answer)
-            : base(service, patientService, operatorName, work)
+            IWorkService workService, string operatorName, long workId, bool changing, bool answer)
+            : base(service, patientService, workService, operatorName, workId, changing)
         {
             _answer = answer;
         }

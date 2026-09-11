@@ -181,7 +181,7 @@ namespace HealthCheckupReservationReception.Views
         public void BeginNewReservation(long patientId)
         {
             using (var reservation = new FrmReservation(
-                _reservationService, _patientService, _operatorName, patientId))
+                _reservationService, _patientService, _workService, _operatorName, patientId))
             {
                 if (reservation.ShowDialog(this) != DialogResult.OK || reservation.Result == null)
                 {
@@ -521,6 +521,9 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>
         /// DLG-RSV-01 예약 변경 (03 §10). `FrmReservation` 을 변경 모드로 연다 — 새 화면이
         /// 아니라 같은 모달의 분기다.
+        ///
+        /// 넘기는 것은 업무ID 하나다. 모달이 상세를 스스로 다시 읽으므로(`DLG-RCP-01`·
+        /// `DLG-RCP-02` 와 같다) 목록이 쥔 `행버전` 은 넘기지 않는다 — 그 사이 낡을 수 있다.
         /// </summary>
         private void BeginReservationChange()
         {
@@ -531,8 +534,8 @@ namespace HealthCheckupReservationReception.Views
                 return;
             }
 
-            using (var reservation = new FrmReservation(
-                _reservationService, _patientService, _operatorName, detail))
+            using (var reservation = FrmReservation.ForChange(
+                _reservationService, _patientService, _workService, _operatorName, detail.WorkId))
             {
                 if (reservation.ShowDialog(this) == DialogResult.OK && reservation.Result != null)
                 {
