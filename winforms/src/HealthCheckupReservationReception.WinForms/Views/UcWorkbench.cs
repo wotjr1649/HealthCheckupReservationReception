@@ -28,6 +28,7 @@ namespace HealthCheckupReservationReception.Views
         private WorkbenchPresenter _presenter;
 
         private clsGridRowPicker _picker;
+        private WorkDetailDto _detail;
         private clsSearchConditions _conditions;
         private clsColumnChooser _columns;
 
@@ -69,6 +70,12 @@ namespace HealthCheckupReservationReception.Views
         }
 
         public event EventHandler<string> ActionRequested;
+
+        /// <summary>
+        /// 03 §9.5 — 마지막으로 그린 상세. 모달을 여는 Action 이 대상으로 삼는 행이다.
+        /// 선택이 풀리면 null 이다.
+        /// </summary>
+        public WorkDetailDto CurrentDetail { get { return _detail; } }
 
         public bool Confirm(string message)
         {
@@ -150,6 +157,7 @@ namespace HealthCheckupReservationReception.Views
         {
             set
             {
+                _detail = value;
                 txtDetailChartNo.Text = value == null ? string.Empty : value.ChartNo;
                 txtDetailName.Text = value == null ? string.Empty : value.Name;
                 txtDetailBirthGender.Text = value == null

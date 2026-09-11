@@ -522,7 +522,37 @@ namespace HealthCheckupReservationReception.Views
                 return;
             }
 
+            // 모달을 여는 Action 은 Form 이 맡는다 — UserControl 이 창을 띄우면 그 창의 부모가
+            // 화면마다 달라진다. 창을 열지 않는 것은 Presenter 로 내려간다.
+            if (e.Item == barBtnRcpStart)
+            {
+                BeginReception();
+                return;
+            }
+
             _workView.RequestAction(ActionOf(e.Item));
+        }
+
+        /// <summary>
+        /// DLG-RCP-01 접수 처리 (03 §11). 모달이 스스로 상세를 다시 읽으므로 여기서 넘기는
+        /// 것은 업무ID 하나다 — 목록이 들고 있던 `행버전` 은 그 사이 낡을 수 있다 (§11.3).
+        /// </summary>
+        private void BeginReception()
+        {
+            WorkDetailDto detail = _workView.CurrentDetail;
+            if (detail == null)
+            {
+                ShowMessage("먼저 목록에서 행을 선택하십시오.");
+                return;
+            }
+
+            using (var reception = new FrmReception(_workService, _operatorName, detail.WorkId))
+            {
+                if (reception.ShowDialog(this) == DialogResult.OK)
+                {
+                    _workView.OpenContext(WorkContext.Reception, detail.WorkId);
+                }
+            }
         }
 
         /// <summary>Ribbon 버튼 ↔ 05 §8.2 업무동작코드. 여기 한 곳에서만 잇는다.</summary>

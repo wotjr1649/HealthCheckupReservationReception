@@ -159,7 +159,7 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnRcpStart.Id = 12;
             this.barBtnRcpStart.Name = "barBtnRcpStart";
             this.barBtnRcpStart.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnRcpStart.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnNotImplemented_ItemClick);
+            this.barBtnRcpStart.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnWorkAction_ItemClick);
             //
             // barBtnRsvLog
             //

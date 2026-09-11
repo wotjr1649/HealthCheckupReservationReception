@@ -768,8 +768,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             return SaveResult;
         }
 
+        public Exception DetailFailure { get; set; }
+
         public OperationResult<WorkDetailReadDto> GetDetail(long workId)
         {
+            if (DetailFailure != null) { throw DetailFailure; }
+
             LastDetailWorkId = workId;
             DetailCalls++;
             return DetailResult;

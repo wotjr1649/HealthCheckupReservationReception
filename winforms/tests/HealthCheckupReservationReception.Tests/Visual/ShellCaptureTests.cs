@@ -315,6 +315,50 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Console.WriteLine("캡처: " + path);
         }
 
+        /// <summary>DLG-RCP-01 — 읽기 전용 화면에 버튼 하나다.</summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void DLGRCP01_실행_화면을_PNG_로_뜬다()
+        {
+            string path = Capture("dlg_rcp_01.png", () => new FrmReception(
+                new FakeWorkService { DetailResult = SampleReceptionDetail() }, "접수1번창구", 77));
+
+            var info = new FileInfo(path);
+            Assert.IsTrue(info.Exists && info.Length > 5 * 1024,
+                "PNG 가 비었거나 너무 작다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
+            Console.WriteLine("캡처: " + path);
+        }
+
+        private static OperationResult<WorkDetailReadDto> SampleReceptionDetail()
+        {
+            return OperationResult<WorkDetailReadDto>.Success(new WorkDetailReadDto
+            {
+                Result = new DbResult { Success = true, Code = 0, Message = "정상 처리되었습니다." },
+                Detail = new WorkDetailDto
+                {
+                    WorkId = 77, PatientId = 1000, ChartNo = "C000001", Name = "홍길동",
+                    Birthday = "19800101", Gender = "M", MobilePhone = "01012345678",
+                    ReserveDate = new DateTime(2026, 9, 11), SlotCode = "AM",
+                    StatusCode = "RSV", Capacity = 20, CurrentCount = 3, RemainingSeats = 17,
+                    RowVersion = new byte[8],
+                },
+                NexItems = new List<WorkExamItemDto>
+                {
+                    new WorkExamItemDto { ExamItemCode = "E001", ExamItemName = "신체계측", NexType = "BASIC" },
+                    new WorkExamItemDto { ExamItemCode = "E002", ExamItemName = "혈압측정", NexType = "BASIC" },
+                    new WorkExamItemDto { ExamItemCode = "E010", ExamItemName = "B형간염", NexType = "CONDITIONAL" },
+                },
+                AexItems = new List<WorkExamItemDto>
+                {
+                    new WorkExamItemDto { AexCode = "OPT01", ExamItemCode = "E101", ExamItemName = "심전도" },
+                },
+                Actions = new List<WorkActionDto>
+                {
+                    new WorkActionDto { ActionCode = "START_RECEPTION", Allowed = true, ReasonCode = 0, ReasonMessage = string.Empty },
+                },
+            });
+        }
+
         private static IList<ChangeLogItemDto> SampleLog()
         {
             return new List<ChangeLogItemDto>
