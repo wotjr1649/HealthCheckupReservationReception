@@ -443,32 +443,18 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         }
 
         /// <summary>
-        /// `[X]` **이것은 특성화 시험이다 — 지금 동작이 옳다고 말하지 않는다.**
-        /// 확정된 결함 하나를 고정해 둔다 (`docs/phase5/2026-09-11-Deadline-Field-Check.md` §4).
+        /// H1 결함의 회귀 시험 (`docs/phase5/2026-09-11-Deadline-Field-Check.md` §4,
+        /// 2026-09-12 수정). 예전에는 *시간대 중 하나라도 `304`* 면 현장으로 넘어갔고, 마감은
+        /// 시간대마다 다르므로(`03_Functions.sql` 의 `기본마감시각` CASE) **AM 이 마감이고 PM 은
+        /// 아직 마감 전인 구간**에서 PM 예약이 `WALKIN` 으로 저장되었다. 막히지 않아 조용했다.
         ///
-        /// `CutoffBlocked` 는 *시간대 중 하나라도 `304`* 면 참이다. 그런데 마감은 시간대마다
-        /// 다른 값이라(`03_Functions.sql` 의 `기본마감시각` CASE), **AM 이 마감이고 PM 은 아직
-        /// 마감 전인 구간**이 존재한다. 그 구간에서 PM 을 고르면 `00` RP-05 대로는 일반
-        /// 당일예약이어야 하는데 화면이 대화상자 전체를 현장으로 바꾸고, 저장 SP 는 `WALKIN` 을
-        /// 「예약일 = 오늘날짜」만으로 받아들여 되잡지 않는다. 막히지 않으므로 조용하다.
-        ///
-        /// `[!]` **이 시험이 red 가 되면 결함이 고쳐진 것이다.** 그때는 시험을 고치지 말고
-        ///      지우고, 옳은 동작을 단언하는 시험으로 바꿔라. 고치는 데에는 설계 판단이
-        ///      필요하다 — 시간대를 아직 고르지 않은 최초 조회가 무엇을 기준으로 전환할지를
-        ///      정해야 한다 (`05` §9.6 은 DB 가 하나를 골라 돌려준다고 정했다).
+        /// 지금은 **고른 시간대**가 판정한다. PM 을 고르면 PM 의 마감만 본다.
         /// </summary>
         [TestMethod]
-        public void PM_이_아직_마감_전이어도_AM_마감_하나로_현장으로_넘어간다_결함고정()
+        public void PM_을_고르면_AM_이_마감이어도_일반으로_남는다()
         {
-            ReservationAvailabilityReadDto normal = CutoffAvailability();
-            // AM 은 마감(304), PM 은 **고를 수 있다** — 정원도 남아 있다.
-            normal.Slots[1].Selectable = true;
-            normal.Slots[1].CutoffPassed = false;
-            normal.Slots[1].BlockCode = (int)DbCode.Ok;
-            normal.Slots[1].BlockMessage = string.Empty;
-            normal.Slots[1].CurrentCount = 3;
-            normal.Slots[1].AppliedCount = 4;
-            normal.Slots[1].RemainingSeats = 16;
+            ReservationAvailabilityReadDto normal = AmCutoffPmOpen();
+            normal.Summary.SlotCode = "PM";
 
             var view = new FakeReservationView();
             var service = new FakeReservationService
@@ -480,11 +466,77 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
             presenter.Begin(PatientId);
 
-            Assert.AreEqual(2, service.AvailabilityCalls,
-                "PM 이 고를 수 있는데도 AM 의 304 하나로 현장 재질의가 일어난다");
+            Assert.AreEqual(1, service.AvailabilityCalls, "PM 은 아직 마감 전이라 되묻지 않는다");
+            Assert.AreEqual(DbReserveType.Normal, service.LastAvailability.ReserveType);
+            Assert.AreEqual("일반 예약", view.ReserveTypeText);
+        }
+
+        /// <summary>
+        /// 시간대를 아직 고르지 않은 최초 조회의 기준 — **하나라도 고를 수 있으면 일반이다.**
+        /// RS1 의 `시간대코드` 는 보낸 값 그대로이고 미선택이면 NULL 이라(05 §9.6), DB 가 대신
+        /// 골라 주지 않는다. 고르는 순간 같은 판정이 그 시간대로 다시 돈다.
+        /// </summary>
+        [TestMethod]
+        public void 시간대_미선택이면_하나라도_열려_있는_동안은_일반이다()
+        {
+            ReservationAvailabilityReadDto normal = AmCutoffPmOpen();
+            normal.Summary.SlotCode = null;
+
+            var view = new FakeReservationView();
+            var service = new FakeReservationService
+            {
+                Availability = normal,
+                WalkInAvailability = TodayAvailability(DbReserveType.WalkIn),
+            };
+            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+
+            presenter.Begin(PatientId);
+
+            Assert.AreEqual(1, service.AvailabilityCalls);
+            Assert.AreEqual(DbReserveType.Normal, service.LastAvailability.ReserveType);
+        }
+
+        /// <summary>
+        /// 미선택이고 **둘 다 마감**이면 남은 길은 현장뿐이다 — 그때는 되묻는다.
+        /// 되묻지 않으면 늦게 온 현장 내원자가 예약할 자리를 잃는다 (00 RP-05).
+        /// </summary>
+        [TestMethod]
+        public void 시간대_미선택이고_둘_다_마감이면_현장으로_묻는다()
+        {
+            ReservationAvailabilityReadDto normal = AmCutoffPmOpen();
+            normal.Summary.SlotCode = null;
+            normal.Slots[1].Selectable = false;
+            normal.Slots[1].CutoffPassed = true;
+            normal.Slots[1].BlockCode = (int)DbCode.CutoffPassed;
+            normal.Slots[1].BlockMessage = "해당 시간대의 마감시간이 지났습니다.";
+
+            var view = new FakeReservationView();
+            var service = new FakeReservationService
+            {
+                Availability = normal,
+                WalkInAvailability = TodayAvailability(DbReserveType.WalkIn),
+            };
+            var presenter = new ReservationPresenter(view, service, Patients(), "창구");
+
+            presenter.Begin(PatientId);
+
+            Assert.AreEqual(2, service.AvailabilityCalls);
             Assert.AreEqual(DbReserveType.WalkIn, service.LastAvailability.ReserveType);
-            Assert.AreEqual("현장 당일예약", view.ReserveTypeText,
-                "화면이 현장이라고 표시까지 한다 — 조작자에게 틀렸다는 단서가 없다");
+            Assert.AreEqual("현장 당일예약", view.ReserveTypeText);
+        }
+
+        /// <summary>AM 은 마감(304), PM 은 고를 수 있고 정원도 남은 상태.</summary>
+        private static ReservationAvailabilityReadDto AmCutoffPmOpen()
+        {
+            ReservationAvailabilityReadDto read = CutoffAvailability();
+            read.Slots[1].Selectable = true;
+            read.Slots[1].CutoffPassed = false;
+            read.Slots[1].BlockCode = (int)DbCode.Ok;
+            read.Slots[1].BlockMessage = string.Empty;
+            read.Slots[1].CurrentCount = 3;
+            read.Slots[1].AppliedCount = 4;
+            read.Slots[1].RemainingSeats = 16;
+            return read;
         }
 
         /// <summary>

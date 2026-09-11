@@ -283,9 +283,14 @@ namespace HealthCheckupReservationReception.Views
             Close();
         }
 
+        /// <summary>
+        /// 기본값은 리본 버튼과 같은 `예약` 이다 — 버튼은 `[예약]` 인데 창은 `신규 예약` 이던
+        /// 것이 R1 결함이었다 (session-17 §4.9 의 `신규예약 → 예약` 이 닿지 않은 자리,
+        /// 2026-09-12 수정). 예약 변경은 Presenter 가 제 이름을 넣는다.
+        /// </summary>
         public string Title
         {
-            set { Text = string.IsNullOrWhiteSpace(value) ? "신규 예약" : value; }
+            set { Text = string.IsNullOrWhiteSpace(value) ? "예약" : value; }
         }
 
         public void ShowMessage(string message)
@@ -399,7 +404,7 @@ namespace HealthCheckupReservationReception.Views
         private static string DescriptionOf(SlotInfoDto slot)
         {
             string text = slot.SlotName + "    "
-                + clsWorkText.FormatCapacityAfterBooking(slot.CurrentCount, slot.Capacity, slot.RemainingSeats);
+                + clsWorkText.FormatCapacityBeforeBooking(slot.CurrentCount, slot.Capacity);
 
             if (!slot.Selectable && !string.IsNullOrWhiteSpace(slot.BlockMessage))
             {

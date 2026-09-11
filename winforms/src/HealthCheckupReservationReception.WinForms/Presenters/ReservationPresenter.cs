@@ -255,7 +255,8 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
-            if (CutoffBlocked(read.Slots))
+            // 무엇이 막혔는지는 **고른 시간대**로 가른다 (CutoffBlocked). 전체가 아니다.
+            if (CutoffBlocked(read.Slots, read.Summary.SlotCode))
             {
                 ReservationAvailabilityReadDto walkIn = Query(date, slot, DbReserveType.WalkIn);
                 if (walkIn != null)
@@ -267,10 +268,11 @@ namespace HealthCheckupReservationReception.Presenters
 
             Render(read);
 
-            // [X] 가드의 열쇠는 **조회 뒤 화면이 실제로 든 값**이다. 시간대를 아직 고르지 않고
-            //     물으면 DB 가 고를 수 있는 하나를 정해 돌려주고 Render 가 그것을 화면에
-            //     세우는데(05 §9.6), 보낸 값(NULL)으로 열쇠를 잡아 두면 다음 번에 "바뀌었다"
-            //     로 보여 같은 일정을 한 번 더 묻는다.
+            // [X] 가드의 열쇠는 **조회 뒤 화면이 실제로 든 값**이다. Render 가 세운 값을
+            //     RadioGroup 이 그대로 받아 주지 않을 수 있으므로(`rgSlot.EditValue`), 보낸
+            //     값으로 열쇠를 잡아 두면 다음 번에 "바뀌었다" 로 보여 같은 일정을 한 번 더
+            //     묻는다. RS1 의 `시간대코드` 는 보낸 값 그대로다 — DB 가 대신 고르지 않는다
+            //     (05 §9.6, `04_Procedures_Select.sql`).
             _askedDate = date;
             _askedSlot = _view.SlotCode;
         }
@@ -313,29 +315,54 @@ namespace HealthCheckupReservationReception.Presenters
         }
 
         /// <summary>
-        /// 막힌 이유가 **마감** 인 시간대가 있는가 (05 §4.2 `304 CutoffPassed`).
+        /// 현장으로 되물을 만큼 **마감에 막혔는가** (05 §4.2 `304 CutoffPassed`).
+        ///
+        /// **판정 대상은 고른 시간대 하나다.** 마감시각은 시간대마다 다르므로
+        /// (`03_Functions.sql` 의 `기본마감시각` CASE) AM 이 마감이어도 PM 은 아직 열려
+        /// 있는 구간이 있다. 아무 시간대나 하나 마감이면 전환하던 것이 H1 결함이었다 —
+        /// 그 구간에 PM 을 잡으면 `00` RP-05 대로는 일반 당일예약인데 `WALKIN` 으로
+        /// 저장되었다 (2026-09-12 수정).
+        ///
+        /// **아직 고르지 않았으면 AM·PM 이 모두 마감일 때만 전환한다.** 하나라도 고를 수
+        /// 있으면 일반으로 두고, 고르는 순간 <see cref="Ask"/> 가 다시 돌아 그 시간대로
+        /// 판정한다. 둘 다 마감이면 남은 길은 현장뿐이라 그때는 되물어야 한다.
         ///
         /// [X] 여기서 "오늘인가" 를 화면이 재지 않는다. `03_Functions.sql` 이
         ///     `적용마감시각 = CASE WHEN @예약일 = 오늘날짜 THEN 기본마감시각 ELSE NULL END`
         ///     이므로 **마감이 걸렸다는 것 자체가 그 날이 DB 오늘날짜라는 뜻**이다.
         ///     PC 시계도, 오늘날짜를 얻으려는 추가 조회도 필요 없다.
         /// </summary>
-        private static bool CutoffBlocked(IList<SlotInfoDto> slots)
+        /// <param name="slotCode">
+        /// RS1 이 되돌려 준 `시간대코드`. 보낸 값 그대로이며 미선택이면 NULL 이다
+        /// (`04_Procedures_Select.sql` 의 `[시간대코드] = CAST(@시간대코드 AS CHAR(2))`).
+        /// </param>
+        private static bool CutoffBlocked(IList<SlotInfoDto> slots, string slotCode)
         {
             if (slots == null)
             {
                 return false;
             }
 
+            bool judged = false;
             foreach (SlotInfoDto slot in slots)
             {
-                if (!slot.Selectable && slot.BlockCode == (int)DbCode.CutoffPassed)
+                if (!string.IsNullOrEmpty(slotCode)
+                    && !string.Equals(slot.SlotCode, slotCode, StringComparison.Ordinal))
                 {
-                    return true;
+                    continue;
                 }
+
+                // 대상 중 하나라도 마감이 아니면 아직 일반으로 잡을 자리가 있다.
+                if (slot.Selectable || slot.BlockCode != (int)DbCode.CutoffPassed)
+                {
+                    return false;
+                }
+
+                judged = true;
             }
 
-            return false;
+            // 고른 시간대가 목록에 없으면 아무것도 판정하지 않은 것이다 — 전환하지 않는다.
+            return judged;
         }
 
         /// <summary>

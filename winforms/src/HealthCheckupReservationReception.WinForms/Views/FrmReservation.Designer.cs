@@ -622,7 +622,7 @@ namespace HealthCheckupReservationReception.Views
             this.Name = "FrmReservation";
             this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "신규 예약";
+            this.Text = "예약";
             ((System.ComponentModel.ISupportInitialize)(this.lcMain)).EndInit();
             this.lcMain.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.txtPatientChartNo.Properties)).EndInit();
