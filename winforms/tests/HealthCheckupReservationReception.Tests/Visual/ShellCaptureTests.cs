@@ -194,6 +194,103 @@ namespace HealthCheckupReservationReception.Tests.Visual
             };
         }
 
+        /// <summary>
+        /// 화면 ID: DLG-RSV-01 — 예약 변경. `FrmReservation` 의 다른 갈래이고 진입값만 다르다
+        /// (03 §10.2). 신규(`WF-RSV-01`)와 한 장씩 떠야 **무엇이 달라 보이는지**를 눈으로 견준다.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void DLGRSV01_실행_화면을_PNG_로_뜬다()
+        {
+            string path = null;
+            RunSta(() =>
+            {
+                WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
+                WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
+
+                using (var screen = new SilentReservationForm(
+                    new FakeReservationService { Availability = SampleAvailability() },
+                    new FakePatientService(), "접수1번창구", SampleWorkDetail(), true))
+                {
+                    screen.StartPosition = FormStartPosition.Manual;
+                    screen.Location = new Point(-32000, -32000);
+                    screen.Show();
+                    Application.DoEvents();
+
+                    using (var bmp = new Bitmap(screen.Width, screen.Height))
+                    {
+                        screen.DrawToBitmap(bmp, new Rectangle(Point.Empty, bmp.Size));
+                        path = Save(bmp, "dlg_rsv_01.png");
+                    }
+
+                    screen.Close();
+                }
+            });
+
+            var info = new FileInfo(path);
+            Assert.IsTrue(info.Exists && info.Length > 10 * 1024,
+                "PNG 가 비었거나 너무 작다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
+            Console.WriteLine("캡처: " + path);
+        }
+
+        /// <summary>
+        /// 화면 ID: DLG-HOL-01 — 휴무일 관리. 탭 하나를 통째로 차지하는데 캡처가 없었다.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void DLGHOL01_실행_화면을_PNG_로_뜬다()
+        {
+            string path = null;
+            RunSta(() =>
+            {
+                WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
+                WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
+
+                var screen = new UcHoliday();
+                screen.Attach(new FakeHolidayService(), new FakeCommonStatusService());
+
+                using (var host = new Form())
+                {
+                    host.StartPosition = FormStartPosition.Manual;
+                    host.Location = new Point(-32000, -32000);
+                    host.ClientSize = new Size(1916, 887);
+                    screen.Dock = DockStyle.Fill;
+                    host.Controls.Add(screen);
+                    host.Show();
+                    Application.DoEvents();
+
+                    IHolidayView view = screen;
+                    view.Rows = SampleHolidays();
+                    view.RegistryWarning = string.Empty;
+                    Application.DoEvents();
+
+                    using (var bmp = new Bitmap(host.ClientSize.Width, host.ClientSize.Height))
+                    {
+                        host.DrawToBitmap(bmp, new Rectangle(Point.Empty, bmp.Size));
+                        path = Save(bmp, "dlg_hol_01.png");
+                    }
+                }
+            });
+
+            var info = new FileInfo(path);
+            Assert.IsTrue(info.Exists && info.Length > 10 * 1024,
+                "PNG 가 비었거나 너무 작다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
+            Console.WriteLine("캡처: " + path);
+        }
+
+        private static IList<HolidayListItemDto> SampleHolidays()
+        {
+            return new List<HolidayListItemDto>
+            {
+                new HolidayListItemDto { HolidayDate = new DateTime(2026, 9, 24), HolidayName = "추석", HolidayType = DbHolidayType.Statutory, IsActive = true, Memo = string.Empty, RowVersion = new byte[8] },
+                new HolidayListItemDto { HolidayDate = new DateTime(2026, 9, 25), HolidayName = "추석 다음날", HolidayType = DbHolidayType.Statutory, IsActive = true, Memo = string.Empty, RowVersion = new byte[8] },
+                new HolidayListItemDto { HolidayDate = new DateTime(2026, 10, 3), HolidayName = "개천절", HolidayType = DbHolidayType.Statutory, IsActive = true, Memo = string.Empty, RowVersion = new byte[8] },
+                new HolidayListItemDto { HolidayDate = new DateTime(2026, 10, 5), HolidayName = "대체공휴일", HolidayType = DbHolidayType.Substitute, IsActive = true, Memo = string.Empty, RowVersion = new byte[8] },
+                new HolidayListItemDto { HolidayDate = new DateTime(2026, 10, 17), HolidayName = "센터 정기점검", HolidayType = DbHolidayType.Own, IsActive = true, Memo = "설비 점검", RowVersion = new byte[8] },
+                new HolidayListItemDto { HolidayDate = new DateTime(2026, 11, 7), HolidayName = "창립기념일", HolidayType = DbHolidayType.Own, IsActive = false, Memo = "올해는 정상 운영", RowVersion = new byte[8] },
+            };
+        }
+
         private static WorkDetailDto SampleWorkDetail()
         {
             return new WorkDetailDto
