@@ -329,6 +329,41 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Console.WriteLine("캡처: " + path);
         }
 
+        /// <summary>DLG-RCP-02 — AEX 한 칸만 열린다. 선택 불가는 회색 + 사유.</summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void DLGRCP02_실행_화면을_PNG_로_뜬다()
+        {
+            string path = Capture("dlg_rcp_02.png", () => new FrmExtraExam(
+                new FakeWorkService { DetailResult = SampleExtraDetail() }, "접수1번창구", 77));
+
+            var info = new FileInfo(path);
+            Assert.IsTrue(info.Exists && info.Length > 5 * 1024,
+                "PNG 가 비었거나 너무 작다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
+            Console.WriteLine("캡처: " + path);
+        }
+
+        private static OperationResult<WorkDetailReadDto> SampleExtraDetail()
+        {
+            OperationResult<WorkDetailReadDto> read = SampleReceptionDetail();
+            read.Value.Detail.StatusCode = "RCP";
+            read.Value.AexOptions = new List<ReservationAexItemDto>
+            {
+                new ReservationAexItemDto { AexCode = "OPT01", ExamItemName = "복부초음파", Requested = true, Selectable = true, ReasonMessage = string.Empty },
+                new ReservationAexItemDto { AexCode = "OPT02", ExamItemName = "갑상선초음파", Requested = false, Selectable = true, ReasonMessage = string.Empty },
+                new ReservationAexItemDto { AexCode = "OPT03", ExamItemName = "유방초음파", Requested = false, Selectable = false, ReasonCode = 411, ReasonMessage = "성별 조건을 충족하지 않는 추가검사입니다." },
+                new ReservationAexItemDto { AexCode = "OPT04", ExamItemName = "골밀도검사", Requested = false, Selectable = true, ReasonMessage = string.Empty },
+                new ReservationAexItemDto { AexCode = "OPT05", ExamItemName = "PSA", Requested = false, Selectable = true, ReasonMessage = string.Empty },
+                new ReservationAexItemDto { AexCode = "OPT06", ExamItemName = "HbA1c", Requested = false, Selectable = true, ReasonMessage = string.Empty },
+                new ReservationAexItemDto { AexCode = "OPT07", ExamItemName = "HPV 검사", Requested = false, Selectable = false, ReasonCode = 411, ReasonMessage = "성별 조건을 충족하지 않는 추가검사입니다." },
+            };
+            read.Value.Actions = new List<WorkActionDto>
+            {
+                new WorkActionDto { ActionCode = "EDIT_EXTRA", Allowed = true, ReasonCode = 0, ReasonMessage = string.Empty },
+            };
+            return read;
+        }
+
         private static OperationResult<WorkDetailReadDto> SampleReceptionDetail()
         {
             return OperationResult<WorkDetailReadDto>.Success(new WorkDetailReadDto

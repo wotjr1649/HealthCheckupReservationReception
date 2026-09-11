@@ -90,6 +90,12 @@ namespace HealthCheckupReservationReception.Repositories
                     {
                         read.Actions = ReadActionRows(reader);
                     }
+
+                    // RS5 추가검사구성 — 05 §8.2 (R18). 고치는 화면(DLG-RCP-02)이 쓴다.
+                    if (reader.NextResult())
+                    {
+                        read.AexOptions = ReadAexOptionRows(reader);
+                    }
                 }
             }
 
@@ -109,6 +115,35 @@ namespace HealthCheckupReservationReception.Repositories
             return Run("dbo.USP_HC_접수_취소", request);
         }
 
+        /// <summary>
+        /// SP-RCP-02 (05 §12.2). 03 §12 가 예약일·시간대·NEX 를 ReadOnly 로 못박았으므로
+        /// 보내는 것은 AEX 일곱과 동시성 토큰뿐이다.
+        /// </summary>
+        public WorkSaveReadDto ChangeExtraExam(ExtraExamChangeRequest request)
+        {
+            using (var command = new SqlCommand("dbo.USP_HC_접수추가검사_변경"))
+            {
+                command.Parameters.Add("@업무ID", SqlDbType.BigInt).Value = request.WorkId;
+                command.Parameters.Add("@행버전", SqlDbType.Binary, 8).Value = request.RowVersion;
+                for (int i = 0; i < ReservationAvailabilityRequest.AexParameterCount; i++)
+                {
+                    string name = "@추가검사"
+                        + (i + 1).ToString("00", System.Globalization.CultureInfo.InvariantCulture)
+                        + "선택여부";
+                    bool on = request.AexSelected != null
+                        && i < request.AexSelected.Length && request.AexSelected[i];
+                    command.Parameters.Add(name, SqlDbType.Bit).Value = on;
+                }
+
+                command.Parameters.Add("@조작자명", SqlDbType.NVarChar, 50).Value =
+                    string.IsNullOrWhiteSpace(request.OperatorName)
+                        ? (object)DBNull.Value
+                        : request.OperatorName;
+
+                return ReservationRepository.Save(command, _connectionString);
+            }
+        }
+
         private WorkSaveReadDto Run(string procedure, WorkActionRequest request)
         {
             using (var command = new SqlCommand(procedure))
@@ -116,6 +151,43 @@ namespace HealthCheckupReservationReception.Repositories
                 ReservationRepository.AddWorkAction(command, request);
                 return ReservationRepository.Save(command, _connectionString);
             }
+        }
+
+        /// <summary>
+        /// 05 §8.2 RS5 — 정확히 7행. ordinal 을 `Read` 앞에서 잡는다.
+        ///
+        /// `유효선택여부` 는 계약에 없다 — TVF 와 같은 식(`선택여부 AND 선택가능`)으로 낸다
+        /// (`03_Functions.sql` `UFN_HC_추가검사확인`). 모르는 값을 넣지 않는다.
+        /// </summary>
+        private static IList<ReservationAexItemDto> ReadAexOptionRows(SqlDataReader reader)
+        {
+            var rows = new List<ReservationAexItemDto>();
+            int ordAexCode = reader.GetOrdinal("추가검사코드");
+            int ordExamItemCode = reader.GetOrdinal("검사항목코드");
+            int ordExamItemName = reader.GetOrdinal("검사항목명");
+            int ordSelected = reader.GetOrdinal("선택여부");
+            int ordSelectable = reader.GetOrdinal("선택가능");
+            int ordReasonCode = reader.GetOrdinal("사유코드");
+            int ordReasonMessage = reader.GetOrdinal("사유메시지");
+
+            while (reader.Read())
+            {
+                bool selected = reader.GetBoolean(ordSelected);
+                bool selectable = reader.GetBoolean(ordSelectable);
+                rows.Add(new ReservationAexItemDto
+                {
+                    AexCode = reader.GetString(ordAexCode),
+                    ExamItemCode = reader.GetString(ordExamItemCode),
+                    ExamItemName = reader.GetString(ordExamItemName),
+                    Requested = selected,
+                    EffectiveSelected = selected && selectable,
+                    Selectable = selectable,
+                    ReasonCode = reader.GetInt32(ordReasonCode),
+                    ReasonMessage = reader.GetString(ordReasonMessage),
+                });
+            }
+
+            return rows;
         }
 
         private static IList<WorkListItemDto> ReadListRows(SqlDataReader reader)

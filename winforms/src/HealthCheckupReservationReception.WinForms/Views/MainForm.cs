@@ -536,6 +536,12 @@ namespace HealthCheckupReservationReception.Views
                 return;
             }
 
+            if (e.Item == barBtnRcpExtra)
+            {
+                BeginExtraExamChange();
+                return;
+            }
+
             _workView.RequestAction(ActionOf(e.Item));
         }
 
@@ -562,6 +568,28 @@ namespace HealthCheckupReservationReception.Views
                 if (reservation.ShowDialog(this) == DialogResult.OK && reservation.Result != null)
                 {
                     _workView.OpenContext(reservation.Result.Context, reservation.Result.WorkId);
+                }
+            }
+        }
+
+        /// <summary>
+        /// DLG-RCP-02 접수완료 추가검사 변경 (03 §12). 모달이 스스로 상세를 다시 읽는다 —
+        /// AEX 일곱은 `SP-WRK-02` RS5 가 준다 (05 §8.2, R18).
+        /// </summary>
+        private void BeginExtraExamChange()
+        {
+            WorkDetailDto detail = _workView.CurrentDetail;
+            if (detail == null)
+            {
+                ShowMessage("먼저 목록에서 행을 선택하십시오.");
+                return;
+            }
+
+            using (var extra = new FrmExtraExam(_workService, _operatorName, detail.WorkId))
+            {
+                if (extra.ShowDialog(this) == DialogResult.OK)
+                {
+                    _workView.OpenContext(WorkContext.Reception, detail.WorkId);
                 }
             }
         }
@@ -593,12 +621,6 @@ namespace HealthCheckupReservationReception.Views
             if (item == barBtnRcpExtra) { return DbWorkAction.EditExtra; }
             if (item == barBtnRcpCancel) { return DbWorkAction.CancelReception; }
             return null;
-        }
-
-        private void barBtnNotImplemented_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            // EXTENSION POINT: WF-RSV-01 · DLG-LOG-01.
-            XtraMessageBox.Show(this, e.Item.Caption + " 화면은 아직 만들지 않았습니다.", Text);
         }
     }
 }

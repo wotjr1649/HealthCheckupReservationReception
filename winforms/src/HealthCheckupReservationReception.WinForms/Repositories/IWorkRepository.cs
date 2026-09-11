@@ -16,5 +16,8 @@ namespace HealthCheckupReservationReception.Repositories
 
         /// <summary>SP-RCP-03 `[dbo].[USP_HC_접수_취소]` (05 §12.3). RCP → CNC.</summary>
         WorkSaveReadDto CancelReception(WorkActionRequest request);
+
+        /// <summary>SP-RCP-02 `[dbo].[USP_HC_접수추가검사_변경]` (05 §12.2). RCP 유지.</summary>
+        WorkSaveReadDto ChangeExtraExam(ExtraExamChangeRequest request);
     }
 }

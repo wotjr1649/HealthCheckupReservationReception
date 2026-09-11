@@ -768,6 +768,14 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             return SaveResult;
         }
 
+        public ExtraExamChangeRequest LastExtra { get; private set; }
+
+        public OperationResult<WorkSaveReadDto> ChangeExtraExam(ExtraExamChangeRequest request)
+        {
+            LastExtra = request;
+            return SaveResult;
+        }
+
         public Exception DetailFailure { get; set; }
 
         public OperationResult<WorkDetailReadDto> GetDetail(long workId)

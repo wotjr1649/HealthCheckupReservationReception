@@ -89,6 +89,7 @@ namespace HealthCheckupReservationReception.Services
             if (read.NexItems == null) { read.NexItems = new List<WorkExamItemDto>(); }
             if (read.AexItems == null) { read.AexItems = new List<WorkExamItemDto>(); }
             if (read.Actions == null) { read.Actions = new List<WorkActionDto>(); }
+            if (read.AexOptions == null) { read.AexOptions = new List<ReservationAexItemDto>(); }
 
             return OperationResult<WorkDetailReadDto>.Success(read);
         }
@@ -108,6 +109,35 @@ namespace HealthCheckupReservationReception.Services
         public OperationResult<WorkSaveReadDto> CancelReception(WorkActionRequest request)
         {
             return Run(request, _repository.CancelReception, "접수를 취소하지 못했습니다.");
+        }
+
+        /// <summary>
+        /// SP-RCP-02 (05 §12.2). 성별·저장 NEX 중복 판정은 SP 가 한다 — 화면이 고를 수 있는
+        /// 것만 보여 주지만 최종 판정은 거기가 아니다 (03 §24.5 와 같은 규칙).
+        /// </summary>
+        public OperationResult<WorkSaveReadDto> ChangeExtraExam(ExtraExamChangeRequest request)
+        {
+            var normalized = new ExtraExamChangeRequest
+            {
+                WorkId = request.WorkId,
+                RowVersion = request.RowVersion,
+                AexSelected = request.AexSelected,
+                OperatorName = Trim(request.OperatorName),
+            };
+
+            if (Length(normalized.OperatorName) > OperatorNameMax)
+            {
+                return OperationResult<WorkSaveReadDto>.Failure(
+                    "조작자명은 " + OperatorNameMax + "자를 넘을 수 없습니다.");
+            }
+
+            WorkSaveReadDto read = _repository.ChangeExtraExam(normalized);
+            if (read == null || read.Result == null)
+            {
+                return OperationResult<WorkSaveReadDto>.Failure("추가검사를 변경하지 못했습니다.");
+            }
+
+            return OperationResult<WorkSaveReadDto>.Success(read);
         }
 
         private static OperationResult<WorkSaveReadDto> Run(

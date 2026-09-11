@@ -115,5 +115,13 @@ namespace HealthCheckupReservationReception.Tests.Services
             LastCancel = request;
             return Save;
         }
+
+        public ExtraExamChangeRequest LastExtra { get; private set; }
+
+        public WorkSaveReadDto ChangeExtraExam(ExtraExamChangeRequest request)
+        {
+            LastExtra = request;
+            return Save;
+        }
     }
 }

@@ -28,5 +28,11 @@ namespace HealthCheckupReservationReception.Services
 
         /// <summary>SP-RCP-03 접수 취소 (05 §12.3). RCP → CNC.</summary>
         OperationResult<WorkSaveReadDto> CancelReception(WorkActionRequest request);
+
+        /// <summary>
+        /// SP-RCP-02 접수완료 추가검사 변경 (05 §12.2). 상태는 `RCP` 를 유지하고 행버전만 바뀐다.
+        /// 동일 집합이면 `결과코드=1` No-op 이다 — 화면이 미리 견주지 않는다.
+        /// </summary>
+        OperationResult<WorkSaveReadDto> ChangeExtraExam(ExtraExamChangeRequest request);
     }
 }

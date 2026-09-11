@@ -79,6 +79,7 @@
     <Compile Include="Models\ExamTargetDto.cs" />
     <Compile Include="Models\ReservationAexItemDto.cs" />
     <Compile Include="Models\ReservationChangeRequest.cs" />
+    <Compile Include="Models\ExtraExamChangeRequest.cs" />
     <Compile Include="Models\ReservationAvailabilityReadDto.cs" />
     <Compile Include="Models\ReservationAvailabilityRequest.cs" />
     <Compile Include="Models\ReservationSaveRequest.cs" />
@@ -119,6 +120,16 @@
     <Compile Include="Services\IReservationService.cs" />
     <Compile Include="Services\ReservationService.cs" />
     <Compile Include="Services\WorkService.cs" />
+    <Compile Include="Views\FrmExtraExam.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\FrmExtraExam.Designer.cs">
+      <DependentUpon>FrmExtraExam.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FrmExtraExam.UI.cs">
+      <DependentUpon>FrmExtraExam.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Views\FrmReception.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -210,8 +221,10 @@
     <Compile Include="Repositories\HolidayRepository.cs" />
     <Compile Include="Presenters\ChangeLogPresenter.cs" />
     <Compile Include="Presenters\ReceptionPresenter.cs" />
+    <Compile Include="Presenters\ExtraExamPresenter.cs" />
     <Compile Include="Views\IChangeLogView.cs" />
     <Compile Include="Views\IReceptionView.cs" />
+    <Compile Include="Views\IExtraExamView.cs" />
     <Compile Include="Services\IChangeLogService.cs" />
     <Compile Include="Services\ChangeLogService.cs" />
     <Compile Include="Services\IHolidayService.cs" />
