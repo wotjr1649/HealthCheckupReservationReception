@@ -118,6 +118,36 @@ Each narrowing came from measuring rather than assuming — six of the original 
 on 2026-09-10, and two of this script's five were green on 2026-09-11. Narrow it again the same
 way: measure first.
 
+**The three are not one decision either — 2026-09-11, measured.** Do not write "permanent" here,
+and do not write "structurally impossible": an earlier draft of this section said the latter and
+was wrong. Both closures (`§1.1` on implementation→`03`, `§4.19` on generator→screens) are
+decisions, and a decision can be changed. What differs is the cost, and it splits the three.
+
+```text
+SCR-002·003   the ribbon: kit.js NAV, per-screen groups and buttons.  9 mismatches,
+              every one an intended change (신규예약 → 예약, DLG-PAT-02 removed,
+              [조회]·[컬럼설정] moved out of the ribbon, the 검색 group dropped).
+              **The target is now stable** — 14 ribbon buttons, all wired, no more coming.
+              Revivable by refreshing the design source. The price: the published 03 then
+              draws the current ribbon, which reverses §4.19 for the ribbon alone.
+
+SCR-004       the screen interior: 62 labels over 10 screens. **Not revivable as written**,
+              for two reasons that refreshing the design source does not touch:
+                - the check reads only files carrying that screen's 화면 ID marker, but the
+                  commands moved to the shared ribbon. 휴무일 captions live in
+                  MainForm.Designer.cs as 휴무일추가/휴무일수정/휴무일삭제; the design
+                  source says 추가/수정/삭제. Same button, different file, different string
+                - many "labels" are wireframe annotations, not UI strings - for example
+                  "휴무일 목록 - 휴무일자 오름차순 고정". Satisfying the check would mean
+                  planting explanatory prose into C# as string literals
+              Reviving this one is a redesign of the check, not a refresh of its expectations.
+```
+
+**Timing governs both.** While the UI/UX pass runs - screens change on every instruction -
+refreshing the design source only makes it stale again on the next one, and `screens/*.js`
+draws the published `03`, so refreshing costs the design-time record §4.19 chose to keep.
+Revisit after that pass ends, and measure again before deciding.
+
 ```text
 runs, and catches what a unit test cannot
   verify-no-secret.sh       credentials in winforms

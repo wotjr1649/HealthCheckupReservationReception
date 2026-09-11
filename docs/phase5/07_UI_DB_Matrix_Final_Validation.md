@@ -60,10 +60,16 @@ ROOT `AGENTS.md` §6 이 이 저장소가 두 번 물린 함정에서 나왔다.
 `[X]` **개수를 세어 적고 싶어지면 세는 게이트를 먼저 만든다.** 못 만들면 적지 않는다.
 이 문서의 §3·§4 대조표는 §13 의 게이트가 `03` §2 · `05` §1.3 과 양방향으로 대조한다.
 
-## 0.3 CANDIDATE 인 이유
+## 0.3 CANDIDATE 인 이유 — 그리고 **FINAL 은 오지 않는다**
 
-`06` 이 밟은 경로를 그대로 밟는다. 계약 절반을 먼저 확정하고, 실행검증 절반(§12)은
-Phase 5 구현이 실제로 돌아간 뒤에 채운다. **§12 가 비어 있는 동안 이 문서는 `FINAL` 이 아니다.**
+`06` 이 밟은 경로를 그대로 밟을 생각이었다. 계약 절반을 먼저 확정하고, 실행검증 절반(§12)은
+Phase 5 구현이 실제로 돌아간 뒤에 채운다 — **§12 가 비어 있는 동안 이 문서는 `FINAL` 이 아니다.**
+
+`[X]` **2026-09-11: 그 계획을 걷었다.** ROOT `AGENTS.md` §4 가 이 문서의 갱신 의무를 면제했으므로
+§12 는 채워지지 않고, 따라서 이 문서는 **영구히 `CANDIDATE` 로 남아 봉인에 들어가지 않는다.**
+그것이 손실이 아닌 이유는 둘이다 — 후반부의 참은 `session-17` §4.x 가 갖고, 봉인에 넣었다면
+그 뒤 UI/UX 를 고칠 때마다 재봉인이 되어 §1.1 의 국면과 정면으로 부딪혔을 것이다.
+**실행검증 기록은 이제 `docs/phase5/` 의 개별 문서가 갖는다** (예: `2026-09-11-Deadline-Field-Check.md`).
 
 ---
 
@@ -858,8 +864,8 @@ contract belongs to the service"*, *"Integrity and concurrency live in the datab
 | P11 | 시각 검증 | 100% · 125% 배율에서 잘림 0건 | **`PASS`**(WF-00 · WF-PAT-01 · 컬럼설정) — 사용자 실측 (2026-09-09). §12.7. **DLG-PAT-01·02·03 은 100% 캡처만 있고 125% 는 미실측이다** (§12.8) |
 | P14 | 배치 ↔ 설계 | 화면 ID·Navigation·Ribbon 그룹/버튼·라벨이 `tools/docgen/wireframe` 의 설계와 같다 | **`PASS`** — `winforms/tools/verify-screen-design.js` `SCR-000`~`004` (2026-09-09) |
 | P15 | 주민번호 세기 | `03` §6.2 의 7번째 자리 여덟 갈래 ↔ Presenter 의 파생 분기 양방향 차집합 0 | **`PASS`** — `winforms/scripts/verify-social-century.sh` `SOC-001`·`SOC-002` (2026-09-09) |
-| P12 | manifest | winforms 변경 커밋마다 manifest 동봉 | `PLANNED` — `verify-winforms-unchanged.sh` |
-| P13 | `07` 문서 | 구현과 일치하는 FINAL | `PLANNED` — §12 가 비어 있는 동안 `CANDIDATE` |
+| P12 | manifest | winforms 변경 커밋마다 manifest 동봉 | **`PASS`** — 2026-09-11 에 매니페스트를 되살렸고 규칙은 `winforms/AGENTS.md` 가 갖는다 |
+| P13 | `07` 문서 | 구현과 일치하는 FINAL | **`상실`** — ROOT `AGENTS.md` §4 가 갱신 의무를 면제했다. §12 는 안 채워지고 이 문서는 봉인에 들어가지 않는다 (§0.3) |
 
 `[X]` **`PASS` 는 실제로 돈 것만이다.** 나머지에 `PASS` 를 적으려면
 그 게이트를 먼저 만들어 돌려야 한다 — 손으로 돌린 증거는 다음 회차에 썩는다 (`06` §42 의 같은 `[X]`).
@@ -1500,8 +1506,9 @@ SP 계약의 단일 출처는 `05` 이며 `winforms/AGENTS.md` 가 그것을 킷
 3. 다음 화면 계열. 남은 아홉은 WF-RSV-01 · WF-WRK-01 · DLG-RSV-01 · DLG-RCP-01/02 ·
    CNF 둘 · DLG-LOG-01 · DLG-HOL-01 이다. WF-RSV-01 이 서면 DLG-PAT-02 의 호출자도 생긴다
 4. 끝날 때마다 §10 의 PLANNED 를 실측으로 바꾸고 §12 에 실행 기록을 남긴다
-5. §12 가 채워지고 §10 이 전건 PASS 가 되면 FINAL 로 올려 docs/baseline/ 에 입주시킨다
-   (ROOT AGENTS.md §2.1 · verify-baseline.sh 에 해시 한 줄)
+5. [걷었다 2026-09-11] 「§12 가 채워지면 FINAL 로 올려 docs/baseline/ 에 입주시킨다」는
+   **실행되지 않는다.** ROOT AGENTS.md §4 가 이 문서의 갱신 의무를 면제했다 — §0.3 을 보라.
+   이 목록 1~4 도 그 시점의 계획이고 지금의 할 일이 아니다
 
 X-01 · X-02 는 R11 로 해소됐고(§14.1) X-04 는 그 전에 닫혔다.
 ```
