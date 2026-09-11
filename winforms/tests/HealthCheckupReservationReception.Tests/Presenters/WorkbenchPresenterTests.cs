@@ -619,6 +619,22 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             return SearchResult ?? OperationResult<IList<WorkListItemDto>>.Success(new List<WorkListItemDto>());
         }
 
+        public OperationResult<WorkSaveReadDto> SaveResult { get; set; }
+        public WorkActionRequest LastReception { get; private set; }
+        public WorkActionRequest LastCancel { get; private set; }
+
+        public OperationResult<WorkSaveReadDto> CompleteReception(WorkActionRequest request)
+        {
+            LastReception = request;
+            return SaveResult;
+        }
+
+        public OperationResult<WorkSaveReadDto> CancelReception(WorkActionRequest request)
+        {
+            LastCancel = request;
+            return SaveResult;
+        }
+
         public OperationResult<WorkDetailReadDto> GetDetail(long workId)
         {
             LastDetailWorkId = workId;

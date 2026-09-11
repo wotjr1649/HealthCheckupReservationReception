@@ -12,6 +12,9 @@ namespace HealthCheckupReservationReception.Services
     /// </summary>
     public sealed class WorkService : IWorkService
     {
+        // 05 §11.3 · §12.1 · §12.3 의 `@조작자명` 크기.
+        private const int OperatorNameMax = 50;
+
         // 05 §8.1 의 Parameter 크기. 화면의 MaxLength 는 UI 제한이지 검증이 아니다 (킷 §6).
         private const int ChartNoMax = 100;
         private const int NameMax = 100;
@@ -88,6 +91,45 @@ namespace HealthCheckupReservationReception.Services
             if (read.Actions == null) { read.Actions = new List<WorkActionDto>(); }
 
             return OperationResult<WorkDetailReadDto>.Success(read);
+        }
+
+        /// <summary>
+        /// SP-RCP-01 (05 §12.1). RSV → RCP.
+        ///
+        /// **판정을 여기서 하지 않는다.** 예약일=오늘 · 접수마감 전 · 행버전 · 검사구성
+        /// 무결성은 전부 SP 가 다시 검증한다 (03 §11.3 *"최신 RowVersion 일치"*). 이 계층이
+        /// 하는 일은 조작자명 길이 하나와 RS0 를 읽어 올리는 것뿐이다.
+        /// </summary>
+        public OperationResult<WorkSaveReadDto> CompleteReception(WorkActionRequest request)
+        {
+            return Run(request, _repository.CompleteReception, "접수하지 못했습니다.");
+        }
+
+        public OperationResult<WorkSaveReadDto> CancelReception(WorkActionRequest request)
+        {
+            return Run(request, _repository.CancelReception, "접수를 취소하지 못했습니다.");
+        }
+
+        private static OperationResult<WorkSaveReadDto> Run(
+            WorkActionRequest request,
+            System.Func<WorkActionRequest, WorkSaveReadDto> call,
+            string failure)
+        {
+            WorkActionRequest normalized = WorkAction.Normalize(request);
+            if (Length(normalized.OperatorName) > OperatorNameMax)
+            {
+                return OperationResult<WorkSaveReadDto>.Failure(
+                    "조작자명은 " + OperatorNameMax + "자를 넘을 수 없습니다.");
+            }
+
+            WorkSaveReadDto read = call(normalized);
+            if (read == null || read.Result == null)
+            {
+                return OperationResult<WorkSaveReadDto>.Failure(failure);
+            }
+
+            // 실패 결과코드도 화면이 이어서 처리한다 — 예약 저장과 같은 규약이다.
+            return OperationResult<WorkSaveReadDto>.Success(read);
         }
 
         private static string Trim(string value)

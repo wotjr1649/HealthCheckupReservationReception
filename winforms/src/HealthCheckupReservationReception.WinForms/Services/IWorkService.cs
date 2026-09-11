@@ -17,5 +17,16 @@ namespace HealthCheckupReservationReception.Services
         /// 결과이고, 갈라서 부르면 서로 다른 시점의 값이 한 화면에 앉는다.
         /// </summary>
         OperationResult<WorkDetailReadDto> GetDetail(long workId);
+
+        /// <summary>
+        /// SP-RCP-01 접수 완료 (05 §12.1). RSV → RCP.
+        ///
+        /// `IsSuccess` 는 **DB 판정을 받아 왔는가** 다 — 예약 저장과 같은 규약이다.
+        /// 마감 지남·정원·행버전 충돌은 결과코드로 오고 그 분기는 화면이 한다.
+        /// </summary>
+        OperationResult<WorkSaveReadDto> CompleteReception(WorkActionRequest request);
+
+        /// <summary>SP-RCP-03 접수 취소 (05 §12.3). RCP → CNC.</summary>
+        OperationResult<WorkSaveReadDto> CancelReception(WorkActionRequest request);
     }
 }

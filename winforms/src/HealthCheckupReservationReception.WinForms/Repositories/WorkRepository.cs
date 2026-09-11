@@ -97,6 +97,27 @@ namespace HealthCheckupReservationReception.Repositories
         }
 
         // ordinal 을 루프 밖에서 잡는다 — 0행이어도 컬럼 이름 계약이 전건 검증된다.
+        /// <summary>SP-RCP-01 (05 §12.1). RSV → RCP. 예약일·시간대·검사구성은 바뀌지 않는다.</summary>
+        public WorkSaveReadDto CompleteReception(WorkActionRequest request)
+        {
+            return Run("dbo.USP_HC_접수_완료", request);
+        }
+
+        /// <summary>SP-RCP-03 (05 §12.3). RCP → CNC. RSV 로 복원하지 않는다.</summary>
+        public WorkSaveReadDto CancelReception(WorkActionRequest request)
+        {
+            return Run("dbo.USP_HC_접수_취소", request);
+        }
+
+        private WorkSaveReadDto Run(string procedure, WorkActionRequest request)
+        {
+            using (var command = new SqlCommand(procedure))
+            {
+                ReservationRepository.AddWorkAction(command, request);
+                return ReservationRepository.Save(command, _connectionString);
+            }
+        }
+
         private static IList<WorkListItemDto> ReadListRows(SqlDataReader reader)
         {
             var rows = new List<WorkListItemDto>();

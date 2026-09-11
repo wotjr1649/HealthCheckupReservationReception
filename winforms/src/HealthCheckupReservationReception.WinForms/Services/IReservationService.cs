@@ -22,5 +22,14 @@ namespace HealthCheckupReservationReception.Services
         /// `Failure` 다.
         /// </summary>
         OperationResult<WorkSaveReadDto> Register(ReservationSaveRequest request);
+
+        /// <summary>
+        /// SP-RSV-03 예약 변경 (05 §11.2). `Register` 와 같은 규약이다 — DB 판정을 받아 왔으면
+        /// `IsSuccess` 이고 결과코드 분기는 Presenter 가 한다.
+        /// </summary>
+        OperationResult<WorkSaveReadDto> Change(ReservationChangeRequest request);
+
+        /// <summary>SP-RSV-04 예약 취소 (05 §11.3). RSV → CNR.</summary>
+        OperationResult<WorkSaveReadDto> Cancel(WorkActionRequest request);
     }
 }

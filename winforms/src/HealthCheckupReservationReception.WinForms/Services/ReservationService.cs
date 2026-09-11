@@ -87,6 +87,56 @@ namespace HealthCheckupReservationReception.Services
             return OperationResult<WorkSaveReadDto>.Success(read);
         }
 
+        /// <summary>
+        /// SP-RSV-03 (05 §11.2). 변경범위를 여기서 재지 않는다 — 원하는 최종 상태를 보내고
+        /// DB 가 현재 행과 견주어 잰다. 변경이 없으면 `결과코드=1` No-op 이 온다.
+        /// </summary>
+        public OperationResult<WorkSaveReadDto> Change(ReservationChangeRequest request)
+        {
+            var normalized = new ReservationChangeRequest
+            {
+                WorkId = request.WorkId,
+                RowVersion = request.RowVersion,
+                ReserveDate = request.ReserveDate,
+                SlotCode = request.SlotCode,
+                AexSelected = request.AexSelected,
+                OperatorName = Trim(request.OperatorName),
+            };
+
+            OperationResult<WorkSaveReadDto> tooLong = OperatorFits(normalized.OperatorName);
+            if (tooLong != null) { return tooLong; }
+
+            return Saved(_repository.Change(normalized), "예약을 변경하지 못했습니다.");
+        }
+
+        public OperationResult<WorkSaveReadDto> Cancel(WorkActionRequest request)
+        {
+            WorkActionRequest normalized = WorkAction.Normalize(request);
+            OperationResult<WorkSaveReadDto> tooLong = OperatorFits(normalized.OperatorName);
+            if (tooLong != null) { return tooLong; }
+
+            return Saved(_repository.Cancel(normalized), "예약을 취소하지 못했습니다.");
+        }
+
+        private OperationResult<WorkSaveReadDto> OperatorFits(string operatorName)
+        {
+            return Length(operatorName) > OperatorNameMax
+                ? OperationResult<WorkSaveReadDto>.Failure(
+                    "조작자명은 " + OperatorNameMax + "자를 넘을 수 없습니다.")
+                : null;
+        }
+
+        private static OperationResult<WorkSaveReadDto> Saved(WorkSaveReadDto read, string failure)
+        {
+            if (read == null || read.Result == null)
+            {
+                return OperationResult<WorkSaveReadDto>.Failure(failure);
+            }
+
+            // 실패 결과코드도 화면이 이어서 처리한다 — `Register` 와 같은 규약이다.
+            return OperationResult<WorkSaveReadDto>.Success(read);
+        }
+
         private static string Trim(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();

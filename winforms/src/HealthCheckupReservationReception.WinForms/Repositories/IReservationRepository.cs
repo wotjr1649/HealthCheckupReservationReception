@@ -10,5 +10,11 @@ namespace HealthCheckupReservationReception.Repositories
 
         /// <summary>SP-RSV-02 `[dbo].[USP_HC_예약_등록]` (05 §11.1).</summary>
         WorkSaveReadDto Register(ReservationSaveRequest request);
+
+        /// <summary>SP-RSV-03 `[dbo].[USP_HC_예약_변경]` (05 §11.2).</summary>
+        WorkSaveReadDto Change(ReservationChangeRequest request);
+
+        /// <summary>SP-RSV-04 `[dbo].[USP_HC_예약_취소]` (05 §11.3).</summary>
+        WorkSaveReadDto Cancel(WorkActionRequest request);
     }
 }

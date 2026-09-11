@@ -714,6 +714,21 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 : OperationResult<ReservationAvailabilityReadDto>.Success(read);
         }
 
+        public ReservationChangeRequest LastChange { get; private set; }
+        public WorkActionRequest LastCancel { get; private set; }
+
+        public OperationResult<WorkSaveReadDto> Change(ReservationChangeRequest request)
+        {
+            LastChange = request;
+            return Save ?? OperationResult<WorkSaveReadDto>.Failure("없다");
+        }
+
+        public OperationResult<WorkSaveReadDto> Cancel(WorkActionRequest request)
+        {
+            LastCancel = request;
+            return Save ?? OperationResult<WorkSaveReadDto>.Failure("없다");
+        }
+
         public OperationResult<WorkSaveReadDto> Register(ReservationSaveRequest request)
         {
             LastSave = request;

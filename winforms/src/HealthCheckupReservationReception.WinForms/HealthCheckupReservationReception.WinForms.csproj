@@ -60,6 +60,7 @@
     <Compile Include="Common\DbHolidayType.cs" />
     <Compile Include="Common\DbLogTarget.cs" />
     <Compile Include="Common\OperationResult.cs" />
+    <Compile Include="Common\WorkAction.cs" />
     <Compile Include="Common\clsPatientText.cs" />
     <Compile Include="Common\clsWorkText.cs" />
     <Compile Include="Models\CommonWorkStatusDto.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="Models\PatientValidWorkReadDto.cs" />
     <Compile Include="Models\ExamTargetDto.cs" />
     <Compile Include="Models\ReservationAexItemDto.cs" />
+    <Compile Include="Models\ReservationChangeRequest.cs" />
     <Compile Include="Models\ReservationAvailabilityReadDto.cs" />
     <Compile Include="Models\ReservationAvailabilityRequest.cs" />
     <Compile Include="Models\ReservationSaveRequest.cs" />
@@ -85,6 +87,7 @@
     <Compile Include="Models\WorkSaveReadDto.cs" />
     <Compile Include="Models\WorkSaveResultDto.cs" />
     <Compile Include="Models\WorkActionDto.cs" />
+    <Compile Include="Models\WorkActionRequest.cs" />
     <Compile Include="Models\WorkActionState.cs" />
     <Compile Include="Models\PatientActionState.cs" />
     <Compile Include="Models\WorkDetailDto.cs" />

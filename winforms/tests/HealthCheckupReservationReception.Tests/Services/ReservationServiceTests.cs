@@ -256,6 +256,21 @@ namespace HealthCheckupReservationReception.Tests.Services
             return Availability;
         }
 
+        public ReservationChangeRequest LastChange { get; private set; }
+        public WorkActionRequest LastCancel { get; private set; }
+
+        public WorkSaveReadDto Change(ReservationChangeRequest request)
+        {
+            LastChange = request;
+            return Save;
+        }
+
+        public WorkSaveReadDto Cancel(WorkActionRequest request)
+        {
+            LastCancel = request;
+            return Save;
+        }
+
         public WorkSaveReadDto Register(ReservationSaveRequest request)
         {
             LastSave = request;

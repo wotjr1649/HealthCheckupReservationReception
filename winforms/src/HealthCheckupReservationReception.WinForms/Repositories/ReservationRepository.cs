@@ -278,6 +278,75 @@ namespace HealthCheckupReservationReception.Repositories
         /// [X] 하나라도 NULL 이면 `100` 이다 (05 §9.3). 그래서 짧은 배열이 와도 계약 개수를
         ///     반드시 채운다 — 모자란 자리는 미선택(false)이다.
         /// </summary>
+        /// <summary>
+        /// SP-RSV-03 (05 §11.2). **무엇이 바뀌었는지 보내지 않는다** — 원하는 최종 상태를
+        /// 통째로 보내고 변경범위는 DB 가 현재 행과 견주어 잰다.
+        /// </summary>
+        public WorkSaveReadDto Change(ReservationChangeRequest request)
+        {
+            using (var command = new SqlCommand("dbo.USP_HC_예약_변경"))
+            {
+                command.Parameters.Add("@업무ID", SqlDbType.BigInt).Value = request.WorkId;
+                command.Parameters.Add("@행버전", SqlDbType.Binary, 8).Value = request.RowVersion;
+                command.Parameters.Add("@예약일", SqlDbType.Date).Value = request.ReserveDate.Date;
+                AddText(command, "@시간대코드", SqlDbType.Char, 2, request.SlotCode);
+                AddAex(command, request.AexSelected);
+                AddText(command, "@조작자명", SqlDbType.NVarChar, 50, request.OperatorName);
+                return Save(command);
+            }
+        }
+
+        /// <summary>SP-RSV-04 (05 §11.3). RSV → CNR. 검사구성 두 컬럼은 지우지 않는다.</summary>
+        public WorkSaveReadDto Cancel(WorkActionRequest request)
+        {
+            using (var command = new SqlCommand("dbo.USP_HC_예약_취소"))
+            {
+                AddWorkAction(command, request);
+                return Save(command);
+            }
+        }
+
+        /// <summary>
+        /// `@업무ID`·`@행버전`·`@조작자명` 셋만 보내는 SP 들의 공통 Parameter (05 §11.3 · §12.1 · §12.3).
+        /// </summary>
+        internal static void AddWorkAction(SqlCommand command, WorkActionRequest request)
+        {
+            command.Parameters.Add("@업무ID", SqlDbType.BigInt).Value = request.WorkId;
+            command.Parameters.Add("@행버전", SqlDbType.Binary, 8).Value = request.RowVersion;
+            AddText(command, "@조작자명", SqlDbType.NVarChar, 50, request.OperatorName);
+        }
+
+        /// <summary>
+        /// 예약·접수 Write SP 의 공통 실행 — RS0 처리결과 + 성공이면 RS1 Work결과다 (05 §11).
+        /// 다섯 SP 가 같은 모양이라 한 벌만 둔다 (ROOT AGENTS.md §6).
+        /// </summary>
+        internal static WorkSaveReadDto Save(SqlCommand command, string connectionString)
+        {
+            var read = new WorkSaveReadDto();
+            using (var connection = new SqlConnection(connectionString))
+            {
+                command.Connection = connection;
+                command.CommandType = CommandType.StoredProcedure;
+
+                connection.Open();
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    read.Result = DbResultReader.Read(reader);
+                    if (read.Result != null && read.Result.Success && reader.NextResult() && reader.Read())
+                    {
+                        read.Row = ReadSaveRow(reader);
+                    }
+                }
+            }
+
+            return read;
+        }
+
+        private WorkSaveReadDto Save(SqlCommand command)
+        {
+            return Save(command, _connectionString);
+        }
+
         private static void AddAex(SqlCommand command, bool[] selected)
         {
             for (int i = 0; i < ReservationAvailabilityRequest.AexParameterCount; i++)
