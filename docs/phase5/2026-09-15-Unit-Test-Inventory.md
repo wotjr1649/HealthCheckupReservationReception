@@ -10,7 +10,7 @@
 
 `[!]` **건수를 이 문서에 적지 않는다.** 앞선 `2026-09-14-Test-Scenarios.md` 가 「단위시험 277건」
 이라 적었고 그 수는 하루 만에 썩었다. 세는 곳은 `vstest.console.exe` 하나다 (ROOT `AGENTS.md` §6).
-다시 세는 법은 §7 에 있다.
+다시 세는 법은 §8 에 있다.
 
 ---
 
@@ -277,7 +277,67 @@ node tools/build-test-inventory.js            # 판정 + 엑셀 생성
 
 ---
 
-## 7. 다시 세는 법 · 다시 돌리는 법
+## 7. 「모든 단위시험을 했는가」 — 재고 답한다
+
+2026-09-15 사용자 질문. 짐작하지 않고 **생산 타입마다 시험이 실물로 쓰는가**를 기계로 쟀다.
+커버리지 변환 도구(`CodeCoverage.exe`)가 이 설치본에 없어 `/EnableCodeCoverage` 의 `.coverage`
+를 읽을 수 없으므로, 대신 「시험 코드가 그 타입을 `new` 하거나 정적으로 부르는가」를 본다.
+
+### 7.1 그때 나온 공백 셋과 처리
+
+| 공백 | 성격 | 처리 |
+|---|---|---|
+| `HolidayService` — Service 여섯 중 유일하게 전용 시험 없음 | 단위시험 자리 | **메웠다** — `HolidayServiceTests` |
+| View 헬퍼 다섯이 무시험 (`clsGridColumns` 는 생산코드 40곳이 쓴다) | 단위시험 자리 | **메웠다** — `clsNotice`·`clsGridColumns`·`clsGridRowPicker`·`clsSearchConditions` 넷. 다섯째 `clsColumnChooser` 는 화면 시험 둘이 이미 밟아 만들지 않았다 |
+| 실물 DB 에 닿지 않는 SP 넷 | **통합테스트 자리** | 남겨 둔다 (§7.2) |
+
+`[!]` **네 헬퍼 시험이 처음 실행에서 아홉 건 red 였다.** 전부 시험 쪽 가정이 틀린 것이었고,
+그 자체가 기록할 만한 실측이다.
+
+```text
+GridView 는 Form 에 얹지 않으면 행을 세우지 않는다 — GetRow 가 전부 null 이라
+                                 시험이 아무것도 재지 못한 채 green 이 될 뻔했다
+FocusedRowChanged 배선은 Designer 가 한다 — 픽스처가 그것을 잇지 않으면
+                                 Select 가 화면과 다른 것을 잰다
+DateEdit 의 미입력은 EditValue=null 이다 — 갓 만든 것은 오늘로 서 있다
+CheckedListBoxItem 은 Description 이 조건 이름이다 — Add(string, bool) 로는 안 찬다
+params 배열에 `Left(null)` 을 넘기면 C# 이 **null 배열**로 읽어 순회에서 터진다
+```
+
+### 7.2 남은 것 — 실물 DB 에 닿지 않는 SP 넷
+
+Repository 가 부르는 SP 16 중 넷은 `Integration/` 경로가 한 번도 밟지 않는다.
+
+```text
+X  USP_HC_예약가능정보_조회      SP-RSV-01. Result Set 여섯, 예약 화면의 심장
+X  USP_HC_예약_변경
+X  USP_HC_접수추가검사_변경
+X  USP_HC_자체휴무일_삭제
+```
+
+`[!]` **SP 자체는 덮여 있다** — `database/tests/contract/17`~`25` 가 예약가능정보만 아홉 건을
+건다. 비어 있는 것은 **C# Repository ↔ 그 SP 의 이음매**다. 컬럼 이름 오타는 컴파일도 되고
+fake 시험도 통과하며 실행할 때만 터진다 — `SelectRepositoryDbTests` 가 존재하는 바로 그
+이유인데, 여섯 Result Set 짜리 가장 큰 SP 가 거기 빠져 있다.
+
+**이것은 단위시험이 아니라 통합테스트 자리다.** 설계에서 다룬다.
+
+### 7.3 「안 쓰는 것」으로 남은 넷은 오탐이다
+
+```text
+OperationResult                        OperationResult<T>.Success 제네릭 표기라 정규식이 못 잡는다
+ExtraExamChangeRequest · ReservationChangeRequest · WorkActionState
+                                       Presenter·Service 를 통해 값이 흐른다 (시험이 직접 new 하지 않을 뿐)
+DbResultReader                         모든 Repository 안에서 쓰이고 실물 DB 시험이 밟는다
+clsColumnChooser · clsSearchCondition  화면 시험 둘이 체크 끄기·기본값 복원으로 밟는다
+```
+
+다시 재는 법은 이 문서가 갖지 않는다 — `/tmp` 스크립트가 아니라 **생성기의 판정**이 단일
+출처이고, 타입이 늘면 같은 방식으로 다시 재면 된다.
+
+---
+
+## 8. 다시 세는 법 · 다시 돌리는 법
 
 ```bash
 cd winforms

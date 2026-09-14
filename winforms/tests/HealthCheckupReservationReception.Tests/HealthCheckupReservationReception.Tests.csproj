@@ -43,6 +43,9 @@
   <!-- MainForm 이 RibbonForm 이므로 그 멤버를 해석하려면 시험 프로젝트에도 참조가 필요하다. -->
   <ItemGroup>
     <Reference Include="DevExpress.Data.v20.2" />
+    <!-- CheckedListBoxControl.Items 의 IControlRowSource 가 여기 있다. 생산 프로젝트가
+         이미 참조하는 같은 20.2 어셈블리이고, 시험 프로젝트에만 빠져 있었다 (킷 §1). -->
+    <Reference Include="DevExpress.Data.Desktop.v20.2" />
     <Reference Include="DevExpress.Utils.v20.2" />
     <Reference Include="DevExpress.XtraBars.v20.2" />
     <Reference Include="DevExpress.XtraEditors.v20.2" />
@@ -71,11 +74,16 @@
     <Compile Include="Presenters\ReservationPresenterTests.cs" />
     <Compile Include="Services\ChangeLogServiceTests.cs" />
     <Compile Include="Services\CommonStatusServiceTests.cs" />
+    <Compile Include="Services\HolidayServiceTests.cs" />
     <Compile Include="Services\PatientServiceTests.cs" />
     <Compile Include="Services\ReservationServiceTests.cs" />
     <Compile Include="Services\WorkServiceTests.cs" />
     <Compile Include="Views\ActionLockTests.cs" />
     <Compile Include="Views\clsBusyScopeTests.cs" />
+    <Compile Include="Views\clsGridColumnsTests.cs" />
+    <Compile Include="Views\clsGridRowPickerTests.cs" />
+    <Compile Include="Views\clsNoticeTests.cs" />
+    <Compile Include="Views\clsSearchConditionsTests.cs" />
     <Compile Include="Views\clsActionRunnerTests.cs" />
     <Compile Include="Views\LayoutBaselineTests.cs" />
     <Compile Include="Views\ScreenInitializationTests.cs" />
