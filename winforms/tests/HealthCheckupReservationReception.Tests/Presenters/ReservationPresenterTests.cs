@@ -340,6 +340,29 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         /// </summary>
         private static FakeWorkService Works()
         {
+            return Works(new List<WorkActionDto>());
+        }
+
+        /// <summary>
+        /// RS4 의 `START_RECEPTION` 한 행만 골라 세운다. 그 사유코드가 「이 예약일이 오늘인가」를
+        /// 말하므로(`503` 이면 오늘이 아니다), 착지를 재는 시험이 이것으로 갈린다.
+        /// </summary>
+        private static FakeWorkService WorksWithReception(int reasonCode)
+        {
+            return Works(new List<WorkActionDto>
+            {
+                new WorkActionDto
+                {
+                    ActionCode = DbWorkAction.StartReception,
+                    Allowed = reasonCode == 0,
+                    ReasonCode = reasonCode,
+                    ReasonMessage = string.Empty,
+                },
+            });
+        }
+
+        private static FakeWorkService Works(IList<WorkActionDto> actions)
+        {
             return new FakeWorkService
             {
                 DetailResult = OperationResult<WorkDetailReadDto>.Success(new WorkDetailReadDto
@@ -351,7 +374,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                         new WorkExamItemDto { ExamItemCode = "EX001", ExamItemName = "문진/진찰", NexType = "BASIC" },
                     },
                     AexItems = new List<WorkExamItemDto>(),
-                    Actions = new List<WorkActionDto>(),
+                    Actions = actions,
                     AexOptions = new List<ReservationAexItemDto>
                     {
                         new ReservationAexItemDto { AexCode = "OPT01", ExamItemName = "복부초음파", Selectable = true, Requested = false, ReasonMessage = string.Empty },
@@ -663,6 +686,87 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(WorkContext.Reception, view.WorkbenchContext);
             Assert.AreEqual(DbReserveType.Normal, service.LastSave.ReserveType,
                 "일반 예약이어도 오늘이면 다음 할 일은 접수다");
+        }
+
+        /// <summary>
+        /// **오늘 건의 추가검사만 바꿔도 접수 Workbench 로 간다** (2026-09-14).
+        ///
+        /// 예약일을 안 바꾸면 시간대정보가 끝까지 비어 있어 마감시각으로는 「오늘인가」를
+        /// 판정할 수 없었고, 그래서 오늘 건이 예약 Workbench 로 떨어졌다 (`session-20` §6).
+        ///
+        /// [X] **DB 오늘날짜를 따로 묻지 않는다.** 진입에서 이미 받는 RS4 의
+        ///     `START_RECEPTION` 사유코드가 그 답이다 — SP 왕복이 늘지 않는다.
+        /// </summary>
+        [TestMethod]
+        public void 오늘_건은_일정을_안_바꿔도_접수_Workbench_로_간다()
+        {
+            var view = new FakeReservationView();
+            var service = new FakeReservationService
+            {
+                Availability = NoChange(),
+                Save = OperationResult<WorkSaveReadDto>.Success(new WorkSaveReadDto
+                {
+                    Result = Ok(),
+                    Row = new WorkSaveResultDto { WorkId = 55, StatusCode = "RSV", RowVersion = new byte[8] },
+                }),
+            };
+            var presenter = new ReservationPresenter(
+                view, service, Patients(), WorksWithReception((int)DbCode.Ok), "창구");
+            presenter.BeginChange(55);
+
+            view.AexSelection = new[] { true, false, false, false, false, false, false };
+            view.RaiseSaveRequested();
+
+            Assert.AreEqual(WorkContext.Reception, view.WorkbenchContext,
+                "오늘 건인데 예약 Workbench 로 떨어졌다 — 다음에 할 일은 접수다");
+        }
+
+        // 마감이 지난 것은 그 날이 오늘이라는 뜻이다 — 503 을 이미 통과했으므로 착지는 접수다.
+        [TestMethod]
+        public void 마감이_지난_오늘_건도_접수_Workbench_로_간다()
+        {
+            var view = new FakeReservationView();
+            var service = new FakeReservationService
+            {
+                Availability = NoChange(),
+                Save = OperationResult<WorkSaveReadDto>.Success(new WorkSaveReadDto
+                {
+                    Result = Ok(),
+                    Row = new WorkSaveResultDto { WorkId = 55, StatusCode = "RSV", RowVersion = new byte[8] },
+                }),
+            };
+            var presenter = new ReservationPresenter(
+                view, service, Patients(), WorksWithReception((int)DbCode.CutoffPassed), "창구");
+            presenter.BeginChange(55);
+
+            view.AexSelection = new[] { true, false, false, false, false, false, false };
+            view.RaiseSaveRequested();
+
+            Assert.AreEqual(WorkContext.Reception, view.WorkbenchContext);
+        }
+
+        // 503 은 「오늘이 아니다」이고, 그때만 예약 Workbench 가 맞다.
+        [TestMethod]
+        public void 오늘이_아닌_건은_예약_Workbench_로_간다()
+        {
+            var view = new FakeReservationView();
+            var service = new FakeReservationService
+            {
+                Availability = NoChange(),
+                Save = OperationResult<WorkSaveReadDto>.Success(new WorkSaveReadDto
+                {
+                    Result = Ok(),
+                    Row = new WorkSaveResultDto { WorkId = 55, StatusCode = "RSV", RowVersion = new byte[8] },
+                }),
+            };
+            var presenter = new ReservationPresenter(
+                view, service, Patients(), WorksWithReception((int)DbCode.NotToday), "창구");
+            presenter.BeginChange(55);
+
+            view.AexSelection = new[] { true, false, false, false, false, false, false };
+            view.RaiseSaveRequested();
+
+            Assert.AreEqual(WorkContext.Reservation, view.WorkbenchContext);
         }
 
         // 05 §9.6 — 예약구분은 DB 가 돌려준 값을 그대로 읽어 준다.

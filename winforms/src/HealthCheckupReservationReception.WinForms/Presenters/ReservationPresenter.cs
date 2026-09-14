@@ -44,6 +44,11 @@ namespace HealthCheckupReservationReception.Presenters
         // 마지막 조회의 시간대정보. 저장 뒤 어디로 갈지가 여기서 나온다 (IsToday).
         private IList<SlotInfoDto> _slots;
 
+        // 변경 진입 시점에 「이 예약일이 DB 오늘날짜인가」. 예약일을 안 바꾸면 _slots 가
+        // 끝까지 비어 있어 IsToday 가 판정할 것이 없다 — 그때 이 값이 대신 답한다.
+        // null 은 모른다는 뜻이다 (2026-09-14).
+        private bool? _entryToday;
+
         // 조회 한 번을 아끼는 자리. DateEdit 은 글자를 칠 때마다 값이 바뀌므로 같은
         // 일정으로 SP 를 되풀이해 부르게 된다 — 같은 (예약일, 시간대) 면 건너뛴다.
         private DateTime? _askedDate;
@@ -133,6 +138,7 @@ namespace HealthCheckupReservationReception.Presenters
             _workId = detail.WorkId;
             _rowVersion = detail.RowVersion;
             _patientId = detail.PatientId;
+            _entryToday = TodayFromActions(read.Actions);
 
             _view.Title = "예약 변경";
             _view.Patient = new PatientDetailDto
@@ -212,6 +218,7 @@ namespace HealthCheckupReservationReception.Presenters
             _workId = null;
             _rowVersion = null;
             _slots = null;
+            _entryToday = null;
 
             _view.Patient = null;
             _view.ScheduleEnabled = false;
@@ -465,20 +472,64 @@ namespace HealthCheckupReservationReception.Presenters
         /// </summary>
         private bool IsToday(string slotCode)
         {
-            if (_slots == null || slotCode == null)
+            if (_slots != null && slotCode != null)
             {
-                return false;
-            }
-
-            foreach (SlotInfoDto slot in _slots)
-            {
-                if (slotCode.Equals(slot.SlotCode, StringComparison.Ordinal))
+                foreach (SlotInfoDto slot in _slots)
                 {
-                    return slot.CutoffTime != null;
+                    if (slotCode.Equals(slot.SlotCode, StringComparison.Ordinal))
+                    {
+                        return slot.CutoffTime != null;
+                    }
                 }
             }
 
-            return false;
+            // 변경 모드에서 예약일을 안 바꾸면 여기까지 온다. 진입 때 받아 둔 값이 답하고,
+            // 모르면 예약 Workbench 로 둔다 — 접수 탭으로 잘못 보내는 쪽이 더 나쁘다.
+            return _entryToday ?? false;
+        }
+
+        /// <summary>
+        /// 진입 시점 RS4 가 「이 예약일이 DB 오늘날짜인가」를 이미 말한다 —
+        /// `START_RECEPTION` 의 사유코드가 `503` 이면 오늘이 아니다
+        /// (`04_Procedures_Select.sql` 의 `w.[예약일] &lt;&gt; @오늘날짜 THEN 503`).
+        ///
+        /// [X] **DB 오늘날짜를 따로 묻지 않는다.** `session-20` §6 은 그러려면 SP 왕복이
+        ///     하나 는다고 적었는데, 진입에서 이미 받는 Result Set 안에 답이 있었다.
+        ///     PC 시계도 쓰지 않는다 — 창구 PC 가 하루 어긋나면 착지가 조용히 틀린다.
+        ///
+        /// [!] **3값이다.** `502`(상태 불일치)나 공통 업무조건(`308`·`309`)이 먼저 걸리면
+        ///     그 CASE 가 `503` 판정에 닿기 전에 끝나므로 오늘인지 알 수 없다. 그때는
+        ///     `null` 이고 호출자가 보수적으로 읽는다.
+        /// </summary>
+        private static bool? TodayFromActions(IList<WorkActionDto> actions)
+        {
+            if (actions == null)
+            {
+                return null;
+            }
+
+            foreach (WorkActionDto action in actions)
+            {
+                if (!string.Equals(action.ActionCode, DbWorkAction.StartReception, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (action.ReasonCode == (int)DbCode.NotToday)
+                {
+                    return false;
+                }
+
+                // 마감이 지났다는 것은 그 날이 오늘이라는 뜻이다 — 503 을 이미 통과했다.
+                if (action.ReasonCode == (int)DbCode.Ok || action.ReasonCode == (int)DbCode.CutoffPassed)
+                {
+                    return true;
+                }
+
+                return null;
+            }
+
+            return null;
         }
 
         private void Render(ReservationAvailabilityReadDto read)
