@@ -500,7 +500,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             read.Summary.CanSave = false;
             read.Summary.BlockCode = (int)DbCode.SlotFull;
             read.Summary.BlockMessage = "해당 시간대의 정원이 찼습니다.";
-            view.ReserveDate = Day.AddDays(1);
+            // [X] 여기는 **물어본 날과 다른 날**이면 된다 — 특정 날짜가 아니다 (2026-09-15 실측).
+            //     `Ask` 는 `_askedDate` 와 같으면 되돌아가므로, 고정 상수를 쓰면 화면 기본값
+            //     (`DateTime.Today`) 이 그 상수와 같아지는 하루에만 시험이 조용히 빨강이 된다.
+            //     실제로 `Day.AddDays(1)` 이 오늘이 된 날 터졌다.
+            view.ReserveDate = view.ReserveDate.AddDays(1);
             view.RaiseScheduleChanged();
 
             Assert.IsFalse(view.SaveEnabled);
