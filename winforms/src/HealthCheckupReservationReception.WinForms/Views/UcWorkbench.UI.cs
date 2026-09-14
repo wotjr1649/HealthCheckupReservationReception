@@ -1,8 +1,6 @@
 ﻿// 화면 ID: WF-WRK-01 — 예약/접수 공통 Workbench (03 §9)
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using DevExpress.Utils;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraGrid.Views.Base;
 using HealthCheckupReservationReception.Common;
@@ -33,21 +31,14 @@ namespace HealthCheckupReservationReception.Views
             deFrom.EditValue = DateTime.Today;
             deTo.EditValue = null;
 
-            colReserveDate.DisplayFormat.FormatType = FormatType.DateTime;
-            colReserveDate.DisplayFormat.FormatString = "yyyy-MM-dd";
+            clsGridColumns.Date(colReserveDate);
 
-            clsGridColumns.Align(colReserveDate, HorzAlignment.Center);
-            clsGridColumns.Align(colSlot, HorzAlignment.Center);
-            clsGridColumns.Align(colStatus, HorzAlignment.Center);
-            clsGridColumns.Align(colName, HorzAlignment.Center);
-            clsGridColumns.Align(colChartNo, HorzAlignment.Near);
-            clsGridColumns.Align(colGender, HorzAlignment.Center);
-            clsGridColumns.Align(colBirthday, HorzAlignment.Center);
-            clsGridColumns.Align(colMobilePhone, HorzAlignment.Center);
+            clsGridColumns.Center(
+                colReserveDate, colSlot, colStatus, colName, colGender, colBirthday, colMobilePhone);
+            clsGridColumns.Left(colChartNo);
 
-            clsGridColumns.Align(colNexName, HorzAlignment.Near);
-            clsGridColumns.Align(colNexType, HorzAlignment.Center);
-            clsGridColumns.Align(colAexName, HorzAlignment.Near);
+            clsGridColumns.Center(colNexType);
+            clsGridColumns.Left(colNexName, colAexName);
 
             // 03 §18 — 컬럼을 숨기는 길은 [컬럼 설정] 드롭다운 하나뿐이다. 헤더를 밖으로 끌어
             // 숨기는 경로를 열어 두면 실수로 사라진 컬럼을 되돌릴 방법을 사용자가 모른다.
@@ -62,8 +53,10 @@ namespace HealthCheckupReservationReception.Views
             clsGridColumns.ShowEmptyText(gvAexList, "선택한 업무가 없습니다.");
 
             // 03 §9.3 Inline 오류. 붉은 글씨가 이 자리가 오류라는 유일한 단서다.
-            lblValidation.Appearance.ForeColor = Color.Firebrick;
-            lblValidation.Appearance.Options.UseForeColor = true;
+            clsNotice.Error(lblValidation);
+
+            _search = new clsActionRunner(this, btnSearch);
+            _actions = new clsActionRunner(this);
 
             // 부품 셋은 Grid·조회조건 칸이 다 선 **뒤에** 만든다 — 그 시점의 Grid 가
             // `[기본값 복원]` 이 되돌릴 기준이다.

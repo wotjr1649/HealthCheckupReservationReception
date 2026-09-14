@@ -15,14 +15,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const MODROOT = process.env.HCDOC_MODULES || 'D:/tmp/hcwork/gen/node_modules';
-function load(name) {
-  try { return require(path.join(MODROOT, name)); } catch (e) { return require(name); }
-}
-const ExcelJS = load('exceljs');
-const JSZip = load('jszip');
-
-const ROOT = path.resolve(__dirname, '..', '..', '..');
+const { ROOT, mod } = require('../paths.js');
+const ExcelJS = mod('exceljs');
+const JSZip = mod('jszip');
 const SRC = path.join(ROOT, 'docs', 'baseline', '02_Function_Definition.xlsx');
 const OUTDIR = path.join(ROOT, 'docs', 'baseline', 'output');
 const OUT = path.join(OUTDIR, '02_검진_예약접수_기능정의.xlsx');

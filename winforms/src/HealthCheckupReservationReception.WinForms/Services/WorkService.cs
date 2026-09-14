@@ -52,13 +52,6 @@ namespace HealthCheckupReservationReception.Services
     /// </summary>
     public sealed class WorkService : IWorkService
     {
-        // 05 §11.3 · §12.1 · §12.3 의 `@조작자명` 크기.
-        private const int OperatorNameMax = 50;
-
-        // 05 §8.1 의 Parameter 크기. 화면의 MaxLength 는 UI 제한이지 검증이 아니다 (킷 §6).
-        private const int ChartNoMax = 100;
-        private const int NameMax = 100;
-
         private readonly IWorkRepository _repository;
 
         public WorkService(IWorkRepository repository)
@@ -77,16 +70,16 @@ namespace HealthCheckupReservationReception.Services
                 Name = Trim(request.Name),
             };
 
-            if (Length(normalized.ChartNo) > ChartNoMax)
+            if (Length(normalized.ChartNo) > DbSize.ChartNo)
             {
                 return OperationResult<IList<WorkListItemDto>>.Failure(
-                    "차트번호는 " + ChartNoMax + "자를 넘을 수 없습니다.");
+                    "차트번호는 " + DbSize.ChartNo + "자를 넘을 수 없습니다.");
             }
 
-            if (Length(normalized.Name) > NameMax)
+            if (Length(normalized.Name) > DbSize.PatientName)
             {
                 return OperationResult<IList<WorkListItemDto>>.Failure(
-                    "이름은 " + NameMax + "자를 넘을 수 없습니다.");
+                    "이름은 " + DbSize.PatientName + "자를 넘을 수 없습니다.");
             }
 
             WorkListReadDto read = _repository.Search(normalized);
@@ -165,10 +158,10 @@ namespace HealthCheckupReservationReception.Services
                 OperatorName = Trim(request.OperatorName),
             };
 
-            if (Length(normalized.OperatorName) > OperatorNameMax)
+            if (Length(normalized.OperatorName) > DbSize.OperatorName)
             {
                 return OperationResult<WorkSaveReadDto>.Failure(
-                    "조작자명은 " + OperatorNameMax + "자를 넘을 수 없습니다.");
+                    "조작자명은 " + DbSize.OperatorName + "자를 넘을 수 없습니다.");
             }
 
             WorkSaveReadDto read = _repository.ChangeExtraExam(normalized);
@@ -185,11 +178,17 @@ namespace HealthCheckupReservationReception.Services
             System.Func<WorkActionRequest, WorkSaveReadDto> call,
             string failure)
         {
-            WorkActionRequest normalized = WorkAction.Normalize(request);
-            if (Length(normalized.OperatorName) > OperatorNameMax)
+            var normalized = new WorkActionRequest
+            {
+                WorkId = request.WorkId,
+                RowVersion = request.RowVersion,
+                OperatorName = Trim(request.OperatorName),
+            };
+
+            if (Length(normalized.OperatorName) > DbSize.OperatorName)
             {
                 return OperationResult<WorkSaveReadDto>.Failure(
-                    "조작자명은 " + OperatorNameMax + "자를 넘을 수 없습니다.");
+                    "조작자명은 " + DbSize.OperatorName + "자를 넘을 수 없습니다.");
             }
 
             WorkSaveReadDto read = call(normalized);

@@ -19,6 +19,8 @@ namespace HealthCheckupReservationReception.Views
 
             // 03 §6.3 — New 의 기본값은 자동발급이다. 항목을 담은 뒤에 골라야 반영된다.
             rgChartMode.EditValue = true;
+
+            _save = new clsActionRunner(this, btnSave, btnClose);
         }
     }
 }

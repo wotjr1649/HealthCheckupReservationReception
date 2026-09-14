@@ -1,6 +1,4 @@
 ﻿// 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
-using System.Drawing;
-using DevExpress.Utils;
 using DevExpress.XtraEditors.Controls;
 using HealthCheckupReservationReception.Common;
 
@@ -13,14 +11,9 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         partial void ConfigureUI()
         {
-            clsGridColumns.Align(colHolidayDate, HorzAlignment.Center);
-            clsGridColumns.Align(colHolidayName, HorzAlignment.Near);
-            clsGridColumns.Align(colHolidayType, HorzAlignment.Center);
-            clsGridColumns.Align(colIsActive, HorzAlignment.Center);
-            clsGridColumns.Align(colMemo, HorzAlignment.Near);
-
-            colHolidayDate.DisplayFormat.FormatType = FormatType.DateTime;
-            colHolidayDate.DisplayFormat.FormatString = "yyyy-MM-dd";
+            clsGridColumns.Center(colHolidayDate, colHolidayType, colIsActive);
+            clsGridColumns.Left(colHolidayName, colMemo);
+            clsGridColumns.Date(colHolidayDate);
 
             // 05 §12.5 `사용여부` 는 BIT 다. `True/False` 대신 03 §24.3 의 표기를 쓴다.
             clsGridColumns.Display(gvHolidayList, colIsActive, IsActiveText);
@@ -31,6 +24,9 @@ namespace HealthCheckupReservationReception.Views
             clsSearchConditions.SetupBirthday(deFrom);
             clsSearchConditions.SetupBirthday(deTo);
             clsSearchConditions.SetupBirthday(deInputDate);
+
+            _action = new clsActionRunner(this, btnAdd, btnEdit, btnDelete, btnClose);
+            _search = new clsActionRunner(this, btnSearch);
 
             _picker = new clsGridRowPicker(gvHolidayList);
             _picker.PickChanged += Picker_PickChanged;
@@ -46,11 +42,8 @@ namespace HealthCheckupReservationReception.Views
             cboType.EditValue = null;
 
             // 03 §24.6 만료 경고는 경고일 뿐 편집을 막지 않는다 — 눈에는 띄어야 한다.
-            lblRegistry.Appearance.ForeColor = Color.DarkOrange;
-            lblRegistry.Appearance.Options.UseForeColor = true;
-
-            lblBlock.Appearance.ForeColor = Color.Firebrick;
-            lblBlock.Appearance.Options.UseForeColor = true;
+            clsNotice.Warn(lblRegistry);
+            clsNotice.Error(lblBlock);
         }
 
         /// <summary>

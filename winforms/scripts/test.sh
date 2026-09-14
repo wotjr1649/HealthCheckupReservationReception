@@ -44,6 +44,12 @@ run ./scripts/verify-db-frozen.sh selftest
 run ./scripts/verify-db-frozen.sh
 run ./scripts/verify-no-secret.sh selftest
 run ./scripts/verify-no-secret.sh
+
+# [X] **스킬이 두 벌이다.** `.agents/` 는 Codex 가, `.claude/` 는 Claude Code 가 읽는다.
+#     PROJECT_INSTRUCTIONS.md 가 「byte-identical」이라 단언하는데 지키는 것이 없었고,
+#     킷 README 가 말하는 동기화 도구는 이 저장소에 없다. 값이 두 곳이면 검사를 함께 둔다
+#     (ROOT AGENTS.md §6). 한쪽만 고치면 두 호스트가 다른 지침으로 돈다.
+run diff -rq .agents/skills/winforms-devexpress-ui .claude/skills/winforms-devexpress-ui
 run ./scripts/verify-contract-names.sh selftest
 run ./scripts/verify-contract-names.sh
 run ./scripts/verify-ui-baseline.sh selftest
@@ -56,10 +62,20 @@ run ./scripts/verify-work-actions.sh
 run ./scripts/verify-work-status.sh selftest
 run ./scripts/verify-work-status.sh
 
+# 05 의 Parameter 크기를 C# 이 길이 검증에 그대로 쓴다 — 코드가 크게 잡으면 DB 가 자르고
+# 작게 잡으면 계약이 허락한 입력을 화면이 막는다. 둘 다 조용하다.
+run ./scripts/verify-param-size.sh selftest
+run ./scripts/verify-param-size.sh
+
+# 잠금 대상 버튼의 Enabled 를 화면이 직접 쓰면, 잠금이 풀릴 때 되돌리기가 그것을 덮는다.
+# 화면은 green 이고 Presenter 시험도 green 인데 버튼만 죽는다 (2026-09-14 실측).
+run ./scripts/verify-enabled-owner.sh selftest
+run ./scripts/verify-enabled-owner.sh
+
 # 같은 모양의 검사가 둘이다 — 스크립트를 복사하지 않고 환경변수로 대상을 바꿔 두 번 돌린다.
 run ./scripts/verify-check-values.sh selftest
 run ./scripts/verify-check-values.sh
-CONSTRAINT=CK_변경이력_TARGET_TABLE LABEL=대상테이블   CODE=src/HealthCheckupReservationReception.WinForms/Common/DbLogTarget.cs   run ./scripts/verify-check-values.sh
+CONSTRAINT=CK_변경이력_TARGET_TABLE LABEL=대상테이블   CLASS=DbLogTarget   run ./scripts/verify-check-values.sh
 run ./scripts/verify-social-century.sh selftest
 run ./scripts/verify-social-century.sh
 run ./scripts/verify-layering.sh selftest
@@ -69,6 +85,12 @@ run ./scripts/verify-rs-columns.sh
 # [X] `source` 모드만 돈다 — SCR-000·001(설계 소스 ↔ 03)이다. SCR-002·003·004 는
 #     ROOT AGENTS.md §1.1 이 놓아 준 *구현 ↔ 03* 이라 의도된 red 이고, 회귀에 두면
 #     다음 사람이 red 에 무뎌진다 (2026-09-11 사용자 결정). 되살릴 때는 인자를 뺀다.
+# [X] 공개본 `03` 은 자기 지위를 스스로 말한다 (ROOT AGENTS.md §3). **그 문장이 설계
+#     소스에서 사라지는 것은 여기서 잡는다** — 산출물만 보면 다음 재생성까지 아무도 모르고
+#     그 사이 커밋은 조용히 지나간다. 공개본에 실제로 실렸는지는 build_all.js 가 생성 직후에
+#     본다: 그쪽은 xlsx·pptx 판독 모듈이 필요해 이 회귀의 「어디서나 같은 판정」을 깬다.
+run node ../tools/docgen/verify_output.js source
+
 run node tools/verify-screen-design.js selftest source
 run node tools/verify-screen-design.js source
 run ./scripts/verify-ui-db-matrix.sh selftest

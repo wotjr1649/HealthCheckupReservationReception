@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# Common/DbCode.cs ↔ 05 §16.1 대조.
+# Common/DbCodes.cs 의 `DbCode` ↔ 05 §16.1 대조.
+#
+# [!] 이 검사만 class 로 좁히지 않는다 — `이름 = 숫자` 줄만 읽으므로 같은 파일의
+#     `public const string` 과 섞이지 않는다 (2026-09-14 실측). 같은 파일에 enum 이
+#     하나 더 생기면 DBC-001 이 차집합으로 **시끄럽게** 깨진다.
 #
 # 05 §16.1 은 C# Enum 정의를 문서 안에 직접 싣는다. 그것을 코드로 옮긴 이상 사본이 둘이고,
 # 사본은 원본이 바뀌면 뒤처진다 (ROOT AGENTS.md §6). 이름과 값을 함께 본다.
@@ -11,7 +15,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 
 : "${DOC:=../docs/baseline/05_DB_Rule_SP_Contract.md}"
-: "${CODE:=src/HealthCheckupReservationReception.WinForms/Common/DbCode.cs}"
+: "${CODE:=src/HealthCheckupReservationReception.WinForms/Common/DbCodes.cs}"
 FAIL=0
 say() { echo "$1 $2"; [ "$1" = FAIL ] && FAIL=1; return 0; }
 

@@ -10,10 +10,7 @@
  */
 'use strict';
 const { execFileSync } = require('child_process');
-const path = require('path');
-
-const ROOT = path.resolve(__dirname, '..', '..');
-const MODULES = 'D:/tmp/hcwork/gen/node_modules';
+const { ROOT, MODULES } = require('./paths.js');
 
 const WF_SCREENS = [
   'a0_list', 'a1_flow', 'wf_00', 'wf_pat_01', 'dlg_pat_02', 'dlg_pat_01', 'dlg_pat_03',
@@ -55,6 +52,8 @@ if (failed) {
 
 console.log('');
 try {
+  execFileSync(process.execPath, ['tools/docgen/verify_output.js', 'selftest'],
+    { cwd: ROOT, stdio: 'inherit' });
   const out = execFileSync(process.execPath, ['tools/docgen/verify_output.js'],
                            { cwd: ROOT, encoding: 'utf8' });
   process.stdout.write(out);

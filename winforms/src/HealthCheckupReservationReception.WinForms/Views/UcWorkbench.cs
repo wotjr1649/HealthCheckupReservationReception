@@ -32,8 +32,12 @@ namespace HealthCheckupReservationReception.Views
         private clsSearchConditions _conditions;
         private clsColumnChooser _columns;
 
-        // 조회 재진입 가드. 동기 SP 호출 동안 쌓인 클릭이 되돌아오는 것을 막는다.
-        private bool _searching;
+        // [R17] 실행 가드 + 보이는 잠금. 규칙은 clsActionRunner 가 갖는다.
+        private clsActionRunner _search;
+
+        // [X] **여기는 잠글 버튼이 없다.** 업무동작 버튼은 MainForm 의 Ribbon 이 갖고 이
+        //     화면은 손이 닿지 않는다 — 재진입 플래그가 유일한 가드다.
+        private clsActionRunner _actions;
 
         partial void ConfigureUI();
 
@@ -63,10 +67,9 @@ namespace HealthCheckupReservationReception.Views
         public void RequestAction(string actionCode)
         {
             EventHandler<string> handler = ActionRequested;
-            if (handler != null)
-            {
-                using (new clsBusyScope(this)) { handler(this, actionCode); }
-            }
+            if (handler == null) { return; }
+
+            _actions.Run(delegate { handler(this, actionCode); });
         }
 
         public event EventHandler<string> ActionRequested;
@@ -168,7 +171,7 @@ namespace HealthCheckupReservationReception.Views
                 txtDetailName.Text = value == null ? string.Empty : value.Name;
                 txtDetailBirthGender.Text = value == null
                     ? string.Empty
-                    : Pair(clsPatientText.FormatBirthday(value.Birthday), clsPatientText.FormatGender(value.Gender));
+                    : clsPatientText.FormatBirthGender(value.Birthday, value.Gender);
                 txtDetailReserveDate.Text = value == null
                     ? string.Empty
                     : clsWorkText.FormatDate(value.ReserveDate);
@@ -278,23 +281,9 @@ namespace HealthCheckupReservationReception.Views
             RaiseSearchRequested();
         }
 
-        /// <summary>
-        /// 조회조건 칸에서 Enter 를 치면 `[조회]` 와 같은 일이 난다 (WF-PAT-01 과 같다).
-        ///
-        /// [X] `Form.AcceptButton` 을 쓰지 않는다. 그 속성은 폼이 갖는데 이 화면은 UserControl 이고,
-        ///     MainForm 에 걸면 어느 업무 화면이 떠 있든 이 버튼이 Enter 를 먹는다.
-        /// </summary>
         private void SearchInput_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode != Keys.Enter)
-            {
-                return;
-            }
-
-            // Enter 가 위로 새어 나가면 상위 폼이 한 번 더 받는다.
-            e.Handled = true;
-            e.SuppressKeyPress = true;
-            RaiseSearchRequested();
+            _search.RunOnEnter(e, SearchRequested, this);
         }
 
         // 두 드롭다운은 무엇이 골라졌는지를 적지 않고 늘 제 이름을 적는다 (WF-PAT-01 과 같다) —
@@ -325,27 +314,12 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// 조회는 UI 스레드에서 동기로 SP 를 부르고, 그동안 쌓인 클릭은 끝난 뒤 발화한다.
-        /// `clsBusyScope` 는 잠긴 것을 **보이게** 하고 `_searching` 은 그 사이 들어온
-        /// Enter·연타를 막는다 — 둘 다 필요하다 (WF-PAT-01 과 같은 이유).
+        /// [R17] 재진입 가드와 대기 표시는 <see cref="clsActionRunner"/> 가 갖는다 —
+        /// 왜 둘 다 필요한지도 거기 적혀 있다. `[조회]`·Enter·체크박스가 이 길로 모인다.
         /// </summary>
         private void RaiseSearchRequested()
         {
-            EventHandler handler = SearchRequested;
-            if (handler == null || _searching) { return; }
-
-            _searching = true;
-            try
-            {
-                using (new clsBusyScope(this, btnSearch))
-                {
-                    handler(this, EventArgs.Empty);
-                }
-            }
-            finally
-            {
-                _searching = false;
-            }
+            _search.Run(SearchRequested, this);
         }
 
         private void gvWorkList_FocusedRowChanged(object sender, FocusedRowChangedEventArgs e)
@@ -396,16 +370,6 @@ namespace HealthCheckupReservationReception.Views
         private static DateTime? DateOf(DateEdit editor)
         {
             return editor.EditValue is DateTime ? (DateTime?)editor.DateTime.Date : null;
-        }
-
-        /// <summary>한 칸에 둘을 넣은 자리다 (`생년월일 / 성별`). 한쪽이 비면 남는 쪽만 적는다.</summary>
-        private static string Pair(string left, string right)
-        {
-            bool hasLeft = !string.IsNullOrWhiteSpace(left);
-            bool hasRight = !string.IsNullOrWhiteSpace(right);
-            if (hasLeft && hasRight) { return left + " / " + right; }
-            if (hasLeft) { return left; }
-            return hasRight ? right : string.Empty;
         }
     }
 }

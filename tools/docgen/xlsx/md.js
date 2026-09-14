@@ -11,8 +11,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const ExcelJS = require('D:/tmp/hcwork/gen/node_modules/exceljs');
-const ROOT = 'D:/AIDEV/HealthCheckupReservationReception';
+const { ROOT, mod } = require('../paths.js');
+const ExcelJS = mod('exceljs');
 const BASE = path.join(ROOT, 'docs', 'baseline');
 const OUTDIR = path.join(BASE, 'output');
 

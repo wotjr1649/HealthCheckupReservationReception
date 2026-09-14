@@ -27,6 +27,9 @@ namespace HealthCheckupReservationReception.Views
     {
         private readonly ReservationPresenter _presenter;
 
+        // [R17] 실행 가드 + 보이는 잠금. 규칙은 clsActionRunner 가 갖는다.
+        private clsActionRunner _save;
+
         // Presenter 가 시킨 값 쓰기가 다시 ScheduleChanged 로 돌아와 무한 왕복하는 것을 막는다.
         private bool _suppress;
 
@@ -143,7 +146,7 @@ namespace HealthCheckupReservationReception.Views
                 txtPatientName.Text = value == null ? string.Empty : value.Name;
                 txtPatientBirthGender.Text = value == null
                     ? string.Empty
-                    : Pair(clsPatientText.FormatBirthday(value.Birthday), clsPatientText.FormatGender(value.Gender));
+                    : clsPatientText.FormatBirthGender(value.Birthday, value.Gender);
             }
         }
 
@@ -273,7 +276,7 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         public bool SaveEnabled
         {
-            set { btnSave.Enabled = value; }
+            set { clsBusyScope.SetEnabled(btnSave, value); }
         }
 
         public string BlockMessage
@@ -353,16 +356,7 @@ namespace HealthCheckupReservationReception.Views
 
         private void btnSave_Click(object sender, EventArgs e)
         {
-            EventHandler handler = SaveRequested;
-            if (handler == null)
-            {
-                return;
-            }
-
-            using (new clsBusyScope(this))
-            {
-                handler(this, EventArgs.Empty);
-            }
+            _save.Run(SaveRequested, this);
         }
 
         private void btnClose_Click(object sender, EventArgs e)
@@ -417,7 +411,7 @@ namespace HealthCheckupReservationReception.Views
             var row = gvAexList.GetRow(e.RowHandle) as ReservationAexItemDto;
             if (row != null && !row.Selectable)
             {
-                e.Appearance.ForeColor = System.Drawing.SystemColors.GrayText;
+                clsNotice.Disabled(e.Appearance);
             }
         }
 
@@ -444,16 +438,6 @@ namespace HealthCheckupReservationReception.Views
             }
 
             return text;
-        }
-
-        /// <summary>한 칸에 둘을 넣은 자리다 (`생년월일 / 성별`). 한쪽이 비면 남는 쪽만 적는다.</summary>
-        private static string Pair(string left, string right)
-        {
-            bool hasLeft = !string.IsNullOrWhiteSpace(left);
-            bool hasRight = !string.IsNullOrWhiteSpace(right);
-            if (hasLeft && hasRight) { return left + " / " + right; }
-            if (hasLeft) { return left; }
-            return hasRight ? right : string.Empty;
         }
     }
 }

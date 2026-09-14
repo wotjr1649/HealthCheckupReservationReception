@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Common/DbWorkStatus.cs ↔ 05 §2.2 허용 코드의 `상태코드` 대조.
+# Common/DbCodes.cs 의 `DbWorkStatus` ↔ 05 §2.2 허용 코드의 `상태코드` 대조.
 #
 # 05 §2.2 가 `상태코드 : RSV / RCP / CNR / CNC` 한 줄로 넷을 못박는다. 코드에 옮겨 적은 이상
 # 사본이 둘이다 (ROOT AGENTS.md §6) — DbWorkAction · DbCode 와 같은 처지다.
@@ -13,7 +13,9 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 
 : "${DOC:=../docs/baseline/05_DB_Rule_SP_Contract.md}"
-: "${CODE:=src/HealthCheckupReservationReception.WinForms/Common/DbWorkStatus.cs}"
+: "${CODE:=src/HealthCheckupReservationReception.WinForms/Common/DbCodes.cs}"
+# 한 파일에 상수 class 가 여럿이다 — 어느 것을 볼지 말한다 (2026-09-14).
+: "${CLASS:=DbWorkStatus}"
 FAIL=0
 say() { echo "$1 $2"; [ "$1" = FAIL ] && FAIL=1; return 0; }
 
@@ -28,22 +30,39 @@ doccodes() {
     | sed '/^$/d' \
     | sort -u
 }
-# public const string X = "Y"; 의 Y.
-codecodes() {
+# `public static class <이름>` 줄부터 그 class 의 닫는 `}` 까지만 남긴다. 빈 값이면 파일 전체다.
+#
+# [X] **class 를 못 찾으면 출력이 빈다.** 그때는 아래 WKS-000 이 FAIL 을 낸다 — 한쪽이 비면
+#     차집합이 0 이 되어 조용히 통과하는 그 함정을 그것이 이미 막고 있다.
+scope() {  # scope <class 이름>
+  if [ -z "${1:-}" ]; then cat; return 0; fi
+  awk -v c="$1" '$0 ~ ("class[[:space:]]+" c "[[:space:]]*$") { f=1; next } f && /^[[:space:]]*}[[:space:]]*$/ { exit } f'
+}
+# public const string X = "Y"; 의 Y. 지정한 class 안에서만 센다.
+codecodes() {  # codecodes <파일> <class 이름>
   tr -d '\r' < "$1" \
+    | scope "$2" \
     | sed -n 's|^[[:space:]]*public const string [A-Za-z][A-Za-z0-9]* = "\([A-Z0-9_]*\)";[[:space:]]*$|\1|p' \
     | sort -u
 }
 
 if [ "${1:-check}" = "selftest" ]; then
   D=$(mktemp -d); RC=0
-  run() { # run <라벨> <기대 exit> <doc 본문> <code 본문>
+  # runfile 은 code.cs 를 통째로 받는다. run 은 본문을 대상 class 로 감싸 준다 —
+  # 게이트가 class 단위로 좁혀 읽으므로 감싸지 않으면 아무것도 못 읽는다.
+  runfile() { # runfile <라벨> <기대 exit> <doc 본문> <code 파일 전체>
     printf '%s\n' "$3" > "$D/doc.md"
     printf '%s\n' "$4" > "$D/code.cs"
     DOC="$D/doc.md" CODE="$D/code.cs" "$0" check > "$D/out.txt" 2>&1
     local got=$?
     if [ "$got" -eq "$2" ]; then echo "PASS WKS-SELFTEST $1"
     else echo "FAIL WKS-SELFTEST $1 (기대 exit $2, 실제 $got)"; sed 's/^/    /' "$D/out.txt"; RC=1; fi
+  }
+  run() { # run <라벨> <기대 exit> <doc 본문> <class 본문>
+    runfile "$1" "$2" "$3" "    public static class DbWorkStatus
+    {
+$4
+    }"
   }
   DOK='예약구분 : NORMAL / WALKIN
 상태코드          : RSV / RCP'
@@ -59,6 +78,22 @@ if [ "${1:-check}" = "selftest" ]; then
   run '줄을 못 읽으면 FAIL 이다'        1 '예약구분 : NORMAL / WALKIN' "$COK"
   run '코드를 못 읽으면 FAIL 이다'      1 "$DOK" '        // 아무것도 없다'
   # 예약구분 줄을 상태코드로 세지 않는다 — 위 DOK 이 이미 그 줄을 함께 담고 있다.
+  # ── 2026-09-14 Common/DbCodes.cs 로 합치면서. 한 파일의 다른 class 를 섞어 세면 안 된다.
+  runfile '같은 파일의 다른 class 를 세지 않는다' 0 "$DOK" '    public static class DbWorkStatus
+    {
+        public const string Reserved = "RSV";
+        public const string Received = "RCP";
+    }
+
+    public static class DbWorkAction
+    {
+        public const string EditReservation = "EDIT_RESERVATION";
+    }'
+  runfile 'class 를 못 찾으면 FAIL 이다' 1 "$DOK" '    public static class 딴것
+    {
+        public const string Reserved = "RSV";
+        public const string Received = "RCP";
+    }'
   rm -f "$D/doc.md" "$D/code.cs" "$D/out.txt"
   rmdir "$D"
   exit $RC
@@ -72,10 +107,10 @@ T=$(mktemp -d)
 trap 'rm -f "$T"/doc.txt "$T"/code.txt; rmdir "$T"' EXIT
 
 doccodes "$DOC"   > "$T/doc.txt"
-codecodes "$CODE" > "$T/code.txt"
+codecodes "$CODE" "$CLASS" > "$T/code.txt"
 
 if [ ! -s "$T/doc.txt" ] || [ ! -s "$T/code.txt" ]; then
-  say FAIL "WKS-000 상태코드를 못 읽었다 (05 §2.2 $(wc -l < "$T/doc.txt") · 코드 $(wc -l < "$T/code.txt")) — 형식이 바뀌었다"
+  say FAIL "WKS-000 상태코드를 못 읽었다 (05 §2.2 $(wc -l < "$T/doc.txt") · 코드 $(wc -l < "$T/code.txt")) — 형식이 바뀌었거나 class $CLASS 를 못 찾았다"
   echo "== FAIL =="; exit 1
 fi
 

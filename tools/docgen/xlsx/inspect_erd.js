@@ -7,8 +7,10 @@
  * 실행: node tools/docgen/xlsx/inspect_erd.js [시트명]
  */
 'use strict';
-const ExcelJS = require('D:/tmp/hcwork/gen/node_modules/exceljs');
-const OUT = 'D:/AIDEV/HealthCheckupReservationReception/docs/baseline/output/04_검진_예약접수_DB설계서.xlsx';
+const path = require('path');
+const { OUT: OUTDIR, mod } = require('../paths.js');
+const ExcelJS = mod('exceljs');
+const OUT = path.join(OUTDIR, '04_검진_예약접수_DB설계서.xlsx');
 
 const w = s => [...String(s)].reduce((a, ch) => a + (ch.charCodeAt(0) > 0x2000 ? 2 : 1), 0);
 const pad = (s, n) => { s = String(s == null ? '' : s); const d = n - w(s); return d > 0 ? s + ' '.repeat(d) : s; };

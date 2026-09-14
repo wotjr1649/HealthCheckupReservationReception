@@ -27,6 +27,11 @@ namespace HealthCheckupReservationReception.Views
         private HolidayPresenter _presenter;
         private clsGridRowPicker _picker;
 
+        // [R17] 실행 가드 + 보이는 잠금. 규칙은 clsActionRunner 가 갖는다.
+        private clsActionRunner _action;
+        // [R17] 실행 가드 + 보이는 잠금. 규칙은 clsActionRunner 가 갖는다.
+        private clsActionRunner _search;
+
         partial void ConfigureUI();
 
         public FrmHoliday()
@@ -162,8 +167,8 @@ namespace HealthCheckupReservationReception.Views
         {
             set
             {
-                btnEdit.Enabled = value;
-                btnDelete.Enabled = value;
+                clsBusyScope.SetEnabled(btnEdit, value);
+                clsBusyScope.SetEnabled(btnDelete, value);
             }
         }
 
@@ -193,29 +198,14 @@ namespace HealthCheckupReservationReception.Views
 
         private void Run(Action action)
         {
-            if (_presenter == null)
-            {
-                return;
-            }
+            if (_presenter == null) { return; }
 
-            using (new clsBusyScope(this))
-            {
-                action();
-            }
+            _action.Run(action);
         }
 
         private void btnSearch_Click(object sender, EventArgs e)
         {
-            EventHandler handler = SearchRequested;
-            if (handler == null)
-            {
-                return;
-            }
-
-            using (new clsBusyScope(this))
-            {
-                handler(this, EventArgs.Empty);
-            }
+            _search.Run(SearchRequested, this);
         }
 
         private void gvHolidayList_FocusedRowChanged(object sender, DevExpress.XtraGrid.Views.Base.FocusedRowChangedEventArgs e)
@@ -243,7 +233,7 @@ namespace HealthCheckupReservationReception.Views
             var row = gvHolidayList.GetRow(e.RowHandle) as HolidayListItemDto;
             if (row != null && !DbHolidayType.Own.Equals(row.HolidayType, StringComparison.Ordinal))
             {
-                e.Appearance.ForeColor = System.Drawing.SystemColors.GrayText;
+                clsNotice.Disabled(e.Appearance);
             }
         }
 

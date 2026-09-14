@@ -22,6 +22,9 @@ namespace HealthCheckupReservationReception.Views
         private readonly ReceptionPresenter _presenter;
         private readonly WorkDetailReadDto _read;
 
+        // [R17] 실행 가드 + 보이는 잠금. 규칙은 clsActionRunner 가 갖는다.
+        private clsActionRunner _receive;
+
         partial void ConfigureUI();
 
         /// <summary>[X] **VS 디자이너 전용이다** (`references/designer.md` 함정 2).</summary>
@@ -93,7 +96,7 @@ namespace HealthCheckupReservationReception.Views
 
         public bool ReceiveEnabled
         {
-            set { btnReceive.Enabled = value; }
+            set { clsBusyScope.SetEnabled(btnReceive, value); }
         }
 
         public string ValidationMessage
@@ -109,16 +112,7 @@ namespace HealthCheckupReservationReception.Views
 
         private void btnReceive_Click(object sender, EventArgs e)
         {
-            EventHandler handler = ReceiveRequested;
-            if (handler == null)
-            {
-                return;
-            }
-
-            using (new clsBusyScope(this))
-            {
-                handler(this, EventArgs.Empty);
-            }
+            _receive.Run(ReceiveRequested, this);
         }
 
         private void btnClose_Click(object sender, EventArgs e)

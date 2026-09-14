@@ -28,10 +28,6 @@ namespace HealthCheckupReservationReception.Services
     /// </summary>
     public sealed class HolidayService : IHolidayService
     {
-        // 05 §12.6 의 Parameter 크기.
-        private const int NameMax = 100;
-        private const int MemoMax = 500;
-
         private readonly IHolidayRepository _repository;
 
         public HolidayService(IHolidayRepository repository)
@@ -87,16 +83,16 @@ namespace HealthCheckupReservationReception.Services
         /// </summary>
         private static OperationResult<HolidaySaveReadDto> Fits(HolidaySaveRequest request)
         {
-            if (Length(request.HolidayName) > NameMax)
+            if (Length(request.HolidayName) > DbSize.HolidayName)
             {
                 return OperationResult<HolidaySaveReadDto>.Failure(
-                    "휴무일명은 " + NameMax + "자를 넘을 수 없습니다.");
+                    "휴무일명은 " + DbSize.HolidayName + "자를 넘을 수 없습니다.");
             }
 
-            if (Length(request.Memo) > MemoMax)
+            if (Length(request.Memo) > DbSize.HolidayMemo)
             {
                 return OperationResult<HolidaySaveReadDto>.Failure(
-                    "비고는 " + MemoMax + "자를 넘을 수 없습니다.");
+                    "비고는 " + DbSize.HolidayMemo + "자를 넘을 수 없습니다.");
             }
 
             return null;

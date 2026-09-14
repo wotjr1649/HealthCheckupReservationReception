@@ -10,10 +10,9 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const ExcelJS = require('D:/tmp/hcwork/gen/node_modules/exceljs');
-const JSZip = require('D:/tmp/hcwork/gen/node_modules/jszip');
-
-const OUT = 'D:/AIDEV/HealthCheckupReservationReception/docs/baseline/output';
+const { OUT, mod } = require('./paths.js');
+const ExcelJS = mod('exceljs');
+const JSZip = mod('jszip');
 
 async function textOf(file) {
   const full = path.join(OUT, file);

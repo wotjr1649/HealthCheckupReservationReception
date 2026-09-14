@@ -8,8 +8,10 @@ const S = require('./spec');
 const { Canvas } = require('./canvas');
 const flow = require('./flow');
 
+const { MODULES } = require('../paths.js');
+
 function loadPptx() {
-  for (const p of ['pptxgenjs', 'D:/tmp/hcwork/gen/node_modules/pptxgenjs']) {
+  for (const p of ['pptxgenjs', path.join(MODULES, 'pptxgenjs')]) {
     try { return require(p); } catch (e) { /* 다음 후보 */ }
   }
   throw new Error('pptxgenjs 모듈을 찾을 수 없습니다. `npm i pptxgenjs` 후 다시 실행하세요.');

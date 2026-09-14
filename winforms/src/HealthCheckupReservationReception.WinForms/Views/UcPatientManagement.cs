@@ -30,8 +30,8 @@ namespace HealthCheckupReservationReception.Views
         private clsSearchConditions _conditions;
         private clsColumnChooser _columns;
 
-        // [R17] 조회 재진입 가드. 동기 SP 호출 동안 쌓인 클릭이 되돌아오는 것을 막는다.
-        private bool _searching;
+        // [R17] 조회 재진입 가드 + 대기 표시. 규칙은 clsActionRunner 가 갖는다.
+        private clsActionRunner _search;
 
         // 마지막으로 그린 상세. 모달을 여는 Action 이 그대로 받아 간다 (2026-09-14).
         private PatientDto _detail;
@@ -122,12 +122,12 @@ namespace HealthCheckupReservationReception.Views
                 txtDetailSocialNumber.Text = value == null ? string.Empty : clsPatientText.FormatSocialNumber(value.SocialNumber);
                 txtDetailBirthGender.Text = value == null
                     ? string.Empty
-                    : Pair(clsPatientText.FormatBirthday(value.Birthday), clsPatientText.FormatGender(value.Gender));
+                    : clsPatientText.FormatBirthGender(value.Birthday, value.Gender);
                 txtDetailMobilePhone.Text = value == null ? string.Empty
                     : clsPatientText.FormatPhone(value.MobilePhone);
                 txtDetailPhoneEmail.Text = value == null ? string.Empty
-                    : Pair(clsPatientText.FormatPhone(value.Phone), value.Email);
-                txtDetailZipAddress.Text = value == null ? string.Empty : Pair(value.Zipcode, value.Address);
+                    : clsPatientText.Pair(clsPatientText.FormatPhone(value.Phone), value.Email);
+                txtDetailZipAddress.Text = value == null ? string.Empty : clsPatientText.Pair(value.Zipcode, value.Address);
                 txtDetailAddressDetail.Text = value == null ? string.Empty : value.AddressDetail;
                 memoDetailMemo.Text = value == null ? string.Empty : value.Memo;
             }
@@ -271,15 +271,7 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         private void SearchInput_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode != Keys.Enter)
-            {
-                return;
-            }
-
-            // Enter 가 위로 새어 나가면 상위 폼이 한 번 더 받는다.
-            e.Handled = true;
-            e.SuppressKeyPress = true;
-            RaiseSearchRequested();
+            _search.RunOnEnter(e, SearchRequested, this);
         }
 
         // 2026-09-10 사용자 결정 — 두 드롭다운은 무엇이 골라졌는지를 적지 않고 늘 제 이름을 적는다.
@@ -310,28 +302,12 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// [R17] 조회는 UI 스레드에서 동기로 SP 를 부르고, 그동안 쌓인 클릭은 끝난 뒤 발화한다.
-        ///
-        /// **가드가 둘 다 필요하다.** `clsBusyScope` 는 사용자가 잠긴 것을 **보게** 하고,
-        /// `_searching` 은 그 사이 들어온 Enter·연타를 막는다 (2026-09-10 사용자 결정).
+        /// [R17] 재진입 가드와 대기 표시는 <see cref="clsActionRunner"/> 가 갖는다 —
+        /// 왜 둘 다 필요한지도 거기 적혀 있다. `[조회]`·Enter·체크박스가 이 길로 모인다.
         /// </summary>
         private void RaiseSearchRequested()
         {
-            EventHandler handler = SearchRequested;
-            if (handler == null || _searching) { return; }
-
-            _searching = true;
-            try
-            {
-                using (new clsBusyScope(this, btnSearch))
-                {
-                    handler(this, EventArgs.Empty);
-                }
-            }
-            finally
-            {
-                _searching = false;
-            }
+            _search.Run(SearchRequested, this);
         }
 
         private void gvPatientList_FocusedRowChanged(object sender, FocusedRowChangedEventArgs e)
@@ -380,16 +356,6 @@ namespace HealthCheckupReservationReception.Views
             {
                 e.DisplayText = clsPatientText.FormatSocialNumber(e.Value as string);
             }
-        }
-
-        /// <summary>설계가 한 칸에 둘을 넣은 자리다 (`생년월일 / 성별` 등). 한쪽이 비면 남는 쪽만 적는다.</summary>
-        private static string Pair(string left, string right)
-        {
-            bool hasLeft = !string.IsNullOrWhiteSpace(left);
-            bool hasRight = !string.IsNullOrWhiteSpace(right);
-            if (hasLeft && hasRight) { return left + " / " + right; }
-            if (hasLeft) { return left; }
-            return hasRight ? right : string.Empty;
         }
     }
 }
