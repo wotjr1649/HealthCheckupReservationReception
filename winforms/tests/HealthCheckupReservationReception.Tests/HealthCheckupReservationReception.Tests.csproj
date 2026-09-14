@@ -59,9 +59,11 @@
   <ItemGroup>
     <Compile Include="Common\clsPatientTextTests.cs" />
     <Compile Include="Common\clsWorkTextTests.cs" />
+    <Compile Include="Integration\DbFixture.cs" />
     <Compile Include="Integration\PatientRepositoryDbTests.cs" />
     <Compile Include="Integration\ScenarioDbTests.cs" />
     <Compile Include="Integration\SelectRepositoryDbTests.cs" />
+    <Compile Include="Integration\WriteRepositoryDbTests.cs" />
     <Compile Include="MainFormTests.cs" />
     <Compile Include="Presenters\ChangeLogPresenterTests.cs" />
     <Compile Include="Presenters\ReceptionPresenterTests.cs" />
