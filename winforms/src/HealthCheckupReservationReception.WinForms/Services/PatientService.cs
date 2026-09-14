@@ -212,14 +212,14 @@ namespace HealthCheckupReservationReception.Services
         // 05 §10.1 · §10.2 의 Parameter 크기. 비고는 NVARCHAR(MAX) 라 한도가 없다.
         private static string FirstTooLongSave(PatientSaveRequest r)
         {
-            if (Over(r.ChartNo, DbSize.ChartNo)) { return "차트번호는 " + DbSize.ChartNo + "자 이하로 입력하십시오."; }
-            if (Over(r.Name, DbSize.PatientName)) { return "이름은 " + DbSize.PatientName + "자 이하로 입력하십시오."; }
+            if (Over(r.ChartNo, DbSize.ChartNo)) { return "차트번호는 " + DbSize.ChartNo + "자를 넘을 수 없습니다."; }
+            if (Over(r.Name, DbSize.PatientName)) { return "이름은 " + DbSize.PatientName + "자를 넘을 수 없습니다."; }
             if (r.SocialNumber != null && r.SocialNumber.Length != SocialNumberLength)
             {
                 return "주민등록번호는 숫자 " + SocialNumberLength + "자리로 입력하십시오.";
             }
-            if (Over(r.MobilePhone, DbSize.MobilePhone)) { return "휴대전화는 " + DbSize.MobilePhone + "자 이하로 입력하십시오."; }
-            if (Over(r.Phone, DbSize.Phone)) { return "전화번호는 " + DbSize.Phone + "자 이하로 입력하십시오."; }
+            if (Over(r.MobilePhone, DbSize.MobilePhone)) { return "휴대전화는 " + DbSize.MobilePhone + "자를 넘을 수 없습니다."; }
+            if (Over(r.Phone, DbSize.Phone)) { return "전화번호는 " + DbSize.Phone + "자를 넘을 수 없습니다."; }
 
             // 04 §8.1.3 CK_수검자_CEL_DIGIT 이 휴대전화를 숫자 10~11자리로 못박는다.
             // 화면도 같은 것을 안내하지만(FrmPatientEditor.Phone_Leave) **판정은 여기서 한 번** 한다 —
@@ -233,18 +233,18 @@ namespace HealthCheckupReservationReception.Services
             {
                 return "전화번호는 숫자 8~11자리로 입력하십시오.";
             }
-            if (Over(r.Email, DbSize.Email)) { return "E-mail 은 " + DbSize.Email + "자 이하로 입력하십시오."; }
-            if (Over(r.Zipcode, DbSize.Zipcode)) { return "우편번호는 " + DbSize.Zipcode + "자 이하로 입력하십시오."; }
-            if (Over(r.Address, DbSize.Address)) { return "주소는 " + DbSize.Address + "자 이하로 입력하십시오."; }
-            if (Over(r.AddressDetail, DbSize.AddressDetail)) { return "상세주소는 " + DbSize.AddressDetail + "자 이하로 입력하십시오."; }
-            if (Over(r.OperatorName, DbSize.OperatorName)) { return "조작자명은 " + DbSize.OperatorName + "자 이하로 입력하십시오."; }
+            if (Over(r.Email, DbSize.Email)) { return "E-mail 은 " + DbSize.Email + "자를 넘을 수 없습니다."; }
+            if (Over(r.Zipcode, DbSize.Zipcode)) { return "우편번호는 " + DbSize.Zipcode + "자를 넘을 수 없습니다."; }
+            if (Over(r.Address, DbSize.Address)) { return "주소는 " + DbSize.Address + "자를 넘을 수 없습니다."; }
+            if (Over(r.AddressDetail, DbSize.AddressDetail)) { return "상세주소는 " + DbSize.AddressDetail + "자를 넘을 수 없습니다."; }
+            if (Over(r.OperatorName, DbSize.OperatorName)) { return "조작자명은 " + DbSize.OperatorName + "자를 넘을 수 없습니다."; }
             return null;
         }
 
         private static string FirstTooLong(PatientSearchRequest r)
         {
-            if (Over(r.ChartNo, DbSize.ChartNo)) { return "차트번호는 " + DbSize.ChartNo + "자 이하로 입력하십시오."; }
-            if (Over(r.Name, DbSize.PatientName)) { return "이름은 " + DbSize.PatientName + "자 이하로 입력하십시오."; }
+            if (Over(r.ChartNo, DbSize.ChartNo)) { return "차트번호는 " + DbSize.ChartNo + "자를 넘을 수 없습니다."; }
+            if (Over(r.Name, DbSize.PatientName)) { return "이름은 " + DbSize.PatientName + "자를 넘을 수 없습니다."; }
             if (r.SocialNumber != null && r.SocialNumber.Length != SocialNumberLength)
             {
                 return "주민등록번호는 숫자 " + SocialNumberLength + "자리로 입력하십시오.";
@@ -253,7 +253,7 @@ namespace HealthCheckupReservationReception.Services
             {
                 return "생년월일은 숫자 " + BirthdayLength + "자리로 입력하십시오.";
             }
-            if (Over(r.MobilePhone, DbSize.MobilePhone)) { return "휴대전화는 " + DbSize.MobilePhone + "자 이하로 입력하십시오."; }
+            if (Over(r.MobilePhone, DbSize.MobilePhone)) { return "휴대전화는 " + DbSize.MobilePhone + "자를 넘을 수 없습니다."; }
             return null;
         }
 

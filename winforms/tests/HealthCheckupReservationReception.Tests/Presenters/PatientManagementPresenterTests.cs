@@ -151,13 +151,13 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakePatientManagementView { ChartNo = "2026-000123" };
             var service = new FakePatientService
             {
-                SearchResult = OperationResult<IList<PatientDto>>.Failure("차트번호는 100자 이하로 입력하십시오."),
+                SearchResult = OperationResult<IList<PatientDto>>.Failure("차트번호는 100자를 넘을 수 없습니다."),
             };
             Presenter(view, service);
 
             view.RaiseSearchRequested();
 
-            Assert.AreEqual("차트번호는 100자 이하로 입력하십시오.", view.LastMessage);
+            Assert.AreEqual("차트번호는 100자를 넘을 수 없습니다.", view.LastMessage);
             Assert.IsNull(view.Rows);
         }
 
