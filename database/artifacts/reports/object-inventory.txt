@@ -1,4 +1,4 @@
-PASS RBD-004 인벤토리 지문 일치  INVENTORY|7|4|19|1|7|2|2|1|5|28|10|0|0|19|41
+PASS RBD-004 인벤토리 지문 일치  INVENTORY|7|4|16|1|7|2|2|1|5|28|10|0|0|19|41
 PASS RBD-006 Seed 역할 분포 NEX 13 / AEX 7 / 겸용 1 / AEX Active 7
 PASS RBD-010 DB 에 credential·대칭키·HC Login 0건 (파일 스캔은 verify-no-secret.sh)
 --- OBJECTS ---
@@ -50,8 +50,6 @@ OBJ|P |USP_HC_공통업무상태_조회
 OBJ|P |USP_HC_변경이력_조회
 OBJ|P |USP_HC_수검자_등록
 OBJ|P |USP_HC_수검자목록_조회
-OBJ|P |USP_HC_수검자상세_조회
-OBJ|P |USP_HC_수검자유효업무_조회
 OBJ|P |USP_HC_수검자정보_수정
 OBJ|P |USP_HC_업무_취소
 OBJ|P |USP_HC_예약_등록
@@ -59,9 +57,8 @@ OBJ|P |USP_HC_예약_변경
 OBJ|P |USP_HC_예약가능정보_조회
 OBJ|P |USP_HC_예약접수목록_조회
 OBJ|P |USP_HC_예약접수상세_조회
-OBJ|P |USP_HC_자체휴무일_등록
 OBJ|P |USP_HC_자체휴무일_삭제
-OBJ|P |USP_HC_자체휴무일_수정
+OBJ|P |USP_HC_자체휴무일_저장
 OBJ|P |USP_HC_접수_완료
 OBJ|P |USP_HC_접수추가검사_변경
 OBJ|P |USP_HC_휴무일목록_조회
@@ -200,8 +197,6 @@ PRM|USP_HC_수검자목록_조회|2|@성명|nvarchar|200
 PRM|USP_HC_수검자목록_조회|3|@주민번호|varchar|13
 PRM|USP_HC_수검자목록_조회|4|@생년월일|varchar|8
 PRM|USP_HC_수검자목록_조회|5|@휴대전화|varchar|13
-PRM|USP_HC_수검자상세_조회|1|@수검자ID|bigint|8
-PRM|USP_HC_수검자유효업무_조회|1|@수검자ID|bigint|8
 PRM|USP_HC_수검자정보_수정|1|@수검자ID|bigint|8
 PRM|USP_HC_수검자정보_수정|2|@행버전|binary|8
 PRM|USP_HC_수검자정보_수정|3|@차트번호|nvarchar|200
@@ -263,17 +258,14 @@ PRM|USP_HC_예약접수목록_조회|3|@상태코드|char|3
 PRM|USP_HC_예약접수목록_조회|4|@차트번호|nvarchar|200
 PRM|USP_HC_예약접수목록_조회|5|@성명|nvarchar|200
 PRM|USP_HC_예약접수상세_조회|1|@업무ID|bigint|8
-PRM|USP_HC_자체휴무일_등록|1|@휴무일자|date|3
-PRM|USP_HC_자체휴무일_등록|2|@휴무일명|nvarchar|200
-PRM|USP_HC_자체휴무일_등록|3|@사용여부|bit|1
-PRM|USP_HC_자체휴무일_등록|4|@비고|nvarchar|1000
 PRM|USP_HC_자체휴무일_삭제|1|@휴무일자|date|3
 PRM|USP_HC_자체휴무일_삭제|2|@행버전|binary|8
-PRM|USP_HC_자체휴무일_수정|1|@휴무일자|date|3
-PRM|USP_HC_자체휴무일_수정|2|@행버전|binary|8
-PRM|USP_HC_자체휴무일_수정|3|@휴무일명|nvarchar|200
-PRM|USP_HC_자체휴무일_수정|4|@사용여부|bit|1
-PRM|USP_HC_자체휴무일_수정|5|@비고|nvarchar|1000
+PRM|USP_HC_자체휴무일_저장|1|@휴무동작코드|varchar|30
+PRM|USP_HC_자체휴무일_저장|2|@휴무일자|date|3
+PRM|USP_HC_자체휴무일_저장|3|@휴무일명|nvarchar|200
+PRM|USP_HC_자체휴무일_저장|4|@사용여부|bit|1
+PRM|USP_HC_자체휴무일_저장|5|@비고|nvarchar|1000
+PRM|USP_HC_자체휴무일_저장|6|@행버전|binary|8
 PRM|USP_HC_접수_완료|1|@업무ID|bigint|8
 PRM|USP_HC_접수_완료|2|@행버전|binary|8
 PRM|USP_HC_접수_완료|3|@조작자명|nvarchar|100

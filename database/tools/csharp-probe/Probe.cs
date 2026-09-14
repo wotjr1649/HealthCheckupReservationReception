@@ -158,7 +158,7 @@ static class Probe
             const string SPFILTER = "FROM sys.parameters pa JOIN sys.procedures p ON p.object_id = pa.object_id " +
                                     "WHERE p.name LIKE 'USP[_]HC[_]%'";
             using (var cmd = new SqlCommand("SELECT COUNT(*) " + SPFILTER, cn))
-                Eq("CS-014", "계약 SP Parameter 전건", (int)cmd.ExecuteScalar(), 109);
+                Eq("CS-014", "계약 SP Parameter 전건", (int)cmd.ExecuteScalar(), 106);
             using (var cmd = new SqlCommand(
                 "SELECT COUNT(*) " + SPFILTER + " AND pa.name NOT LIKE '%[가-힣]%'", cn))
                 Eq("CS-015", "한글을 담지 않는 Parameter", (int)cmd.ExecuteScalar(), 0);
