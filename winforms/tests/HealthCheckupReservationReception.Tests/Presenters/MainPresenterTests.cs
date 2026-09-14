@@ -314,8 +314,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public OperationResult<CommonWorkStatusDto> Result { get; set; }
         public Exception Failure { get; set; }
 
+        /// <summary>몇 번 물었는가. 「조회마다 오늘날짜를 다시 묻지 않는다」를 재는 자리다.</summary>
+        public int Calls { get; private set; }
+
         public OperationResult<CommonWorkStatusDto> GetCurrent()
         {
+            Calls++;
             if (Failure != null)
             {
                 throw Failure;

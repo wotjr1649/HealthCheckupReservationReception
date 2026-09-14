@@ -57,6 +57,7 @@
     <Compile Include="Common\clsPatientTextTests.cs" />
     <Compile Include="Common\clsWorkTextTests.cs" />
     <Compile Include="Integration\PatientRepositoryDbTests.cs" />
+    <Compile Include="Integration\ScenarioDbTests.cs" />
     <Compile Include="Integration\SelectRepositoryDbTests.cs" />
     <Compile Include="MainFormTests.cs" />
     <Compile Include="Presenters\ChangeLogPresenterTests.cs" />
@@ -74,6 +75,7 @@
     <Compile Include="Services\ReservationServiceTests.cs" />
     <Compile Include="Services\WorkServiceTests.cs" />
     <Compile Include="Views\LayoutBaselineTests.cs" />
+    <Compile Include="Views\ScreenInitializationTests.cs" />
     <Compile Include="Views\UcPatientManagementTests.cs" />
     <Compile Include="Views\UcWorkbenchTests.cs" />
     <Compile Include="Views\FrmPatientEditorTests.cs" />

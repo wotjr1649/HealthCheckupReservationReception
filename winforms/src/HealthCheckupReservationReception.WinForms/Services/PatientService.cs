@@ -1,10 +1,44 @@
-﻿using System.Collections.Generic;
+﻿// ── 수검자 서비스 ────────────────────────────────────────────────────────────
+// 계약(IPatientService) 과 구현(PatientService) 을 한 파일에 둔다.
+// 부르는 SP: SP-PAT-01 조회 · 02 상세 · 03 등록 · 04 수정 · 05 유효업무.
+
+using System;
+using System.Collections.Generic;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
 using HealthCheckupReservationReception.Repositories;
 
 namespace HealthCheckupReservationReception.Services
 {
+    public interface IPatientService
+    {
+        OperationResult<IList<PatientDto>> Search(PatientSearchRequest request);
+
+        /// <summary>[R21] 차트번호로 한 사람만 다시 읽는다. 목록 SP 를 쓴다.</summary>
+        OperationResult<PatientDto> GetByChartNo(string chartNo);
+
+        /// <summary>
+        /// DLG-PAT-01 New 저장 (SP-PAT-03 · 05 §10.1).
+        ///
+        /// `IsSuccess` 는 **DB 판정을 받아 왔는가** 다. `202`·`203` 처럼 실패 결과코드도
+        /// 화면이 이어서 처리해야 하므로 (03 §6.3 · §6.5) 여기서 실패로 접지 않는다 —
+        /// 결과코드 분기는 Presenter 가 한다 (05 §3.6 · 07 §6.2). DB 에 닿기 전에
+        /// 접히는 것(길이 위반 · RS0 없음)만 `Failure` 다.
+        /// </summary>
+        OperationResult<PatientSaveReadDto> Register(PatientSaveRequest request);
+
+        /// <summary>DLG-PAT-01 Edit 저장 (SP-PAT-04 · 05 §10.2). 성패 규약은 Register 와 같다.</summary>
+        OperationResult<PatientSaveReadDto> Update(PatientSaveRequest request);
+
+        /// <summary>
+        /// SP-PAT-05 현재일 이후 RSV/RCP 유효업무 (05 §7.4).
+        ///
+        /// 03 §8.5 의 중복판단이 이것을 쓴다 — 신규예약은 수검자를 확정한 **직후**,
+        /// 아직 예약일이 없을 때 물어야 하므로 SP-RSV-01 의 `다른업무ID` 로는 대신할 수 없다.
+        /// 유효업무가 없으면 `Value` 가 null 이고 그것이 정상이다.
+        /// </summary>
+    }
+
     /// <summary>
     /// WF-PAT-01 의 업무 계층 (03 §5.3 · 05 §7.2 · §7.3).
     /// 정규화와 길이 검증이 여기 있다 — 비어 있음 판정은 Presenter 가 한다 (킷 §6).
@@ -30,7 +64,7 @@ namespace HealthCheckupReservationReception.Services
             _repository = repository;
         }
 
-        public OperationResult<IList<PatientListItemDto>> Search(PatientSearchRequest request)
+        public OperationResult<IList<PatientDto>> Search(PatientSearchRequest request)
         {
             // 03 §5.3 — 주민번호와 전화번호는 `-` 를 제거하여 조회한다. 빈 문자열은 미입력이다.
             var normalized = new PatientSearchRequest
@@ -45,68 +79,61 @@ namespace HealthCheckupReservationReception.Services
             string tooLong = FirstTooLong(normalized);
             if (tooLong != null)
             {
-                return OperationResult<IList<PatientListItemDto>>.Failure(tooLong);
+                return OperationResult<IList<PatientDto>>.Failure(tooLong);
             }
 
             PatientListReadDto read = _repository.Search(normalized);
             if (read == null || read.Result == null)
             {
-                return OperationResult<IList<PatientListItemDto>>.Failure("수검자 목록을 읽지 못했습니다.");
+                return OperationResult<IList<PatientDto>>.Failure("수검자 목록을 읽지 못했습니다.");
             }
 
             // 분기는 숫자 결과코드로만 한다 (05 §3.6 · §4.3).
             if (!read.Result.Success)
             {
-                return OperationResult<IList<PatientListItemDto>>.Failure(read.Result.Message);
+                return OperationResult<IList<PatientDto>>.Failure(read.Result.Message);
             }
 
             // 조회 0건은 성공이다 (05 §3.4).
-            return OperationResult<IList<PatientListItemDto>>.Success(
-                read.Rows ?? new List<PatientListItemDto>());
+            return OperationResult<IList<PatientDto>>.Success(
+                read.Rows ?? new List<PatientDto>());
         }
 
         /// <summary>
-        /// SP-PAT-05 (05 §7.4). **0행은 실패가 아니다** — 유효업무가 없다는 뜻이고
-        /// 03 §8.5 는 그때 일정영역을 연다. `Value` 가 null 인 성공으로 돌려준다.
+        /// [R21] **한 사람만 다시 읽는다.** `SELECT_수검자상세`(SP-PAT-02)가 사라졌으므로
+        /// 목록 SP 를 차트번호로 부른다 — `UQ_수검자_CHART_NO` 라 결과가 한 사람으로 확정된다.
+        ///
+        /// [!] 차트번호는 **포함검색**이다 (05 §7.2, R17). `C0001` 이 `C00010` 도 잡으므로
+        ///     받은 행 중 **정확히 같은 차트번호**만 고른다. 그 판정을 SP 에 맡길 수 없는 이유는
+        ///     같은 Parameter 가 화면의 부분검색도 겸하기 때문이다.
+        ///
+        /// 쓰는 자리는 둘뿐이다 — 저장이 `601` 로 막힌 뒤의 복구(`DLG-PAT-01`)와,
+        /// 목록 없이 열린 화면의 보충. 평시에는 목록 한 번이 전부다.
         /// </summary>
-        public OperationResult<PatientValidWorkDto> GetValidWork(long patientId)
+        public OperationResult<PatientDto> GetByChartNo(string chartNo)
         {
-            PatientValidWorkReadDto read = _repository.ReadValidWork(patientId);
-            if (read == null || read.Result == null)
+            if (string.IsNullOrWhiteSpace(chartNo))
             {
-                return OperationResult<PatientValidWorkDto>.Failure("수검자의 유효업무를 읽지 못했습니다.");
+                return OperationResult<PatientDto>.Failure("차트번호가 없습니다.");
             }
 
-            if (!read.Result.Success)
+            OperationResult<IList<PatientDto>> found = Search(new PatientSearchRequest { ChartNo = chartNo });
+            if (!found.IsSuccess)
             {
-                return OperationResult<PatientValidWorkDto>.Failure(read.Result.Message);
+                return OperationResult<PatientDto>.Failure(found.Message);
             }
 
-            return OperationResult<PatientValidWorkDto>.Success(read.Work);
+            string wanted = chartNo.Trim();
+            foreach (PatientDto row in found.Value)
+            {
+                if (string.Equals(row.ChartNo, wanted, StringComparison.Ordinal))
+                {
+                    return OperationResult<PatientDto>.Success(row);
+                }
+            }
+
+            return OperationResult<PatientDto>.Failure("수검자를 찾지 못했습니다.");
         }
-
-        public OperationResult<PatientDetailDto> GetDetail(long patientId)
-        {
-            PatientDetailReadDto read = _repository.ReadDetail(patientId);
-            if (read == null || read.Result == null)
-            {
-                return OperationResult<PatientDetailDto>.Failure("수검자 상세를 읽지 못했습니다.");
-            }
-
-            if (!read.Result.Success)
-            {
-                return OperationResult<PatientDetailDto>.Failure(read.Result.Message);
-            }
-
-            if (read.Detail == null)
-            {
-                // RS1 은 정확히 1행이다 (05 §7.3). 비었으면 계약 위반이므로 성공으로 읽지 않는다.
-                return OperationResult<PatientDetailDto>.Failure("수검자 상세 결과가 비어 있습니다.");
-            }
-
-            return OperationResult<PatientDetailDto>.Success(read.Detail);
-        }
-
         /// <summary>
         /// DLG-PAT-01 New 저장 (SP-PAT-03 · 05 §10.1).
         /// 비어 있음은 Presenter 가, 고유성·후보판정은 DB 가 한다 (07 §7).

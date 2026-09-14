@@ -1,12 +1,39 @@
-﻿// 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
+﻿// ── 휴무일 리포지토리 ────────────────────────────────────────────────────────
+// 계약과 구현을 한 파일에 둔다. **SqlClient 는 이 폴더 안에서만 산다** (킷 §2).
+//
+//   USP_HC_휴무일목록_조회     SP-HOL-01   RS0~RS2
+//   USP_HC_자체휴무일_저장     SP-HOL-02   RS0+RS1   [R22] 등록·수정이 하나다
+//   USP_HC_자체휴무일_삭제     SP-HOL-04   RS0 만
+
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
 
 namespace HealthCheckupReservationReception.Repositories
 {
+    // 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
+    public interface IHolidayRepository
+    {
+        /// <summary>SP-HOL-01 목록 + 공휴일 등재현황 (05 §12.5).</summary>
+        HolidayListReadDto Search(HolidaySearchRequest request);
+
+/// <summary>
+        /// SP-HOL-02 자체휴무일 저장 (05 §12.6).
+        ///
+        /// **[R22] 등록과 수정이 SP 하나다.** 어느 쪽인지는 <paramref name="action"/> 이
+        /// 말한다 — `CREATE` / `UPDATE` (<see cref="DbHolidayAction"/>). 현재 상태에서
+        /// 유도하지 않는 이유는 05 §12.6 이 적는다.
+        /// </summary>
+        HolidaySaveReadDto Save(HolidaySaveRequest request, string action);
+
+        /// <summary>SP-HOL-04 자체휴무일 물리 삭제 (05 §12.8). RS1 이 없다.</summary>
+        HolidaySaveReadDto Delete(DateTime holidayDate, byte[] rowVersion);
+    }
+
+    // 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
     /// <summary>
     /// DLG-HOL-01 이 쓰는 네 SP (05 §12.5~§12.8).
     /// Parameter 는 이름·타입·크기를 계약 그대로 명시한다. AddWithValue 를 쓰지 않는다 (킷 §3).
@@ -64,27 +91,19 @@ namespace HealthCheckupReservationReception.Repositories
             return read;
         }
 
-        public HolidaySaveReadDto Register(HolidaySaveRequest request)
+public HolidaySaveReadDto Save(HolidaySaveRequest request, string action)
         {
-            using (var command = new SqlCommand("dbo.USP_HC_자체휴무일_등록"))
+            using (var command = new SqlCommand("dbo.USP_HC_자체휴무일_저장"))
             {
+                command.Parameters.Add("@휴무동작코드", SqlDbType.VarChar, 30).Value = action;
                 command.Parameters.Add("@휴무일자", SqlDbType.Date).Value = request.HolidayDate.Date;
                 AddName(command, request.HolidayName);
                 command.Parameters.Add("@사용여부", SqlDbType.Bit).Value = request.IsActive;
                 AddMemo(command, request.Memo);
-                return Save(command, true);
-            }
-        }
 
-        public HolidaySaveReadDto Update(HolidaySaveRequest request)
-        {
-            using (var command = new SqlCommand("dbo.USP_HC_자체휴무일_수정"))
-            {
-                command.Parameters.Add("@휴무일자", SqlDbType.Date).Value = request.HolidayDate.Date;
+                // 등록에는 행버전이 없다 — 아직 행이 없기 때문이다. SP 가 기본값 NULL 을 갖지만
+                // 계약 Parameter 를 빠뜨리지 않는다 (05 §2.1) — DBNull 로 명시해 넘긴다.
                 AddRowVersion(command, request.RowVersion);
-                AddName(command, request.HolidayName);
-                command.Parameters.Add("@사용여부", SqlDbType.Bit).Value = request.IsActive;
-                AddMemo(command, request.Memo);
                 return Save(command, true);
             }
         }
@@ -100,7 +119,7 @@ namespace HealthCheckupReservationReception.Repositories
         }
 
         /// <summary>
-        /// 셋이 RS0 를 같은 모양으로 내고 둘만 RS1 을 더 낸다 (05 §12.6~§12.8).
+        /// 셋이 RS0 를 같은 모양으로 내고 둘만 RS1 을 더 낸다 (05 §12.5·§12.6·§12.8).
         /// <paramref name="hasRow"/> 가 그 차이 전부다.
         /// </summary>
         private HolidaySaveReadDto Save(SqlCommand command, bool hasRow)

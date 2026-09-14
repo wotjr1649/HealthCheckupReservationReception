@@ -23,8 +23,13 @@ namespace HealthCheckupReservationReception.Views
 
         // ── 조회조건 (05 §12.5 — 두 날짜는 필수다)
 
-        DateTime? FromDate { get; }
-        DateTime? ToDate { get; }
+        /// <summary>
+        /// `[X]` **Presenter 가 쓴다.** 기본값(03 §24.4 오늘부터 두 해)의 `오늘` 은 DB 가
+        /// 주므로 화면이 스스로 채울 수 없다 — `get` 만 두었더니 채우는 쪽이 없어 두 칸이
+        /// 빈 채로 남았고, 그 하나로 이 화면의 CRUD 가 전부 죽었다 (2026-09-11 실측).
+        /// </summary>
+        DateTime? FromDate { get; set; }
+        DateTime? ToDate { get; set; }
 
         /// <summary>null 이면 세 구분 전부다.</summary>
         string HolidayTypeFilter { get; }

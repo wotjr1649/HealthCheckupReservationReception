@@ -1,4 +1,7 @@
-﻿// 화면 ID: DLG-LOG-01 — 변경이력 열람 (03 §23)
+﻿// ── 변경이력 서비스 ──────────────────────────────────────────────────────────
+// 계약(IChangeLogService) 과 구현(ChangeLogService) 을 한 파일에 둔다.
+// 부르는 SP: SP-LOG-01 — 한 행의 변경기록.
+
 using System.Collections.Generic;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
@@ -6,6 +9,13 @@ using HealthCheckupReservationReception.Repositories;
 
 namespace HealthCheckupReservationReception.Services
 {
+    // 화면 ID: DLG-LOG-01 — 변경이력 열람 (03 §23)
+    public interface IChangeLogService
+    {
+        OperationResult<ChangeLogReadDto> Read(string targetTable, long targetKey);
+    }
+
+    // 화면 ID: DLG-LOG-01 — 변경이력 열람 (03 §23)
     /// <summary>
     /// DLG-LOG-01 의 업무 계층 (03 §23 · 05 §8.3).
     ///

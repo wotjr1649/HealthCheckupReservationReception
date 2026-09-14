@@ -20,7 +20,7 @@ namespace HealthCheckupReservationReception.Views
     public partial class FrmReception : XtraForm, IReceptionView
     {
         private readonly ReceptionPresenter _presenter;
-        private readonly long _workId;
+        private readonly WorkDetailReadDto _read;
 
         partial void ConfigureUI();
 
@@ -31,10 +31,10 @@ namespace HealthCheckupReservationReception.Views
             ConfigureUI();
         }
 
-        public FrmReception(IWorkService service, string operatorName, long workId) : this()
+        public FrmReception(IWorkService service, string operatorName, WorkDetailReadDto read) : this()
         {
             _presenter = new ReceptionPresenter(this, service, operatorName);
-            _workId = workId;
+            _read = read;
         }
 
         /// <summary>진입 조회는 창이 뜬 뒤다 — `FrmReservation` 이 밟은 함정을 되풀이하지 않는다.</summary>
@@ -48,7 +48,7 @@ namespace HealthCheckupReservationReception.Views
 
             using (new clsBusyScope(this))
             {
-                _presenter.Begin(_workId);
+                _presenter.Begin(_read);
             }
         }
 

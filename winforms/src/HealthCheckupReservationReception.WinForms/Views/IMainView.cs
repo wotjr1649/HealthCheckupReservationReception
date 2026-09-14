@@ -62,8 +62,10 @@ namespace HealthCheckupReservationReception.Views
     {
         PatientManagement,   // 수검자 관리   → WF-PAT-01
         ReservationDesk,     // 예약 관리     → WF-WRK-01 Reservation Context
-        ReceptionDesk,       // 접수 관리     → WF-WRK-01 Reception Context
-        HolidayManagement    // 휴무일 관리   → DLG-HOL-01
+        ReceptionDesk        // 접수 관리     → WF-WRK-01 Reception Context
+
+        // 휴무일 관리는 여기 없다. 03 §24.2 대로 업무 Tab 을 열지 않고 Modal 을 직접
+        // 열므로 내비게이션이 아니다 — 리봘 머리줄의 버튼 하나다 (2026-09-11).
     }
 
     /// <summary>
@@ -73,8 +75,7 @@ namespace HealthCheckupReservationReception.Views
     public enum BusinessTab
     {
         PatientManagement,
-        Workbench,
-        Holiday
+        Workbench
     }
 
     /// <summary>

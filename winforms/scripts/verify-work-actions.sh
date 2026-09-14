@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # Common/DbWorkAction.cs ↔ 05 §8.2 고정 업무동작코드 대조.
 #
 # 05 §8.2 RS4 는 `업무동작코드` 다섯을 고정으로 돌려주고, 화면은 그 문자열로 Ribbon 버튼을
@@ -7,12 +7,15 @@
 # [X] **오타는 조용하다.** 컴파일도 되고, 단위시험은 같은 상수를 쓰므로 함께 틀린다.
 #     실행하면 그 버튼 하나가 영영 닫힌 채로 있고 아무도 이유를 모른다.
 #
-# WKA-001  코드 문자열 집합이 양방향 차집합 0
+# WKA-001  업무동작코드   Common/DbWorkAction.cs    <-> 05 §8.2
+# WKA-002  휴무동작코드   Common/DbHolidayAction.cs <-> 05 §12.6   [R22]
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
 : "${DOC:=../docs/baseline/05_DB_Rule_SP_Contract.md}"
 : "${CODE:=src/HealthCheckupReservationReception.WinForms/Common/DbWorkAction.cs}"
+: "${DOC2:=../docs/baseline/05_DB_Rule_SP_Contract.md}"
+: "${CODE2:=src/HealthCheckupReservationReception.WinForms/Common/DbHolidayAction.cs}"
 FAIL=0
 say() { echo "$1 $2"; [ "$1" = FAIL ] && FAIL=1; return 0; }
 
@@ -25,6 +28,17 @@ doccodes() {
     | sed -n 's|^[[:space:]]*\([A-Z][A-Z0-9]*_[A-Z0-9_]*\)[[:space:]]*$|\1|p' \
     | sort -u
 }
+# [R22] §12.6 입력표의 `@휴무동작코드` 행. 그 줄의 백틱 안 대문자 토큰만 센다 —
+#       `VARCHAR(30)` 은 괄호가 있어 걸리지 않고, 한글 칸은 애초에 대문자가 아니다.
+holcodes() {
+  tr -d '\r' < "$1" \
+    | awk '/^## 12[.]6 /{f=1;next} f && /^## /{exit} f' \
+    | grep '@휴무동작코드' \
+    | grep -oE '`[A-Z][A-Z0-9_]*`' \
+    | tr -d '`' \
+    | sort -u
+}
+
 # public const string X = "Y"; 의 Y.
 codecodes() {
   tr -d '\r' < "$1" \
@@ -55,6 +69,28 @@ START_RECEPTION'
   # [X] 한쪽이 비면 차집합이 0 이 되어 "일치" 로 보인다 — 조용히 통과하는 게이트다.
   run '구획을 못 읽으면 FAIL 이다'    1 '' "$COK"
   run '코드를 못 읽으면 FAIL 이다'    1 "$DOK" '        // 아무것도 없다'
+  # ── [R22] WKA-002. 실물 DOC/CODE 를 그대로 두고 DOC2/CODE2 만 갈아 끼운다 —
+  #         그래야 여기서 나는 red 가 WKA-002 의 것임이 분명하다.
+  run2() { # run2 <라벨> <기대 exit> <doc 구획> <code 본문>
+    printf '## 12.6 `SP`
+%s
+## 12.7 다음
+' "$3" > "$D/doc2.md"
+    printf "%s\n" "$4" > "$D/code2.cs"
+    DOC2="$D/doc2.md" CODE2="$D/code2.cs" "$0" check > "$D/out.txt" 2>&1
+    local got=$?
+    if [ "$got" -eq "$2" ]; then echo "PASS WKA-SELFTEST $1"
+    else echo "FAIL WKA-SELFTEST $1 (기대 exit $2, 실제 $got)"; sed 's/^/    /' "$D/out.txt"; RC=1; fi
+  }
+  HDOK='| `@휴무동작코드` | `VARCHAR(30)` | X | `CREATE_HOLIDAY` / `UPDATE_HOLIDAY` |'
+  HCOK='        public const string Create = "CREATE_HOLIDAY";
+        public const string Update = "UPDATE_HOLIDAY";'
+  run2 '휴무동작코드가 같으면 통과한다'   0 "$HDOK" "$HCOK"
+  run2 '휴무동작코드 오타를 잡는다'       1 "$HDOK" '        public const string Create = "CREAT";
+        public const string Update = "UPDATE_HOLIDAY";'
+  run2 '휴무 구획을 못 읽으면 FAIL 이다'  1 '| 없음 |' "$HCOK"
+  rm -f "$D/doc2.md" "$D/code2.cs"
+
   # 산문의 USP_HC_... 를 동작코드로 세지 않는다.
   run '절 제목의 SP 이름을 세지 않는다' 0 "$DOK" "$COK"
   rm -f "$D/doc.md" "$D/code.cs" "$D/out.txt"
@@ -87,5 +123,28 @@ else
   [ -n "$ONLY_CODE" ] && echo "$ONLY_CODE" | sed 's/^/    코드에만: /'
 fi
 
-if [ "$FAIL" -eq 0 ]; then echo "== PASS 업무동작코드 ↔ 05 §8.2 =="; else echo "== FAIL =="; fi
+# ── WKA-002 [R22] 휴무동작코드. 같은 이유로 같은 방식이다.
+if [ -f "$DOC2" ] && [ -f "$CODE2" ]; then
+  H=$(mktemp -d)
+  holcodes  "$DOC2"  > "$H/doc.txt"
+  codecodes "$CODE2" > "$H/code.txt"
+  if [ ! -s "$H/doc.txt" ] || [ ! -s "$H/code.txt" ]; then
+    say FAIL "WKA-002 휴무동작코드를 못 읽었다 — 05 §12.6 과 코드의 형식이 바뀌었다"
+  else
+    ONLY_D=$(comm -23 "$H/doc.txt" "$H/code.txt")
+    ONLY_C=$(comm -13 "$H/doc.txt" "$H/code.txt")
+    if [ -z "$ONLY_D" ] && [ -z "$ONLY_C" ]; then
+      say PASS "WKA-002 휴무동작코드 양방향 차집합 0 ($(wc -l < "$H/doc.txt") 건)"
+    else
+      say FAIL "WKA-002 휴무동작코드 불일치"
+      [ -n "$ONLY_D" ] && echo "$ONLY_D" | sed 's/^/    05 §12.6 에만: /'
+      [ -n "$ONLY_C" ] && echo "$ONLY_C" | sed 's/^/    코드에만: /'
+    fi
+  fi
+  rm -f "$H/doc.txt" "$H/code.txt"; rmdir "$H"
+else
+  say FAIL "WKA-002 파일이 없다: $DOC2 · $CODE2"
+fi
+
+if [ "$FAIL" -eq 0 ]; then echo "== PASS 동작코드 ↔ 05 §8.2 · §12.6 =="; else echo "== FAIL =="; fi
 exit $FAIL

@@ -69,6 +69,18 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>우측 Detail (03 §9.5). null 이면 비운다.</summary>
         WorkDetailDto Detail { set; }
 
+        /// <summary>
+        /// 마지막 선택행의 `SP-WRK-02` 한 벌(RS0~RS5) 그대로. **모달이 이것을 받아 열린다**
+        /// (2026-09-14 사용자 지시) — 같은 업무ID 로 같은 여섯을 다시 읽지 않는다.
+        ///
+        /// [!] **낡을 수 있다.** 다른 창구가 그 사이 바꾸면 모달은 옛 값을 보인다. 저장은
+        ///     `행버전` 으로 `601` 이, 마감은 `304` 가 막으므로 **틀린 저장은 통과하지 못한다**
+        ///     — 화면이 미리 닫지 않는 R12 와 같은 줄이다.
+        ///
+        /// 선택이 풀리면 null 이다. <see cref="Detail"/> 은 그리기용이고 이것은 넘겨주기용이다.
+        /// </summary>
+        WorkDetailReadDto Read { get; set; }
+
         IList<WorkExamItemDto> NexItems { set; }
         IList<WorkExamItemDto> AexItems { set; }
 

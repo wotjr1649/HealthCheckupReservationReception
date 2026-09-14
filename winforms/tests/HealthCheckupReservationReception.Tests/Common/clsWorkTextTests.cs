@@ -40,7 +40,21 @@ namespace HealthCheckupReservationReception.Tests.Common
         public void 정원_문구는_잔여의_기준을_밝힌다()
         {
             Assert.AreEqual("2 / 20 (잔여 18)", clsWorkText.FormatCapacity(2, 20, 18));
-            Assert.AreEqual("2 / 20 (예약 후 잔여 17)", clsWorkText.FormatCapacityAfterBooking(2, 20, 17));
+            Assert.AreEqual("2 / 20 (예약 전 잔여 18)", clsWorkText.FormatCapacityBeforeBooking(2, 20));
+        }
+
+        /// <summary>
+        /// 예약 화면은 DB 의 `잔여자리` 를 쓰지 않고 `정원 - 현재인원` 으로 적는다
+        /// (2026-09-12 사용자 지시). 앞의 두 수와 뒤의 잔여가 어긋나 보이지 않아야 한다.
+        /// </summary>
+        [TestMethod]
+        [DataRow(1, 20, "1 / 20 (예약 전 잔여 19)")]
+        [DataRow(0, 20, "0 / 20 (예약 전 잔여 20)")]
+        [DataRow(20, 20, "20 / 20 (예약 전 잔여 0)")]
+        [DataRow(21, 20, "21 / 20 (예약 전 잔여 0)")]   // 05 §9.7 의 MAX(0, ...)
+        public void 예약_전_잔여는_정원에서_현재인원을_뺀다(int current, int capacity, string expected)
+        {
+            Assert.AreEqual(expected, clsWorkText.FormatCapacityBeforeBooking(current, capacity));
         }
     }
 }

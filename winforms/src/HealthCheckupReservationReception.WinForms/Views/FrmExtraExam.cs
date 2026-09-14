@@ -20,7 +20,7 @@ namespace HealthCheckupReservationReception.Views
     public partial class FrmExtraExam : XtraForm, IExtraExamView
     {
         private readonly ExtraExamPresenter _presenter;
-        private readonly long _workId;
+        private readonly WorkDetailReadDto _read;
 
         partial void ConfigureUI();
 
@@ -31,10 +31,10 @@ namespace HealthCheckupReservationReception.Views
             ConfigureUI();
         }
 
-        public FrmExtraExam(IWorkService service, string operatorName, long workId) : this()
+        public FrmExtraExam(IWorkService service, string operatorName, WorkDetailReadDto read) : this()
         {
             _presenter = new ExtraExamPresenter(this, service, operatorName);
-            _workId = workId;
+            _read = read;
         }
 
         protected override void OnLoad(EventArgs e)
@@ -47,7 +47,7 @@ namespace HealthCheckupReservationReception.Views
 
             using (new clsBusyScope(this))
             {
-                _presenter.Begin(_workId);
+                _presenter.Begin(_read);
             }
         }
 

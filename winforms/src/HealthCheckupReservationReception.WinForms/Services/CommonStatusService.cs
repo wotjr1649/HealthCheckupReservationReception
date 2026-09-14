@@ -1,9 +1,18 @@
-﻿using HealthCheckupReservationReception.Common;
+﻿// ── 공통 업무상태 서비스 ─────────────────────────────────────────────────────
+// 계약(ICommonStatusService) 과 구현(CommonStatusService) 을 한 파일에 둔다.
+// 부르는 SP: SP-COM-01 — 오늘날짜·운영시간·업무가능.
+
+using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
 using HealthCheckupReservationReception.Repositories;
 
 namespace HealthCheckupReservationReception.Services
 {
+    public interface ICommonStatusService
+    {
+        OperationResult<CommonWorkStatusDto> GetCurrent();
+    }
+
     public sealed class CommonStatusService : ICommonStatusService
     {
         private readonly ICommonStatusRepository _repository;

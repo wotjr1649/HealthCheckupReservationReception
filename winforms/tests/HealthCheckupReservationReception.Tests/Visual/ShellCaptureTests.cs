@@ -99,7 +99,7 @@ namespace HealthCheckupReservationReception.Tests.Visual
                 WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
 
                 var screen = new UcPatientManagement();
-                screen.Attach(new FakePatientService(), new FakeWorkService(), new FakeCommonStatusService());
+                screen.Attach(new FakePatientService(), new FakeWorkService());
 
                 using (var host = new Form())
                 {
@@ -194,6 +194,174 @@ namespace HealthCheckupReservationReception.Tests.Visual
             };
         }
 
+        /// <summary>
+        /// 화면 ID: DLG-RSV-01 — 예약 변경. `FrmReservation` 의 다른 갈래이고 진입값만 다르다
+        /// (03 §10.2). 신규(`WF-RSV-01`)와 한 장씩 떠야 **무엇이 달라 보이는지**를 눈으로 견준다.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void DLGRSV01_실행_화면을_PNG_로_뜬다()
+        {
+            string path = null;
+            RunSta(() =>
+            {
+                WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
+                WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
+
+                using (var screen = new SilentReservationForm(
+                    new FakeReservationService { Availability = SampleChangeAvailability() },
+                    new FakePatientService(), SampleWorkDetailService(), "접수1번창구",
+                    SampleWorkDetailService().DetailResult.Value, true))
+                {
+                    screen.StartPosition = FormStartPosition.Manual;
+                    screen.Location = new Point(-32000, -32000);
+                    screen.Show();
+                    Application.DoEvents();
+
+                    using (var bmp = new Bitmap(screen.Width, screen.Height))
+                    {
+                        screen.DrawToBitmap(bmp, new Rectangle(Point.Empty, bmp.Size));
+                        path = Save(bmp, "dlg_rsv_01.png");
+                    }
+
+                    screen.Close();
+                }
+            });
+
+            var info = new FileInfo(path);
+            Assert.IsTrue(info.Exists && info.Length > 10 * 1024,
+                "PNG 가 비었거나 너무 작다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
+            Console.WriteLine("캡처: " + path);
+        }
+
+        /// <summary>
+        /// 화면 ID: DLG-HOL-01 — 휴무일 관리. 탭 하나를 통째로 차지하는데 캡처가 없었다.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("Visual")]
+        public void DLGHOL01_실행_화면을_PNG_로_뜬다()
+        {
+            string path = null;
+            RunSta(() =>
+            {
+                WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
+                WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
+
+                // [X] **행을 직접 물리지 않는다.** 예전 캡처는 `view.Rows = ...` 로 채워
+                //     넣었고, 그래서 초기화가 통째로 끊겨 있던 화면이 사진에서는 멀쩡해
+                //     보였다 (2026-09-11). 이제 fake 를 물려 두고 화면이 **스스로 조회하게**
+                //     둔다 — 목록이 비면 그 자체가 결함이다.
+                using (var screen = new FrmHoliday(
+                    new FakeHolidayService { SearchResult = SampleHolidayRead() },
+                    new FakeCommonStatusService { Result = SampleTodayStatus() }))
+                {
+                    screen.StartPosition = FormStartPosition.Manual;
+                    screen.Location = new Point(-32000, -32000);
+                    screen.Show();
+                    Application.DoEvents();
+
+                    using (var bmp = new Bitmap(screen.Width, screen.Height))
+                    {
+                        screen.DrawToBitmap(bmp, new Rectangle(Point.Empty, bmp.Size));
+                        path = Save(bmp, "dlg_hol_01.png");
+                    }
+
+                    screen.Close();
+                }
+            });
+
+            var info = new FileInfo(path);
+            Assert.IsTrue(info.Exists && info.Length > 10 * 1024,
+                "PNG 가 비었거나 너무 작다: " + path + " (" + (info.Exists ? info.Length : 0) + " bytes)");
+            Console.WriteLine("캡처: " + path);
+        }
+
+        private static OperationResult<HolidayListReadDto> SampleHolidayRead()
+        {
+            return OperationResult<HolidayListReadDto>.Success(new HolidayListReadDto
+            {
+                Result = new DbResult { Success = true, Code = 0, Message = "정상 처리되었습니다." },
+                Rows = SampleHolidays(),
+                // 03 §24.6 — 잔여일수 < 경고임계일수 이면 화면이 만료 경고를 그린다.
+                Registry = new HolidayRegistryDto
+                {
+                    LastHolidayDate = new DateTime(2027, 12, 27),
+                    RemainingDays = 120,
+                    WarningThresholdDays = 180,
+                },
+            });
+        }
+
+        private static OperationResult<CommonWorkStatusDto> SampleTodayStatus()
+        {
+            return OperationResult<CommonWorkStatusDto>.Success(new CommonWorkStatusDto
+            {
+                Today = new DateTime(2026, 9, 11),
+                DayName = "금요일",
+                OpenTime = new TimeSpan(9, 0, 0),
+                CloseTime = new TimeSpan(18, 0, 0),
+                IsBusinessDay = true,
+                IsWithinHours = true,
+                IsWorkAllowed = true,
+                BlockCode = (int)DbCode.Ok,
+                BlockMessage = string.Empty,
+            });
+        }
+
+        private static IList<HolidayListItemDto> SampleHolidays()
+        {
+            return new List<HolidayListItemDto>
+            {
+                new HolidayListItemDto { HolidayDate = new DateTime(2026, 9, 24), HolidayName = "추석", HolidayType = DbHolidayType.Statutory, IsActive = true, Memo = string.Empty, RowVersion = new byte[8] },
+                new HolidayListItemDto { HolidayDate = new DateTime(2026, 9, 25), HolidayName = "추석 다음날", HolidayType = DbHolidayType.Statutory, IsActive = true, Memo = string.Empty, RowVersion = new byte[8] },
+                new HolidayListItemDto { HolidayDate = new DateTime(2026, 10, 3), HolidayName = "개천절", HolidayType = DbHolidayType.Statutory, IsActive = true, Memo = string.Empty, RowVersion = new byte[8] },
+                new HolidayListItemDto { HolidayDate = new DateTime(2026, 10, 5), HolidayName = "대체공휴일", HolidayType = DbHolidayType.Substitute, IsActive = true, Memo = string.Empty, RowVersion = new byte[8] },
+                new HolidayListItemDto { HolidayDate = new DateTime(2026, 10, 17), HolidayName = "센터 정기점검", HolidayType = DbHolidayType.Own, IsActive = true, Memo = "설비 점검", RowVersion = new byte[8] },
+                new HolidayListItemDto { HolidayDate = new DateTime(2026, 11, 7), HolidayName = "창립기념일", HolidayType = DbHolidayType.Own, IsActive = false, Memo = "올해는 정상 운영", RowVersion = new byte[8] },
+            };
+        }
+
+        /// <summary>
+        /// 05 §8.2 `SP-WRK-02`. 예약 변경 진입은 이 조회로 NEX·추가검사구성·정원을 세운다 —
+        /// 아무것도 바꾸지 않은 진입은 `SP-RSV-01` 이 `변경범위=NONE` 으로 RS2~RS5 를 0행으로
+        /// 주므로(05 §9.11), 이것이 없으면 화면이 통째로 빈다.
+        /// </summary>
+        private static FakeWorkService SampleWorkDetailService()
+        {
+            return new FakeWorkService
+            {
+                DetailResult = OperationResult<WorkDetailReadDto>.Success(new WorkDetailReadDto
+                {
+                    Result = new DbResult { Success = true, Code = 0, Message = "정상 처리되었습니다." },
+                    Detail = SampleWorkDetail(),
+                    NexItems = SampleAvailability().NexItems,
+                    AexItems = new List<WorkExamItemDto>(),
+                    Actions = new List<WorkActionDto>(),
+                    AexOptions = SampleAvailability().AexItems,
+                }),
+            };
+        }
+
+        /// <summary>
+        /// 변경 진입의 실제 응답이다 — 아무것도 바꾸지 않았으므로 `변경범위=NONE` 이고
+        /// RS2~RS5 가 전부 0행이다 (05 §9.11). 화면이 그래도 차 있어야 한다.
+        /// </summary>
+        private static ReservationAvailabilityReadDto SampleChangeAvailability()
+        {
+            ReservationAvailabilityReadDto read = SampleAvailability();
+            read.Summary.WorkId = 1;
+            read.Summary.DateChanged = false;
+            read.Summary.SlotChanged = false;
+            read.Summary.AexChanged = false;
+            read.Summary.CanSave = false;
+            read.Summary.BlockMessage = string.Empty;
+            read.Slots = new List<SlotInfoDto>();
+            read.Target = null;
+            read.NexItems = new List<WorkExamItemDto>();
+            read.AexItems = new List<ReservationAexItemDto>();
+            return read;
+        }
+
         private static WorkDetailDto SampleWorkDetail()
         {
             return new WorkDetailDto
@@ -248,25 +416,14 @@ namespace HealthCheckupReservationReception.Tests.Visual
                 WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
                 WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
 
-                var patients = new FakePatientService
-                {
-                    DetailResult = OperationResult<PatientDetailDto>.Success(new PatientDetailDto
-                    {
-                        PatientId = 1000,
-                        ChartNo = "C000001",
-                        Name = "홍길동",
-                        Birthday = "19800101",
-                        Gender = "M",
-                    }),
-                };
-
                 // 모달이다 — 생성자가 곧 03 §3 의 `BeginNewReservation` 이다.
                 //
                 // [X] `SilentReservationForm` 을 쓴다. 실물 폼은 닫을 때 폐기 확인을 띄우고
                 //     캡처가 **사람이 Yes 를 누를 때까지 멈춘다** (2026-09-11 사용자 보고).
                 using (var screen = new SilentReservationForm(
                     new FakeReservationService { Availability = SampleAvailability() },
-                    patients, "접수1번창구", 1000, true))
+                    new FakePatientService(), new FakeWorkService(), "접수1번창구",
+                    FrmReservationTests.Patient(), true))
                 {
                     screen.StartPosition = FormStartPosition.Manual;
                     screen.Location = new Point(-32000, -32000);
@@ -321,7 +478,7 @@ namespace HealthCheckupReservationReception.Tests.Visual
         public void DLGRCP01_실행_화면을_PNG_로_뜬다()
         {
             string path = Capture("dlg_rcp_01.png", () => new FrmReception(
-                new FakeWorkService { DetailResult = SampleReceptionDetail() }, "접수1번창구", 77));
+                new FakeWorkService(), "접수1번창구", SampleReceptionDetail().Value));
 
             var info = new FileInfo(path);
             Assert.IsTrue(info.Exists && info.Length > 5 * 1024,
@@ -335,7 +492,7 @@ namespace HealthCheckupReservationReception.Tests.Visual
         public void DLGRCP02_실행_화면을_PNG_로_뜬다()
         {
             string path = Capture("dlg_rcp_02.png", () => new FrmExtraExam(
-                new FakeWorkService { DetailResult = SampleExtraDetail() }, "접수1번창구", 77));
+                new FakeWorkService(), "접수1번창구", SampleExtraDetail().Value));
 
             var info = new FileInfo(path);
             Assert.IsTrue(info.Exists && info.Length > 5 * 1024,
@@ -535,9 +692,9 @@ namespace HealthCheckupReservationReception.Tests.Visual
         }
 
         // 설계 wf_pat_01.js 의 예시 행 그대로다. 계약이 아니라 눈으로 견주기 위한 값이다.
-        private static IList<PatientListItemDto> SampleRows()
+        private static IList<PatientDto> SampleRows()
         {
-            return new List<PatientListItemDto>
+            return new List<PatientDto>
             {
                 Row(1, "2026-000121", "수검자1", "19800511", "M", "010-0000-0001"),
                 Row(2, "2026-000122", "수검자2", "19721103", "F", "010-0000-0002"),
@@ -546,9 +703,9 @@ namespace HealthCheckupReservationReception.Tests.Visual
             };
         }
 
-        private static PatientListItemDto Row(long id, string chartNo, string name, string birthday, string gender, string mobile)
+        private static PatientDto Row(long id, string chartNo, string name, string birthday, string gender, string mobile)
         {
-            return new PatientListItemDto
+            return new PatientDto
             {
                 PatientId = id,
                 ChartNo = chartNo,
@@ -560,9 +717,9 @@ namespace HealthCheckupReservationReception.Tests.Visual
             };
         }
 
-        private static PatientDetailDto SampleDetail()
+        private static PatientDto SampleDetail()
         {
-            return new PatientDetailDto
+            return new PatientDto
             {
                 PatientId = 3,
                 ChartNo = "2026-000123",

@@ -850,7 +850,8 @@ BEGIN
 END
 GO
 -- 05 §11.3. RSV → CNR. 검사구성 두 컬럼은 지우지 않고, 마감시각은 취소 가능조건이 아니다.
-CREATE OR ALTER PROCEDURE [dbo].[USP_HC_예약_취소]
+CREATE OR ALTER PROCEDURE [dbo].[USP_HC_업무_취소]
+    @업무동작코드 VARCHAR(30),
     @업무ID       BIGINT,
     @행버전   BINARY(8),
     @조작자명 NVARCHAR(50)
@@ -880,12 +881,28 @@ BEGIN
     DECLARE @잠금결과 INT, @자원업무 NVARCHAR(255);
     DECLARE @현재상태코드 CHAR(3) = NULL, @현재행버전 BINARY(8) = NULL;
 
+    -- [R20] 예약취소·접수취소를 한 SP 로 합쳤다. 두 본문은 **주석 말고는 네 리터럴만** 달랐다
+    --       (실측). 그 넷이 이 표다 — 나머지 잠금·검증 순서·결과코드·감사·Result Set 은 같다.
+    --
+    --   업무동작코드           허용 상태   결과 상태
+    --   CANCEL_RESERVATION    RSV        CNR
+    --   CANCEL_RECEPTION      RCP        CNC
+    --
+    -- [X] **동작을 받지 않고 현재 상태에서 유도하지 않는다.** 그러면 접수 건에 `[예약취소]`
+    --     를 눌러도 SP 가 막지 않는다 — 화면이 틀렸을 때 DB 가 세우던 방어선이 사라진다.
+    --     동작코드는 05 §8.2 RS4 가 이미 쓰는 어휘라 새 마법값이 아니다.
+    DECLARE @허용상태 CHAR(3) = NULL, @결과상태 CHAR(3) = NULL;
+
     ----------------------------------------------------------------------------
     -- [1] Transaction 밖 : 필수값. 허용 결과코드 는 0, 100, 500, 502, 601, 308~309 뿐이다.
     ----------------------------------------------------------------------------
     SET @조작자명 = NULLIF(LTRIM(RTRIM(@조작자명)), N'');
 
-    IF @업무ID IS NULL
+    SET @업무동작코드 = NULLIF(UPPER(LTRIM(RTRIM(@업무동작코드))), '');
+
+    IF @업무동작코드 IS NULL
+    BEGIN SET @결과코드 = 100; SET @오류항목 = N'업무동작코드'; END
+    ELSE IF @업무ID IS NULL
     BEGIN SET @결과코드 = 100; SET @오류항목 = N'업무ID'; END
     ELSE IF @행버전 IS NULL
     BEGIN SET @결과코드 = 100; SET @오류항목 = N'행버전'; END
@@ -893,6 +910,20 @@ BEGIN
     BEGIN SET @결과코드 = 100; SET @오류항목 = N'조작자명'; END
 
     IF @결과코드 = 100 SET @결과메시지 = N'필수값을 입력하십시오.';
+
+    IF @결과코드 = 0
+    BEGIN
+        IF @업무동작코드 = 'CANCEL_RESERVATION'
+        BEGIN SET @허용상태 = 'RSV'; SET @결과상태 = 'CNR'; END
+        ELSE IF @업무동작코드 = 'CANCEL_RECEPTION'
+        BEGIN SET @허용상태 = 'RCP'; SET @결과상태 = 'CNC'; END
+        ELSE
+        BEGIN
+            SET @결과코드 = 101; SET @오류항목 = N'업무동작코드';
+            SET @결과메시지 = N'입력값 형식이 올바르지 않습니다.';
+        END
+    END
+
     IF @결과코드 <> 0 SET @성공여부 = 0;
 
     ----------------------------------------------------------------------------
@@ -923,7 +954,7 @@ BEGIN
                 SET @성공여부 = 0; SET @결과코드 = 500; SET @오류항목 = N'업무ID';
                 SET @결과메시지 = N'예약·접수 업무를 찾을 수 없습니다.';
             END
-            ELSE IF @현재상태코드 <> 'RSV'
+            ELSE IF @현재상태코드 <> @허용상태
             BEGIN
                 SET @성공여부 = 0; SET @결과코드 = 502; SET @오류항목 = N'업무ID';
                 SET @결과메시지 = N'현재 상태에서는 요청한 업무를 처리할 수 없습니다.';
@@ -944,16 +975,16 @@ BEGIN
             BEGIN
                 -- 조건부 UPDATE 표준형 (스펙 §24.4). 검사구성 두 컬럼은 건드리지 않는다.
                 UPDATE [dbo].[예약접수]
-                   SET [상태코드]     = 'CNR'
+                   SET [상태코드]     = @결과상태
                      , [최종수정일시] = @저장시각
                  WHERE [업무ID]   = @업무ID
-                   AND [상태코드] = 'RSV'
+                   AND [상태코드] = @허용상태
                    AND [행버전]   = @행버전;
 
                 IF @@ROWCOUNT = 0
                 BEGIN
                     SET @성공여부 = 0;
-                    IF EXISTS (SELECT 1 FROM [dbo].[예약접수] WHERE [업무ID] = @업무ID AND [상태코드] <> 'RSV')
+                    IF EXISTS (SELECT 1 FROM [dbo].[예약접수] WHERE [업무ID] = @업무ID AND [상태코드] <> @허용상태)
                     BEGIN
                         SET @결과코드 = 502; SET @오류항목 = N'업무ID';
                         SET @결과메시지 = N'현재 상태에서는 요청한 업무를 처리할 수 없습니다.';
@@ -1003,7 +1034,7 @@ BEGIN
     --     그래서 '해당 Result Set' 을 결과를 보고하는 RS0 로 읽고 감사를 RS0 뒤·RS1 앞에 둔다.
     --     감사는 여전히 @@TRANCOUNT = 0 지점 · 자체 TRY / 빈 CATCH 다 (06 §21.1 · §43-19).
     ----------------------------------------------------------------------------
-    -- [7] 감사 기록. 바뀐 것은 상태코드 하나다.
+    -- [7] 감사 기록. 바뀐 것은 상태코드 하나다 — 어느 쌍이었는지는 변수가 안다.
     ----------------------------------------------------------------------------
     IF @결과코드 = 0 AND @대상키 IS NOT NULL
     BEGIN
@@ -1011,7 +1042,7 @@ BEGIN
             INSERT INTO [dbo].[변경이력]
                 ([기록일시], [조작자명], [대상테이블], [대상키], [컬럼명], [변경전], [변경후])
             VALUES
-                (@저장시각, @조작자명, N'예약접수', @대상키, N'상태코드', N'RSV', N'CNR');
+                (@저장시각, @조작자명, N'예약접수', @대상키, N'상태코드', @허용상태, @결과상태);
         END TRY
         BEGIN CATCH
         END CATCH

@@ -1,4 +1,11 @@
-﻿using System.Collections.Generic;
+﻿// ── 수검자 리포지토리 ────────────────────────────────────────────────────────
+// 계약과 구현을 한 파일에 둔다. **SqlClient 는 이 폴더 안에서만 산다** (킷 §2).
+//
+//   USP_HC_수검자목록_조회       SP-PAT-01   RS0+RS1  목록·상세·유효업무를 한 번에 (R21)
+//   USP_HC_수검자_등록           SP-PAT-03   RS0+RS1
+//   USP_HC_수검자정보_수정       SP-PAT-04   RS0+RS1
+
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using HealthCheckupReservationReception.Common;
@@ -6,6 +13,21 @@ using HealthCheckupReservationReception.Models;
 
 namespace HealthCheckupReservationReception.Repositories
 {
+    public interface IPatientRepository
+    {
+        /// <summary>SP-PAT-01 `[dbo].[USP_HC_수검자목록_조회]` (05 §7.2).</summary>
+        PatientListReadDto Search(PatientSearchRequest request);
+
+
+        /// <summary>SP-PAT-03 `[dbo].[USP_HC_수검자_등록]` (05 §10.1).</summary>
+        PatientSaveReadDto Register(PatientSaveRequest request);
+
+        /// <summary>SP-PAT-04 `[dbo].[USP_HC_수검자정보_수정]` (05 §10.2).</summary>
+        PatientSaveReadDto Update(PatientSaveRequest request);
+
+        /// <summary>SP-PAT-05 `[dbo].[USP_HC_수검자유효업무_조회]` (05 §7.4).</summary>
+    }
+
     /// <summary>
     /// WF-PAT-01 이 쓰는 두 조회 SP (05 §7.2 · §7.3).
     /// Parameter 는 이름·타입·크기를 계약 그대로 명시한다. AddWithValue 를 쓰지 않는다 (킷 §3).
@@ -39,29 +61,6 @@ namespace HealthCheckupReservationReception.Repositories
                     if (read.Result != null && read.Result.Success && reader.NextResult())
                     {
                         read.Rows = ReadRows(reader);
-                    }
-                }
-            }
-
-            return read;
-        }
-
-        public PatientDetailReadDto ReadDetail(long patientId)
-        {
-            var read = new PatientDetailReadDto();
-            using (var connection = new SqlConnection(_connectionString))
-            using (var command = new SqlCommand("dbo.USP_HC_수검자상세_조회", connection))
-            {
-                command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.Add("@수검자ID", SqlDbType.BigInt).Value = patientId;
-
-                connection.Open();
-                using (SqlDataReader reader = command.ExecuteReader())
-                {
-                    read.Result = DbResultReader.Read(reader);
-                    if (read.Result != null && read.Result.Success && reader.NextResult() && reader.Read())
-                    {
-                        read.Detail = ReadDetail(reader);
                     }
                 }
             }
@@ -217,61 +216,6 @@ namespace HealthCheckupReservationReception.Repositories
             return rows;
         }
 
-        /// <summary>
-        /// SP-PAT-05 (05 §7.4). RS1 은 0행 또는 1행이다 — 0행이 "유효업무 없음" 이고 정상이다.
-        /// </summary>
-        public PatientValidWorkReadDto ReadValidWork(long patientId)
-        {
-            var read = new PatientValidWorkReadDto();
-            using (var connection = new SqlConnection(_connectionString))
-            using (var command = new SqlCommand("dbo.USP_HC_수검자유효업무_조회", connection))
-            {
-                command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.Add("@수검자ID", SqlDbType.BigInt).Value = patientId;
-
-                connection.Open();
-                using (SqlDataReader reader = command.ExecuteReader())
-                {
-                    read.Result = DbResultReader.Read(reader);
-                    if (read.Result != null && read.Result.Success && reader.NextResult())
-                    {
-                        read.Work = ReadValidWorkRow(reader);
-                    }
-                }
-            }
-
-            return read;
-        }
-
-        private static PatientValidWorkDto ReadValidWorkRow(SqlDataReader reader)
-        {
-            // ordinal 을 Read 앞에서 잡는다 — 0행이어도 컬럼 이름 계약이 전건 검증된다.
-            int ordWorkId = reader.GetOrdinal("업무ID");
-            int ordReserveDate = reader.GetOrdinal("예약일");
-            int ordSlotCode = reader.GetOrdinal("시간대코드");
-            int ordStatusCode = reader.GetOrdinal("상태코드");
-            int ordIsToday = reader.GetOrdinal("오늘여부");
-            int ordRowVersion = reader.GetOrdinal("행버전");
-
-            if (!reader.Read())
-            {
-                return null;
-            }
-
-            var rowVersion = new byte[8];
-            reader.GetBytes(ordRowVersion, 0, rowVersion, 0, rowVersion.Length);
-
-            return new PatientValidWorkDto
-            {
-                WorkId = reader.GetInt64(ordWorkId),
-                ReserveDate = reader.GetDateTime(ordReserveDate),
-                SlotCode = reader.GetString(ordSlotCode),
-                StatusCode = reader.GetString(ordStatusCode),
-                IsToday = reader.GetBoolean(ordIsToday),
-                RowVersion = rowVersion,
-            };
-        }
-
         private static byte[] Bytes(SqlDataReader reader, int ordinal)
         {
             var value = new byte[8];
@@ -285,9 +229,9 @@ namespace HealthCheckupReservationReception.Repositories
                 string.IsNullOrWhiteSpace(value) ? (object)System.DBNull.Value : value;
         }
 
-        private static IList<PatientListItemDto> ReadRows(SqlDataReader reader)
+        private static IList<PatientDto> ReadRows(SqlDataReader reader)
         {
-            var rows = new List<PatientListItemDto>();
+            var rows = new List<PatientDto>();
             int ordPatientId = reader.GetOrdinal("수검자ID");
             int ordChartNo = reader.GetOrdinal("차트번호");
             int ordName = reader.GetOrdinal("성명");
@@ -299,10 +243,20 @@ namespace HealthCheckupReservationReception.Repositories
             int ordEmail = reader.GetOrdinal("이메일");
             int ordZipcode = reader.GetOrdinal("우편번호");
             int ordAddress = reader.GetOrdinal("주소");
+            // [R21] 예전 SELECT_수검자상세 가 주던 넷.
+            int ordAddressDetail = reader.GetOrdinal("상세주소");
+            int ordMemo = reader.GetOrdinal("비고");
+            int ordHepatitisB = reader.GetOrdinal("B형간염제외여부");
+            int ordRowVersion = reader.GetOrdinal("행버전");
+            // [R21] 예전 SELECT_수검자유효업무 가 주던 것. 없으면 NULL 이다.
+            int ordValidWorkId = reader.GetOrdinal("유효업무ID");
+            int ordValidDate = reader.GetOrdinal("유효예약일");
+            int ordValidSlot = reader.GetOrdinal("유효시간대코드");
+            int ordValidStatus = reader.GetOrdinal("유효상태코드");
 
             while (reader.Read())
             {
-                rows.Add(new PatientListItemDto
+                rows.Add(new PatientDto
                 {
                     PatientId = reader.GetInt64(ordPatientId),
                     ChartNo = reader.GetString(ordChartNo),
@@ -315,36 +269,23 @@ namespace HealthCheckupReservationReception.Repositories
                     Email = Text(reader, ordEmail),
                     Zipcode = Text(reader, ordZipcode),
                     Address = Text(reader, ordAddress),
+                    AddressDetail = Text(reader, ordAddressDetail),
+                    Memo = Text(reader, ordMemo),
+                    HepatitisBExcluded = reader.GetBoolean(ordHepatitisB),
+                    RowVersion = Bytes(reader, ordRowVersion),
+
+                    // 유효업무가 없으면 null 이다 — 그것이 「예약 가능」의 근거다 (00 RP-06).
+                    ValidWork = reader.IsDBNull(ordValidWorkId) ? null : new PatientValidWorkDto
+                    {
+                        WorkId = reader.GetInt64(ordValidWorkId),
+                        ReserveDate = reader.GetDateTime(ordValidDate),
+                        SlotCode = reader.GetString(ordValidSlot),
+                        StatusCode = reader.GetString(ordValidStatus),
+                    },
                 });
             }
 
             return rows;
-        }
-
-        private static PatientDetailDto ReadDetail(SqlDataReader reader)
-        {
-            int ordRowVersion = reader.GetOrdinal("행버전");
-            var rowVersion = new byte[8];
-            reader.GetBytes(ordRowVersion, 0, rowVersion, 0, rowVersion.Length);
-
-            return new PatientDetailDto
-            {
-                PatientId = reader.GetInt64(reader.GetOrdinal("수검자ID")),
-                ChartNo = reader.GetString(reader.GetOrdinal("차트번호")),
-                Name = reader.GetString(reader.GetOrdinal("성명")),
-                SocialNumber = reader.GetString(reader.GetOrdinal("주민번호")),
-                Birthday = reader.GetString(reader.GetOrdinal("생년월일")),
-                Gender = reader.GetString(reader.GetOrdinal("성별")),
-                MobilePhone = Text(reader, reader.GetOrdinal("휴대전화")),
-                Phone = Text(reader, reader.GetOrdinal("전화번호")),
-                Email = Text(reader, reader.GetOrdinal("이메일")),
-                Zipcode = Text(reader, reader.GetOrdinal("우편번호")),
-                Address = Text(reader, reader.GetOrdinal("주소")),
-                AddressDetail = Text(reader, reader.GetOrdinal("상세주소")),
-                Memo = Text(reader, reader.GetOrdinal("비고")),
-                HepatitisBExcluded = reader.GetBoolean(reader.GetOrdinal("B형간염제외여부")),
-                RowVersion = rowVersion,
-            };
         }
 
         private static string Text(SqlDataReader reader, int ordinal)

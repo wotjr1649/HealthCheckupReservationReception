@@ -33,6 +33,9 @@ namespace HealthCheckupReservationReception.Views
         // [R17] 조회 재진입 가드. 동기 SP 호출 동안 쌓인 클릭이 되돌아오는 것을 막는다.
         private bool _searching;
 
+        // 마지막으로 그린 상세. 모달을 여는 Action 이 그대로 받아 간다 (2026-09-14).
+        private PatientDto _detail;
+
         partial void ConfigureUI();
 
         public UcPatientManagement()
@@ -45,9 +48,11 @@ namespace HealthCheckupReservationReception.Views
         /// Presenter 를 붙인다. UserControl 은 디자이너가 만들어야 하므로 생성자로 받지 않는다
         /// (킷 `references/mvp-wiring.md`).
         /// </summary>
-        public void Attach(IPatientService service, IWorkService workService, ICommonStatusService statusService)
+        // [R21] ICommonStatusService 를 더 받지 않는다 — 목록 SP 가 유효업무를 실어 주면서
+        //       화면이 「오늘이 며칠인가」를 물을 일이 없어졌다.
+        public void Attach(IPatientService service, IWorkService workService)
         {
-            _presenter = new PatientManagementPresenter(this, service, workService, statusService);
+            _presenter = new PatientManagementPresenter(this, service, workService);
         }
 
         /// <summary>
@@ -86,21 +91,32 @@ namespace HealthCheckupReservationReception.Views
 
         public string SocialNumber { get { return txtSocialNumber.Text; } }
 
-        // 03 §5.3 · §7.2 — 달력 칸의 값을 조회조건이 쓰는 yyyyMMdd 로 바꾼다.
-        // 그 규칙은 DLG-PAT-02 와 한 벌이다 (clsSearchConditions).
-        public string Birthday { get { return clsSearchConditions.BirthdayOf(deBirthday); } }
+        /// <summary>
+        /// **2026-09-11 사용자 지시로 조회조건에서 걷었다** — 이 화면에는 입력칸이 없다.
+        ///
+        /// `SP-PAT-01` 은 `@생년월일`·`@휴대전화` 를 여전히 받으므로 계약을 건드리지 않고
+        /// **화면이 묻지 않는 것**으로 끊는다. null 이 가면 SP 가 조건으로 세지 않는다.
+        /// 되살리려면 Designer 에 칸 둘과 `ConfigureUI` 의 `_conditions.Add` 두 줄이면 된다.
+        /// </summary>
+        public string Birthday { get { return null; } }
 
-        public string MobilePhone { get { return txtMobilePhone.Text; } }
+        public string MobilePhone { get { return null; } }
 
-        public IList<PatientListItemDto> Rows
+        public IList<PatientDto> Rows
         {
             set { _picker.Rebind(gcPatientList, value); }
         }
 
-        public PatientDetailDto Detail
+        /// <summary>
+        /// 03 §5.5 우측 상세. **모달이 이것을 받아 열린다** (2026-09-14) — 그리기와 함께
+        /// 보관한다. 행버전까지 들어 있으므로 `[정보수정]` 이 저장에 쓸 수 있다.
+        /// </summary>
+        public PatientDto Detail
         {
+            get { return _detail; }
             set
             {
+                _detail = value;
                 txtDetailChartNo.Text = value == null ? string.Empty : value.ChartNo;
                 txtDetailName.Text = value == null ? string.Empty : value.Name;
                 txtDetailSocialNumber.Text = value == null ? string.Empty : clsPatientText.FormatSocialNumber(value.SocialNumber);
@@ -148,7 +164,7 @@ namespace HealthCheckupReservationReception.Views
         {
             for (int i = 0; i < gvPatientList.RowCount; i++)
             {
-                var row = gvPatientList.GetRow(i) as PatientListItemDto;
+                var row = gvPatientList.GetRow(i) as PatientDto;
                 if (row != null && row.PatientId == patientId)
                 {
                     _picker.Select(i);
@@ -158,10 +174,13 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// 예약이 하나 생겼다 — 목록의 `예약` 칸이 낡았으므로 되읽고 그 줄로 돌아간다.
-        /// MainForm 이 저장 뒤에 부른다.
+        /// **쓰기가 하나 끝났다 — 되읽고 그 줄로 돌아간다.** `MainForm` 이 저장 뒤에 부른다.
+        ///
+        /// [R23] 이름이 `ReloadAfterReservation` 이었다. 예약 저장만 쓰던 자리인데 수검자
+        /// 등록·수정도 같은 것이 필요해졌다 — 하는 일이 하나이므로 이름만 넓혔다
+        /// (2026-09-14 사용자 지시). 낡는 칸이 예약이든 이름이든 답은 같다: 다시 읽는다.
         /// </summary>
-        public void ReloadAfterReservation(long patientId, string notice)
+        public void ReloadAfterSave(long patientId, string notice)
         {
             if (_presenter == null)
             {
@@ -197,7 +216,7 @@ namespace HealthCheckupReservationReception.Views
         {
             get
             {
-                var row = _picker.Row as PatientListItemDto;
+                var row = _picker.Row as PatientDto;
                 return row == null ? (long?)null : row.PatientId;
             }
         }
@@ -210,7 +229,7 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         public ChangeLogTarget CurrentLogTarget()
         {
-            var row = _picker.Row as PatientListItemDto;
+            var row = _picker.Row as PatientDto;
             if (row == null)
             {
                 return null;
@@ -328,7 +347,7 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>03 §5.5 — 행 선택 즉시 우측 상세를 갱신한다. 판정은 Presenter 가 한다.</summary>
         private void Picker_PickChanged(object sender, EventArgs e)
         {
-            var row = _picker.Row as PatientListItemDto;
+            var row = _picker.Row as PatientDto;
             EventHandler<long?> handler = SelectionChanged;
             if (handler != null)
             {

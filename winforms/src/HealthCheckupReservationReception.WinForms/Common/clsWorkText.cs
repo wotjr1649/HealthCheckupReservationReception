@@ -45,9 +45,8 @@ namespace HealthCheckupReservationReception.Common
         ///
         /// [X] **`잔여자리` 는 SP 마다 뜻이 다르다.** 여기(SP-WRK-02 RS1)는
         ///     `MAX(0, 정원 - 현재인원)` 이라 `2 / 20 (잔여 18)` 이 그대로 맞는다.
-        ///     예약 화면의 것은 `MAX(0, 정원 - **적용후인원**)` 이고 신규는 적용후인원이
-        ///     현재인원+1 이라 `2 / 20 (잔여 17)` 이 된다 — 같은 문구를 쓰면 숫자가 안 맞는
-        ///     것처럼 읽힌다(실측 2026-09-11 사용자 보고). 그래서 함수를 둘로 갈랐다.
+        ///     예약 화면(SP-RSV-01 RS2)의 것은 `MAX(0, 정원 - **적용후인원**)` 이라 뜻이
+        ///     다르다 — 그쪽은 <see cref="FormatCapacityBeforeBooking"/> 를 쓴다.
         /// </summary>
         public static string FormatCapacity(int current, int capacity, int remaining)
         {
@@ -55,15 +54,21 @@ namespace HealthCheckupReservationReception.Common
         }
 
         /// <summary>
-        /// 03 §8.3 예약 화면의 시간대 줄. `잔여자리` 가 **이 예약을 넣은 뒤**의 수다
-        /// (05 §9.7 `잔여자리 = MAX(0, 정원 - 적용후인원)`, 신규는 `적용후인원 = 현재인원 + 1`).
+        /// 03 §8.3 예약 화면의 시간대 줄. **이 예약을 넣기 전**의 빈자리를 적는다
+        /// (2026-09-12 사용자 지시).
         ///
-        /// 앞의 `현재인원 / 정원` 과 기준이 다르므로 그 사실을 글자로 적는다 — 숫자를 화면이
-        /// 고쳐 계산하지 않는다.
+        /// [X] **DB 의 `잔여자리` 를 쓰지 않는다.** SP-RSV-01 RS2 의 그 값은
+        ///     `MAX(0, 정원 - 적용후인원)` 이고 신규는 `적용후인원 = 현재인원 + 1` 이라
+        ///     (05 §9.7) `1 / 20 (잔여 18)` 처럼 앞의 두 수와 하나 어긋나 보인다. 그래서
+        ///     같은 계약이 준 `정원`·`현재인원` 만으로 예약 전 빈자리를 적는다 — 두 수의
+        ///     차이일 뿐 판정이 아니므로 규칙이 화면으로 새지 않는다.
         /// </summary>
-        public static string FormatCapacityAfterBooking(int current, int capacity, int remainingAfter)
+        public static string FormatCapacityBeforeBooking(int current, int capacity)
         {
-            return Counts(current, capacity) + " (예약 후 잔여 " + Number(remainingAfter) + ")";
+            int before = capacity - current;
+            if (before < 0) { before = 0; }     // 05 §9.7 의 MAX(0, ...) 와 같은 바닥
+
+            return Counts(current, capacity) + " (예약 전 잔여 " + Number(before) + ")";
         }
 
         private static string Counts(int current, int capacity)

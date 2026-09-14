@@ -60,6 +60,8 @@ BEGIN
     SET NOCOUNT ON;
 
     DECLARE @서버시각 DATETIME2(7) = SYSDATETIME();
+    -- [R21] 유효업무 판정 기준일. RP-06 의 유효집합이 `예약일 >= DB 현재일` 이다.
+    DECLARE @오늘날짜 DATE = CONVERT(DATE, @서버시각);
 
     -- 1. 정규화 — 공백 제거, 빈 문자열은 NULL, 전화·주민번호의 '-' 제거
     SET @차트번호      = NULLIF(LTRIM(RTRIM(@차트번호)), N'');
@@ -133,152 +135,53 @@ BEGIN
         , [이메일]        = CAST(p.[이메일]        AS VARCHAR(200))
         , [우편번호]      = CAST(p.[우편번호]      AS VARCHAR(10))
         , [주소]      = CAST(p.[주소]      AS NVARCHAR(200))
+        -- [R21] 여기부터가 예전 SELECT_수검자상세(SP-PAT-02) 가 더 주던 넷이다.
+        --       상세를 보려고 SP 를 한 번 더 부르던 것을 없앴다 (2026-09-14 사용자 지시).
+        , [상세주소]    = CAST(p.[상세주소]    AS NVARCHAR(200))
+        , [비고]        = CAST(p.[비고]        AS NVARCHAR(MAX))
+        , [B형간염제외여부] = CAST(p.[B형간염제외여부] AS BIT)
+        , [행버전]      = CAST(p.[행버전]      AS BINARY(8))
+        -- [R21] 여기부터가 예전 SELECT_수검자유효업무(SP-PAT-05) 가 주던 것이다.
+        --       RP-06 유효업무는 `예약일 >= 오늘 AND 상태 IN (RSV, RCP)` 하나뿐이고,
+        --       그 판정을 화면이 두 번 조회해 이어 붙이던 것을 DB 로 되돌렸다.
+        -- [!] 없으면 NULL 이다. 「예약 가능」을 DB 가 말하는 것이 아니라 **유효업무가 있는지**를
+        --     말한다 — 가능/불가 문구는 화면이 만든다 (03 §5.5).
+        , [유효업무ID]   = CAST(v.[업무ID]     AS BIGINT)
+        , [유효예약일]   = CAST(v.[예약일]     AS DATE)
+        , [유효시간대코드] = CAST(v.[시간대코드] AS CHAR(2))
+        , [유효상태코드] = CAST(v.[상태코드]   AS CHAR(3))
     FROM [dbo].[수검자] p
+    -- [R21] **CROSS/OUTER APPLY 를 쓰지 않는다** (2026-09-14 사용자 지시). 유효업무만 미리
+    --       추린 파생표를 만들어 수검자ID 로 붙인다 — 읽는 법이 한 줄이다:
+    --       "왼쪽에 짝이 없으면 NULL".
+    --       가장 이른 예약일 하나를 고르는 이유는 RP-06 이 유효업무를 최대 1건으로 보기
+    --       때문이다. 2건 이상이면 그 불변조건이 이미 깨진 상태이고 SP-RSV-02 가 701 로 막는다.
+    --       IX_예약접수_PATIENT_STATE_DATE([수검자ID],[상태코드],[예약일]) 가 이 모양을 위한
+    --       인덱스다 (04 §8.2.3).
+    -- [!] **한 걸음인 이유 — 실측이다.** 「업무ID 를 먼저 고르고 그 ID 로 한 행을 다시 붙인다」
+    --     는 두 걸음도 써 봤다. 값이 언제나 한 행에서 온다는 점은 그쪽이 낫지만, 수검자마다
+    --     예약접수를 한 번씩 찾아 들어가 **논리적 읽기가 2 에서 204 가 됐다**(수검자 40행 기준).
+    --     그래서 한 걸음으로 되돌렸다. 여기 `MIN()` 넷이 서로 다른 행에서 올 수 있는 경우는
+    --     한 수검자에게 유효업무가 2건 이상일 때뿐인데, 그것은 RP-06 불변조건이 이미 깨진
+    --     상태다(`SP-RSV-02` 가 저장 시점에 `701` 로 막는다). 그때도 `유효업무ID` 는 채워지므로
+    --     화면은 여전히 **예약 불가**로 판정한다 — 틀리는 것은 함께 보여 주는 일정 문구뿐이다.
+    LEFT JOIN (
+        SELECT w.[수검자ID]
+             , [업무ID]     = MIN(w.[업무ID])
+             , [예약일]     = MIN(w.[예약일])
+             , [시간대코드] = MIN(w.[시간대코드])
+             , [상태코드]   = MIN(w.[상태코드])
+          FROM [dbo].[예약접수] w
+         WHERE w.[예약일] >= @오늘날짜
+           AND w.[상태코드] IN ('RSV', 'RCP')
+         GROUP BY w.[수검자ID]
+    ) v ON v.[수검자ID] = p.[수검자ID]
     WHERE (@차트번호      IS NULL OR p.[차트번호]      LIKE @차트번호패턴   )
       AND (@성명         IS NULL OR p.[성명]         LIKE @성명패턴       )
       AND (@주민번호 IS NULL OR p.[주민번호] =  @주민번호)
       AND (@생년월일     IS NULL OR p.[생년월일]     =  @생년월일)
       AND (@휴대전화  IS NULL OR REPLACE(p.[휴대전화], '-', '') = @휴대전화)
     ORDER BY p.[성명] ASC, p.[생년월일] ASC, p.[차트번호] ASC;
-END
-GO
--- 허용 결과코드 0 / 100 / 200 (05 §13). RS1 은 정확히 1행이다.
-CREATE OR ALTER PROCEDURE [dbo].[USP_HC_수검자상세_조회]
-    @수검자ID BIGINT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @서버시각 DATETIME2(7) = SYSDATETIME();
-
-    IF @수검자ID IS NULL
-    BEGIN
-        SELECT
-              CAST(0 AS BIT)                    AS [성공여부]
-            , CAST(100 AS INT)                  AS [결과코드]
-            , CAST(N'필수값을 입력하십시오.' AS NVARCHAR(300)) AS [결과메시지]
-            , CAST(N'수검자ID' AS NVARCHAR(50))  AS [오류항목]
-            , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-        RETURN;
-    END
-
-    IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [수검자ID] = @수검자ID)
-    BEGIN
-        SELECT
-              CAST(0 AS BIT)                    AS [성공여부]
-            , CAST(200 AS INT)                  AS [결과코드]
-            , CAST(N'수검자를 찾을 수 없습니다.' AS NVARCHAR(300)) AS [결과메시지]
-            , CAST(N'수검자ID' AS NVARCHAR(50))  AS [오류항목]
-            , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-        RETURN;
-    END
-
-    -- RS0
-    SELECT
-          CAST(1 AS BIT)                    AS [성공여부]
-        , CAST(0 AS INT)                    AS [결과코드]
-        , CAST(N'정상 처리되었습니다.' AS NVARCHAR(300)) AS [결과메시지]
-        , CAST(NULL AS NVARCHAR(50))         AS [오류항목]
-        , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-
-    -- RS1 (15컬럼, 정확히 1행)
-    SELECT
-          [수검자ID]     = CAST(p.[수검자ID]     AS BIGINT)
-        , [차트번호]       = CAST(p.[차트번호]       AS NVARCHAR(100))
-        , [성명]          = CAST(p.[성명]          AS NVARCHAR(100))
-        , [주민번호]  = CAST(p.[주민번호]  AS VARCHAR(13))
-        , [생년월일]      = CAST(p.[생년월일]      AS VARCHAR(8))
-        , [성별]        = CAST(p.[성별]        AS CHAR(1))
-        , [휴대전화]   = CAST(p.[휴대전화]     AS VARCHAR(13))
-        , [전화번호]         = CAST(p.[전화번호]     AS VARCHAR(13))
-        , [이메일]         = CAST(p.[이메일]         AS VARCHAR(200))
-        , [우편번호]       = CAST(p.[우편번호]       AS VARCHAR(10))
-        , [주소]       = CAST(p.[주소]       AS NVARCHAR(200))
-        , [상세주소] = CAST(p.[상세주소] AS NVARCHAR(200))
-        , [비고]          = CAST(p.[비고]          AS NVARCHAR(MAX))
-        -- [X] 15컬럼이다. R3 이 05 §9.2 RS1 에 B형간염제외여부 를 넣었는데 SQL 이 따라오지 않았고,
-        --     expected-contracts.json 도 14컬럼으로 같이 틀려 있어 게이트가 영원히 못 잡았다.
-        --     DLG-PAT-01 수정 화면이 현재값을 못 받으면 @B형간염제외여부(NULL 불가)에
-        --     체크박스 초기값 0 이 실려 제외 플래그가 조용히 1->0 이 된다 (05 §9.2 명문).
-        , [B형간염제외여부] = CAST(p.[B형간염제외여부] AS BIT)
-        , [행버전]        = CAST(p.[행버전]        AS BINARY(8))
-    FROM [dbo].[수검자] p
-    WHERE p.[수검자ID] = @수검자ID;
-END
-GO
--- 허용 결과코드 0 / 100 / 200 / 701. RP-06 은 유효업무를 0~1건으로 제한한다.
--- 2건 이상은 조회로 고칠 수 없는 데이터 손상이므로 701 로 알린다 (00 RP-06, 05 §7.4).
-CREATE OR ALTER PROCEDURE [dbo].[USP_HC_수검자유효업무_조회]
-    @수검자ID BIGINT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @서버시각 DATETIME2(7) = SYSDATETIME();
-    DECLARE @오늘날짜 DATE = CONVERT(DATE, @서버시각);
-
-    IF @수검자ID IS NULL
-    BEGIN
-        SELECT
-              CAST(0 AS BIT)                    AS [성공여부]
-            , CAST(100 AS INT)                  AS [결과코드]
-            , CAST(N'필수값을 입력하십시오.' AS NVARCHAR(300)) AS [결과메시지]
-            , CAST(N'수검자ID' AS NVARCHAR(50))  AS [오류항목]
-            , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-        RETURN;
-    END
-
-    IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [수검자ID] = @수검자ID)
-    BEGIN
-        SELECT
-              CAST(0 AS BIT)                    AS [성공여부]
-            , CAST(200 AS INT)                  AS [결과코드]
-            , CAST(N'수검자를 찾을 수 없습니다.' AS NVARCHAR(300)) AS [결과메시지]
-            , CAST(N'수검자ID' AS NVARCHAR(50))  AS [오류항목]
-            , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-        RETURN;
-    END
-
-    DECLARE @건수 INT = (SELECT COUNT(*) FROM [dbo].[예약접수] w
-                         WHERE w.[수검자ID] = @수검자ID
-                           AND w.[예약일] >= @오늘날짜
-                           AND w.[상태코드] IN ('RSV','RCP'));
-    IF @건수 >= 2
-    BEGIN
-        SELECT
-              CAST(0 AS BIT)                    AS [성공여부]
-            , CAST(701 AS INT)                  AS [결과코드]
-            , CAST(N'예약·접수 업무의 검사구성 또는 유효업무 데이터가 올바르지 않습니다.' AS NVARCHAR(300)) AS [결과메시지]
-            , CAST(N'업무ID' AS NVARCHAR(50))     AS [오류항목]
-            , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-        RETURN;
-    END
-
-    -- RS0
-    SELECT
-          CAST(1 AS BIT)                    AS [성공여부]
-        , CAST(0 AS INT)                    AS [결과코드]
-        , CAST(N'정상 처리되었습니다.' AS NVARCHAR(300)) AS [결과메시지]
-        , CAST(NULL AS NVARCHAR(50))         AS [오류항목]
-        , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-
-    -- RS1 (7컬럼, 0행 또는 1행)
-    SELECT
-          [업무ID]          = CAST(w.[업무ID] AS BIGINT)
-        , [예약일] = CAST(w.[예약일] AS DATE)
-        , [시간대코드]        = CAST(w.[시간대코드] AS CHAR(2))
-        , [상태코드]          = CAST(w.[상태코드] AS CHAR(3))
-        , [상태명]      = CAST(CASE w.[상태코드]
-                                     WHEN 'RSV' THEN N'예약'
-                                     WHEN 'RCP' THEN N'접수완료'
-                                     WHEN 'CNR' THEN N'예약취소'
-                                     ELSE N'접수취소' END AS NVARCHAR(10))
-        , [오늘여부]         = CAST(CASE WHEN w.[예약일] = @오늘날짜 THEN 1 ELSE 0 END AS BIT)
-        , [행버전]      = CAST(w.[행버전] AS BINARY(8))
-    FROM [dbo].[예약접수] w
-    WHERE w.[수검자ID] = @수검자ID
-      AND w.[예약일] >= @오늘날짜
-      AND w.[상태코드] IN ('RSV','RCP');
 END
 GO
 -- 허용 결과코드 0 / 101 / 103 / 104 (05 §8.1).
@@ -426,6 +329,30 @@ BEGIN
         RETURN;
     END
 
+    -- [R23] **그 업무 한 행을 먼저 변수로 꺼낸다** (2026-09-14 사용자 지시).
+    --   이 SP 는 `@업무ID` 하나로 열리고 그 업무는 정확히 1행이다. 그런데 RS1~RS5 가
+    --   저마다 `FROM [예약접수] w … WHERE w.[업무ID] = @업무ID` 를 다시 쓰면서, 행마다
+    --   달라지는 값을 TVF·파생표에 넘기느라 `CROSS APPLY` 를 네 번 썼다.
+    --   한 번 꺼내 두면 인자가 전부 **변수**가 되어 APPLY 가 필요 없어진다 —
+    --   상관(correlated)이 아니게 되기 때문이다.
+    DECLARE @수검자ID BIGINT, @예약일 DATE, @시간대코드 CHAR(2), @상태코드 CHAR(3);
+    DECLARE @저장국가검사 NVARCHAR(400), @저장추가검사 NVARCHAR(400), @현재인원 INT;
+
+    SELECT @수검자ID   = w.[수검자ID]
+         , @예약일     = w.[예약일]
+         , @시간대코드 = w.[시간대코드]
+         , @상태코드   = w.[상태코드]
+         , @저장국가검사 = ISNULL(w.[국가검사항목], N'')
+         , @저장추가검사 = ISNULL(w.[추가검사항목], N'')
+      FROM [dbo].[예약접수] w
+     WHERE w.[업무ID] = @업무ID;
+
+    -- 그 날짜·시간대에 이미 잡힌 건수 (00 CP-03 정원 20).
+    SET @현재인원 = (SELECT COUNT(*) FROM [dbo].[예약접수] x
+                      WHERE x.[예약일]     = @예약일
+                        AND x.[시간대코드] = @시간대코드
+                        AND x.[상태코드] IN ('RSV', 'RCP'));
+
     -- RS0
     SELECT
           CAST(1 AS BIT)                    AS [성공여부]
@@ -452,15 +379,11 @@ BEGIN
                                      WHEN 'CNR' THEN N'예약취소'
                                      ELSE N'접수취소' END AS NVARCHAR(10))
         , [정원]        = CAST(20 AS INT)
-        , [현재인원]    = CAST(c.[건수] AS INT)
-        , [잔여자리]       = CAST(CASE WHEN 20 - c.[건수] < 0 THEN 0 ELSE 20 - c.[건수] END AS INT)
+        , [현재인원]    = CAST(@현재인원 AS INT)
+        , [잔여자리]       = CAST(CASE WHEN 20 - @현재인원 < 0 THEN 0 ELSE 20 - @현재인원 END AS INT)
         , [행버전]      = CAST(w.[행버전] AS BINARY(8))
     FROM [dbo].[예약접수] w
     JOIN [dbo].[수검자] p ON p.[수검자ID] = w.[수검자ID]
-    CROSS APPLY (SELECT [건수] = COUNT(*) FROM [dbo].[예약접수] x
-                  WHERE x.[예약일] = w.[예약일]
-                    AND x.[시간대코드]    = w.[시간대코드]
-                    AND x.[상태코드] IN ('RSV','RCP')) c
     WHERE w.[업무ID] = @업무ID;
 
     -- RS2 국가검사항목 — 실제 저장된 NEX 만
@@ -469,10 +392,9 @@ BEGIN
         , [검사항목명] = CAST(m.[검사항목명] AS NVARCHAR(100))
         , [국가검사구분] = CAST(CASE WHEN m.[국가검사규칙코드] = 'NEX-01' THEN 'BASIC' ELSE 'CONDITIONAL' END AS VARCHAR(12))
         , [국가검사규칙코드] = CAST(m.[국가검사규칙코드] AS VARCHAR(10))
-    FROM [dbo].[예약접수] w
-    JOIN [dbo].[검사코드] m
-      ON N',' + ISNULL(w.[국가검사항목], N'') + N',' LIKE N'%,' + m.[검사항목코드] + N',%'
-    WHERE w.[업무ID] = @업무ID
+    -- [R23] 저장 NEX 문자열은 위에서 꺼내 두었다. 예약접수를 다시 읽지 않는다.
+    FROM [dbo].[검사코드] m
+    WHERE N',' + @저장국가검사 + N',' LIKE N'%,' + m.[검사항목코드] + N',%'
     ORDER BY m.[검사항목코드] ASC;
 
     -- RS3 추가검사항목 — 실제 저장된 AEX 만
@@ -480,17 +402,40 @@ BEGIN
           [추가검사코드] = CAST(m.[추가검사코드] AS VARCHAR(10))
         , [검사항목코드]   = CAST(m.[검사항목코드] AS VARCHAR(10))
         , [검사항목명]   = CAST(m.[검사항목명] AS NVARCHAR(100))
-    FROM [dbo].[예약접수] w
-    JOIN [dbo].[검사코드] m
-      ON N',' + ISNULL(w.[추가검사항목], N'') + N',' LIKE N'%,' + m.[검사항목코드] + N',%'
-    WHERE w.[업무ID] = @업무ID
+    -- [R23] 저장 AEX 문자열도 같다.
+    FROM [dbo].[검사코드] m
+    WHERE N',' + @저장추가검사 + N',' LIKE N'%,' + m.[검사항목코드] + N',%'
     ORDER BY m.[추가검사코드] ASC;
 
     -- RS4 가능한업무 — 정확히 5행. 순서는 05 §8.2 의 고정 목록이므로 정렬순서 로 강제한다.
-    --   상관 인자를 받는 TVF 는 CROSS APPLY 여야 한다. CROSS JOIN 으로 쓰면
-    --   같은 FROM 절 다른 테이블의 컬럼을 인자로 못 받아 Msg 4104 가 난다.
+    --
+    -- [R23] **두 걸음으로 읽는다.** 먼저 동작 다섯에 사유코드를 매긴 표(`사유`)를 만들고,
+    --       그 다음 그 표를 화면 문구로 옮긴다. 예전에는 한 SELECT 안에서 `CROSS APPLY` 둘로
+    --       했는데, 사유코드 CASE 를 세 칸(허용여부·사유코드·사유메시지)이 쓰기 때문에
+    --       한 번만 계산하려고 APPLY 를 쓴 것이었다. CTE 가 같은 일을 더 읽기 쉽게 한다.
+    --
+    -- [!] `UFN_HC_일정확인` 이 `CROSS JOIN` 인 것은 인자가 전부 **변수**이기 때문이다.
+    --     행마다 다른 값을 넘길 때는 `CROSS JOIN` 이 Msg 4104 로 막히고 `APPLY` 여야 한다.
+    ;WITH [사유] AS (
+        SELECT [정렬순서]     = a.[정렬순서]
+             , [업무동작코드] = a.[업무동작코드]
+             , [산출사유코드] =
+          CASE
+              WHEN a.[업무동작코드] IN ('EDIT_RESERVATION','CANCEL_RESERVATION','START_RECEPTION')
+                   AND @상태코드 <> 'RSV'                                     THEN 502
+              WHEN a.[업무동작코드] IN ('EDIT_EXTRA','CANCEL_RECEPTION')
+                   AND @상태코드 <> 'RCP'                                     THEN 502
+              WHEN s.[업무가능코드] <> 0                                                THEN s.[업무가능코드]
+              WHEN a.[업무동작코드] = 'START_RECEPTION' AND @예약일 <> @오늘날짜     THEN 503
+              WHEN a.[업무동작코드] = 'START_RECEPTION' AND s.[마감경과여부] = 1              THEN 304
+              ELSE 0
+          END
+          FROM (VALUES (1,'EDIT_RESERVATION'),(2,'CANCEL_RESERVATION'),(3,'START_RECEPTION'),
+                       (4,'EDIT_EXTRA'),(5,'CANCEL_RECEPTION')) a([정렬순서], [업무동작코드])
+          CROSS JOIN [dbo].[UFN_HC_일정확인](@서버시각, @예약일, @시간대코드, 'RECEPTION') s
+    )
     SELECT
-          [업무동작코드]    = CAST(a.[업무동작코드] AS VARCHAR(30))
+          [업무동작코드]    = CAST(r.[업무동작코드] AS VARCHAR(30))
         , [허용여부]       = CAST(CASE WHEN r.[산출사유코드] = 0 THEN 1 ELSE 0 END AS BIT)
         , [사유코드]    = CAST(r.[산출사유코드] AS INT)
         , [사유메시지] = CAST(CASE r.[산출사유코드]
@@ -500,23 +445,8 @@ BEGIN
                                    WHEN 502 THEN N'현재 상태에서는 요청한 업무를 처리할 수 없습니다.'
                                    WHEN 503 THEN N'예약일이 오늘인 업무만 접수할 수 있습니다.'
                                    ELSE N'' END AS NVARCHAR(300))
-    FROM [dbo].[예약접수] w
-    CROSS JOIN (VALUES (1,'EDIT_RESERVATION'),(2,'CANCEL_RESERVATION'),(3,'START_RECEPTION'),
-                       (4,'EDIT_EXTRA'),(5,'CANCEL_RECEPTION')) a([정렬순서], [업무동작코드])
-    CROSS APPLY [dbo].[UFN_HC_일정확인](@서버시각, w.[예약일], w.[시간대코드], 'RECEPTION') s
-    CROSS APPLY (SELECT [산출사유코드] =
-          CASE
-              WHEN a.[업무동작코드] IN ('EDIT_RESERVATION','CANCEL_RESERVATION','START_RECEPTION')
-                   AND w.[상태코드] <> 'RSV'                                   THEN 502
-              WHEN a.[업무동작코드] IN ('EDIT_EXTRA','CANCEL_RECEPTION')
-                   AND w.[상태코드] <> 'RCP'                                   THEN 502
-              WHEN s.[업무가능코드] <> 0                                                THEN s.[업무가능코드]
-              WHEN a.[업무동작코드] = 'START_RECEPTION' AND w.[예약일] <> @오늘날짜   THEN 503
-              WHEN a.[업무동작코드] = 'START_RECEPTION' AND s.[마감경과여부] = 1              THEN 304
-              ELSE 0
-          END) r
-    WHERE w.[업무ID] = @업무ID
-    ORDER BY a.[정렬순서];
+    FROM [사유] r
+    ORDER BY r.[정렬순서];
 
     -- RS5 추가검사구성 — 정확히 7행 (05 §8.2, R18).
     --   RS3 은 **저장된** AEX 만 준다. 고치는 화면(DLG-RCP-02)은 안 고른 것까지 일곱을
@@ -530,15 +460,14 @@ BEGIN
           [추가검사코드] = CAST(x.[추가검사코드] AS VARCHAR(10))
         , [검사항목코드]   = CAST(x.[검사항목코드] AS VARCHAR(10))
         , [검사항목명]   = CAST(x.[검사항목명] AS NVARCHAR(100))
-        , [선택여부]     = CAST(CASE WHEN N',' + ISNULL(w.[추가검사항목], N'') + N','
+        , [선택여부]     = CAST(CASE WHEN N',' + @저장추가검사 + N','
                                        LIKE N'%,' + x.[검사항목코드] + N',%' THEN 1 ELSE 0 END AS BIT)
         , [선택가능]     = CAST(x.[선택가능] AS BIT)
         , [사유코드]    = CAST(x.[사유코드] AS INT)
         , [사유메시지] = CAST(x.[사유메시지] AS NVARCHAR(300))
-    FROM [dbo].[예약접수] w
-    CROSS APPLY [dbo].[UFN_HC_추가검사확인](w.[수검자ID], w.[예약일], w.[업무ID], 1,
+    -- [R23] 인자가 전부 변수라 `CROSS JOIN` 이다. 예약접수를 다시 읽지 않는다.
+    FROM [dbo].[UFN_HC_추가검사확인](@수검자ID, @예약일, @업무ID, 1,
                    0, 0, 0, 0, 0, 0, 0) x
-    WHERE w.[업무ID] = @업무ID
     ORDER BY x.[추가검사코드] ASC;
 END
 GO
@@ -806,37 +735,55 @@ BEGIN
         [현재인원] INT, [적용후인원] INT, [잔여자리] INT, [운영여부] BIT,
         [마감시각] TIME(0), [마감경과여부] BIT, [선택가능] BIT, [차단코드] INT, [차단메시지] NVARCHAR(300));
 
+    -- [R23] **세던 것을 미리 세어 둔다.** 예전에는 `CROSS APPLY` 셋이었는데 그중 둘은
+    --       TVF 가 아니라 파생표였다 — 그 날짜의 시간대별 예약 건수와, 거기서 나오는 적용후.
+    --       아래 세 변수가 그 값을 갖고, AM/PM 두 행은 자기 것을 고르기만 한다.
+    DECLARE @AM건수 INT = (SELECT COUNT(*) FROM [dbo].[예약접수] x
+                            WHERE x.[예약일] = @예약일 AND x.[시간대코드] = 'AM'
+                              AND x.[상태코드] IN ('RSV', 'RCP'));
+    DECLARE @PM건수 INT = (SELECT COUNT(*) FROM [dbo].[예약접수] x
+                            WHERE x.[예약일] = @예약일 AND x.[시간대코드] = 'PM'
+                              AND x.[상태코드] IN ('RSV', 'RCP'));
+
+    -- 변경이면 **자기 자신을 빼고** 센다 (05 §9.6). 그 업무가 이 날짜의 어느 시간대에 있는가 —
+    -- 없으면 NULL 이고 아래 비교가 UNKNOWN 이 되어 빼지 않는다. 신규(@업무ID IS NULL)와 같다.
+    DECLARE @기존시간대 CHAR(2) = NULL;
+    IF @업무ID IS NOT NULL
+        SELECT @기존시간대 = y.[시간대코드]
+          FROM [dbo].[예약접수] y
+         WHERE y.[업무ID] = @업무ID
+           AND y.[예약일] = @예약일
+           AND y.[상태코드] IN ('RSV', 'RCP');
+
+    -- [!] `UFN_HC_일정확인` 만 `CROSS APPLY` 로 남는다. 인자에 `t.[시간대코드]` 가 들어가
+    --     **행마다 값이 다르기** 때문이다 — 그럴 때 `CROSS JOIN` 은 Msg 4104 로 막힌다.
+    --     이 SP 에서 APPLY 는 이 한 줄뿐이고, 뜻은 *"행마다 인자를 바꿔 함수를 부른다"* 다.
+    ;WITH [시간대] AS (
+        SELECT [시간대코드] = v.[시간대코드]
+             , [건수]       = CASE v.[시간대코드] WHEN 'AM' THEN @AM건수 ELSE @PM건수 END
+             , [적용후]     = CASE v.[시간대코드] WHEN 'AM' THEN @AM건수 ELSE @PM건수 END
+                              - CASE WHEN @기존시간대 = v.[시간대코드] THEN 1 ELSE 0 END + 1
+          FROM (VALUES ('AM'), ('PM')) v([시간대코드])
+    )
     INSERT INTO @시간대목록
     SELECT
-          v.[시간대코드]
-        , CASE v.[시간대코드] WHEN 'AM' THEN N'오전' ELSE N'오후' END
+          t.[시간대코드]
+        , CASE t.[시간대코드] WHEN 'AM' THEN N'오전' ELSE N'오후' END
         , 20
-        , c.[건수]
-        , a.[적용후]
-        , CASE WHEN 20 - a.[적용후] < 0 THEN 0 ELSE 20 - a.[적용후] END
+        , t.[건수]
+        , t.[적용후]
+        , CASE WHEN 20 - t.[적용후] < 0 THEN 0 ELSE 20 - t.[적용후] END
         , s.[운영여부]
         , s.[마감시각]
         , s.[마감경과여부]
-        , CASE WHEN s.[사유코드] = 0 AND a.[적용후] <= 20 THEN 1 ELSE 0 END
+        , CASE WHEN s.[사유코드] = 0 AND t.[적용후] <= 20 THEN 1 ELSE 0 END
         , CASE WHEN s.[사유코드] <> 0 THEN s.[사유코드]
-               WHEN a.[적용후] > 20 THEN 305 ELSE 0 END
+               WHEN t.[적용후] > 20 THEN 305 ELSE 0 END
         , CASE WHEN s.[사유코드] <> 0 THEN s.[사유메시지]
-               WHEN a.[적용후] > 20 THEN N'해당 시간대의 예약 정원이 마감되었습니다.'
+               WHEN t.[적용후] > 20 THEN N'해당 시간대의 예약 정원이 마감되었습니다.'
                ELSE N'' END
-    FROM (VALUES ('AM'),('PM')) v([시간대코드])
-    CROSS APPLY [dbo].[UFN_HC_일정확인](@서버시각, @예약일, v.[시간대코드], @마감구분) s
-    CROSS APPLY (SELECT [건수] = COUNT(*) FROM [dbo].[예약접수] x
-                  WHERE x.[예약일] = @예약일
-                    AND x.[시간대코드] = v.[시간대코드]
-                    AND x.[상태코드] IN ('RSV','RCP')) c
-    CROSS APPLY (SELECT [적용후] = c.[건수]
-                   - CASE WHEN @업무ID IS NOT NULL
-                           AND EXISTS (SELECT 1 FROM [dbo].[예약접수] y
-                                        WHERE y.[업무ID] = @업무ID
-                                          AND y.[예약일] = @예약일
-                                          AND y.[시간대코드] = v.[시간대코드]
-                                          AND y.[상태코드] IN ('RSV','RCP'))
-                          THEN 1 ELSE 0 END + 1) a;
+    FROM [시간대] t
+    CROSS APPLY [dbo].[UFN_HC_일정확인](@서버시각, @예약일, t.[시간대코드], @마감구분) s;
 
     -- TGT / NEX / AEX
     DECLARE @검진대상여부 BIT = NULL, @검진대상사유코드 INT = NULL;

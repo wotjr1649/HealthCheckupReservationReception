@@ -28,7 +28,7 @@ DECLARE @Log0 INT = (SELECT COUNT(*) FROM [dbo].[변경이력]);
 -- 등록
 ----------------------------------------------------------------------------
 -- HLD-001 자체휴무일 등록. 휴무구분 은 Parameter 가 아니며 SP 가 고정한다 (00 HOL-05).
-EXEC [dbo].[USP_HC_자체휴무일_등록] @D, N'설비 점검', 1, N'HLD 시험';
+EXEC [dbo].[USP_HC_자체휴무일_저장] @휴무동작코드 = 'CREATE_HOLIDAY', @휴무일자 = @D, @휴무일명 = N'설비 점검', @사용여부 = 1, @비고 = N'HLD 시험';
 IF EXISTS (SELECT 1 FROM [dbo].[휴무일]
             WHERE [휴무일자] = @D AND [휴무구분] = N'자체휴무일' AND [휴무일명] = N'설비 점검')
     PRINT 'PASS HLD-001 자체휴무일 1행 등록 · 휴무구분 자동 고정';
@@ -45,7 +45,7 @@ ELSE BEGIN PRINT 'FAIL HLD-002 등록이 두 시각을 다른 값으로 넣었�
 
 -- HLD-003 같은 날짜 재등록은 아무것도 바꾸지 않는다 (801)
 SELECT @Rv = [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D;
-EXEC [dbo].[USP_HC_자체휴무일_등록] @D, N'중복시도', 1, NULL;
+EXEC [dbo].[USP_HC_자체휴무일_저장] @휴무동작코드 = 'CREATE_HOLIDAY', @휴무일자 = @D, @휴무일명 = N'중복시도', @사용여부 = 1, @비고 = NULL;
 IF ((SELECT COUNT(*) FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = 1
     AND (SELECT [휴무일명] FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = N'설비 점검'
     AND (SELECT [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = @Rv)
@@ -58,7 +58,7 @@ ELSE BEGIN PRINT 'FAIL HLD-003 중복 등록이 데이터를 바꿨다'; SET @Fa
 SELECT @LawRv = [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @Law;
 
 -- HLD-004 법정공휴일 수정 시도. 토큰이 **맞아도** 막혀야 한다.
-EXEC [dbo].[USP_HC_자체휴무일_수정] @Law, @LawRv, N'바꿔보기', 1, NULL;
+EXEC [dbo].[USP_HC_자체휴무일_저장] @휴무동작코드 = 'UPDATE_HOLIDAY', @휴무일자 = @Law, @행버전 = @LawRv, @휴무일명 = N'바꿔보기', @사용여부 = 1, @비고 = NULL;
 IF ((SELECT [휴무일명] FROM [dbo].[휴무일] WHERE [휴무일자] = @Law) = N'신정'
     AND (SELECT [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @Law) = @LawRv)
     PRINT 'PASS HLD-004 법정공휴일 수정 시도가 행을 바꾸지 않았다';
@@ -75,7 +75,7 @@ ELSE BEGIN PRINT 'FAIL HLD-005 법정공휴일이 삭제됐다'; SET @Fail += 1;
 ----------------------------------------------------------------------------
 -- HLD-006 자체휴무일 수정 성공. 행버전 은 반드시 바뀐다.
 SELECT @Rv = [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D;
-EXEC [dbo].[USP_HC_자체휴무일_수정] @D, @Rv, N'설비 점검(연장)', 1, N'HLD 시험';
+EXEC [dbo].[USP_HC_자체휴무일_저장] @휴무동작코드 = 'UPDATE_HOLIDAY', @휴무일자 = @D, @행버전 = @Rv, @휴무일명 = N'설비 점검(연장)', @사용여부 = 1, @비고 = N'HLD 시험';
 SELECT @Rv2 = [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D;
 IF ((SELECT [휴무일명] FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = N'설비 점검(연장)'
     AND @Rv2 <> @Rv)
@@ -92,9 +92,9 @@ ELSE BEGIN PRINT 'FAIL HLD-006b 수정이 생성일시를 건드렸다'; SET @Fa
 -- Korean_Wansung_CI_AS 는 N''설비 점검(연장)'' 과 소문자 라틴 혼용을 같다고 본다.
 DECLARE @CaseName NVARCHAR(100) = N'HVAC 점검', @Rv3 BINARY(8);
 SELECT @Rv3 = [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D;
-EXEC [dbo].[USP_HC_자체휴무일_수정] @D, @Rv3, @CaseName, 1, N'HLD 시험';
+EXEC [dbo].[USP_HC_자체휴무일_저장] @휴무동작코드 = 'UPDATE_HOLIDAY', @휴무일자 = @D, @행버전 = @Rv3, @휴무일명 = @CaseName, @사용여부 = 1, @비고 = N'HLD 시험';
 SELECT @Rv3 = [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D;
-EXEC [dbo].[USP_HC_자체휴무일_수정] @D, @Rv3, N'hvac 점검', 1, N'HLD 시험';
+EXEC [dbo].[USP_HC_자체휴무일_저장] @휴무동작코드 = 'UPDATE_HOLIDAY', @휴무일자 = @D, @행버전 = @Rv3, @휴무일명 = N'hvac 점검', @사용여부 = 1, @비고 = N'HLD 시험';
 IF ((SELECT [휴무일명] FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = N'hvac 점검'
     AND CONVERT(VARBINARY(200), (SELECT [휴무일명] FROM [dbo].[휴무일] WHERE [휴무일자] = @D))
         = CONVERT(VARBINARY(200), N'hvac 점검'))
@@ -103,30 +103,30 @@ ELSE BEGIN PRINT 'FAIL HLD-006c 대소문자 변경이 No-op 으로 사라졌다
 
 -- 뒤 시험이 이름에 기대므로 되돌린다.
 SELECT @Rv3 = [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D;
-EXEC [dbo].[USP_HC_자체휴무일_수정] @D, @Rv3, N'설비 점검(연장)', 1, N'HLD 시험';
+EXEC [dbo].[USP_HC_자체휴무일_저장] @휴무동작코드 = 'UPDATE_HOLIDAY', @휴무일자 = @D, @행버전 = @Rv3, @휴무일명 = N'설비 점검(연장)', @사용여부 = 1, @비고 = N'HLD 시험';
 SELECT @Rv2 = [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D;
 
 -- HLD-007 stale 행버전 은 601 이고 아무것도 바꾸지 않는다
-EXEC [dbo].[USP_HC_자체휴무일_수정] @D, @Rv, N'stale시도', 0, NULL;
+EXEC [dbo].[USP_HC_자체휴무일_저장] @휴무동작코드 = 'UPDATE_HOLIDAY', @휴무일자 = @D, @행버전 = @Rv, @휴무일명 = N'stale시도', @사용여부 = 0, @비고 = NULL;
 IF ((SELECT [휴무일명] FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = N'설비 점검(연장)'
     AND (SELECT [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = @Rv2)
     PRINT 'PASS HLD-007 stale 행버전이 데이터를 바꾸지 않았다';
 ELSE BEGIN PRINT 'FAIL HLD-007 stale 요청이 반영됐다'; SET @Fail += 1; END
 
 -- HLD-008 No-op — 같은 값 재전송은 행을 갱신하지 않는다 (05 §12.7)
-EXEC [dbo].[USP_HC_자체휴무일_수정] @D, @Rv2, N'설비 점검(연장)', 1, N'HLD 시험';
+EXEC [dbo].[USP_HC_자체휴무일_저장] @휴무동작코드 = 'UPDATE_HOLIDAY', @휴무일자 = @D, @행버전 = @Rv2, @휴무일명 = N'설비 점검(연장)', @사용여부 = 1, @비고 = N'HLD 시험';
 IF ((SELECT [행버전] FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = @Rv2)
     PRINT 'PASS HLD-008 No-op 이 행버전을 바꾸지 않았다';
 ELSE BEGIN PRINT 'FAIL HLD-008 No-op 이 행을 갱신했다'; SET @Fail += 1; END
 
 -- HLD-009 사용여부 0 은 삭제가 아니라 일시 무효화이며 그 날짜를 계속 점유한다 (03 §24.5)
-EXEC [dbo].[USP_HC_자체휴무일_수정] @D, @Rv2, N'설비 점검(연장)', 0, N'HLD 시험';
+EXEC [dbo].[USP_HC_자체휴무일_저장] @휴무동작코드 = 'UPDATE_HOLIDAY', @휴무일자 = @D, @행버전 = @Rv2, @휴무일명 = N'설비 점검(연장)', @사용여부 = 0, @비고 = N'HLD 시험';
 IF EXISTS (SELECT 1 FROM [dbo].[휴무일] WHERE [휴무일자] = @D AND [사용여부] = 0)
     PRINT 'PASS HLD-009 사용여부 0 이 행을 남긴 채 비활성만 시켰다';
 ELSE BEGIN PRINT 'FAIL HLD-009 비활성화가 반영되지 않았다'; SET @Fail += 1; END
 
 -- HLD-010 비활성 행도 날짜를 점유하므로 같은 날짜 등록은 여전히 막힌다 (HOL-04)
-EXEC [dbo].[USP_HC_자체휴무일_등록] @D, N'비활성위에등록', 1, NULL;
+EXEC [dbo].[USP_HC_자체휴무일_저장] @휴무동작코드 = 'CREATE_HOLIDAY', @휴무일자 = @D, @휴무일명 = N'비활성위에등록', @사용여부 = 1, @비고 = NULL;
 IF ((SELECT COUNT(*) FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = 1
     AND (SELECT [사용여부] FROM [dbo].[휴무일] WHERE [휴무일자] = @D) = 0)
     PRINT 'PASS HLD-010 비활성 행 위에 덮어 등록되지 않았다';

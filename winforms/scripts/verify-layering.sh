@@ -18,12 +18,17 @@ srcfiles() { find "$SRC" -name '*.cs' -not -path '*/obj/*' -not -path '*/bin/*' 
 
 # [X] 낱말만 찾으면 **그 규칙을 설명하는 주석이 첫 HIT** 가 된다. verify-no-secret.sh 초판이
 #     자기 자신을 세었던 것과 같은 함정이다. 줄 주석을 걷고 코드만 본다.
-nocomment() { sed 's|//.*||' "$1"; }
-codegrep() {  # codegrep <패턴> <파일...>  → 파일:줄:내용
-  local pat="$1"; shift
-  local f
-  for f in "$@"; do nocomment "$f" | grep -nE "$pat" | sed "s|^|$f:|"; done
+#
+# [!] **한 번만 훑는다.** 예전에는 파일마다 `sed | grep | sed` 셋을 띄웠고, .cs 83개 x 검사 3개면
+#     프로세스가 700개였다 — Windows 에서 34초다(실측 2026-09-14). 지금은 awk 한 번으로
+#     `파일:줄:주석걷은내용` 스트림을 만들어 두고 검사마다 그것을 grep 한다.
+#     읽는 내용도 판정도 그대로다.
+strip_all() {  # strip_all <파일...>  → 파일:줄:주석걷은내용
+  awk '{ sub(/\/\/.*/, ""); print FILENAME ":" FNR ":" $0 }' "$@"
 }
+# codegrep 은 그 스트림에서 고른다. **접두 `파일:줄:` 을 패턴이 건드리지 않는지 보고 쓴다** —
+# 경로에 `USP_HC_`·`DevExpress`·DML 낱말이 들어갈 일이 없어 지금 패턴 넷은 안전하다.
+codegrep() { grep -E "$1" "$STRIPPED" || true; }
 
 if [ "${1:-check}" = "selftest" ]; then
   D=$(mktemp -d); RC=0
@@ -62,8 +67,13 @@ fi
 FILES=$(srcfiles)
 [ -n "$FILES" ] || { say FAIL "LAY-000 .cs 를 하나도 못 찾았다 ($SRC)"; echo "== FAIL =="; exit 1; }
 
+T=$(mktemp -d)
+trap 'rm -f "$T"/allowed "$T"/used "$T"/stripped; rmdir "$T"' EXIT
+STRIPPED="$T/stripped"
+strip_all $FILES > "$STRIPPED"
+
 # ── LAY-001
-HIT=$(codegrep 'UFN_HC_' $FILES || true)
+HIT=$(codegrep 'UFN_HC_')
 if [ -z "$HIT" ]; then
   say PASS "LAY-001 C# 에 Inline TVF 직접 호출 0건 (05 §1.4)"
 else
@@ -71,11 +81,9 @@ else
 fi
 
 # ── LAY-002
-T=$(mktemp -d)
-trap 'rm -f "$T"/allowed "$T"/used; rmdir "$T"' EXIT
 tr -d '\r' < "$DOC" | awk '/^## 1[.]3 /{f=1;next} f && /^## /{exit} f' \
   | grep -oE 'USP_HC_[^]`]+' | sort -u > "$T/allowed"
-for f in $FILES; do nocomment "$f"; done | grep -ohE 'USP_HC_[A-Za-z0-9_가-힣]+' | sort -u > "$T/used"
+grep -ohE 'USP_HC_[A-Za-z0-9_가-힣]+' "$STRIPPED" | sort -u > "$T/used"
 if [ ! -s "$T/allowed" ]; then
   say FAIL "LAY-002 05 §1.3 에서 SP 이름을 못 읽었다 — 표 형식이 바뀌었다"
 else
@@ -88,7 +96,7 @@ else
 fi
 
 # ── LAY-003  문자열 리터럴 안의 DML 과 AddWithValue
-HIT=$(codegrep '"[^"]*\b(SELECT|INSERT|UPDATE|DELETE)\b[^"]*"|AddWithValue' $FILES || true)
+HIT=$(codegrep '"[^"]*\b(SELECT|INSERT|UPDATE|DELETE)\b[^"]*"|AddWithValue')
 if [ -z "$HIT" ]; then
   say PASS "LAY-003 inline DML 0건 · AddWithValue 0건 (킷 §3)"
 else
@@ -96,19 +104,20 @@ else
 fi
 
 # ── LAY-004
+# 계층은 **경로로** 갈린다. 스트림의 접두가 곧 경로이므로 한 번 grep 한 뒤 경로로 거른다.
 HIT=
-for f in $FILES; do
+for f in $(codegrep '\b(SqlConnection|SqlCommand|SqlDataReader|SqlTransaction)\b' \
+             | sed 's|:[0-9]*:.*||' | sort -u); do
   case "$f" in
     */Repositories/*) ;;
-    *) nocomment "$f" | grep -qE '\b(SqlConnection|SqlCommand|SqlDataReader|SqlTransaction)\b' \
-         && HIT="$HIT\n    $f — SqlClient 타입이 Repositories/ 밖에 있다" ;;
+    *) HIT="$HIT\n    $f — SqlClient 타입이 Repositories/ 밖에 있다" ;;
   esac
+done
+for f in $(codegrep 'DevExpress' | sed 's|:[0-9]*:.*||' | sort -u); do
   case "$f" in
-    */Views/I*.cs) nocomment "$f" | grep -q 'DevExpress' \
-         && HIT="$HIT\n    $f — View 계약이 DevExpress 를 노출한다" ;;
+    */Views/I*.cs) HIT="$HIT\n    $f — View 계약이 DevExpress 를 노출한다" ;;
     */Views/*|*/Program.cs) ;;
-    *) nocomment "$f" | grep -q 'DevExpress' \
-         && HIT="$HIT\n    $f — DevExpress 타입이 Views/·Program.cs 밖에 있다" ;;
+    *) HIT="$HIT\n    $f — DevExpress 타입이 Views/·Program.cs 밖에 있다" ;;
   esac
 done
 if [ -z "$HIT" ]; then

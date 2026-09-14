@@ -1,4 +1,7 @@
-﻿// 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
+﻿// ── 휴무일 서비스 ────────────────────────────────────────────────────────────
+// 계약(IHolidayService) 과 구현(HolidayService) 을 한 파일에 둔다.
+// 부르는 SP: SP-HOL-01 목록 · 02 등록 · 03 수정 · 04 삭제.
+
 using System;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
@@ -6,6 +9,16 @@ using HealthCheckupReservationReception.Repositories;
 
 namespace HealthCheckupReservationReception.Services
 {
+    // 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
+    public interface IHolidayService
+    {
+        OperationResult<HolidayListReadDto> Search(HolidaySearchRequest request);
+        OperationResult<HolidaySaveReadDto> Register(HolidaySaveRequest request);
+        OperationResult<HolidaySaveReadDto> Update(HolidaySaveRequest request);
+        OperationResult<HolidaySaveReadDto> Delete(DateTime holidayDate, byte[] rowVersion);
+    }
+
+    // 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
     /// <summary>
     /// DLG-HOL-01 의 업무 계층 (03 §24 · 05 §12.5~§12.8).
     ///
@@ -57,13 +70,15 @@ namespace HealthCheckupReservationReception.Services
         public OperationResult<HolidaySaveReadDto> Register(HolidaySaveRequest request)
         {
             OperationResult<HolidaySaveReadDto> tooLong = Fits(request);
-            return tooLong ?? Saved(_repository.Register(request), "휴무일을 등록하지 못했습니다.");
+            return tooLong ?? Saved(_repository.Save(request, DbHolidayAction.Create),
+                "휴무일을 등록하지 못했습니다.");
         }
 
         public OperationResult<HolidaySaveReadDto> Update(HolidaySaveRequest request)
         {
             OperationResult<HolidaySaveReadDto> tooLong = Fits(request);
-            return tooLong ?? Saved(_repository.Update(request), "휴무일을 수정하지 못했습니다.");
+            return tooLong ?? Saved(_repository.Save(request, DbHolidayAction.Update),
+                "휴무일을 수정하지 못했습니다.");
         }
 
         /// <summary>

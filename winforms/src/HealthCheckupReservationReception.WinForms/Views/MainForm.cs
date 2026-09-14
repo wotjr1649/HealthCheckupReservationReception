@@ -39,7 +39,6 @@ namespace HealthCheckupReservationReception.Views
 
         private UcPatientManagement _patientView;
         private UcWorkbench _workView;
-        private UcHoliday _holidayView;
 
         /// <summary>
         /// [X] **VS 디자이너 전용이다.** 디자이너는 설계 대상 타입을 매개변수 없는 생성자로
@@ -79,8 +78,6 @@ namespace HealthCheckupReservationReception.Views
             // 초기 상태(행 미선택)로 맞춘다.
             ApplyPatientRowActions();
             ApplyWorkActions(WorkActionState.None());
-            ApplyHolidayRowActions(false);
-
             _presenter = new MainPresenter(this, statusService, operatorName);
         }
 
@@ -184,7 +181,8 @@ namespace HealthCheckupReservationReception.Views
         public void BeginNewReservation(long patientId)
         {
             using (var reservation = new FrmReservation(
-                _reservationService, _patientService, _operatorName, patientId))
+                _reservationService, _patientService, _workService, _operatorName, patientId,
+                _patientView == null ? null : _patientView.Detail))
             {
                 if (reservation.ShowDialog(this) != DialogResult.OK || reservation.Result == null)
                 {
@@ -226,7 +224,7 @@ namespace HealthCheckupReservationReception.Views
             // 남는다 — 목록의 `예약` 칸이 방금 낡았으므로 되읽고 그 줄로 돌아간다.
             if (_patientView != null)
             {
-                _patientView.ReloadAfterReservation(patientId, "예약이 등록되었습니다.");
+                _patientView.ReloadAfterSave(patientId, "예약이 등록되었습니다.");
             }
         }
 
@@ -278,18 +276,9 @@ namespace HealthCheckupReservationReception.Views
             {
                 var patient = new UcPatientManagement();
                 patient.RowActionsChanged += PatientView_RowActionsChanged;
-                patient.Attach(_patientService, _workService, _statusService);
+                patient.Attach(_patientService, _workService);
                 _patientView = patient;
                 return patient;
-            }
-
-            if (tab == BusinessTab.Holiday)
-            {
-                var holiday = new UcHoliday();
-                holiday.RowActionsChanged += HolidayView_RowActionsChanged;
-                holiday.Attach(_holidayService, _statusService);
-                _holidayView = holiday;
-                return holiday;
             }
 
             if (tab == BusinessTab.Workbench)
@@ -327,34 +316,33 @@ namespace HealthCheckupReservationReception.Views
             ApplyWorkActions(state);
         }
 
-        private void HolidayView_RowActionsChanged(object sender, bool ownRowPicked)
-        {
-            ApplyHolidayRowActions(ownRowPicked);
-        }
-
         /// <summary>
-        /// 03 §24.5 — `[휴무일수정]`·`[휴무일삭제]` 는 **자체휴무일 행이 잡혔을 때만** 열린다.
-        /// `[휴무일추가]` 는 선택행과 무관한 독립 Action 이라 늘 열려 있다.
+        /// 03 §24.2 — `[휴무일 관리]` 는 **업무 Tab 을 열지 않고** DLG-HOL-01 Modal 을 직접 연다.
+        /// 기준정보 정비이므로 열려 있는 업무 Tab 의 상태·Dirty·Single Instance 계약에 관여하지
+        /// 않는다. 2026-09-14 사용자 지시로 자리는 `접수 관리` 오른쪽 탭이지만, **탭이 열리지는
+        /// 않는다** — 전환을 취소하고 Modal 만 띄우므로 선택된 페이지는 그대로 남는다.
+        ///
+        /// `[!]` **공통 업무불가로 이 문을 닫지 않는다** (03 §24.2). 정비가 필요한 바로 그
+        ///      시각(운영시간 밖)에 막히면 안 된다.
         /// </summary>
-        private void ApplyHolidayRowActions(bool ownRowPicked)
+        private void barRibbonMain_SelectedPageChanging(object sender, RibbonPageChangingEventArgs e)
         {
-            barBtnHolidayEdit.Enabled = ownRowPicked;
-            barBtnHolidayDelete.Enabled = ownRowPicked;
-        }
+            if (e.Page != barPageHoliday)
+            {
+                return;
+            }
 
-        private void barBtnHolidayNew_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            if (_holidayView != null) { _holidayView.RequestRegister(); }
-        }
+            e.Cancel = true;
 
-        private void barBtnHolidayEdit_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            if (_holidayView != null) { _holidayView.RequestUpdate(); }
-        }
-
-        private void barBtnHolidayDelete_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            if (_holidayView != null) { _holidayView.RequestDelete(); }
+            // 클릭을 리본이 아직 쥐고 있는 사이에 Modal 을 세우지 않는다. 전환 취소가 끝난
+            // 다음 열어야 탭이 눌린 모양으로 남지 않는다.
+            BeginInvoke((MethodInvoker)(() =>
+            {
+                using (var dialog = new FrmHoliday(_holidayService, _statusService))
+                {
+                    dialog.ShowDialog(this);
+                }
+            }));
         }
 
         public void SelectNavigationPage(BusinessNavigation page)
@@ -399,7 +387,6 @@ namespace HealthCheckupReservationReception.Views
                 case BusinessNavigation.PatientManagement: return barPagePatient;
                 case BusinessNavigation.ReservationDesk: return barPageRsvDesk;
                 case BusinessNavigation.ReceptionDesk: return barPageRcpDesk;
-                case BusinessNavigation.HolidayManagement: return barPageHoliday;
                 default: return null;
             }
         }
@@ -430,10 +417,6 @@ namespace HealthCheckupReservationReception.Views
             {
                 handler(this, BusinessNavigation.ReceptionDesk);
             }
-            else if (selected == barPageHoliday)
-            {
-                handler(this, BusinessNavigation.HolidayManagement);
-            }
         }
 
         // 03 §5.2 — [신규등록] 은 대상 행이 필요 없다. Modal 만 열면 된다.
@@ -452,18 +435,48 @@ namespace HealthCheckupReservationReception.Views
                 return;
             }
 
-            OpenPatientEditor(_patientView.SelectedPatientId);
+            // 03 §6.4 Edit 진입값은 **행을 고를 때 받아 둔 상세**다 (2026-09-14 사용자 지시) —
+            // 행버전까지 그 안에 있으므로 모달이 `SP-PAT-02` 를 다시 부르지 않는다.
+            PatientDto detail = _patientView.Detail;
+            if (detail == null || detail.PatientId != _patientView.SelectedPatientId.Value)
+            {
+                // 고른 행과 그려진 상세가 어긋났다. 0 을 저장 SP 에 보내느니 말한다.
+                ShowMessage("수검자 상세를 아직 읽지 못했습니다. 행을 다시 선택하십시오.");
+                return;
+            }
+
+            OpenPatientEditor(detail);
         }
 
         /// <summary>
-        /// DLG-PAT-01 을 연다 (03 §6). 03 §5 는 저장 뒤 수검자 관리 화면이 할 일을 정하지
-        /// 않으므로 목록을 자동으로 다시 읽지 않는다 (07 §14.3 A-11).
+        /// DLG-PAT-01 을 연다 (03 §6).
+        ///
+        /// **[R23] 저장했으면 목록을 되읽고 그 사람으로 돌아간다** (2026-09-14 사용자 지시 —
+        /// *"INSERT, UPDATE, DELETE 가 발생시 SELECT 를 호출하여 수정한 내용이 즉각 frm 에도
+        /// 반영되게끔 하고 싶다"*). 예약 저장이 쓰는 길과 같은 길이다.
+        ///
+        /// [X] **예전에는 아무것도 하지 않았다.** 근거는 *"03 §5 가 저장 뒤 할 일을 정하지
+        ///     않는다"*(07 §14.3 A-11)였는데, 그것은 *정하지 않았다*는 말이지 *하지 말라*는
+        ///     말이 아니었다. 방금 고친 이름이 목록에 그대로 남아 있으면 사용자는 저장이
+        ///     됐는지 알 수 없고, [정보수정] 을 다시 눌러 낡은 행버전을 보내면 `601` 이 난다.
+        ///
+        /// [!] 취소로 닫으면 되읽지 않는다 — 바뀐 것이 없는데 조회 한 번이 나가고 고른 행이
+        ///     풀린다. `FrmPatientEditor` 가 저장했을 때만 `DialogResult.OK` 로 닫는다.
         /// </summary>
-        private void OpenPatientEditor(long? patientId)
+        private void OpenPatientEditor(PatientDto patient)
         {
-            using (var editor = new FrmPatientEditor(_patientService, _operatorName, patientId))
+            using (var editor = new FrmPatientEditor(_patientService, _operatorName, patient))
             {
-                editor.ShowDialog(this);
+                if (editor.ShowDialog(this) != DialogResult.OK || editor.SavedPatientId == null)
+                {
+                    return;
+                }
+
+                if (_patientView != null)
+                {
+                    _patientView.ReloadAfterSave(editor.SavedPatientId.Value,
+                        patient == null ? "수검자를 등록했습니다." : "수검자 정보를 저장했습니다.");
+                }
             }
         }
 
@@ -552,18 +565,22 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>
         /// DLG-RSV-01 예약 변경 (03 §10). `FrmReservation` 을 변경 모드로 연다 — 새 화면이
         /// 아니라 같은 모달의 분기다.
+        ///
+        /// 넘기는 것은 **행을 고를 때 받아 둔 한 벌**이다 (2026-09-14 사용자 지시) —
+        /// `DLG-RCP-01`·`DLG-RCP-02` 와 같은 방식이고, 그래서 모달이 `SP-WRK-02` 를 다시
+        /// 부르지 않는다. 낡으면 저장이 `601` 로 막고 그때 최신값을 다시 읽는다.
         /// </summary>
         private void BeginReservationChange()
         {
-            WorkDetailDto detail = _workView.CurrentDetail;
-            if (detail == null)
+            WorkDetailReadDto read = _workView.Read;
+            if (read == null || read.Detail == null)
             {
                 ShowMessage("먼저 목록에서 행을 선택하십시오.");
                 return;
             }
 
-            using (var reservation = new FrmReservation(
-                _reservationService, _patientService, _operatorName, detail))
+            using (var reservation = FrmReservation.ForChange(
+                _reservationService, _patientService, _workService, _operatorName, read))
             {
                 if (reservation.ShowDialog(this) == DialogResult.OK && reservation.Result != null)
                 {
@@ -573,41 +590,43 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// DLG-RCP-02 접수완료 추가검사 변경 (03 §12). 모달이 스스로 상세를 다시 읽는다 —
-        /// AEX 일곱은 `SP-WRK-02` RS5 가 준다 (05 §8.2, R18).
+        /// DLG-RCP-02 접수완료 추가검사 변경 (03 §12). **행을 고를 때 받아 둔 한 벌을 넘긴다**
+        /// (2026-09-14 사용자 지시) — AEX 일곱(RS5)까지 그 안에 있으므로 모달이 `SP-WRK-02` 를
+        /// 다시 부르지 않는다.
         /// </summary>
         private void BeginExtraExamChange()
         {
-            WorkDetailDto detail = _workView.CurrentDetail;
-            if (detail == null)
+            WorkDetailReadDto read = _workView.Read;
+            if (read == null || read.Detail == null)
             {
                 ShowMessage("먼저 목록에서 행을 선택하십시오.");
                 return;
             }
 
-            using (var extra = new FrmExtraExam(_workService, _operatorName, detail.WorkId))
+            using (var extra = new FrmExtraExam(_workService, _operatorName, read))
             {
                 if (extra.ShowDialog(this) == DialogResult.OK)
                 {
-                    _workView.OpenContext(WorkContext.Reception, detail.WorkId);
+                    _workView.OpenContext(WorkContext.Reception, read.Detail.WorkId);
                 }
             }
         }
 
+        /// <summary>DLG-RCP-01 접수 (03 §11). 같은 이유로 받아 둔 한 벌을 넘긴다.</summary>
         private void BeginReception()
         {
-            WorkDetailDto detail = _workView.CurrentDetail;
-            if (detail == null)
+            WorkDetailReadDto read = _workView.Read;
+            if (read == null || read.Detail == null)
             {
                 ShowMessage("먼저 목록에서 행을 선택하십시오.");
                 return;
             }
 
-            using (var reception = new FrmReception(_workService, _operatorName, detail.WorkId))
+            using (var reception = new FrmReception(_workService, _operatorName, read))
             {
                 if (reception.ShowDialog(this) == DialogResult.OK)
                 {
-                    _workView.OpenContext(WorkContext.Reception, detail.WorkId);
+                    _workView.OpenContext(WorkContext.Reception, read.Detail.WorkId);
                 }
             }
         }

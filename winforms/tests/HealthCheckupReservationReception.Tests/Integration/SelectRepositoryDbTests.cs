@@ -139,24 +139,30 @@ namespace HealthCheckupReservationReception.Tests.Integration
         }
 
         /// <summary>
-        /// 05 §7.4 — 조회범위는 `예약일 >= 오늘날짜` 이고 정상 Cardinality 는 0행 또는 1행이다.
+        /// [R22] 05 §12.6 — 등록·수정이 SP 하나가 되며 `@휴무동작코드` 가 생겼다.
         ///
-        /// [X] **없는 수검자는 `200` 이다.** §7.4 본문은 그 말을 하지 않고 §13 의 허용
-        ///     결과코드 표(`SELECT_수검자유효업무 | 0, 100, 200, 701`)만 갖고 있다 — 실측으로
-        ///     확인했다. 같은 SELECT 계열이라도 `SP-LOG-01` 은 반대다(대상이 없어도 `0`):
-        ///     감사 기록은 대상 행보다 오래 살기 때문이고, 이쪽은 그 수검자로 예약을
-        ///     이어 갈 수 있는지를 묻는 자리라 존재를 따진다.
+        /// **허용 밖 코드는 `101` 이고 오류항목이 그 Parameter 이름이다.** 이 갈래를 실물로
+        /// 재는 이유는, 문자열 오타가 컴파일도 되고 Fake 시험도 통과하기 때문이다 —
+        /// 실행해야 드러난다 (`DbWorkAction` 이 같은 이유로 게이트를 갖는다).
+        ///
+        /// [!] **아무것도 쓰지 않는다.** 코드 검증이 잠금·Transaction 앞이라 DB 에 닿지 않는다.
         /// </summary>
         [TestMethod]
         [TestCategory("Db")]
-        public void SP_PAT_05_는_없는_수검자에_200_이다()
+        public void SP_HOL_02_는_허용밖_휴무동작코드에_101_이다()
         {
-            IPatientRepository repository = new PatientRepository(ConnectionString());
+            IHolidayRepository repository = new HolidayRepository(ConnectionString());
 
-            PatientValidWorkReadDto read = Run(() => repository.ReadValidWork(-1));
+            HolidaySaveReadDto read = Run(() => repository.Save(new HolidaySaveRequest
+            {
+                HolidayDate = new DateTime(2027, 5, 5),
+                HolidayName = "코드시험",
+                IsActive = true,
+            }, "UPSERT"));
 
-            Assert.AreEqual((int)DbCode.PatientNotFound, read.Result.Code, "RS0: " + read.Result.Message);
-            Assert.IsNull(read.Work, "실패인데 유효업무가 나왔다");
+            Assert.AreEqual((int)DbCode.BadValue, read.Result.Code, "RS0: " + read.Result.Message);
+            Assert.AreEqual("휴무동작코드", read.Result.Field, "오류항목이 Parameter 이름이 아니다");
+            Assert.IsNull(read.HolidayDate, "실패인데 RS1 을 읽었다");
         }
 
         private static T Run<T>(Func<T> call)

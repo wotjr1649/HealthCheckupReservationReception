@@ -25,7 +25,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var service = new FakeHolidayService { SearchResult = Ok(Rows()) };
             var presenter = new HolidayPresenter(view, service, Status());
 
-            presenter.LoadInitial();
+            // [X] `LoadInitial` 로 재지 않는다. 그것은 03 §24.4 기본값으로 두 칸을
+            //     **채우므로** 빈 기간이 안 된다. 비울 수 있는 것은 사용자가 지우고
+            //     `[조회]` 를 누르는 길이다.
+            view.RaiseSearchRequested();
 
             Assert.IsNull(service.LastSearch, "조건이 없는데 SP 를 불렀다");
             StringAssert.Contains(view.BlockMessage, "조회기간");
@@ -40,7 +43,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var service = new FakeHolidayService { SearchResult = Ok(Rows()) };
             var presenter = new HolidayPresenter(view, service, Status());
 
-            presenter.LoadInitial();
+            view.RaiseSearchRequested();
 
             Assert.IsNull(service.LastSearch);
         }

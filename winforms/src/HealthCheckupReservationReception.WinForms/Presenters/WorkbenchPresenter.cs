@@ -63,6 +63,9 @@ namespace HealthCheckupReservationReception.Presenters
         private readonly ICommonStatusService _statusService;
         private readonly string _operatorName;
 
+        // Target 이 읽어 둔 한 벌. 이어지는 선택 이벤트가 한 번 쓰고 비운다 (2026-09-14).
+        private WorkDetailReadDto _pendingRead;
+
         // 마지막으로 읽은 상세. 업무 Action 이 실어 보낼 `행버전` 이 여기서 나온다 —
         // 목록 행(05 §8.1 RS1)에는 `행버전` 이 없다.
 
@@ -168,8 +171,11 @@ namespace HealthCheckupReservationReception.Presenters
         /// 행을 자동선택한다. 신규예약 저장 성공(§8.11)과 접수 Shortcut 이 이 길로 돌아온다.
         ///
         /// [X] 상세를 **먼저** 부른다. 그 업무가 며칠인지 알아야 목록을 그 날로 좁힐 수 있기
-        ///     때문이다 — 조회조건만으로는 방금 저장한 건이 목록에 없을 수 있다. 행을 고르면
-        ///     선택 이벤트가 상세를 한 번 더 읽지만, 그 값이 화면에 서는 최신값이다.
+        ///     때문이다 — 조회조건만으로는 방금 저장한 건이 목록에 없을 수 있다.
+        ///
+        /// [!] **여기서 읽은 것을 이어지는 선택 이벤트가 쓴다** (2026-09-14). 예전에는 행을
+        ///     고르는 순간 같은 업무ID 로 상세를 한 번 더 읽었다 — 같은 초의 같은 값이었다.
+        ///     한 번만 쓰고 비우므로 뒤따르는 사용자의 선택에는 영향이 없다.
         /// </summary>
         private void Target(long workId)
         {
@@ -191,9 +197,15 @@ namespace HealthCheckupReservationReception.Presenters
             }
 
             _view.FocusSearchOn(detail.Value.Detail.ReserveDate.Date);
+
+            // 곧 이어질 선택 이벤트가 이것을 쓴다. 한 번 쓰이면 비워진다.
+            _pendingRead = detail.Value;
             Search();
 
-            if (!_view.SelectWork(workId))
+            bool found = _view.SelectWork(workId);
+            _pendingRead = null;
+
+            if (!found)
             {
                 _view.ValidationMessage = "방금 저장한 업무를 목록에서 찾지 못했습니다.";
             }
@@ -327,13 +339,15 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
+            // [R20] 취소 둘이 한 SP 가 되면서 이 분기도 사라졌다 — 동작코드를 그대로 넘긴다.
+            // 화면이 무엇을 취소하는지 말하고, 그 상태에서 그 동작이 되는지는 SP 가 판정한다.
             if (DbWorkAction.CancelReservation.Equals(actionCode, StringComparison.Ordinal))
             {
-                Run(CancelReservationAsk, _reservationService.Cancel, "예약을 취소하지 못했습니다.");
+                Run(CancelReservationAsk, actionCode, "예약을 취소하지 못했습니다.");
             }
             else if (DbWorkAction.CancelReception.Equals(actionCode, StringComparison.Ordinal))
             {
-                Run(CancelReceptionAsk, _service.CancelReception, "접수를 취소하지 못했습니다.");
+                Run(CancelReceptionAsk, actionCode, "접수를 취소하지 못했습니다.");
             }
         }
 
@@ -343,10 +357,7 @@ namespace HealthCheckupReservationReception.Presenters
         /// [X] **성공해도 목록을 다시 읽는다.** 상태가 바뀌었고 `행버전` 도 바뀌었다 —
         ///     화면에 남은 옛 값으로 다음 Action 을 걸면 `601` 이 난다.
         /// </summary>
-        private void Run(
-            string question,
-            Func<WorkActionRequest, OperationResult<WorkSaveReadDto>> call,
-            string failure)
+        private void Run(string question, string actionCode, string failure)
         {
             if (!_view.Confirm(question))
             {
@@ -357,7 +368,7 @@ namespace HealthCheckupReservationReception.Presenters
             OperationResult<WorkSaveReadDto> result;
             try
             {
-                result = call(new WorkActionRequest
+                result = _service.CancelWork(actionCode, new WorkActionRequest
                 {
                     WorkId = workId,
                     RowVersion = _detail.RowVersion,
@@ -405,6 +416,15 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
+            // Target 이 방금 읽어 둔 그 업무면 다시 읽지 않는다 (2026-09-14).
+            WorkDetailReadDto pending = _pendingRead;
+            _pendingRead = null;
+            if (pending != null && pending.Detail != null && pending.Detail.WorkId == workId.Value)
+            {
+                Render(pending);
+                return;
+            }
+
             OperationResult<WorkDetailReadDto> result;
             try
             {
@@ -424,8 +444,17 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
-            WorkDetailReadDto read = result.Value;
+            Render(result.Value);
+        }
+
+        /// <summary>
+        /// 받은 한 벌을 화면에 세우고 **통째로 보관한다**. 모달이 그것을 받아 열리므로
+        /// 같은 업무ID 로 `SP-WRK-02` 를 다시 부르지 않는다 (2026-09-14 사용자 지시).
+        /// </summary>
+        private void Render(WorkDetailReadDto read)
+        {
             _detail = read.Detail;
+            _view.Read = read;
             _view.Detail = read.Detail;
             _view.NexItems = read.NexItems;
             _view.AexItems = read.AexItems;
@@ -435,6 +464,7 @@ namespace HealthCheckupReservationReception.Presenters
         private void ClearSelection()
         {
             _detail = null;
+            _view.Read = null;
             _view.Detail = null;
             _view.NexItems = new List<WorkExamItemDto>();
             _view.AexItems = new List<WorkExamItemDto>();

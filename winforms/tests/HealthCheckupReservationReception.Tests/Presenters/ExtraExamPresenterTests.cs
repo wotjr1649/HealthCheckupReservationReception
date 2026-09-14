@@ -23,7 +23,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakeExtraExamView();
             var service = new FakeWorkService { DetailResult = Detail(true) };
 
-            new ExtraExamPresenter(view, service, "접수1번창구").Begin(77);
+            new ExtraExamPresenter(view, service, "접수1번창구").Begin(service.DetailResult.Value);
 
             Assert.AreEqual(7, view.AexOptions.Count);
             Assert.IsTrue(view.SaveEnabled);
@@ -38,7 +38,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakeExtraExamView();
             var service = new FakeWorkService { DetailResult = Detail(false) };
 
-            new ExtraExamPresenter(view, service, "접수1번창구").Begin(77);
+            new ExtraExamPresenter(view, service, "접수1번창구").Begin(service.DetailResult.Value);
 
             Assert.IsFalse(view.SaveEnabled);
             StringAssert.Contains(view.ValidationMessage, "현재 상태에서는");
@@ -56,7 +56,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 DetailResult = Detail(true),
                 SaveResult = Saved(true, 0, "정상 처리되었습니다."),
             };
-            new ExtraExamPresenter(view, service, "접수1번창구").Begin(77);
+            new ExtraExamPresenter(view, service, "접수1번창구").Begin(service.DetailResult.Value);
 
             view.RaiseSave();
 
@@ -76,7 +76,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 DetailResult = Detail(true),
                 SaveResult = Saved(false, 411, "성별 조건을 충족하지 않는 추가검사입니다."),
             };
-            new ExtraExamPresenter(view, service, "접수1번창구").Begin(77);
+            new ExtraExamPresenter(view, service, "접수1번창구").Begin(service.DetailResult.Value);
             int before = service.DetailCalls;
 
             view.RaiseSave();

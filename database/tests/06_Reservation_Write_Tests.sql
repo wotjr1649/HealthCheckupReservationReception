@@ -56,7 +56,7 @@ BEGIN
 
     EXEC [dbo].[USP_HC_예약_등록] @OPt, 'NORMAL', '2026-11-17', 'AM', 1,0,0,0,0,0,0, N'TEST';
     EXEC [dbo].[USP_HC_예약_변경] @OW, @ORv, '2026-11-16', 'PM', 0,0,0,0,0,0,0, N'TEST';
-    EXEC [dbo].[USP_HC_예약_취소] @OW2, @ORv2, N'TEST';
+    EXEC [dbo].[USP_HC_업무_취소] 'CANCEL_RESERVATION', @OW2, @ORv2, N'TEST';
 
     DECLARE @Off1 VARCHAR(300) =
           CONVERT(VARCHAR(12), (SELECT COUNT(*) FROM [dbo].[수검자]))     + '|'
@@ -384,15 +384,15 @@ DECLARE @Cap0 INT = (SELECT COUNT(*) FROM [dbo].[예약접수]
                         AND [상태코드] IN ('RSV', 'RCP'));
 
 -- RWR-040 / RWR-041  미존재 업무ID 와 stale 행버전 은 아무것도 바꾸지 않는다
-EXEC [dbo].[USP_HC_예약_취소] -1, 0x0000000000000001, N'TEST';
-EXEC [dbo].[USP_HC_예약_취소] @Wc, 0x0000000000000001, N'TEST';
+EXEC [dbo].[USP_HC_업무_취소] 'CANCEL_RESERVATION', -1, 0x0000000000000001, N'TEST';
+EXEC [dbo].[USP_HC_업무_취소] 'CANCEL_RESERVATION', @Wc, 0x0000000000000001, N'TEST';
 IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @Wc) = 'RSV')
     PRINT 'PASS RWR-040/041 미존재 WorkId·stale RowVersion 이 취소하지 않았다';
 ELSE BEGIN PRINT 'FAIL RWR-040/041 실패 경로가 취소했다'; SET @Fail += 1; END
 
 -- RWR-043 / RWR-052  취소 성공 + 검사구성 보존 + 감사 1행
 SET @H0 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @Wc);
-EXEC [dbo].[USP_HC_예약_취소] @Wc, @RvC, N'TEST';
+EXEC [dbo].[USP_HC_업무_취소] 'CANCEL_RESERVATION', @Wc, @RvC, N'TEST';
 SET @H1 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @Wc);
 IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @Wc) = 'CNR'
     AND (SELECT ISNULL([국가검사항목], N'') + N'|' + ISNULL([추가검사항목], N'')
@@ -410,7 +410,7 @@ ELSE BEGIN PRINT 'FAIL RWR-052 UPDATE_예약취소 감사 기록 불일치'; SET
 -- RWR-042  이미 CNR 인 Work 는 다시 취소되지 않는다 (502)
 DECLARE @RvC2 BINARY(8) = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wc);
 SET @H0 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @Wc);
-EXEC [dbo].[USP_HC_예약_취소] @Wc, @RvC2, N'TEST';
+EXEC [dbo].[USP_HC_업무_취소] 'CANCEL_RESERVATION', @Wc, @RvC2, N'TEST';
 IF ((SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @Wc) = @RvC2
     AND (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @Wc) = @H0)
     PRINT 'PASS RWR-042 CNR Work 재취소가 데이터도 감사도 남기지 않았다';

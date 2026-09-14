@@ -1,4 +1,8 @@
-﻿// 화면 ID: DLG-LOG-01 — 변경이력 열람 (03 §23)
+﻿// ── 변경이력 리포지토리 ──────────────────────────────────────────────────────
+// 계약과 구현을 한 파일에 둔다. **SqlClient 는 이 폴더 안에서만 산다** (킷 §2).
+//
+//   USP_HC_변경이력_조회   SP-LOG-01   RS0+RS1
+
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -6,6 +10,13 @@ using HealthCheckupReservationReception.Models;
 
 namespace HealthCheckupReservationReception.Repositories
 {
+    // 화면 ID: DLG-LOG-01 — 변경이력 열람 (03 §23)
+    public interface IChangeLogRepository
+    {
+        ChangeLogReadDto Read(string targetTable, long targetKey);
+    }
+
+    // 화면 ID: DLG-LOG-01 — 변경이력 열람 (03 §23)
     /// <summary>
     /// DLG-LOG-01 이 쓰는 유일한 SP (05 §8.3).
     /// Parameter 는 이름·타입·크기를 계약 그대로 명시한다. AddWithValue 를 쓰지 않는다 (킷 §3).

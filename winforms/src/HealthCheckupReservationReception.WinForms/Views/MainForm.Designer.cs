@@ -40,11 +40,7 @@ namespace HealthCheckupReservationReception.Views
             this.barGroupRsvWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupRsvView = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barPageRcpDesk = new DevExpress.XtraBars.Ribbon.RibbonPage();
-            this.barBtnHolidayNew = new DevExpress.XtraBars.BarButtonItem();
-            this.barBtnHolidayEdit = new DevExpress.XtraBars.BarButtonItem();
-            this.barBtnHolidayDelete = new DevExpress.XtraBars.BarButtonItem();
             this.barPageHoliday = new DevExpress.XtraBars.Ribbon.RibbonPage();
-            this.barGroupHolidayWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupRcpWork = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barGroupRcpView = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.barStatusMain = new DevExpress.XtraBars.Ribbon.RibbonStatusBar();
@@ -69,19 +65,18 @@ namespace HealthCheckupReservationReception.Views
             this.barBtnRcpExtra,
             this.barBtnRcpCancel,
             this.barBtnRcpLog,
-            this.barBtnHolidayNew,
-            this.barBtnHolidayEdit,
-            this.barBtnHolidayDelete,
             this.barStaticWorkStatus,
             this.barStaticOperator});
             this.barRibbonMain.Location = new System.Drawing.Point(0, 0);
             this.barRibbonMain.MaxItemId = 28;
             this.barRibbonMain.Name = "barRibbonMain";
-            // **Page 는 「가는 곳」만 갖는다** (2026-09-11 사용자 결정). 업무 화면 셋이 그
-            // 전부이고, Page 를 누르면 반드시 그 화면이 선다 — Page ↔ 화면 1:1 이다.
-            // 예전에는 `신규 예약` 과 `휴무일 관리` 도 Page 였는데 둘 다 눌러도 아무 데도
-            // 가지 않고 Modal 만 띄운 뒤 탭이 제자리로 돌아왔다. 같은 띠에서 어떤 것은 가고
-            // 어떤 것은 뜨니 예측이 되지 않았다.
+            // **Page 는 「가는 곳」이다 — 마지막 하나만 문이다** (2026-09-14 사용자 지시).
+            // 업무 화면 셋은 Page ↔ 화면 1:1 이고, `휴무일 관리` 는 눌러도 **페이지가 열리지
+            // 않는다**: SelectedPageChanging 을 취소하고 DLG-HOL-01 Modal 만 띄운다. 탭이
+            // 바뀌었다 돌아오는 것이 아니라 애초에 바뀌지 않으므로 그룹도 하나 없다.
+            // [X] 같은 진입점을 페이지 머리줄 버튼(PageHeaderItemLinks)으로도, 페이지마다
+            //     `기준정보` 그룹으로도 두어 봤다. 앞은 이 DevExpress 버전이 그 자리를
+            //     아이콘만으로 그려 글자가 없었고, 뒤는 같은 버튼이 세 탭에 생겼다.
             this.barRibbonMain.Pages.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPage[] {
             this.barPagePatient,
             this.barPageRsvDesk,
@@ -104,6 +99,7 @@ namespace HealthCheckupReservationReception.Views
             this.barRibbonMain.StatusBar = this.barStatusMain;
             this.barRibbonMain.ToolbarLocation = DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Hidden;
             this.barRibbonMain.SelectedPageChanged += new System.EventHandler(this.barRibbonMain_SelectedPageChanged);
+            this.barRibbonMain.SelectedPageChanging += new DevExpress.XtraBars.Ribbon.RibbonPageChangingEventHandler(this.barRibbonMain_SelectedPageChanging);
             //
             // barBtnPatientNew
             //
@@ -258,6 +254,13 @@ namespace HealthCheckupReservationReception.Views
             this.barPageRcpDesk.Name = "barPageRcpDesk";
             this.barPageRcpDesk.Text = "접수 관리";
             //
+            // barPageHoliday
+            //
+            // 03 §24.2 — `[휴무일 관리]` 는 업무 Tab 을 열지 않고 DLG-HOL-01 Modal 을 직접 연다.
+            // 그룹이 없는 것은 빠뜨린 것이 아니라 **이 탭이 열리지 않는다는 뜻**이다.
+            this.barPageHoliday.Name = "barPageHoliday";
+            this.barPageHoliday.Text = "휴무일 관리";
+            //
             // barGroupRcpWork
             //
             // [현장 당일예약] 이 없다 — 2026-09-11 grilling. 00 RP-05 가 일반/현장을 **시각**으로
@@ -280,48 +283,6 @@ namespace HealthCheckupReservationReception.Views
             this.barGroupRcpView.ItemLinks.Add(this.barBtnRcpLog);
             this.barGroupRcpView.Name = "barGroupRcpView";
             this.barGroupRcpView.Text = "보기";
-            //
-            // barBtnHolidayNew
-            //
-            // 03 §24.5 — 선택행과 무관한 독립 Action 이라 늘 열려 있다.
-            this.barBtnHolidayNew.Caption = "휴무일추가";
-            this.barBtnHolidayNew.Id = 25;
-            this.barBtnHolidayNew.Name = "barBtnHolidayNew";
-            this.barBtnHolidayNew.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnHolidayNew.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnHolidayNew_ItemClick);
-            //
-            // barBtnHolidayEdit
-            //
-            this.barBtnHolidayEdit.Caption = "휴무일수정";
-            this.barBtnHolidayEdit.Id = 26;
-            this.barBtnHolidayEdit.Name = "barBtnHolidayEdit";
-            this.barBtnHolidayEdit.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnHolidayEdit.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnHolidayEdit_ItemClick);
-            //
-            // barBtnHolidayDelete
-            //
-            this.barBtnHolidayDelete.Caption = "휴무일삭제";
-            this.barBtnHolidayDelete.Id = 27;
-            this.barBtnHolidayDelete.Name = "barBtnHolidayDelete";
-            this.barBtnHolidayDelete.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            this.barBtnHolidayDelete.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.barBtnHolidayDelete_ItemClick);
-            //
-            // barPageHoliday
-            //
-            // 03 §24 는 Modal 로 적었지만 2026-09-11 사용자 결정으로 업무 화면이다 — 탭을
-            // 누르면 그 화면이 서므로 Page ↔ 화면 1:1 이 그대로 유지된다.
-            this.barPageHoliday.Groups.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPageGroup[] {
-            this.barGroupHolidayWork});
-            this.barPageHoliday.Name = "barPageHoliday";
-            this.barPageHoliday.Text = "휴무일 관리";
-            //
-            // barGroupHolidayWork
-            //
-            this.barGroupHolidayWork.ItemLinks.Add(this.barBtnHolidayNew);
-            this.barGroupHolidayWork.ItemLinks.Add(this.barBtnHolidayEdit);
-            this.barGroupHolidayWork.ItemLinks.Add(this.barBtnHolidayDelete);
-            this.barGroupHolidayWork.Name = "barGroupHolidayWork";
-            this.barGroupHolidayWork.Text = "자체휴무일";
             //
             // barStatusMain
             //
@@ -371,11 +332,7 @@ namespace HealthCheckupReservationReception.Views
         private DevExpress.XtraBars.Ribbon.RibbonPage barPagePatient;
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageRsvDesk;
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageRcpDesk;
-        private DevExpress.XtraBars.BarButtonItem barBtnHolidayNew;
-        private DevExpress.XtraBars.BarButtonItem barBtnHolidayEdit;
-        private DevExpress.XtraBars.BarButtonItem barBtnHolidayDelete;
         private DevExpress.XtraBars.Ribbon.RibbonPage barPageHoliday;
-        private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupHolidayWork;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientWork;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupPatientView;
         private DevExpress.XtraBars.Ribbon.RibbonPageGroup barGroupRsvWork;

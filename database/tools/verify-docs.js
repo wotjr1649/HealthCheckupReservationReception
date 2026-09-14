@@ -270,9 +270,20 @@ function splitFences(src) {
   // dbo 스키마 한정 참조만 센다 — 계획의 SQL 이 테이블을 부르는 형태이고 산문과 섞이지 않는다.
   // SP/TVF/Sequence 는 영문으로 시작하므로 이 정규식에 걸리지 않는다.
   const TBLR3 = /(?:\bdbo\.|\[dbo\]\.)\[?([가-힣][가-힣A-Za-z_0-9]*)\]?/g;
+  // [R20] **지나간 이름은 계획 기록에 남는다.** 예약취소·접수취소가 `USP_HC_업무_취소` 하나로
+  //       합쳐졌는데(05 §11.3), Phase 4 계획은 그때 그 이름으로 설계를 적었다. 기록을 고쳐
+  //       쓰지 않는 것이 이 저장소의 규칙이므로(database/AGENTS.md 머리말) 이름만 통과시킨다.
+  //       V11 의 목적은 그대로다 — 오타와 존재한 적 없는 객체를 잡는 것이고, 아래 둘은
+  //       실제로 존재했던 이름이다. 새 이름을 여기 더하지 마라: 여기 있다는 것은 "지금은
+  //       없지만 그때는 있었다" 는 뜻이다.
+  // [R21] 같은 이유로 둘을 더한다 — 수검자상세·수검자유효업무가 수검자목록 RS1 로 들어갔다.
+  const RETIRED = ['USP_HC_예약_취소', 'USP_HC_접수_취소',
+                   'USP_HC_수검자상세_조회', 'USP_HC_수검자유효업무_조회',
+                   'USP_HC_자체휴무일_등록', 'USP_HC_자체휴무일_수정'];
   const known = new Set([
     ...(spec.match(OBJ) || []),
     ...[...sec04Summary.matchAll(/\`([가-힣][가-힣A-Za-z_0-9]*)\`/g)].map(x => x[1]),
+    ...RETIRED,
   ]);
   const hits = [];
   for (const [n, s] of Object.entries(plans))
@@ -651,7 +662,8 @@ function splitFences(src) {
       if (!(a < b && b < c)) hits.push(f + ' 순서 어긋남 [6]=' + a + ' [7]=' + b + ' [6b]=' + c);
     }
   }
-  if (bodies !== 8) hits.push('Write SP 본문 ' + bodies + '개 (기대 8)');
+  // [R20] 취소 둘이 USP_HC_업무_취소 하나가 되어 Write SP 본문이 8 → 7 이다.
+  if (bodies !== 7) hits.push('Write SP 본문 ' + bodies + '개 (기대 7)');
   hits.length ? F('V19', '감사/RS1 순서 위반 ' + hits.length + '건', hits.join(String.fromCharCode(10)))
               : P('V19', '감사 INSERT 가 RS1 보다 앞 (Write SP ' + bodies + '개)');
 }
@@ -1062,6 +1074,117 @@ function splitFences(src) {
       ? F('V26', '정책 시각값이 00 과 어긋나거나 사라졌다 ' + bad.length + '건', bad.join('\n'))
       : P('V26', '정책 시각값 주장 ' + checked + '건이 00 CP-04(' + OPEN + '~' + CLOSE + ')·§3 마감(' +
                  NAM + '/' + NPM + ' · ' + RAM + '/' + RPM + ')과 일치');
+  }
+}
+
+// V27 06 §18 SP 구현 Matrix 가 **베낀 표가 아니라 검사되는 표**인가.
+//
+// [X] R7 무렵 값(Param 합계 87·113)이 R20~R22 를 지나도록 그대로 남아 있었다. 같은 절 안에서
+//     Matrix 는 106 을 말하고 아래 요약표는 87 을 말했다 — **한 문서가 자기 자신과 어긋났다.**
+//     `SCH-019` 는 실물을 정확히 106 으로 재고 green 이었다. 문서에 베낀 수에만 검사가 없었다
+//     (ROOT `AGENTS.md` §6). 그래서 이 검사를 만들고 요약표는 걷었다.
+//
+// 대조 대상은 **이미 기계가 지키는 두 곳**이다:
+//   Param      database/tests/01_Schema_Tests.sql 의 @ExpP  (SCH-019 가 sys.parameters 와 EXCEPT 양방향)
+//   Result Set 05 의 각 SP 절이 선언한 RSn 개수              (계약의 단일 출처)
+{
+  const SCHEMA = path.join(REPO, 'database', 'tests', '01_Schema_Tests.sql');
+  const base05 = read(BASE05);
+
+  // 06 §18 Matrix 행: | `USP_HC_x` | 구분 | Param | RS … |
+  const sec18 = sliceSection(spec, 'SP 구현 Matrix');
+  const doc = new Map();
+  for (const m of sec18.matchAll(
+      /^\|\s*`(USP_HC_[^`]+)`\s*\|\s*([A-Z]+)\s*\|\s*(\d+)\s*\|\s*\**\s*(\d+)/gm)) {
+    doc.set(m[1], { kind: m[2], param: +m[3], rs: +m[4] });
+  }
+
+  // 01_Schema_Tests.sql @ExpP — (N'SP', 순번, N'@p', 'type') 행을 SP 별로 센다.
+  const expp = new Map();
+  for (const m of read(SCHEMA).matchAll(/\(\s*N'(USP_HC_[^']+)'\s*,\s*\d+\s*,\s*N'@/g)) {
+    expp.set(m[1], (expp.get(m[1]) || 0) + 1);
+  }
+  // Parameter 가 0 개인 SP 는 @ExpP 에 행이 없다 — 05 §1.3 에 있으면 0 으로 둔다.
+  for (const m of base05.matchAll(/^\| *SP-[A-Z]{3}-\d{2} *\| *`\[dbo\]\.\[(USP_HC_[^\]]+)\]`/gm)) {
+    if (!expp.has(m[1])) expp.set(m[1], 0);
+  }
+
+  // 05 의 RS 선언 — SP 이름이 붙은 제목부터 다음 **장**까지가 그 SP 의 구획이다.
+  // (`예약가능정보` 는 §9 장 하나를 통째로 쓰고 그 안에 ## 절이 여럿이다.)
+  const rsOf = new Map();
+  let cur = null;
+  for (const l of base05.replace(/\r/g, '').split('\n')) {
+    const h = l.match(/^#+ [\d.]+ .*\[dbo\]\.\[(USP_HC_[^\]]+)\]/);
+    if (h) { cur = h[1]; if (!rsOf.has(cur)) rsOf.set(cur, new Set()); continue; }
+    if (/^# /.test(l)) cur = null;
+    // `RS1 Schema:` 는 같은 RS 를 다시 가리키는 소제목이다 — 번호로 모아 중복을 없앤다.
+    const r = cur && l.match(/^RS(\d+) /);
+    if (r) rsOf.get(cur).add(r[1]);
+  }
+
+  const bad = [];
+  if (doc.size === 0 || expp.size === 0) {
+    F('V27', '06 §18 Matrix 또는 01_Schema_Tests @ExpP 를 못 읽었다 — 미실행은 PASS 가 아니다 ' +
+             '(Matrix ' + doc.size + ' · @ExpP ' + expp.size + ')');
+  } else {
+    for (const [sp, want] of expp) {
+      if (!doc.has(sp)) { bad.push(sp + ' — 05 §1.3 에 있는데 06 §18 Matrix 에 없다'); continue; }
+      const got = doc.get(sp);
+      if (got.param !== want) {
+        bad.push(sp + ' — Param 06 §18 이 ' + got.param + ', 01_Schema_Tests @ExpP 는 ' + want);
+      }
+      const rs = rsOf.has(sp) ? rsOf.get(sp).size : -1;
+      if (rs < 0) bad.push(sp + ' — 05 에서 RS 선언을 못 찾았다');
+      else if (got.rs !== rs) {
+        bad.push(sp + ' — Result Set 06 §18 이 ' + got.rs + ', 05 선언은 ' + rs);
+      }
+    }
+    for (const sp of doc.keys()) {
+      if (!expp.has(sp)) bad.push(sp + ' — 06 §18 Matrix 에만 있다 (05 §1.3 밖)');
+    }
+
+    // 합계 줄의 구분별 수도 센다 — 「SELECT 7 / INSERT 2 / UPDATE 5 / SAVE 1 / DELETE 1」.
+    // 이 줄이 없으면 FAIL 이다. 미실행은 PASS 가 아니다.
+    const sum = sec18.match(/^합계: ([^\n]*?) —/m);
+    if (!sum) {
+      bad.push('06 §18 합계 줄을 못 찾았다 — 형식이 바뀌었다');
+    } else {
+      const said = new Map();
+      for (const m of sum[1].matchAll(/([A-Z]+)\s+(\d+)/g)) said.set(m[1], +m[2]);
+      const real = new Map();
+      for (const v of doc.values()) real.set(v.kind, (real.get(v.kind) || 0) + 1);
+      for (const [k, n] of real) {
+        if (said.get(k) !== n) bad.push('구분 ' + k + ' — 합계 줄이 ' + (said.get(k) === undefined ? '없다' : said.get(k)) + ', Matrix 는 ' + n);
+      }
+      for (const k of said.keys()) {
+        if (!real.has(k)) bad.push('구분 ' + k + ' — 합계 줄에만 있다');
+      }
+    }
+
+    bad.length
+      ? F('V27', '06 §18 SP Matrix 가 실측과 어긋난다 ' + bad.length + '건', bad.join('\n'))
+      : P('V27', '06 §18 SP Matrix ' + doc.size + '행의 Param ↔ 01_Schema_Tests @ExpP · ' +
+                 'Result Set ↔ 05 선언 전건 일치');
+  }
+}
+
+// V28 06 이 자기 버전을 두 곳에 적는다 — 그 둘이 같은가.
+//
+// [X] §1 머리말의 `문서 버전` 과 §4.1 회차표의 `06` 행이 **v1.17 과 v1.19 로 갈라져 있었다**.
+//     R21·R22 가 §4.1 만 고치고 머리말을 두고 갔기 때문이다. `V06`(계획이 현재 스펙 버전을
+//     참조하는가)이 머리말을 읽으므로, 갈라진 동안 V06 은 낡은 쪽을 기준으로 green 이었다.
+//     §1 의 `[R12]` 주석은 *"회차별 버전을 여기 적지 않는다 — §4.1 이 단일 출처"* 라고 적어
+//     두었지만 버전 자체는 그대로 남아 있었다. 지우는 대신 **둘이 같은지 센다**.
+{
+  const head = spec.match(/^- \*\*문서 버전:\*\*\s*(v[\d.]+)/m);
+  const row = spec.match(/^\|\s*`06_DB_Transaction_Security_Seed\.md`\s*\|\s*(v[\d.]+)\s*\|/m);
+  if (!head || !row) {
+    F('V28', '06 의 문서 버전을 §1 또는 §4.1 에서 못 읽었다 — 미실행은 PASS 가 아니다 ' +
+             '(§1 ' + (head ? head[1] : '없음') + ' · §4.1 ' + (row ? row[1] : '없음') + ')');
+  } else if (head[1] !== row[1]) {
+    F('V28', '06 이 자기 버전을 두 값으로 말한다', '§1 머리말 ' + head[1] + ' · §4.1 회차표 ' + row[1]);
+  } else {
+    P('V28', '06 문서 버전 ' + head[1] + ' 이 §1 과 §4.1 에서 일치');
   }
 }
 

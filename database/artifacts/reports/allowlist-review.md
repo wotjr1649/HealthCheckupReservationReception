@@ -12,21 +12,21 @@
 | `Deploy.sql` | 18 |
 | `Rebuild.sql` | 62 |
 | `deploy/00_Preflight.sql` | 50 |
-| `deploy/01_Schema.sql` | 375 |
+| `deploy/01_Schema.sql` | 386 |
 | `deploy/02_Seed.sql` | 101 |
 | `deploy/03_Functions.sql` | 258 |
-| `deploy/04_Procedures_Select.sql` | 1047 |
+| `deploy/04_Procedures_Select.sql` | 994 |
 | `deploy/05_Procedures_Patient_Write.sql` | 719 |
-| `deploy/06_Procedures_Reservation_Write.sql` | 1029 |
-| `deploy/07_Procedures_Reception_Write.sql` | 759 |
-| `deploy/07a_Procedures_Holiday.sql` | 404 |
-| `deploy/08_Verify.sql` | 66 |
+| `deploy/06_Procedures_Reservation_Write.sql` | 1060 |
+| `deploy/07_Procedures_Reception_Write.sql` | 584 |
+| `deploy/07a_Procedures_Holiday.sql` | 377 |
+| `deploy/08_Verify.sql` | 69 |
 | `tests/00_Test_Harness.sql` | 194 |
 | `tests/00b_Test_Harness_RCP.sql` | 66 |
-| `tests/01_Schema_Tests.sql` | 419 |
+| `tests/01_Schema_Tests.sql` | 416 |
 | `tests/02_Seed_Tests.sql` | 167 |
 | `tests/03_Rule_Tests.sql` | 351 |
-| `tests/04_Select_SP_Tests.sql` | 70 |
+| `tests/04_Select_SP_Tests.sql` | 69 |
 | `tests/05_Patient_Write_Tests.sql` | 323 |
 | `tests/06_Reservation_Write_Tests.sql` | 452 |
 | `tests/07_Reception_Write_Tests.sql` | 437 |
@@ -43,11 +43,6 @@
 | `tests/contract/03_수검자목록_ChartNo.sql` | 4 |
 | `tests/contract/04_수검자목록_0건.sql` | 4 |
 | `tests/contract/05_수검자목록_주민번호형식.sql` | 4 |
-| `tests/contract/06_수검자상세_PatientId없음.sql` | 4 |
-| `tests/contract/07_수검자상세_미존재.sql` | 4 |
-| `tests/contract/08_수검자상세_정상.sql` | 6 |
-| `tests/contract/09_수검자유효업무_0건.sql` | 6 |
-| `tests/contract/10_수검자유효업무_2건701.sql` | 6 |
 | `tests/contract/11_예약접수목록_날짜역전.sql` | 4 |
 | `tests/contract/12_예약접수목록_조건없음.sql` | 4 |
 | `tests/contract/13_예약접수목록_날짜범위.sql` | 4 |
@@ -94,6 +89,7 @@
 | `tests/contract/HOL-005_자체휴무일_등록_날짜중복.sql` | 6 |
 | `tests/contract/HOL-006_자체휴무일_수정_법정공휴일.sql` | 7 |
 | `tests/contract/HOL-007_자체휴무일_삭제_미존재.sql` | 5 |
+| `tests/contract/HOL-008_자체휴무일_저장_동작코드_허용밖.sql` | 8 |
 | `tests/contract/OFF-308-01_업무일아님_예약등록.sql` | 38 |
 | `tests/contract/OFF-309-02_업무시간밖_예약등록.sql` | 24 |
 | `tests/contract/PWR-000_fixture.sql` | 10 |
@@ -154,7 +150,7 @@
 | `tests/contract/SEL-022_변경이력_기록0건.sql` | 6 |
 | `tests/contract/SEL-023_변경이력_TargetTable_허용밖.sql` | 5 |
 | `tests/contract/SEL-024_변경이력_TargetTable_NULL.sql` | 4 |
-| **합계 145개** | **9358** |
+| **합계 141개** | **9126** |
 
 ## 2. §9.2 허용목록 대조
 
@@ -181,10 +177,10 @@
 | `EXECUTE AS USER` / `REVERT`, `ALTER ROLE … ADD MEMBER` | 사용 | `ALTER ROLE  ADD MEMBER` 7개 파일 |
 | `sys.dm_exec_describe_first_result_set(_for_object)` | 미사용 | `sys.dm_exec_describe_first_result_set(_for_object)` — 0건 |
 | `WAITFOR TIME` | 사용 | `WAITFOR TIME` 2개 파일 |
-| **예외적 허용 (SQL 2016 DDL 배관)** `CREATE OR ALTER`, `DROP … IF EXISTS` | 사용 | `CREATE OR ALTER` 8개 파일 · `DROP  IF EXISTS` 2개 파일 |
+| **예외적 허용 (SQL 2016 DDL 배관)** `CREATE OR ALTER`, `DROP … IF EXISTS` | 사용 | `CREATE OR ALTER` 10개 파일 · `DROP  IF EXISTS` 2개 파일 |
 | `STRING_SPLIT`, XML 파싱, JSON 함수/타입, `OPENJSON`, `FOR JSON` — `04` §3.8·§15.5 | 사용 | `FOR JSON` 11개 파일 · `04` 26개 파일 |
 | 비트마스크 — `04` §15.5 | 사용 | `04` 26개 파일 |
-| `SESSION_CONTEXT`, `AT TIME ZONE`, `STRING_AGG`, `TRIM()`, `CONCAT_WS`, `TRANSLATE`, `DATEDIFF_BIG`, `COMPRESS`, `GREATEST`/`LEAST`, `GENERATE_SERIES`, 정규식 함수, 벡터 타입 — 2012 이후 기능 | 사용 | `AT TIME ZONE` 42개 파일 · `TRIM()` 6개 파일 |
+| `SESSION_CONTEXT`, `AT TIME ZONE`, `STRING_AGG`, `TRIM()`, `CONCAT_WS`, `TRANSLATE`, `DATEDIFF_BIG`, `COMPRESS`, `GREATEST`/`LEAST`, `GENERATE_SERIES`, 정규식 함수, 벡터 타입 — 2012 이후 기능 | 사용 | `AT TIME ZONE` 48개 파일 · `TRIM()` 6개 파일 |
 
 사용 22 · 미사용 1 · 수동판단 0 (허용 행 23)
 
@@ -219,6 +215,6 @@
 | 항목 | 값 |
 |---|---|
 | 검토자 | Claude Opus 5 (세션 실행) |
-| 시각 | 2026-09-11 15:26 KST |
+| 시각 | 2026-09-14 17:52 KST |
 | 생성 | `node tools/allowlist-review.js` |
 | 대상 커밋 | (커밋 직전 트리) |

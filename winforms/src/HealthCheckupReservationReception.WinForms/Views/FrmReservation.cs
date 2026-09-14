@@ -36,8 +36,13 @@ namespace HealthCheckupReservationReception.Views
         // OnLoad 까지 들고 있는 진입 인자다 (03 §3 BeginNewReservation).
         private long _patientId;
 
-        // DLG-RSV-01 예약변경 (03 §10). 이것이 있으면 변경 모드다.
-        private WorkDetailDto _work;
+        // DLG-RSV-01 예약변경 (03 §10). 이것이 있으면 변경 모드다. 상세는 모달이 스스로
+        // 읽으므로(Presenter.BeginChange) 여기서 들고 있는 것은 업무ID 하나다 — 목록이
+        // 쥐고 있던 행버전은 그 사이 낡을 수 있다 (03 §11.3).
+        private WorkDetailReadDto _read;
+
+        // 부모가 받아 둔 수검자 상세. 신규예약 진입이 SP-PAT-02 를 다시 부르지 않게 한다.
+        private PatientDto _patient;
 
         partial void ConfigureUI();
 
@@ -58,11 +63,12 @@ namespace HealthCheckupReservationReception.Views
         /// 일반/현장을 가르는 인자가 없다. 그것은 조작자가 아니라 시각이 정한다 (00 RP-05).
         /// </summary>
         public FrmReservation(IReservationService service, IPatientService patientService,
-            string operatorName, long patientId)
+            IWorkService workService, string operatorName, long patientId, PatientDto patient)
             : this()
         {
-            _presenter = new ReservationPresenter(this, service, patientService, operatorName);
+            _presenter = new ReservationPresenter(this, service, patientService, workService, operatorName);
             _patientId = patientId;
+            _patient = patient;
         }
 
         /// <summary>
@@ -72,12 +78,27 @@ namespace HealthCheckupReservationReception.Views
         /// 범위(예약일·시간대·AEX)가 신규예약과 같기 때문이다. 그래서 파일이 따로 없고
         /// `grep "화면 ID:"` 는 이 줄로 잡는다 (winforms/AGENTS.md).
         /// </summary>
-        public FrmReservation(IReservationService service, IPatientService patientService,
-            string operatorName, WorkDetailDto work)
+        /// <remarks>
+        /// 생성자가 아니라 이름 있는 메서드다 — 신규예약 생성자와 인자 모양이 같아지므로
+        /// (`long` 하나가 수검자ID 인지 업무ID 인지) 호출부에서 구분이 사라진다.
+        /// </remarks>
+        public static FrmReservation ForChange(IReservationService service, IPatientService patientService,
+            IWorkService workService, string operatorName, WorkDetailReadDto read)
+        {
+            return new FrmReservation(service, patientService, workService, operatorName, read);
+        }
+
+        /// <summary>
+        /// <see cref="ForChange"/> 와 시험용 파생 폼이 쓴다. `protected` 인 이유는
+        /// `changing` 같은 마법값을 호출부에 내놓지 않기 위해서다 — 바깥은 팩토리만 본다.
+        /// </summary>
+        protected FrmReservation(IReservationService service, IPatientService patientService,
+            IWorkService workService, string operatorName, WorkDetailReadDto read)
             : this()
         {
-            _presenter = new ReservationPresenter(this, service, patientService, operatorName);
-            _work = work;
+            _presenter = new ReservationPresenter(this, service, patientService, workService, operatorName);
+            _read = read;
+            _patientId = 0;
         }
 
         /// <summary>
@@ -100,8 +121,8 @@ namespace HealthCheckupReservationReception.Views
 
             using (new clsBusyScope(this))
             {
-                if (_work != null) { _presenter.BeginChange(_work); }
-                else { _presenter.Begin(_patientId); }
+                if (_read != null) { _presenter.BeginChange(_read); }
+                else { _presenter.Begin(_patientId, _patient); }
             }
         }
 
@@ -114,7 +135,7 @@ namespace HealthCheckupReservationReception.Views
         public event EventHandler ScheduleChanged;
         public event EventHandler SaveRequested;
 
-        public PatientDetailDto Patient
+        public PatientDto Patient
         {
             set
             {
@@ -283,9 +304,14 @@ namespace HealthCheckupReservationReception.Views
             Close();
         }
 
+        /// <summary>
+        /// 기본값은 리본 버튼과 같은 `예약` 이다 — 버튼은 `[예약]` 인데 창은 `신규 예약` 이던
+        /// 것이 R1 결함이었다 (session-17 §4.9 의 `신규예약 → 예약` 이 닿지 않은 자리,
+        /// 2026-09-12 수정). 예약 변경은 Presenter 가 제 이름을 넣는다.
+        /// </summary>
         public string Title
         {
-            set { Text = string.IsNullOrWhiteSpace(value) ? "신규 예약" : value; }
+            set { Text = string.IsNullOrWhiteSpace(value) ? "예약" : value; }
         }
 
         public void ShowMessage(string message)
@@ -395,11 +421,22 @@ namespace HealthCheckupReservationReception.Views
             }
         }
 
-        /// <summary>03 §8.3 — `오전  12 / 20`. 고를 수 없는 시간대는 사유를 함께 적는다.</summary>
+        /// <summary>
+        /// 03 §8.3 — `오전  12 / 20`. 고를 수 없는 시간대는 사유를 함께 적는다.
+        ///
+        /// **정원 0 은 「아직 모른다」다** — 05 §9.7 이 정원을 20 으로 못박아 두었으므로 실제
+        /// 값으로 올 수 없다. 예약 변경 진입에서 지금 시간대가 아닌 쪽이 그렇고, 그때는 `0 / 0`
+        /// 을 그리는 대신 이름만 적는다. 고르면 SP 가 두 행의 정원을 함께 준다.
+        /// </summary>
         private static string DescriptionOf(SlotInfoDto slot)
         {
+            if (slot.Capacity <= 0)
+            {
+                return slot.SlotName;
+            }
+
             string text = slot.SlotName + "    "
-                + clsWorkText.FormatCapacityAfterBooking(slot.CurrentCount, slot.Capacity, slot.RemainingSeats);
+                + clsWorkText.FormatCapacityBeforeBooking(slot.CurrentCount, slot.Capacity);
 
             if (!slot.Selectable && !string.IsNullOrWhiteSpace(slot.BlockMessage))
             {

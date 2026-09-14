@@ -56,7 +56,7 @@ ELSE IF @Scen = 3
 ELSE IF @Scen = 4
     EXEC [dbo].[USP_HC_예약_등록] @P1, 'NORMAL', '2026-11-18', 'AM', 0,0,0,0,0,0,0, N'CONC-B';
 ELSE IF @Scen = 5
-    EXEC [dbo].[USP_HC_예약_취소] @W, @Rv, N'CONC-B';
+    EXEC [dbo].[USP_HC_업무_취소] 'CANCEL_RESERVATION', @W, @Rv, N'CONC-B';
 ELSE IF @Scen = 6
     -- A 와 같은 stale @Rv. 먼저 도는 쪽이 성공하고 나중이 601 이다.
     -- A 는 OPT01+OPT06, B 는 OPT01+OPT02 로 서로 다른 실제 변경을 요구한다.

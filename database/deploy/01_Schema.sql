@@ -37,6 +37,17 @@ DROP PROCEDURE IF EXISTS [dbo].[USP_HC_UPDATE_예약취소];
 DROP PROCEDURE IF EXISTS [dbo].[USP_HC_UPDATE_접수완료];
 DROP PROCEDURE IF EXISTS [dbo].[USP_HC_UPDATE_접수추가검사];
 DROP PROCEDURE IF EXISTS [dbo].[USP_HC_UPDATE_접수취소];
+
+-- [R20] 예약취소·접수취소가 [USP_HC_업무_취소] 하나가 되었다.
+-- [R21] 수검자상세·수검자유효업무의 Result Set 이 [USP_HC_수검자목록_조회] 안으로 들어갔다.
+--       같은 이유로 여기 적는다 — CREATE OR ALTER 는 없어진 SP 를 지우지 않는다.
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_예약_취소];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_접수_취소];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_수검자상세_조회];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_수검자유효업무_조회];
+-- [R22] 자체휴무일 등록+수정이 [USP_HC_자체휴무일_저장] 하나가 되었다.
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_자체휴무일_등록];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_자체휴무일_수정];
 GO
 CREATE TABLE [dbo].[수검자]
 (

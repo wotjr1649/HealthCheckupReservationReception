@@ -19,15 +19,20 @@ namespace HealthCheckupReservationReception.Tests.Presenters
     [TestClass]
     public class ReceptionPresenterTests
     {
+        /// <summary>
+        /// **진입에서 SP 를 부르지 않는다** (2026-09-14 사용자 지시). 부모(`WF-WRK-01`)가 행을
+        /// 고를 때 받은 `SP-WRK-02` 한 벌을 그대로 받아 연다 — 같은 업무ID 로 같은 여섯을
+        /// 다시 읽던 자리다.
+        /// </summary>
         [TestMethod]
-        public void 열면_상세를_읽고_RS4_그대로_버튼을_연다()
+        public void 열면_받아온_한_벌로_RS4_그대로_버튼을_연다()
         {
             var view = new FakeReceptionView();
             var service = new FakeWorkService { DetailResult = Detail(Allowed(true, 0, string.Empty)) };
 
-            new ReceptionPresenter(view, service, "접수1번창구").Begin(77);
+            new ReceptionPresenter(view, service, "접수1번창구").Begin(service.DetailResult.Value);
 
-            Assert.AreEqual(77L, service.LastDetailWorkId);
+            Assert.AreEqual(0, service.DetailCalls, "진입에서 상세를 다시 읽었다");
             Assert.AreEqual("C000001", view.Detail.ChartNo);
             Assert.IsTrue(view.ReceiveEnabled);
             Assert.AreEqual("접수 가능", view.EligibilityText);
@@ -42,7 +47,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 DetailResult = Detail(Allowed(false, 304, "접수 마감시각이 지났습니다.")),
             };
 
-            new ReceptionPresenter(view, service, "접수1번창구").Begin(77);
+            new ReceptionPresenter(view, service, "접수1번창구").Begin(service.DetailResult.Value);
 
             Assert.IsFalse(view.ReceiveEnabled);
             Assert.AreEqual("접수 불가 — 접수 마감시각이 지났습니다.", view.EligibilityText);
@@ -55,7 +60,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakeReceptionView();
             var service = new FakeWorkService { DetailResult = Detail(Allowed(false, 503, string.Empty)) };
 
-            new ReceptionPresenter(view, service, "접수1번창구").Begin(77);
+            new ReceptionPresenter(view, service, "접수1번창구").Begin(service.DetailResult.Value);
 
             StringAssert.Contains(view.EligibilityText, "503");
         }
@@ -69,7 +74,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 DetailResult = Detail(Allowed(true, 0, string.Empty)),
                 SaveResult = Saved(true, 0, "정상 처리되었습니다."),
             };
-            new ReceptionPresenter(view, service, "접수1번창구").Begin(77);
+            new ReceptionPresenter(view, service, "접수1번창구").Begin(service.DetailResult.Value);
 
             view.RaiseReceive();
 
@@ -92,7 +97,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 DetailResult = Detail(Allowed(true, 0, string.Empty)),
                 SaveResult = Saved(false, 601, "다른 사용자가 예약·접수 업무를 변경했습니다."),
             };
-            new ReceptionPresenter(view, service, "접수1번창구").Begin(77);
+            new ReceptionPresenter(view, service, "접수1번창구").Begin(service.DetailResult.Value);
             int before = service.DetailCalls;
 
             view.RaiseReceive();
@@ -103,16 +108,20 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         }
 
         [TestMethod]
-        public void 상세를_못_읽으면_비우고_버튼을_닫는다()
+        /// <summary>
+        /// 부모가 빈손으로 열면 비우고 닫는다. 예전에는 「상세를 못 읽으면」이었고, 진입이
+        /// 조회를 하지 않게 된 뒤로는 **받은 것이 없을 때**가 그 자리다 (2026-09-14).
+        /// </summary>
+        public void 받은_것이_없으면_비우고_버튼을_닫는다()
         {
             var view = new FakeReceptionView();
-            var service = new FakeWorkService { DetailFailure = new InvalidOperationException("서버 SQLDEV01") };
+            var service = new FakeWorkService();
 
-            new ReceptionPresenter(view, service, "접수1번창구").Begin(77);
+            new ReceptionPresenter(view, service, "접수1번창구").Begin(null);
 
             Assert.IsNull(view.Detail);
             Assert.IsFalse(view.ReceiveEnabled);
-            Assert.IsFalse(view.ValidationMessage.Contains("SQLDEV01"), view.ValidationMessage);
+            Assert.AreEqual(0, service.DetailCalls, "빈손인데 SP 를 불렀다");
         }
 
         // 05 §8.2 RS4 는 정확히 5행이고 코드가 고정이다. 없으면 계약 위반이다.
@@ -122,7 +131,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakeReceptionView();
             var service = new FakeWorkService { DetailResult = Detail(new List<WorkActionDto>()) };
 
-            new ReceptionPresenter(view, service, "접수1번창구").Begin(77);
+            new ReceptionPresenter(view, service, "접수1번창구").Begin(service.DetailResult.Value);
 
             Assert.IsFalse(view.ReceiveEnabled);
             Assert.IsNotNull(view.ValidationMessage);

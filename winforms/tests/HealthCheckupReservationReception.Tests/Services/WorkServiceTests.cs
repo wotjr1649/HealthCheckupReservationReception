@@ -40,7 +40,7 @@ namespace HealthCheckupReservationReception.Tests.Services
             var repository = new FakeWorkRepository { Save = Blocked(502, "현재 상태에서는 요청한 업무를 처리할 수 없습니다.") };
             var service = new WorkService(repository);
 
-            OperationResult<WorkSaveReadDto> result = service.CancelReception(Request());
+            OperationResult<WorkSaveReadDto> result = service.CancelWork(DbWorkAction.CancelReception, Request());
 
             Assert.AreEqual(77L, repository.LastCancel.WorkId);
             Assert.IsTrue(result.IsSuccess);
@@ -110,8 +110,11 @@ namespace HealthCheckupReservationReception.Tests.Services
             return Save;
         }
 
-        public WorkSaveReadDto CancelReception(WorkActionRequest request)
+        public string LastCancelAction { get; private set; }
+
+        public WorkSaveReadDto CancelWork(string actionCode, WorkActionRequest request)
         {
+            LastCancelAction = actionCode;
             LastCancel = request;
             return Save;
         }

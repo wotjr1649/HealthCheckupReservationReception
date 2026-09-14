@@ -1,11 +1,15 @@
-# 검진 예약·접수 관리 프로그램 — DB Transaction·잠금·보안·Seed 구현 계약서
+﻿# 검진 예약·접수 관리 프로그램 — DB Transaction·잠금·보안·Seed 구현 계약서
 
 - **문서명:** `06_DB_Transaction_Security_Seed.md`
 - **상태:** `FINAL / GO / READ-ONLY` — SQL 실행검증 완료. §42 Gate 판정은 전부 실측이다
 - **위치:** `docs/baseline/` — 2026-09-08 입주. 이제 이 문서를 고치는 것도 재봉인이다 (ROOT `AGENTS.md` §2)
-- **문서 버전:** v1.16  (`[R12]` 회차별 버전을 여기 적지 않는다 — §4.1 표가 단일 출처이고 무엇을 고쳤는지는 아래 `RN 개정 범위` 가 적는다. 걷어낸 사본은 R6 부터 한 칸씩 밀려 있었고 아무 게이트도 그것을 보지 않았다. ROOT `AGENTS.md` §6)
-- **기준일:** 2026-09-08  ·  **실행검증일:** 2026-09-07(R3 회귀) · 2026-09-08(R4 회귀 · R5 회귀 회차 `C`) · 2026-09-09(R12 회귀 회차 `R12` 창 밖) · 2026-09-10(R13 회귀 회차 `R13` 창 밖) · 2026-09-11(R19 회귀 회차 `R19` 창 안)
-- **기준선 ID:** `HC-RSV-RCP-20260911-R19`  (직전 `HC-RSV-RCP-20260911-R18`)
+- **문서 버전:** v1.20  (`[R12]` 회차별 버전을 여기 적지 않는다 — §4.1 표가 단일 출처이고 무엇을 고쳤는지는 아래 `RN 개정 범위` 가 적는다. 걷어낸 사본은 R6 부터 한 칸씩 밀려 있었고 아무 게이트도 그것을 보지 않았다. ROOT `AGENTS.md` §6)
+- **기준일:** 2026-09-08  ·  **실행검증일:** 2026-09-07(R3 회귀) · 2026-09-08(R4 회귀 · R5 회귀 회차 `C`) · 2026-09-09(R12 회귀 회차 `R12` 창 밖) · 2026-09-10(R13 회귀 회차 `R13` 창 밖) · 2026-09-11(R19 회귀 회차 `R19` 창 안) · 2026-09-14(R20 회귀 회차 `R20` 창 안 · R22 회귀 회차 `R22` 창 안 — R21·R22 를 함께 담는다)
+- **기준선 ID:** `HC-RSV-RCP-20260914-R24`  (직전 `HC-RSV-RCP-20260914-R22`)
+- **R24 개정 범위:** `06` 만 연다. **계약·SQL·시험은 한 줄도 바꾸지 않는다** — 고치는 것은 §18 이 말하던 거짓 수치와 §36.1 의 죽은 표뿐이다. `USP_HC_예약접수상세_조회` 의 Result Set 이 R18 부터 6 인데 `5 (RS0~RS4)` 로 남아 있었고, 합계 줄은 `20개 · Param 113개` 로 R20~R22 를 지나도록 뒤처졌으며, §36.1 의 「SP별 Parameter 수」 표는 합계 87 로 **같은 절 안에서 Matrix 와 어긋나** 있었다(실물 106). `[!]` **수를 고치는 것으로 끝내지 않는다** — 그러면 다음 회차에 또 썩는다. `verify-docs.js` `V27` 을 새로 놓아 §18 Matrix 의 `Param` 열을 `database/tests/01_Schema_Tests.sql` 의 `@ExpP` 와, `Result Set` 열을 `05` 의 RS 선언과, 합계 줄의 구분별 수를 Matrix 행과 대조한다. 음성시험 넷으로 잡는 것을 확인했다 (Param 한 칸 · RS 한 칸 · SP 행 삭제 · 합계 줄). §36.1 의 표는 걷었다 (ROOT `AGENTS.md` §6)
+- **R22 개정 범위:** `05` 재봉인과 한 쌍이다. 2026-09-14 사용자 지시로 **자체휴무일 등록·수정을 `USP_HC_자체휴무일_저장` 하나로 합쳤다** — 둘은 같은 한 행을 쓰고 잠금 자원·Transaction·Result Set 이 같았다. 여기서 고치는 것은 §1 문서정보 · §4.1 회차표 · §18 SP Matrix 두 행 → 한 행과 개수 · §42 회차 등재다. Transaction 형태(`sp_getapplock HOL|휴무일자` · `XACT_ABORT ON`)와 감사 규칙은 한 줄도 바뀌지 않는다 — 휴무일 SP 는 원래 `변경이력` 을 남기지 않는다(§18 각주)
+- **R21 개정 범위:** `05` 재봉인과 한 쌍이다. 2026-09-14 사용자 지시로 **`SELECT_수검자상세`(SP-PAT-02)와 `SELECT_수검자유효업무`(SP-PAT-05)를 `SELECT_수검자목록`(SP-PAT-01) RS1 안으로 들였다** — 화면이 목록을 한 번 받으면 행을 고를 때도 모달을 열 때도 다시 묻지 않는다. 여기서 고치는 것은 §1 문서정보 · §4.1 회차표 · §18 SP Matrix 두 행 삭제와 개수 · §18 Parameter 표 · §19 판정항목 한 줄이다. Transaction·잠금·감사 규칙은 한 줄도 바뀌지 않는다 — 사라진 둘은 `Transaction X · Lock X` 인 SELECT 였다
+- **R20 개정 범위:** `05` 재봉인과 한 쌍이다. 2026-09-14 사용자 지시로 **예약취소와 접수취소를 `USP_HC_업무_취소` 하나로 합쳤다** — 두 본문이 주석을 빼면 네 리터럴만 달랐다(실측). 여기서 고치는 것은 §1 문서정보 · §4.1 회차표 · SP 표 두 행 → 한 행 · `GRANT EXECUTE` 두 줄 → 한 줄 · §42 회차 등재다. 잠금 자원명(`WORK`)·Transaction 형태·감사 규칙은 한 줄도 바뀌지 않는다 — 합친 SP 가 예전 둘과 같은 것을 한다
 - **R19 개정 범위:** `06` 만 연다. 계약·SQL·Seed·시험을 한 줄도 바꾸지 않는다 — **R18 이 미룬 전체 회귀를 실제로 돌려 그 자리를 닫는 회차다.** 2026-09-11 사용자 승인으로 `database/scripts/test.sh` 를 돌렸고(`Rebuild.sql` 이 `DROP DATABASE` 를 한다), 그 한 번이 넓혀 둔 운영시간 창을 `00` 값으로 되돌리고 fixture 가 없어 판정되지 않던 계약시험까지 판정했다. §42 에 회차 `R19` 를 등재한다. 함께 고치는 것은 §1 문서정보다 — 버전·기준일·기준선 ID 가 R4 값(`v1.1` · `HC-RSV-RCP-20260908-R4`)에 굳은 채 §4.1 과 다른 말을 하고 있었고 아무 게이트도 그것을 보지 않았다. 값을 빼고 단일 출처를 가리킨다 (ROOT `AGENTS.md` §6 — R12 가 머리말에서 걷어낸 것과 **같은 사본의 나머지 한 곳**이다)
 - **R18 개정 범위:** `05` 재봉인에 딸린다. `05` §8.2 `SELECT_예약접수상세` 가 `RS5 추가검사구성` 을 얻는다 — `03` §12 `DLG-RCP-02` 가 AEX 를 고치라고 요구하는데 그 일곱을 읽는 길이 계약에 없었다. 이 문서에서 바뀌는 것은 **§4.1 회차표뿐**이다: Transaction 경계·잠금 순서·검증순서·허용 ResultCode·Seed·시험 아키텍처는 한 줄도 바뀌지 않는다. `[!]` **기존 Result Set 을 고치지 않고 뒤에 더했으므로** 이미 `RS0`~`RS4` 를 읽는 쪽(C# Repository · `tools/expected-contracts.json`)은 깨지지 않는다 — 계약시험의 기대값에는 새 절을 한 벌 더한다. `[!]` **이 회차의 증거는 배포 후 `SELECT_예약접수상세` 를 직접 불러 RS0~RS4 가 회차 전과 한 바이트도 다르지 않고 RS5 가 7행인 것을 확인한 것이다.** 전체 회귀는 DB 를 DROP 하므로 이 회차에서 미뤘고, **R19 가 그것을 돌려 닫았다** — §42 의 회차 `R19` 가 그 증거다
 - **R17 개정 범위:** `03`·`04`·`05` 재봉인에 딸린다. 수검자 조회에서 **차트번호와 이름을 포함검색으로 열었다** (2026-09-10 사용자 결정). 이 문서에서 바뀌는 것은 §4.1 회차표와 §43-32 한계 하나뿐이다 — Transaction·잠금·Seed·시험 아키텍처는 그대로다. `[!]` R16 이 조건 없는 전체조회를 열면서 **`04` §11.3 의 이름 포함검색 금지가 지키던 것이 인덱스 seek 하나만 남았고**, R17 이 그 비용을 알고 지불했다
@@ -64,11 +68,10 @@
 물리 스키마 DDL   7 Table + PK 7 / FK 2 / UQ 2 / UX 1 / NCI 5 / Sequence 1
 Master Seed       검사코드 19행 + 휴무일 41행 (§14)
 Inline TVF 4개 구현
-Stored Procedure 20개 구현
-Write SP 11개의 Transaction 경계·오류 처리·부분저장 차단
+Stored Procedure 19개 구현
+Write SP 10개의 Transaction 경계·오류 처리·부분저장 차단
 Patient / 주민번호 / 차트번호 / Work / 시간대 / 휴무일 직렬화 및 잠금 획득 총순서
 행버전 단일 동시성 토큰, No-op 경계
-Database Role / User WITHOUT LOGIN / GRANT EXECUTE 15건
 Test Fixture, Rule Test, SP Contract Test, Rollback / Concurrency / Security / Clean Rebuild Test
 배포·재구축 Script, 로그·증거 산출물
 ```
@@ -109,12 +112,19 @@ Extended Events / trace flag 세션 (서버 수준 객체)
 | `02_Function_Definition.xlsx` | v2.1 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260908-R7` |
 | `03_Wireframe_Definition.md` | v1.10 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260910-R17` |
 | `04_DB_Design.md` | v3.7 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260910-R17` |
-| `05_DB_Rule_SP_Contract.md` | v3.9 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260911-R18` |
-| `06_DB_Transaction_Security_Seed.md` | v1.16 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260911-R19` |
+| `05_DB_Rule_SP_Contract.md` | v4.2 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260914-R22` |
+| `06_DB_Transaction_Security_Seed.md` | v1.20 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260914-R24` |
 
 `[!]` **기준선 ID 는 문서마다 "마지막 봉인 회차" 다** — 세트 하나에 ID 하나가 아니다.
 R11 은 `01`·`03`·`05`·`06` 넷을 열었다. 수검자 동시성 토큰이 R7 에 `행버전` 으로 통일됐는데 `01` §P01-04 와 `03` §6.4·§16 이 따라오지 않아 **번호가 작은 쪽이 이기는 사슬 위쪽에 옛 문장이 남아 있었다**(ROOT `AGENTS.md` §1). 세 줄을 함께 고쳤고 `05` §4.2 의 `304` Enum 이름 한 칸도 얹었다. 회차의 단일 출처가 이 표이므로 `06` 도 따라 열린다(R5·R10 이 겪은 같은 연쇄다).
 R12 는 `00`·`03`·`05`·`06` 넷을 열었다. 공통 업무 가능조건이 예약·접수 업무의 것인데 같은 기준정보인 수검자만 휴무일과 다르게 묶여 있었고, 화면은 그 상태에서 Action 을 닫아 저장 시점의 DB 판정을 받아볼 수 없게 만들고 있었다.
+R24 는 `06` 만 열었다. §18 SP Matrix 가 자기 자신과 어긋나 있던 것을 고치고, 다시 어긋나지 않도록 `V27` 을 놓는 회차다 — `05` 는 고칠 문장이 0건이다(실측). 계약은 바뀌지 않았다.
+
+R22 도 `05`·`06` 둘을 열었다. 자체휴무일 등록·수정이 `USP_HC_자체휴무일_저장` 하나가 되어 SP 가 17 → 16 이 되는 회차다 — 왕복이 줄지는 않는다. 줄이는 것은 **설명할 표면**이다.
+
+R21 도 `05`·`06` 둘을 열었다. `SELECT_수검자상세`·`SELECT_수검자유효업무` 의 Result Set 이 `SELECT_수검자목록` RS1 로 들어가 SP 가 19 → 17 이 되는 회차다 — 화면의 조회 왕복을 줄이는 것이 목적이고, 판정은 그대로 DB 가 낸다. `03`·`04` 는 R17 표기를 유지한다.
+
+R20 은 `05`·`06` 둘을 열었다. 예약취소·접수취소를 `USP_HC_업무_취소` 하나로 합치는 회차다 — 두 본문이 주석을 빼면 네 리터럴만 달랐고, 그 넷을 `@업무동작코드` 가 고른다. `03`·`04` 는 R17 표기를 유지한다.
 R19 는 `06` 만 열었다. R18 이 `NOT RUN` 으로 미룬 전체 회귀를 돌려 그 자리를 닫고 §1 문서정보의 R4 잔재를 걷는 회차다 — 계약·SQL·Seed·시험은 한 줄도 바뀌지 않으므로 `05` 는 R18, `03`·`04` 는 R17 표기를 유지한다.
 R18 은 `05`·`06` 둘을 열었다. `SELECT_예약접수상세` 에 `RS5 추가검사구성` 을 더해 `DLG-RCP-02` 를 여는 회차다 — 기존 Result Set 을 고치지 않고 뒤에 더했으므로 이미 읽는 쪽은 깨지지 않는다. `03`·`04` 는 R17 표기를 유지한다.
 R17 은 `03`·`04`·`05`·`06` 넷을 열었다. 수검자 조회에서 차트번호와 이름을 포함검색으로 여는 회차다 — 사용자가 실행본을 눌러 보고 *"일부만 알아도 찾아야 한다"* 고 지적했다.
@@ -309,7 +319,7 @@ database/
 │  ├─ 13_Security_Tests.sql
 │  ├─ 14_Clean_Rebuild_Verify.sql
 │  └─ contract/                       SP별 호출 시나리오 — EXEC 한 번, DB 상태 단언 없음
-│     └─ 01_*.sql ~ 25_*.sql · PWR-*·SEL-02* 등 Test ID 명 20개 SP 전건. RS0 결과코드·RS 형상 판정용 원본
+│     └─ 01_*.sql ~ 25_*.sql · PWR-*·SEL-02* 등 Test ID 명 19개 SP 전건. RS0 결과코드·RS 형상 판정용 원본
 │
 ├─ scripts/
 │  ├─ deploy.sh  rebuild.sh  test.sh  concurrency-test.sh
@@ -503,7 +513,7 @@ shell script는 역할에 따라 두 가지를 쓴다.
 
 ## 9.3 별도 lint script 미작성 · G13 증거의 한계 `[D4-004]` `[X 수정]`
 
-규칙이 허용목록이고 대상 객체가 30개(Table 6 + TVF 4 + SP 20)뿐이므로 별도 정적검사 script를 만들지 않는다. 객체 수가 크게 늘거나 다수 인원이 SQL을 추가하게 되면 그때 도입한다.
+규칙이 허용목록이고 대상 객체가 29개(Table 6 + TVF 4 + SP 19)뿐이므로 별도 정적검사 script를 만들지 않는다. 객체 수가 크게 늘거나 다수 인원이 SQL을 추가하게 되면 그때 도입한다.
 
 `[X]` **다만 블랙리스트 `grep` 0건을 "허용목록 준수 PASS"로 승격하지 않는다.** 초안의 `T37` Step 4는 알려진 신기능 문자열 일부만 `grep` 하고 그 결과 0건을 G13 증거로 삼았다. 논리적으로 성립하지 않는다 — grep 목록에 없는 2012 이후 기능은 그대로 통과하고, 주석·문자열 안의 금지 단어는 오탐한다.
 
@@ -1011,32 +1021,39 @@ NEX-06  EX013  나이 IN (56,66)
 
 ---
 
-# 18. 20개 SP 구현 Matrix `[B]`
+# 18. 16개 SP 구현 Matrix `[B]`
 
 | SP | 구분 | Param | Result Set | 관련 정책·Rule | Transaction | Lock | Test file |
 |---|:---:|---:|:---:|---|:---:|---|---|
 | `USP_HC_공통업무상태_조회` | SELECT | 0 | 2 (RS0,RS1) | CP-01~04, HOL | X | X | `04_Select_SP_Tests.sql` |
-| `USP_HC_수검자목록_조회` | SELECT | 5 | 2 | EP-01, 검색계약 | X | X | `04_Select_SP_Tests.sql` |
-| `USP_HC_수검자상세_조회` | SELECT | 1 | 2 | EP-01~02 | X | X | `04_Select_SP_Tests.sql` |
+| `USP_HC_수검자목록_조회` | SELECT | 5 | 2 | EP-01~02, RP-06, 검색계약 | X | X | `04_Select_SP_Tests.sql` |
 | `USP_HC_수검자_등록` | INSERT | 14 | 2 | EP-03~09 | **O** | `SSN` → `CHART` | `05_Patient_Write_Tests.sql` |
 | `USP_HC_수검자정보_수정` | UPDATE | 14 | 2 | EP-04, EP-08, CP-06 | **O** | `SSN` → `CHART` → `PAT` | `05_Patient_Write_Tests.sql` |
-| `USP_HC_수검자유효업무_조회` | SELECT | 1 | 2 | RP-06 | X | X | `04_Select_SP_Tests.sql` |
 | `USP_HC_예약가능정보_조회` | SELECT | 13 | **6** (RS0~RS5) | RP-02~08, TGT/NEX/AEX/HOL | X | X | `04_Select_SP_Tests.sql` |
 | `USP_HC_예약_등록` | INSERT | 12 | 2 | RP-01~08 | **O** | `PAT` → `SLOT` | `06_Reservation_Write_Tests.sql` |
 | `USP_HC_예약_변경` | UPDATE | 12 | 2 | RP-03·06·09 | **O** | `PAT` → `WORK` → `SLOT`×n | `06_Reservation_Write_Tests.sql` |
-| `USP_HC_예약_취소` | UPDATE | 3 | 2 | RP-10, CP-05 | **O** | `WORK` | `06_Reservation_Write_Tests.sql` |
 | `USP_HC_예약접수목록_조회` | SELECT | 5 | 2 | CP-05, 검색계약 | X | X | `04_Select_SP_Tests.sql` |
-| `USP_HC_예약접수상세_조회` | SELECT | 1 | **5** (RS0~RS4) | CP-05, 상태 Matrix | X | X | `04_Select_SP_Tests.sql` |
+| `USP_HC_예약접수상세_조회` | SELECT | 1 | **6** (RS0~RS5) | CP-05, 상태 Matrix | X | X | `04_Select_SP_Tests.sql` |
 | `USP_HC_변경이력_조회` | SELECT | 2 | 2 | CP-06 | X | X | `04_Select_SP_Tests.sql` |
 | `USP_HC_접수_완료` | UPDATE | 3 | 2 | RCP-01~04 | **O** | **`PAT` → `WORK` → `SLOT`** | `07_Reception_Write_Tests.sql` |
 | `USP_HC_접수추가검사_변경` | UPDATE | 10 | 2 | RCP-05, AEX | **O** | `WORK` | `07_Reception_Write_Tests.sql` |
-| `USP_HC_접수_취소` | UPDATE | 3 | 2 | RCP-06, CP-05 | **O** | `WORK` | `07_Reception_Write_Tests.sql` |
+| `USP_HC_업무_취소` | UPDATE | 4 | 2 | RP-10, RCP-06, CP-05 | **O** | `WORK` | `06_Reservation_Write_Tests.sql` · `07_Reception_Write_Tests.sql` |
 | `USP_HC_휴무일목록_조회` | SELECT | 3 | 3 (RS0~RS2) | HOL-03~06 | X | X | `15_Holiday_Tests.sql` |
-| `USP_HC_자체휴무일_등록` | INSERT | 4 | 2 | HOL-04~05 | **O** | `HOL` | `15_Holiday_Tests.sql` |
-| `USP_HC_자체휴무일_수정` | UPDATE | 5 | 2 | HOL-04~05 | **O** | `HOL` | `15_Holiday_Tests.sql` |
+| `USP_HC_자체휴무일_저장` | SAVE | 6 | 2 | HOL-04~05 | **O** | `HOL` | `15_Holiday_Tests.sql` |
 | `USP_HC_자체휴무일_삭제` | DELETE | 2 | 1 (RS0) | HOL-05 | **O** | `HOL` | `15_Holiday_Tests.sql` |
 
-합계: SELECT 9 / INSERT 3 / UPDATE 7 / DELETE 1 = **20개**. Param 합계 **113개**(§36).
+합계: SELECT 7 / INSERT 2 / UPDATE 5 / SAVE 1 / DELETE 1 — 외부 호출 Stored Procedure 16개.
+
+`[X]` **Param 합계를 여기 적지 않는다.** `Parameter 99`(R7) → `합계 87` → `합계 113` 이
+차례로 거짓이 되었고, R20~R22 로 SP 가 20 → 16 이 되는 동안에도 이 자리는 `113` 인 채였다.
+같은 절 안에서 Matrix 는 106 을, 아래 요약표는 87 을 말하고 있었다 — **한 문서가 자기 자신과
+어긋난 것**이다. §42 `G09` 가 *"건수를 여기 적지 않는다"* 로 이미 같은 결론에 와 있었는데
+이 자리만 따라오지 않았다 (ROOT `AGENTS.md` §6).
+
+`[!]` **위 Matrix 는 이제 베낀 표가 아니라 검사되는 표다.** `verify-docs.js` `V27` 이 매 회귀에서
+`Param` 열을 `database/tests/01_Schema_Tests.sql` 의 `@ExpP` 와, `Result Set` 열을 `05` 의 각 SP
+절이 선언한 `RSn` 개수와 대조한다. 그 `@ExpP` 는 다시 `SCH-019` 가 `sys.parameters` 와 `EXCEPT`
+양방향으로 지킨다. 구분별 합계와 SP 총수도 `V27`·`V25` 가 같은 줄에서 센다.
 
 `[R7]` **DELETE SP 가 0개에서 1개가 되었다.** `§2.2`·`G06` 이 *"DELETE SP 0개"* 를 금지 조건으로 들고 있었는데, 그것은 **업무 데이터를 지우는 SP** 를 막는 규칙이었다(취소는 상태전이이지 삭제가 아니다 — `00` CP-05). `USP_HC_자체휴무일_삭제` 는 기준정보 1행을 지우며 업무 데이터를 건드리지 않는다. `G06` 의 조건을 *"업무 테이블(`수검자`·`예약접수`·`완료이력`)을 지우는 SP 0개"* 로 좁힌다.
 
@@ -1780,33 +1797,17 @@ SlotFull  = (적용후인원 > 20)
 
 아래 설계는 **실행하지 않는다.** 실무 이관 시의 참고 기록으로만 남긴다.
 
-## 32.1 구성
+## 32.1 구성 — 스크립트를 두지 않는다
 
-```sql
-CREATE ROLE [HC_APP_ROLE];
+`[!]` **2026-09-14 사용자 지시로 참고용 `CREATE ROLE`·`GRANT EXECUTE` 스크립트를 걷었다.**
+`SP`·`TABLE` 에 권한·계정등급 쿼리를 두지 않는다는 것이 이 프로젝트의 기준이고, 실행하지
+않는 참고 기록이라도 **한 벌 남아 있으면 읽는 사람이 그것을 계약으로 읽는다.** 실제로 그
+목록은 `SP-LOG-01` 이 빠진 15건짜리였고 SP 가 20개가 된 뒤로도 그대로였다 — 아무도 세지 않는
+사본이었다는 뜻이다 (ROOT `AGENTS.md` §6).
 
-GRANT EXECUTE ON [dbo].[USP_HC_공통업무상태_조회]   TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_수검자목록_조회]     TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_수검자상세_조회]     TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_수검자_등록]         TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_수검자정보_수정]     TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_수검자유효업무_조회] TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_예약가능정보_조회]   TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_예약_등록]           TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_예약_변경]       TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_예약_취소]       TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_예약접수목록_조회]   TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_예약접수상세_조회]   TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_접수_완료]       TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_접수추가검사_변경]   TO [HC_APP_ROLE];
-GRANT EXECUTE ON [dbo].[USP_HC_접수_취소]       TO [HC_APP_ROLE];
+권한 경계가 필요해지는 날에는 그때의 SP 목록(`05` §1.3)을 단일 출처로 삼아 배포 스크립트를
+새로 만든다. 여기에 미리 적어 두지 않는다.
 
-CREATE USER [HC_APP_TEST] WITHOUT LOGIN;
-ALTER ROLE [HC_APP_ROLE] ADD MEMBER [HC_APP_TEST];
-```
-
-`[R3]` **위 `GRANT` 목록은 15건이라 `USP_HC_변경이력_조회`(SP-LOG-01)이 빠져 있다.** R3 재봉인으로
-SP 가 20개가 되었으므로 구현한다면 20건이어야 한다 — `05` §1.3 과 §18 SP 구현 Matrix 를 참조한다.
 
 `[사용자 결정 2026-09-07]` **Security(`T31`·`T32`)를 구현하지 않는다.** 과제 범위에서 권한 경계는
 요구되지 않고 개발 속도만 늦춘다는 판단이다. `deploy/08_Security.sql` 은 **파일째 삭제했고**
@@ -1827,13 +1828,11 @@ Ownership chaining 전제(§32.2)와 Phase 5 연결 방법(§32.3)은 문서로�
 | Ownership chaining | **기본 소유권 체인 사용** | `dbo`가 SP와 테이블을 모두 소유하므로 SP 실행 시 테이블 권한이 필요 없다. **`TRUSTWORTHY ON`·`EXECUTE AS OWNER`가 불필요**하며 이는 §2.3 금지 항목을 자연스럽게 회피한다 |
 | Secret | **없음** | 통합인증만 사용. 연결문자열에 비밀번호가 없어 Repository 저장 대상이 0건이다 |
 
-## 32.3 Phase 5 연결 방법 (문서화만)
+## 32.3 Phase 5 연결 방법 — 여기서 정하지 않는다
 
-```sql
--- Phase 5 배포 시 사용자가 수행 (Phase 4에서 실행하지 않음)
-CREATE USER [DOMAIN\AppServiceAccount] FOR LOGIN [DOMAIN\AppServiceAccount];
-ALTER ROLE [HC_APP_ROLE] ADD MEMBER [DOMAIN\AppServiceAccount];
-```
+`[!]` **2026-09-14 사용자 지시.** 계정·권한은 이 프로젝트의 산출물이 아니므로 연결 계정을
+만드는 스크립트도 두지 않는다. Phase 5 는 **통합인증**으로 붙고(`winforms/AGENTS.md`),
+권한 경계가 필요해지는 날의 방법은 그날 정한다.
 
 ---
 
@@ -2169,20 +2168,17 @@ TVF 에 시각을 주입해 실측했다.
 
 ## 36.1 Parameter 검증 (SQL만) — `EXCEPT` 양방향 `[X 수정]`
 
-`05` §7~§12의 Parameter 113개를 `(SpName, ParamOrdinal, ParamName, TypeName, IsNullable)` 기대 `VALUES` 인라인 테이블로 두고 `sys.parameters` + `sys.types` 실측과 **`EXCEPT` 양방향** 대조한다. 차집합이 한 건이라도 있으면 `FAIL`.
+`05` §7~§12의 Parameter 전건을 `(SpName, ParamOrdinal, ParamName, TypeName, IsNullable)` 기대 `VALUES` 인라인 테이블로 두고 `sys.parameters` + `sys.types` 실측과 **`EXCEPT` 양방향** 대조한다. 차집합이 한 건이라도 있으면 `FAIL`.
 
 `[X]` 초안은 메타데이터를 `SELECT`만 하고 사람이 눈으로 보라고 했다. 자동 판정이 없으면 회귀에서 잡히지 않는다.
 
-| SP별 Parameter 수 | 값 |
-|---|---:|
-| `SELECT_공통업무상태` / `SELECT_수검자상세` / `SELECT_수검자유효업무` / `SELECT_예약접수상세` | 0 / 1 / 1 / 1 |
-| `SELECT_수검자목록` / `SELECT_예약접수목록` | 5 / 5 |
-| `INSERT_수검자` / `UPDATE_수검자정보` | 12 / 12 |
-| `SELECT_예약가능정보` | 13 |
-| `INSERT_예약` / `UPDATE_예약변경` | 11 / 11 |
-| `UPDATE_예약취소` / `UPDATE_접수완료` / `UPDATE_접수취소` | 2 / 2 / 2 |
-| `UPDATE_접수추가검사` | 9 |
-| **합계** | **87** |
+`[X]` **여기 있던 「SP별 Parameter 수」 표를 걷었다** (R24). R7 무렵 값(합계 87)이었고
+R20~R22 를 지나도록 아무도 고치지 않았다 — 사라진 SP(`UPDATE_예약취소`·`UPDATE_접수취소`)를
+여전히 세고, 생긴 SP(휴무일 넷·변경이력)는 아예 없었다. 실물은 106 이다.
+
+**SP별 Parameter 는 §18 Matrix 의 `Param` 열 하나가 갖는다.** 그 열은 `V27` 이 매 회귀에서
+`01_Schema_Tests.sql` 의 `@ExpP` 와 대조하고, `@ExpP` 는 `SCH-019` 가 `sys.parameters` 와
+`EXCEPT` 양방향으로 지킨다. 같은 값을 두 곳에 두지 않는다 (ROOT `AGENTS.md` §6).
 
 ## 36.2 RS0 검증 (SQL만) — NULL 안전 `[X 수정]`
 
@@ -2229,7 +2225,7 @@ WHERE p.name LIKE 'USP[_]HC[_]%';
 | 4 | `SELECT_예약접수상세` RS 개수 = 5, RS4 = 정확히 5행 |
 | 5 | `SELECT_예약가능정보` RS 개수 = 6 |
 | 6 | `SELECT_예약가능정보` 변경범위별 Cardinality (아래) |
-| 7 | `SELECT_수검자유효업무` 0행/1행 정상, 2행이면 `701` |
+| 7 | `[R21]` `SELECT_수검자목록` RS1 의 `유효업무ID` 는 행마다 0건 또는 1건이다 (RP-06). 2건 이상이면 불변조건 위반이며 `INSERT_예약` 이 `701` 로 막는다 |
 | 8 | 검색 0건이 실패로 오인되지 않음 |
 
 `SELECT_예약가능정보` 변경범위별 기대 Cardinality (`05` §9.11):
@@ -2455,7 +2451,7 @@ END CATCH
 |---|---|---|
 | `SEC-001` | `EXECUTE AS USER` 컨텍스트에서 `USER_NAME()` | `HC_APP_TEST` (실측 확인) |
 | `SEC-002` | 동일 컨텍스트의 `IS_SRVROLEMEMBER('sysadmin')` | **`0`** (실측 확인) — dbo/sysadmin 오인 방지 증거. **FAIL이면 이후 전 항목 무의미하므로 즉시 중단** |
-| `SEC-003` | 20개 SP 실행 | 전부 성공 (`Msg 229` 만 실패로 계산) |
+| `SEC-003` | 19개 SP 실행 | 전부 성공 (`Msg 229` 만 실패로 계산) |
 | `SEC-004` | 6개 테이블 직접 `SELECT` | 전부 `Msg 229` |
 | `SEC-005` | 6개 테이블 `INSERT`/`UPDATE`/`DELETE` (Transaction + `ROLLBACK`) | 전부 `Msg 229`, 데이터 변경 0 |
 | `SEC-006` | 4개 TVF 직접 `SELECT` | 전부 `Msg 229` |
@@ -2584,6 +2580,38 @@ artifacts/
 | `R12` 창 밖 | 2026-09-09 22:57 | 밖 (수, 18:00 이후) | `artifacts/logs/full_test_run_r12_off.log` — exit 0 · PASS 273 · FAIL 0 · SKIP 56 · NOT RUN 9 |
 | `R13` 창 밖 | 2026-09-10 00시대 | 밖 (목, 심야 — 운영시작 9시간 전) | `artifacts/logs/full_test_run_r13_off.log` — exit 0 · PASS 403 · FAIL 0 · **SKIP 0 · NOT RUN 1** |
 | `R19` 창 안 | 2026-09-11 14:58 | 안 (금, 비휴무일 · PM 창) | `artifacts/logs/full_test_run_r19.log` — exit 0 · PASS 411 · FAIL 0 · **SKIP 0 · NOT RUN 1** |
+| `R20` 창 안 | 2026-09-14 14:4x | 안 (월, 비휴무일 · PM 창) | `artifacts/logs/full_test_run_r20.log` — exit 0 · PASS 411 · FAIL 0 · **SKIP 0 · NOT RUN 1** |
+| `R22` 창 안 | 2026-09-14 16:30~16:41 | 안 (월, 비휴무일 · PM 창) | `artifacts/logs/full_test_run_r22.log` — exit 0 · PASS 407 · FAIL 0 · **SKIP 0 · NOT RUN 1** |
+| `R24` 창 안 | 2026-09-14 17:40~17:52 | 안 (월, 비휴무일 · PM 창) | `artifacts/logs/full_test_run_r24.log` — exit 0 · PASS 409 · FAIL 0 · **SKIP 0 · NOT RUN 1** |
+
+`[I]` **회차 `R24` 는 `PASS` 가 `R22` 보다 정확히 2 많다 — 새 게이트 둘이다.**
+`V27`(§18 SP Matrix ↔ `01_Schema_Tests` `@ExpP` · `05` RS 선언)과 `V28`(`06` 자기 버전 두 곳)이다.
+**시험이 늘어 수가 올랐고 줄어든 것은 없다.** `R23`(`CROSS APPLY` 9 → 3 · 수검자 저장 뒤 되읽기)도
+이 실행이 함께 담는다 — `R23` 은 계약을 열지 않아 회차 행을 따로 두지 않는다.
+
+`[!]` **회차 `R21`·`R23` 은 자기 이름의 전체회귀를 갖지 않는다.** 2026-09-14 사용자 지시로
+*"회귀에서 너무 시간을 소모한다 — 줄인다"*, 전체회귀를 **마지막 한 번만** 돌렸다. 위 `R22` 행이 `R21`·`R22` 를,
+`R24` 행이 `R23`·`R24` 를 함께 담은 실행이다(각각 두 회차가 모두 커밋된 뒤에 돌았다). 회차마다 돌린 것은
+파일 게이트와 그 회차가 건드린 시험뿐이다 — `01_Schema_Tests` · `04_Select_SP_Tests` ·
+`15_Holiday_Tests` · `14_Clean_Rebuild_Verify` · `verify-contract-all` · `verify-docs`.
+
+`[X]` **그 한 번을 두 번 돌렸다.** 첫 실행이 `CS-014`(계약 SP Parameter 전건) 하나로 red 였는데,
+`R21` 이 `tools/csharp-probe/Probe.cs` 에 기대값 `109` 를 **손으로 박아** 두고 `R22` 가 그것을
+`106` 으로 안 고쳤기 때문이다. 회귀를 자주 돌린 것이 아니라 **하드코딩한 수 하나**가 12분을
+더 쓰게 했다 — ROOT `AGENTS.md` §6 이 말하는 비용이 이런 모양으로 온다.
+
+`[I]` **회차 `R22` 는 `PASS` 가 `R20` 보다 4 적다 — 전부 설명된다.**
+`R21` 이 사라진 두 SP 의 계약시험 다섯(`06`~`10`)을 걷었고(−5), `R22` 가 `HOL-008`
+(`@휴무동작코드` 허용밖 → `101`)을 더했다(+1). `RS-CONTRACT` 는 182 → 176 으로 줄었지만
+그것은 `PASS` 한 줄의 **값**이라 줄 수에는 영향이 없다. **줄어든 것은 사라진 SP 의 시험뿐이고,
+남은 시험이 약해진 자리는 없다.**
+
+`[I]` **회차 `R20` 은 SP 가 하나 줄었는데도 `PASS` 가 `R19` 와 같은 411 이다.**
+SP 를 세던 자리 몇이 합쳐진 만큼 다른 자리가 늘었다 — `RS-CONTRACT` 가 172 → 182 다.
+합친 SP 의 Result Set 을 예약·접수 양쪽 계약시험이 함께 검증하기 때문이다.
+`[X]` 초판은 여기 「`PASS` 가 하나 적다」고 적었는데 그것은 매니페스트 둘이 red 인
+     중간 실행을 본 것이었다. 두 매니페스트는 서로를 담고 있어 **db-frozen 을 먼저,
+     winforms 를 나중에** 떠야 한다 — 거꾸로 뜨면 자기 자신 때문에 red 가 된다.
 
 `[I]` **회차 `R19` 는 창 안에서 `SKIP 0` 을 낸 첫 회차다.** `R13` 창 밖(`403 · 0 · 1`)보다 `PASS` 가
 8 늘었고 그 8 은 전부 **그 사이에 생긴 판정**이다 — 게이트 ID 집합을 견줘 확인했다.
@@ -3048,7 +3076,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | Prefix | 범위 | 건수 | 산출 파일 | 검증 대상 | Gate |
 |---|---|---:|---|---|---|
 | `PRE` | `001`~`006` | 6 | `deploy/00_Preflight.sql` | 배포 안전가드 `50010`~`50015` (§8.3) | G03 |
-| `SCH` | `001`~`019` | 19 | `tests/01_Schema_Tests.sql` | 6 Table · PK/FK/UQ/UX/NCI · 53컬럼 · 제약 26 · Default 10 · NCI Key · **SP 별 Parameter(합계 113)** (§34) | G05 |
+| `SCH` | `001`~`019` | 19 | `tests/01_Schema_Tests.sql` | 6 Table · PK/FK/UQ/UX/NCI · 53컬럼 · 제약 26 · Default 10 · NCI Key · **SP 별 Parameter 전건** (§34) | G05 |
 | `SED` | `001`~`011` | 11 | `tests/02_Seed_Tests.sql` | `검사코드` 19행 · `휴무일` 2행 · AEX 7건 Active (§13·§14) | G07 |
 | `SSN` | `001`~`006` | 6 | `tests/02_Seed_Tests.sql` | 실제 주민등록번호 미사용 — 체크디지트 전건 무효 (§16.2) | G12 |
 | `RUL` | `T01`~`T12` `N01`~`N12` `A01`~`A10` `G01`~`G08` `D01`~`D09` | 51 | `tests/03_Rule_Tests.sql` | 4개 TVF 결정적 경계 — 마감시각 · NEX 술어 · AEX 판정순서 · 휴무일 · `DATEFIRST` 불변 (§35) | G08 |

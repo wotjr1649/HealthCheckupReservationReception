@@ -76,25 +76,30 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
+        /// <summary>
+        /// [R21] **대상을 실어 연다.** 부모(`WF-PAT-01`)가 목록에서 받아 둔 행을 그대로 넘기고,
+        /// 모달은 조회 없이 그것으로 선다 — 그래야 수검자가 확정되고 §8.10 이 걸린다.
+        /// </summary>
         private static SilentReservationForm Form(bool answer)
         {
             WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
 
-            var patients = new FakePatientService
-            {
-                DetailResult = OperationResult<PatientDetailDto>.Success(new PatientDetailDto
-                {
-                    PatientId = PatientId,
-                    ChartNo = "C000001",
-                    Name = "홍길동",
-                    Birthday = "19800101",
-                    Gender = "M",
-                }),
-            };
-
             return new SilentReservationForm(
                 new FakeReservationService { Availability = Availability() },
-                patients, "접수1번창구", PatientId, answer);
+                new FakePatientService(), new FakeWorkService(), "접수1번창구", Patient(), answer);
+        }
+
+        /// <summary>목록 SP RS1 한 행. `ValidWork` 가 없으니 예약 가능이다 (00 RP-06).</summary>
+        internal static PatientDto Patient()
+        {
+            return new PatientDto
+            {
+                PatientId = PatientId,
+                ChartNo = "C000001",
+                Name = "홍길동",
+                Birthday = "19800101",
+                Gender = "M",
+            };
         }
 
         private static ReservationAvailabilityReadDto Availability()
@@ -150,10 +155,24 @@ namespace HealthCheckupReservationReception.Tests.Views
             _answer = answer;
         }
 
+        /// <summary>
+        /// [R21] 대상을 `PatientDto` 하나로 받는다. 예전에는 `patientId` 와 상세를 따로 넘겼고
+        /// 상세 자리에 `null` 을 두면 모달이 스스로 조회했다 — 그 SP 가 사라졌다.
+        /// </summary>
         internal SilentReservationForm(
             IReservationService service, IPatientService patientService,
-            string operatorName, long patientId, bool answer)
-            : base(service, patientService, operatorName, patientId)
+            IWorkService workService, string operatorName, PatientDto patient, bool answer)
+            : base(service, patientService, workService, operatorName,
+                patient == null ? 0L : patient.PatientId, patient)
+        {
+            _answer = answer;
+        }
+
+        /// <summary>DLG-RSV-01(예약 변경) 갈래. 같은 폼이고 진입값만 다르다 (03 §10.2).</summary>
+        internal SilentReservationForm(
+            IReservationService service, IPatientService patientService,
+            IWorkService workService, string operatorName, WorkDetailReadDto read, bool answer)
+            : base(service, patientService, workService, operatorName, read)
         {
             _answer = answer;
         }
