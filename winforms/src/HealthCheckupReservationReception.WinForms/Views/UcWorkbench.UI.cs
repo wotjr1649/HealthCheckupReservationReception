@@ -49,8 +49,13 @@ namespace HealthCheckupReservationReception.Views
             // 03 §8.8 — 구분은 기본/조건부로 적는다. WF-RSV-01 과 같은 규칙을 쓴다.
             clsGridColumns.Display(gvNexList, colNexType, clsWorkText.FormatNexType);
 
+            // [X] 두 칸의 빈 문구가 같으면 안 된다. NEX 는 업무를 고르면 반드시 8~11행이
+            //     차므로 비어 있다는 것이 곧 "업무 미선택" 이다. AEX 는 업무를 골라도 0건일
+            //     수 있어서, 같은 문구를 쓰면 **업무가 선택된 화면에 "선택한 업무가 없습니다"**
+            //     가 뜬다 (2026-09-15 증빙 캡처에서 드러났다). FrmReception 이 같은 그리드에
+            //     쓰는 문구로 맞춘다.
             clsGridColumns.ShowEmptyText(gvNexList, "선택한 업무가 없습니다.");
-            clsGridColumns.ShowEmptyText(gvAexList, "선택한 업무가 없습니다.");
+            clsGridColumns.ShowEmptyText(gvAexList, "선택한 추가검사가 없습니다.");
 
             // 03 §9.3 Inline 오류. 붉은 글씨가 이 자리가 오류라는 유일한 단서다.
             clsNotice.Error(lblValidation);
