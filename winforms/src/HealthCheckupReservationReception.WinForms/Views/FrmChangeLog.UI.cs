@@ -13,11 +13,8 @@ namespace HealthCheckupReservationReception.Views
             colRecordedAt.DisplayFormat.FormatType = FormatType.DateTime;
             colRecordedAt.DisplayFormat.FormatString = "yyyy-MM-dd HH:mm:ss";
 
-            clsGridColumns.Align(colRecordedAt, HorzAlignment.Center);
-            clsGridColumns.Align(colOperatorName, HorzAlignment.Center);
-            clsGridColumns.Align(colColumnName, HorzAlignment.Center);
-            clsGridColumns.Align(colBeforeValue, HorzAlignment.Near);
-            clsGridColumns.Align(colAfterValue, HorzAlignment.Near);
+            clsGridColumns.Center(colRecordedAt, colOperatorName, colColumnName);
+            clsGridColumns.Left(colBeforeValue, colAfterValue);
 
             // 03 §23.4 — 0건은 오류가 아니다. 빈 Grid 를 고장과 구별되게 적는다.
             clsGridColumns.ShowEmptyText(gvLog, "변경 기록이 없습니다.");

@@ -1,6 +1,5 @@
 ﻿// 화면 ID: WF-RSV-01 — 신규 예약 (03 §8)
 using System.Drawing;
-using DevExpress.Utils;
 using HealthCheckupReservationReception.Common;
 
 namespace HealthCheckupReservationReception.Views
@@ -13,11 +12,8 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         partial void ConfigureUI()
         {
-            clsGridColumns.Align(colNexName, HorzAlignment.Near);
-            clsGridColumns.Align(colNexType, HorzAlignment.Center);
-            clsGridColumns.Align(colAexChecked, HorzAlignment.Center);
-            clsGridColumns.Align(colAexName, HorzAlignment.Near);
-            clsGridColumns.Align(colAexReason, HorzAlignment.Near);
+            clsGridColumns.Center(colNexType, colAexChecked);
+            clsGridColumns.Left(colNexName, colAexName, colAexReason);
 
             // [X] 성공한 0건과 실패가 사용자에게 같은 그림이면 안 된다 — WF-WRK-01 에서 실측한 자리다.
             //     여기서는 03 §8.5 의 진행 단계가 그 이유이므로 그대로 적는다.

@@ -1,5 +1,4 @@
 ﻿// 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
-using DevExpress.Utils;
 using DevExpress.XtraEditors.Controls;
 using HealthCheckupReservationReception.Common;
 
@@ -12,14 +11,9 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         partial void ConfigureUI()
         {
-            clsGridColumns.Align(colHolidayDate, HorzAlignment.Center);
-            clsGridColumns.Align(colHolidayName, HorzAlignment.Near);
-            clsGridColumns.Align(colHolidayType, HorzAlignment.Center);
-            clsGridColumns.Align(colIsActive, HorzAlignment.Center);
-            clsGridColumns.Align(colMemo, HorzAlignment.Near);
-
-            colHolidayDate.DisplayFormat.FormatType = FormatType.DateTime;
-            colHolidayDate.DisplayFormat.FormatString = "yyyy-MM-dd";
+            clsGridColumns.Center(colHolidayDate, colHolidayType, colIsActive);
+            clsGridColumns.Left(colHolidayName, colMemo);
+            clsGridColumns.Date(colHolidayDate);
 
             // 05 §12.5 `사용여부` 는 BIT 다. `True/False` 대신 03 §24.3 의 표기를 쓴다.
             clsGridColumns.Display(gvHolidayList, colIsActive, IsActiveText);

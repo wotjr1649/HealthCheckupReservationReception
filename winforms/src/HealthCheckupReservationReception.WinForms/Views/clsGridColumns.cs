@@ -12,9 +12,54 @@ namespace HealthCheckupReservationReception.Views
     public static class clsGridColumns
     {
         /// <summary>
+        /// 가운데 정렬. 날짜·시간대·상태·성별처럼 폭이 정해진 칸이다.
+        ///
+        /// 한 줄에 여러 컬럼을 받는다 — 화면마다 같은 호출이 다섯·여섯 줄씩 이어지던
+        /// 자리이고, 그 줄들은 「무엇이 가운데인가」를 읽는 데 방해만 됐다 (2026-09-14).
+        /// </summary>
+        public static void Center(params GridColumn[] columns)
+        {
+            Apply(columns, HorzAlignment.Center);
+        }
+
+        /// <summary>
+        /// 왼쪽 정렬. 차트번호·이름·메모처럼 글이 이어지는 칸이다.
+        /// DevExpress 의 `Near` 다 — RTL 을 쓰지 않으므로 읽는 이름으로 적는다.
+        /// </summary>
+        public static void Left(params GridColumn[] columns)
+        {
+            Apply(columns, HorzAlignment.Near);
+        }
+
+        /// <summary>
+        /// 날짜 컬럼의 표기 `yyyy-MM-dd`.
+        ///
+        /// [X] **`FormatType` 을 함께 세우지 않으면 `FormatString` 이 무시된다.**
+        ///     그 두 줄 짝이 화면 셋에 복사돼 있었다 — 한쪽만 적으면 조용히 안 듣는다.
+        /// </summary>
+        public static void Date(params GridColumn[] columns)
+        {
+            foreach (GridColumn column in columns)
+            {
+                if (column == null) { continue; }
+
+                column.DisplayFormat.FormatType = FormatType.DateTime;
+                column.DisplayFormat.FormatString = "yyyy-MM-dd";
+            }
+        }
+
+        private static void Apply(GridColumn[] columns, HorzAlignment alignment)
+        {
+            foreach (GridColumn column in columns)
+            {
+                if (column != null) { Align(column, alignment); }
+            }
+        }
+
+        /// <summary>
         /// 컬럼 정렬. DevExpress 는 Cell 과 Header 를 따로 받는다 — 그 둘을 함께 맞춘다.
         /// </summary>
-        public static void Align(GridColumn column, HorzAlignment alignment)
+        private static void Align(GridColumn column, HorzAlignment alignment)
         {
             column.AppearanceCell.TextOptions.HAlignment = alignment;
             column.AppearanceCell.Options.UseTextOptions = true;
