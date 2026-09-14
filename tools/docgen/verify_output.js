@@ -9,7 +9,10 @@
  *     게다가 적중해도 실패시키지 않아 아무 힘이 없었다. 규칙마다 허용 문자열을 명시하고,
  *     한 건이라도 남으면 exit 1 이다.
  *
- *   node tools/docgen/verify_output.js
+ * 반대쪽도 본다 — `03` 은 **반드시 들어 있어야 하는 문장**이 있다 (REQUIRED).
+ *
+ *   node tools/docgen/verify_output.js            판정
+ *   node tools/docgen/verify_output.js selftest   규칙이 실제로 잡는지
  */
 'use strict';
 const { all } = require('./scan_output.js');
@@ -58,8 +61,27 @@ const RULES = [
  *               자체의 어휘다. 기준선·회귀·커밋 같은 저장소 통제 어휘가 아니다.
  */
 
-(async () => {
-  const map = await all();
+/*
+ * REQUIRED — RULES 의 반대. **반드시 들어 있어야 하는 문장**이다.
+ *
+ * [X] `03` 화면설계서는 설계 시점의 기록이고 실행 프로그램과 다른 부분이 있다
+ *     (2026-09-10 · 2026-09-11 사용자 결정). 그 사실이 공개본 **안**에 없으면 받아 보는
+ *     쪽은 그림과 다른 프로그램을 결함으로 읽는다. 저장소 안 문서에 적어 두는 것으로는
+ *     닿지 않는다 — 사내로 나가는 것은 이 파일뿐이다.
+ *
+ * [!] **선언만 두면 썩는다.** 그 결정에 딸려 적어 둔 수치들이 실제로 썩었다. 그래서
+ *     문장을 넣는 데서 끝내지 않고 여기서 판정한다. 문구를 고치려면 여기와
+ *     `wireframe/screens/a0_list.js` 를 같은 커밋에서 함께 고친다.
+ */
+const REQUIRED = [
+  ['03_검진_예약접수_화면설계서.pptx', '문서의 지위',
+    /설계 시점의 화면 정의/,
+    /동작의 기준은 실행 프로그램/],
+];
+
+/** 판정만 한다 — 파일을 읽지 않으므로 selftest 가 가짜 입력으로 그대로 부를 수 있다. */
+function judge(map) {
+  const lines = [];
   let fail = 0, checked = 0;
 
   for (const [file, items] of Object.entries(map)) {
@@ -77,13 +99,66 @@ const RULES = [
     const uniq = [...new Map(hits.map(h => [h.name + '|' + h.text, h])).values()];
     if (uniq.length) {
       fail += uniq.length;
-      console.log('FAIL ' + file + ' — 공개용에 들어가면 안 되는 내용 ' + uniq.length + '건');
-      for (const h of uniq) console.log('        [' + h.name + '] ' + h.where + '  ' + h.text);
+      lines.push('FAIL ' + file + ' — 공개용에 들어가면 안 되는 내용 ' + uniq.length + '건');
+      for (const h of uniq) lines.push('        [' + h.name + '] ' + h.where + '  ' + h.text);
     } else {
-      console.log('PASS ' + file + ' — 내부 통제 어휘 0건');
+      lines.push('PASS ' + file + ' — 내부 통제 어휘 0건');
     }
   }
 
+  for (const [file, label, ...needs] of REQUIRED) {
+    const items = map[file];
+    // [X] 산출물이 없으면 「없으니 통과」가 된다 — 조용히 통과하는 그 함정이다. FAIL 로 센다.
+    if (!items) {
+      fail++;
+      lines.push('FAIL ' + file + ' — 산출물이 없다. ' + label + ' 을(를) 확인할 수 없다');
+      continue;
+    }
+    // 줄바꿈·연속 공백으로 끊겨도 같은 문장이다.
+    const text = items.map(i => i.text).join(' ').replace(/\s+/g, ' ');
+    const missing = needs.filter(re => !re.test(text));
+    if (missing.length) {
+      fail += missing.length;
+      lines.push('FAIL ' + file + ' — ' + label + ' 문장이 없다 ' + missing.length + '건');
+      for (const re of missing) lines.push('        없는 것: ' + re);
+    } else {
+      lines.push('PASS ' + file + ' — ' + label + ' 있다');
+    }
+  }
+
+  return { fail, checked, lines };
+}
+
+/*
+ * selftest — 규칙이 실제로 잡는지 가짜 입력으로 본다.
+ * 이 파일에는 없던 것이다. 이 저장소의 다른 게이트는 전부 갖고 있고, fail-open 인 게이트를
+ * 여러 번 겪었다. 판정을 judge() 로 떼어 낸 이유가 그것뿐이다.
+ */
+if (process.argv[2] === 'selftest') {
+  const WF = '03_검진_예약접수_화면설계서.pptx';
+  const NOTICE = '이 문서는 설계 시점의 화면 정의다. 개발 과정에서 사용성 판단에 따라 실제 화면과 '
+    + '달라진 부분이 있으며, 동작의 기준은 실행 프로그램이다. 업무 규칙과 항목의 의미는 이 문서가 기준이다.';
+  const one = text => ({ [WF]: [{ where: 'selftest', text }] });
+  let rc = 0;
+  const run = (label, want, map) => {
+    const got = judge(map).fail;
+    if (got === want) { console.log('PASS VOUT-SELFTEST ' + label); }
+    else { console.log('FAIL VOUT-SELFTEST ' + label + ' (기대 FAIL ' + want + ' · 실제 ' + got + ')'); rc = 1; }
+  };
+
+  run('지위 문장이 있으면 통과한다',       0, one(NOTICE));
+  run('지위 문장이 없으면 잡는다',         2, one('아무 말도 하지 않는다'));
+  run('앞 절반만 있으면 잡는다',           1, one('이 문서는 설계 시점의 화면 정의다.'));
+  run('줄바꿈으로 끊겨도 같은 문장이다',    0, one(NOTICE.split(' ').join('\n')));
+  run('산출물이 아예 없으면 잡는다',        1, {});
+  run('통제 어휘를 잡는다',                1, one(NOTICE + ' FINAL'));
+  run('허용 문자열은 봐준다',              0, one(NOTICE + ' 검사결과 입력·판독·최종 판정'));
+  process.exit(rc);
+}
+
+(async () => {
+  const { fail, checked, lines } = judge(await all());
+  for (const l of lines) console.log(l);
   console.log('\n=== verify_output: 텍스트 ' + checked + '조각 · FAIL ' + fail + ' ===');
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

@@ -8,9 +8,11 @@
  * 생성 후 같은 프로세스에서 재열람 검증까지 수행한다.
  */
 
-const ExcelJS = require('D:/tmp/hcwork/gen/node_modules/exceljs');
+const path = require('path');
+const { OUT: OUTDIR, mod } = require('../paths.js');
+const ExcelJS = mod('exceljs');
 
-const OUT = 'D:/AIDEV/HealthCheckupReservationReception/docs/baseline/output/00_검진_예약접수_업무정책.xlsx';
+const OUT = path.join(OUTDIR, '00_검진_예약접수_업무정책.xlsx');
 
 /* ------------------------------------------------------------------ *
  * 행 헬퍼
