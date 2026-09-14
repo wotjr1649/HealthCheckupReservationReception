@@ -26,6 +26,7 @@ b9c1f5c5bf130920c0457f576c902f7e43e23664790f40729e6094f51d08d65e *../winforms/.c
 7e346e6424c8b55410783d7fca243321f9da7ea21ebae71161c2c18ad3491646 *../winforms/CLAUDE.md
 94732445f4c922609e3e15c196b1abf3519f03972705c04d2bde07582e5a3f9b *../winforms/HealthCheckupReservationReception.sln
 9e4828d1caf86d812141c07078609646b403249eb74172580d39b93a8df62e66 *../winforms/artifacts/db-frozen-manifest.txt
+abf5f23dd8122f535e9873b965260b5fbbc9c20333f7452516e1763ce04517b9 *../winforms/scripts/seed-tgt-cases.sh
 8952512c39f1077dfce04262def2ee40a463f296709c49a8fa6f834fadd3af58 *../winforms/scripts/seed-today.sh
 5b6f50c71a5b37c0aeeb795bc26dd36ba6980446250cf3c0896b176960fc3add *../winforms/scripts/test.sh
 ea07b3bc39f03f7e6bf662aeb7b9a4612f9fae111491531984f5281ffc77840a *../winforms/scripts/verify-check-values.sh
