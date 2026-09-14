@@ -15,7 +15,7 @@
 | `deploy/01_Schema.sql` | 386 |
 | `deploy/02_Seed.sql` | 101 |
 | `deploy/03_Functions.sql` | 258 |
-| `deploy/04_Procedures_Select.sql` | 950 |
+| `deploy/04_Procedures_Select.sql` | 994 |
 | `deploy/05_Procedures_Patient_Write.sql` | 719 |
 | `deploy/06_Procedures_Reservation_Write.sql` | 1060 |
 | `deploy/07_Procedures_Reception_Write.sql` | 584 |
@@ -150,7 +150,7 @@
 | `tests/contract/SEL-022_변경이력_기록0건.sql` | 6 |
 | `tests/contract/SEL-023_변경이력_TargetTable_허용밖.sql` | 5 |
 | `tests/contract/SEL-024_변경이력_TargetTable_NULL.sql` | 4 |
-| **합계 141개** | **9082** |
+| **합계 141개** | **9126** |
 
 ## 2. §9.2 허용목록 대조
 
@@ -215,6 +215,6 @@
 | 항목 | 값 |
 |---|---|
 | 검토자 | Claude Opus 5 (세션 실행) |
-| 시각 | 2026-09-14 16:41 KST |
+| 시각 | 2026-09-14 17:52 KST |
 | 생성 | `node tools/allowlist-review.js` |
 | 대상 커밋 | (커밋 직전 트리) |

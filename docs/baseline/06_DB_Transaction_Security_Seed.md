@@ -2582,10 +2582,16 @@ artifacts/
 | `R19` 창 안 | 2026-09-11 14:58 | 안 (금, 비휴무일 · PM 창) | `artifacts/logs/full_test_run_r19.log` — exit 0 · PASS 411 · FAIL 0 · **SKIP 0 · NOT RUN 1** |
 | `R20` 창 안 | 2026-09-14 14:4x | 안 (월, 비휴무일 · PM 창) | `artifacts/logs/full_test_run_r20.log` — exit 0 · PASS 411 · FAIL 0 · **SKIP 0 · NOT RUN 1** |
 | `R22` 창 안 | 2026-09-14 16:30~16:41 | 안 (월, 비휴무일 · PM 창) | `artifacts/logs/full_test_run_r22.log` — exit 0 · PASS 407 · FAIL 0 · **SKIP 0 · NOT RUN 1** |
+| `R24` 창 안 | 2026-09-14 17:40~17:52 | 안 (월, 비휴무일 · PM 창) | `artifacts/logs/full_test_run_r24.log` — exit 0 · PASS 409 · FAIL 0 · **SKIP 0 · NOT RUN 1** |
 
-`[!]` **회차 `R21` 은 자기 이름의 전체회귀를 갖지 않는다.** 2026-09-14 사용자 지시로
-*"회귀에서 너무 시간을 소모한다 — 줄인다"*, 전체회귀를 **마지막 한 번만** 돌렸다. 위 `R22` 행이
-`R21`·`R22` 둘을 함께 담은 실행이다(두 회차가 모두 커밋된 뒤에 돌았다). 회차마다 돌린 것은
+`[I]` **회차 `R24` 는 `PASS` 가 `R22` 보다 정확히 2 많다 — 새 게이트 둘이다.**
+`V27`(§18 SP Matrix ↔ `01_Schema_Tests` `@ExpP` · `05` RS 선언)과 `V28`(`06` 자기 버전 두 곳)이다.
+**시험이 늘어 수가 올랐고 줄어든 것은 없다.** `R23`(`CROSS APPLY` 9 → 3 · 수검자 저장 뒤 되읽기)도
+이 실행이 함께 담는다 — `R23` 은 계약을 열지 않아 회차 행을 따로 두지 않는다.
+
+`[!]` **회차 `R21`·`R23` 은 자기 이름의 전체회귀를 갖지 않는다.** 2026-09-14 사용자 지시로
+*"회귀에서 너무 시간을 소모한다 — 줄인다"*, 전체회귀를 **마지막 한 번만** 돌렸다. 위 `R22` 행이 `R21`·`R22` 를,
+`R24` 행이 `R23`·`R24` 를 함께 담은 실행이다(각각 두 회차가 모두 커밋된 뒤에 돌았다). 회차마다 돌린 것은
 파일 게이트와 그 회차가 건드린 시험뿐이다 — `01_Schema_Tests` · `04_Select_SP_Tests` ·
 `15_Holiday_Tests` · `14_Clean_Rebuild_Verify` · `verify-contract-all` · `verify-docs`.
 
