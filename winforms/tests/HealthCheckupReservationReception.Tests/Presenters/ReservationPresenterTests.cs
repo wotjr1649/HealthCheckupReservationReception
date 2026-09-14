@@ -23,6 +23,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §8.5 진행 상태
 
+        // 대상: ReservationPresenter (WF-RSV-01) — 수검자 확정 전의 화면 상태
+        // 목적: 03 §8.5 — 수검자가 확정되기 전에는 물어볼 대상이 없다. 일정이 열려 있으면
+        //       수검자 없이 SP-RSV-01 이 나가고, 저장이 열려 있으면 빈 예약이 저장된다.
+        // 확인: 일정영역·추가검사·저장이 모두 닫혀 있고 대상판정이 「미판정」이다.
         [TestMethod]
         public void 최초에는_일정과_AEX_와_저장이_닫혀_있다()
         {
@@ -35,6 +39,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("대상판정 : 미판정", view.TargetText);
         }
 
+        // 대상: ReservationPresenter (WF-RSV-01) — 부모가 넘긴 수검자 행으로 여는 진입
+        // 목적: R21 로 부모(WF-PAT-01)가 목록 RS1 에서 받아 둔 행을 그대로 넘긴다. 여기서 다시
+        //       조회하면 같은 값을 두 번 읽고 그동안 화면이 멈춘다. 다만 일정영역을 연 뒤에는
+        //       정원을 보여야 하므로 가용성은 한 번 물어야 한다.
+        // 확인: 차트번호가 서고 일정영역이 열리며 가용성 조회가 정확히 1회다.
         [TestMethod]
         public void 전달키로_들어오면_수검자가_확정되고_일정이_열린다()
         {
@@ -50,14 +59,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(1, service.AvailabilityCalls, "일정영역을 연 뒤 한 번은 물어야 정원이 보인다");
         }
 
-        /// <summary>
-        /// 노쇼 — 지난 예약이 `RSV` 인 채로 남아 있어도 오늘·미래 예약을 막지 않는다
-        /// (`00` RP-06 *"과거 업무는 중복판단에서 제외한다"*, 2026-09-11 사용자 지시).
-        ///
-        /// `USP_HC_수검자유효업무_조회` 의 조회범위가 `예약일 >= @오늘날짜` 이므로 (05 §7.4)
-        /// 지난 건은 **RS1 에 아예 없다** — 화면이 받는 그림은 `유효업무 없음` 이고 그때
-        /// 일정영역이 열려야 한다. 앞의 `기존_유효예약이_있으면…` 과 한 쌍이다.
-        /// </summary>
+        // 대상: ReservationPresenter (WF-RSV-01) — 지난 노쇼(RSV) 만 있는 수검자의 진입
+        // 목적: 지난 예약이 RSV 인 채로 남아 있어도 오늘·미래 예약을 막지 않는다 (00 RP-06
+        //       「과거 업무는 중복판단에서 제외한다」, 2026-09-11 사용자 지시). 조회범위가
+        //       「예약일 >= 오늘」이라 지난 건은 RS1 에 아예 없고, 화면이 받는 그림은 「유효업무
+        //       없음」이다. 그때 일정영역이 열려야 그 사람이 다시 예약할 수 있다.
+        // 확인: 일정영역이 열리고 Workbench 로 보내지 않으며 가용성 조회가 1회다.
         [TestMethod]
         public void 지난_미접수_예약만_있으면_일정이_열린다()
         {
@@ -73,16 +80,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(1, service.AvailabilityCalls);
         }
 
-        /// <summary>
-        /// **[R21] 진입이 SP 를 한 번도 부르지 않는다** (2026-09-14 사용자 지시).
-        /// 부모(`WF-PAT-01`)가 목록에서 받아 우측 상세에 그려 둔 그 행을 그대로 받는다.
-        ///
-        /// 예전에는 둘을 물었다 — `SP-PAT-02` 로 상세를, `SP-PAT-05` 로 유효예약을.
-        /// 지금은 목록 SP(`SP-PAT-01`) RS1 이 그 두 답을 한 행에 싣고 온다.
-        ///
-        /// [!] **RP-06 판정이 화면으로 온 것이 아니다.** `ValidWork` 가 채워지는 기준
-        ///     (`예약일 >= DB 현재일 AND 상태 IN (RSV, RCP)`)은 SP 안에 있다.
-        /// </summary>
+        // 대상: ReservationPresenter (WF-RSV-01) — 진입에서 수검자 관련 SP 를 부르지 않음 (R21)
+        // 목적: 2026-09-14 사용자 지시 — 진입이 수검자 SP 를 한 번도 부르지 않는다. 예전에는
+        //       상세와 유효예약 둘을 물었는데, 지금은 목록 SP RS1 이 그 두 답을 한 행에 싣고 온다.
+        //       RP-06 판정이 화면으로 온 것이 아니다 — 유효업무가 채워지는 기준은 SP 안에 있다.
+        // 확인: 수검자 상세 조회가 0회이고, 받아 온 차트번호로 화면이 서며 일정이 열린다.
         [TestMethod]
         public void 받아_온_수검자로_열면_SP_를_부르지_않는다()
         {
@@ -97,14 +99,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("C000001", view.Patient.ChartNo);
             Assert.IsTrue(view.ScheduleEnabled);
         }
-        /// <summary>
-        /// 다른 사람의 행이 넘어오면 **열지 않는다**. 넘어온 값과 대상이 어긋나면
-        /// 엉뚱한 사람의 예약이 되기 때문이다.
-        ///
-        /// [X] **예전에는 그때 `SP-PAT-02` 로 메웠다.** R21 로 그 SP 가 사라졌고, 목록을
-        ///     거치지 않고 이 창을 여는 길도 없다 (03 §3 — 진입점은 하나다).
-        ///     그러니 메우는 대신 멈추고 말한다.
-        /// </summary>
+        // 대상: ReservationPresenter (WF-RSV-01) — 넘어온 행의 수검자ID 가 대상과 어긋난 경우
+        // 목적: 넘어온 값과 대상이 어긋나면 엉뚱한 사람의 예약이 된다. 예전에는 그때 상세 SP 로
+        //       메웠지만 R21 로 그 SP 가 사라졌고, 목록을 거치지 않고 이 창을 여는 길도 없다
+        //       (03 §3 진입점은 하나다). 그러니 메우는 대신 멈추고 말한다.
+        // 확인: 화면에 수검자가 서지 않고 일정이 닫힌 채이며 가용성을 조회하지 않고,
+        //       안내에 「목록에서 다시」가 들어 있다.
         [TestMethod]
         public void 다른_수검자의_상세가_오면_열지_않는다()
         {
@@ -121,11 +121,13 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         }
         // ── 2026-09-11: DLG-RSV-01 예약 변경 (03 §10)
 
-        /// <summary>
-        /// **같은 화면이 모드만 바꾼다.** 진입값이 업무 상세면 변경이고, `SP-PAT-05` 기존
-        /// 유효예약 확인을 거치지 않는다 — 그 판정은 *"새 예약을 만들 수 있는가"* 이고
-        /// 변경은 이미 있는 그 예약을 고치는 일이다 (중복은 SP 가 현재 Work 를 빼고 본다).
-        /// </summary>
+        // 대상: ReservationPresenter (DLG-RSV-01 예약 변경) — 변경 모드 진입
+        // 목적: 같은 화면이 모드만 바꾼다. 진입값이 업무 상세면 변경이고, 기존 유효예약 확인을
+        //       거치지 않는다 — 그 판정은 「새 예약을 만들 수 있는가」이고 변경은 이미 있는 그
+        //       예약을 고치는 일이다 (중복은 SP 가 현재 Work 를 빼고 본다). 행버전을 안 실으면
+        //       남의 변경을 덮어쓴다.
+        // 확인: 제목이 「예약 변경」이고 수검자가 상세에서 채워지며 일정이 열리고,
+        //       가용성 조회에 업무ID 55 와 행버전이 실리고 수검자 SP 는 0회다.
         [TestMethod]
         public void 변경으로_열면_업무ID_와_행버전을_실어_묻는다()
         {
@@ -144,7 +146,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(0, patients.DetailCalls, "변경인데 수검자를 다시 읽었다");
         }
 
-        /// <summary>05 §11.2 — 원하는 최종 상태를 통째로 보낸다. 변경범위는 DB 가 잰다.</summary>
+        // 대상: ReservationPresenter (DLG-RSV-01) — 변경 모드의 저장 경로
+        // 목적: 05 §11.2 는 원하는 최종 상태를 통째로 보내고 변경범위는 DB 가 재도록 정했다.
+        //       신규등록 SP 로 가면 같은 사람에게 예약이 하나 더 생긴다.
+        // 확인: 신규등록 SP 가 불리지 않고 예약변경 SP 로 업무ID 55 와 조작자명이 간다.
         [TestMethod]
         public void 변경_저장은_예약변경_SP_로_간다()
         {
@@ -169,14 +174,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("창구", service.LastChange.OperatorName);
         }
 
-        /// <summary>
-        /// **아무것도 바꾸지 않은 진입에서도 화면이 차 있어야 한다** (2026-09-12 사용자 보고).
-        ///
-        /// 변경 진입은 `변경범위=NONE` 이라 `SP-RSV-01` 이 RS2~RS5 를 **전부 0행**으로 준다
-        /// (05 §9.11). 그래서 시간대·NEX·AEX 가 통째로 비었고, AEX 목록이 없으니 「일정은
-        /// 그대로 두고 추가검사만 변경」(`변경범위=EXTRA`)에 닿을 길이 없었다. 이제 진입에서
-        /// `SP-WRK-02` 가 저장된 검사구성을 먼저 세운다.
-        /// </summary>
+        // 대상: ReservationPresenter (DLG-RSV-01) — 변경 진입 시 검사구성 초기 표시
+        // 목적: 2026-09-12 사용자 보고. 변경 진입은 변경범위=NONE 이라 SP-RSV-01 이 RS2~RS5 를
+        //       전부 0행으로 준다 (05 §9.11). 그래서 시간대·국가검사·추가검사가 통째로 비었고,
+        //       추가검사 목록이 없으니 「일정은 그대로 두고 추가검사만 변경」에 닿을 길이 없었다.
+        //       이제 부모가 넘긴 상세가 저장된 검사구성을 먼저 세운다.
+        // 확인: 상세를 다시 읽지 않고도 국가검사 1건·추가검사 2건이 서고 추가검사 영역이 열린다.
         [TestMethod]
         public void 변경으로_열면_저장된_검사구성이_먼저_선다()
         {
@@ -197,11 +200,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsTrue(view.AexEnabled, "AEX 가 닫혀 있어 추가검사만 변경할 수 없다");
         }
 
-        /// <summary>
-        /// 03 §10.3 「TGT/NEX/AEX 유지」 — 0행은 「없음」이 아니라 「이번엔 재평가하지 않았다」다.
-        /// 예약일을 바꾸지 않은 응답은 RS2·RS3·RS4 가 0행으로 오는데(05 §9.11), 그것으로
-        /// 시간대와 NEX 를 지우면 화면이 다시 빈다.
-        /// </summary>
+        // 대상: ReservationPresenter (DLG-RSV-01) — 예약일을 바꾸지 않은 응답의 해석
+        // 목적: 03 §10.3 「TGT/NEX/AEX 유지」 — 0행은 「없음」이 아니라 「이번엔 재평가하지
+        //       않았다」다. 예약일을 바꾸지 않은 응답은 RS2·RS3·RS4 가 0행으로 오는데 (05 §9.11)
+        //       그것으로 시간대와 국가검사를 지우면 화면이 다시 빈다.
+        // 확인: 국가검사 건수가 진입 때 그대로 남고, 시간대는 새 응답으로 2건으로 갱신되며,
+        //       저장이 열려 있다.
         [TestMethod]
         public void 시간대만_바꾼_응답이_NEX_를_지우지_않는다()
         {
@@ -229,13 +233,13 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsTrue(view.SaveEnabled);
         }
 
-        /// <summary>
-        /// **일정은 그대로 두고 추가검사만 바꾸는 길이 열려 있어야 한다** (2026-09-12 사용자).
-        ///
-        /// `[!]` AEX 체크는 SP 를 다시 부르지 않으므로(Ask) `저장가능` 이 진입 때의 0 에
-        ///      머문다. 버튼을 그 값에만 매어 두면 골라도 누를 수가 없다 — 03 §10.3 이 준
-        ///      두 길 중 「No-op 안내」를 골라, 막을 이유가 없으면 열고 SP 가 판정한다.
-        /// </summary>
+        // 대상: ReservationPresenter (DLG-RSV-01) — 일정은 그대로 두고 추가검사만 바꾸는 길
+        // 목적: 2026-09-12 사용자 보고. 추가검사 체크는 SP 를 다시 부르지 않으므로 저장가능 이
+        //       진입 때 값 0 에 머문다. 버튼을 그 값에만 매어 두면 골라도 누를 수가 없어
+        //       「일정 그대로, 추가검사만 변경」이 영영 막힌다. 03 §10.3 이 준 두 길 중 「No-op
+        //       안내」를 골라, 막을 이유가 없으면 열고 SP 가 저장 시점에 판정한다.
+        // 확인: 저장이 열려 있고, 저장하면 예약변경 SP 로 고른 추가검사가 실리며 예약일·시간대는
+        //       진입 값 그대로 간다.
         [TestMethod]
         public void 바꾼_것이_없어도_저장은_열려_있고_AEX_선택이_그대로_실린다()
         {
@@ -264,10 +268,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("AM", service.LastChange.SlotCode);
         }
 
-        /// <summary>
-        /// 05 §11.2 — 정말로 바꾼 것이 없으면 SP 가 `결과코드=1` 로 돌려준다. 성공이지만
-        /// 저장이 아니므로 Workbench 로 넘기지 않고, 사유를 적고 창을 열어 둔다.
-        /// </summary>
+        // 대상: ReservationPresenter (DLG-RSV-01) — 결과코드 1(No-op) 처리
+        // 목적: 05 §11.2 에서 정말로 바꾼 것이 없으면 SP 가 결과코드 1 로 돌려준다. 성공이지만
+        //       저장이 아니므로 Workbench 로 넘기면 조작자는 바뀐 줄 안다.
+        // 확인: Workbench 로 데려가지 않고 안내에 「변경된 내용이 없습니다」가 선다.
         [TestMethod]
         public void 저장했는데_No_op_이면_데려가지_않고_사유를_적는다()
         {
@@ -290,11 +294,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.BlockMessage, "변경된 내용이 없습니다");
         }
 
-        /// <summary>
-        /// 05 §9.7 은 시간대를 AM/PM 정확히 2행으로 못박는다. 변경 진입에서는 SP 가 0행을
-        /// 주므로 화면이 두 줄을 세운다 — 지금 시간대의 정원은 `SP-WRK-02` RS1 이 주고,
-        /// 반대쪽은 아직 모르므로 정원 0(=모름)으로 둔다.
-        /// </summary>
+        // 대상: ReservationPresenter (DLG-RSV-01) — 변경 진입 시 시간대 두 줄 구성
+        // 목적: 05 §9.7 은 시간대를 AM/PM 정확히 2행으로 못박는다. 변경 진입에서는 SP 가 0행을
+        //       주므로 화면이 두 줄을 세운다 — 지금 시간대의 정원은 상세 RS1 이 주고 반대쪽은
+        //       아직 모르므로 정원 0(모름)으로 둔다. 반대쪽을 고를 수 없으면 시간대를 못 바꾼다.
+        // 확인: 시간대가 2건이고 AM·PM 순서이며, 지금 시간대의 정원은 20 이고 반대쪽은 0 이되
+        //       반대쪽도 고를 수 있다.
         [TestMethod]
         public void 변경으로_열면_시간대가_두_줄_선다()
         {
@@ -313,11 +318,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsTrue(view.Slots[1].Selectable, "반대쪽을 고를 수 없으면 시간대를 못 바꾼다");
         }
 
-        /// <summary>
-        /// 03 §10.3 「없음 → 저장 Disabled **또는 No-op 안내**」. 05 §9.6 은 그 상태의
-        /// `차단메시지` 를 빈 문자열로 정했으므로, 비어 있으면 화면이 메운다 — 캡처에서
-        /// 저장이 왜 꺼져 있는지 알 수 없던 자리다 (2026-09-12 사용자 보고).
-        /// </summary>
+        // 대상: ReservationPresenter (DLG-RSV-01) — 변경 진입 직후의 안내 문구
+        // 목적: 03 §10.3 「없음 → 저장 Disabled 또는 No-op 안내」에서 05 §9.6 은 그 상태의
+        //       차단메시지를 빈 문자열로 정했다. 비어 있으면 화면이 메운다 — 캡처에서 저장이 왜
+        //       꺼져 있는지 알 수 없던 자리다 (2026-09-12 사용자 보고).
+        // 확인: 안내에 「아직 바꾼 것이 없습니다」가 들어 있다.
         [TestMethod]
         public void 아직_바꾼_것이_없으면_그_사실을_적는다()
         {
@@ -330,10 +335,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.BlockMessage, "아직 바꾼 것이 없습니다");
         }
 
-        /// <summary>
-        /// 예약일을 건드리지 않으면 TGT 는 오지 않는다 (RS3 0행). 「미판정」으로 적으면
-        /// 비대상처럼 읽히므로 언제 판정되는지를 적는다.
-        /// </summary>
+        // 대상: ReservationPresenter (DLG-RSV-01) — 예약일 미변경 시 대상판정 문구
+        // 목적: 예약일을 건드리지 않으면 대상판정(RS3)이 0행으로 온다. 「미판정」으로 적으면
+        //       비대상처럼 읽히므로 언제 판정되는지를 적어 조작자가 기다릴 줄 알게 한다.
+        // 확인: 대상판정 문구에 「예약일을 바꾸면」이 들어 있다.
         [TestMethod]
         public void 예약일을_안_바꾸면_대상판정_대신_언제_판정하는지_적는다()
         {
@@ -346,10 +351,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.TargetText, "예약일을 바꾸면");
         }
 
-        /// <summary>
-        /// 부모가 빈손으로 열면 진입을 접는다. 예전에는 「상세 조회가 실패하면」이었고,
-        /// 진입이 조회를 하지 않게 된 뒤로는 **받은 것이 없을 때**가 그 자리다 (2026-09-14).
-        /// </summary>
+        // 대상: ReservationPresenter (DLG-RSV-01) — 부모가 빈손으로 연 경우
+        // 목적: 진입이 조회를 하지 않게 된 뒤로는 「받은 것이 없을 때」가 곧 열 수 없는 때다
+        //       (2026-09-14). 스스로 SP 를 불러 메우면 진입 계약이 깨지고, 그대로 열면 대상 없는
+        //       변경이 나간다.
+        // 확인: 가용성도 상세도 부르지 않고 일정이 닫힌 채이며 안내에 「업무 상세」가 들어 있다.
         [TestMethod]
         public void 받은_것이_없으면_변경_진입을_접는다()
         {
@@ -453,7 +459,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             };
         }
 
-        // 03 §8.5 — 기존 유효예약이 있으면 신규예약을 중단하고 그 WorkId 로 Workbench 로 간다.
+        // 대상: ReservationPresenter (WF-RSV-01) — 유효예약이 있는 수검자의 신규예약 진입
+        // 목적: 03 §8.5 — 기존 유효예약이 있으면 신규예약을 중단하고 그 건으로 Workbench 로
+        //       간다 (00 RP-06). 이어 가면 정원이 한 사람에게 두 자리 나가고, 접을 것을 조회하면
+        //       쓸모없는 SP 왕복이 한 번 생긴다.
+        // 확인: 그 업무ID 55 로 예약 Workbench 를 가리키고 일정영역이 열리지 않으며 가용성을
+        //       조회하지 않는다.
         [TestMethod]
         public void 기존_유효예약이_있으면_신규예약을_접고_Workbench_로_간다()
         {
@@ -470,7 +481,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(0, service.AvailabilityCalls, "접을 것을 조회했다");
         }
 
-        // 03 §8.5 — 조회 시점에 다른 창구가 예약을 넣었을 수도 있다 (05 §9.6 다른업무ID).
+        // 대상: ReservationPresenter (WF-RSV-01) — 조회 응답의 다른업무ID (05 §9.6)
+        // 목적: 03 §8.5 — 진입 시점에는 없었는데 조회 시점에 다른 창구가 예약을 넣었을 수 있다.
+        //       그 경우에도 같은 길로 접어야 중복예약이 생기지 않는다.
+        // 확인: 조회가 준 업무ID 77 로 Workbench 를 가리킨다.
         [TestMethod]
         public void 조회가_다른업무ID_를_주면_그때도_Workbench_로_간다()
         {
@@ -487,6 +501,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 05 §9.12 — `저장가능` 은 DB 것이다
 
+        // 대상: ReservationPresenter (WF-RSV-01) — 저장 버튼 활성화와 차단 사유 표시
+        // 목적: 05 §9.12 에서 저장가능 은 SP-RSV-01 이 정원·마감·TGT·AEX 를 모두 본 뒤 내는 답이다.
+        //       화면이 그 조건을 다시 계산하면 판정이 두 곳이 되고, 둘이 어긋나는 날 조작자는
+        //       버튼이 왜 닫혔는지 알 수 없다.
+        // 확인: 저장가능=1 이면 저장 버튼이 열린다. 일정을 바꿔 저장가능=0 · 차단코드=305(정원초과)
+        //       가 오면 버튼이 닫히고 DB 가 준 차단메시지가 화면에 그대로 뜬다.
         [TestMethod]
         public void 저장_버튼은_DB_의_저장가능_그대로다()
         {
@@ -500,7 +520,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             read.Summary.CanSave = false;
             read.Summary.BlockCode = (int)DbCode.SlotFull;
             read.Summary.BlockMessage = "해당 시간대의 정원이 찼습니다.";
-            view.ReserveDate = Day.AddDays(1);
+            // [X] 여기는 **물어본 날과 다른 날**이면 된다 — 특정 날짜가 아니다 (2026-09-15 실측).
+            //     `Ask` 는 `_askedDate` 와 같으면 되돌아가므로, 고정 상수를 쓰면 화면 기본값
+            //     (`DateTime.Today`) 이 그 상수와 같아지는 하루에만 시험이 조용히 빨강이 된다.
+            //     실제로 `Day.AddDays(1)` 이 오늘이 된 날 터졌다.
+            view.ReserveDate = view.ReserveDate.AddDays(1);
             view.RaiseScheduleChanged();
 
             Assert.IsFalse(view.SaveEnabled);
@@ -509,6 +533,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §8.7 대상판정 문구
 
+        // 대상: ReservationPresenter (WF-RSV-01) — 완료이력이 없는 대상자의 판정 문구
+        // 목적: 03 §8.7 — 판정문구는 화면 계산결과이며 DB 컬럼으로 저장하지 않는다. 완료이력이
+        //       없는 것과 판정을 못 한 것은 다르므로 그 둘을 같은 문구로 적지 않는다.
+        // 확인: 대상판정이 「대상 — 최초검진」이다.
         [TestMethod]
         public void 최초검진이면_대상_최초검진이다()
         {
@@ -520,6 +548,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("대상판정 : 대상 — 최초검진", view.TargetText);
         }
 
+        // 대상: ReservationPresenter (WF-RSV-01) — 완료이력이 있는 대상자의 판정 문구
+        // 목적: 00 TGT-04 의 2년 주기가 업무 규칙이므로, 조작자가 보는 문구에 최근 완료연도가
+        //       있어야 「왜 지금 대상인가」를 화면에서 바로 읽는다.
+        // 확인: 대상판정이 「대상 — 최근 완료연도 2024」다.
         [TestMethod]
         public void 완료이력이_있으면_최근_완료연도를_적는다()
         {
@@ -536,7 +568,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("대상판정 : 대상 — 최근 완료연도 2024", view.TargetText);
         }
 
-        // 비대상 사유는 화면이 짓지 않는다 — DB 가 준 `사유메시지` 를 그대로 붙인다.
+        // 대상: ReservationPresenter (WF-RSV-01) — 비대상 사유 문구
+        // 목적: 비대상 사유는 화면이 짓지 않는다 — DB 가 준 사유메시지를 그대로 붙인다. 화면이
+        //       지으면 400·401 같은 사유코드가 늘 때마다 문구가 두 곳이 된다.
+        // 확인: 대상판정이 「비대상 — 예약일 기준 만 20세 미만입니다.」로 DB 문장 그대로다.
         [TestMethod]
         public void 비대상이면_DB_가_준_사유를_그대로_붙인다()
         {
@@ -554,7 +589,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("대상판정 : 비대상 — 예약일 기준 만 20세 미만입니다.", view.TargetText);
         }
 
-        // 03 §8.5 — 비대상이면 AEX Disabled.
+        // 대상: ReservationPresenter (WF-RSV-01) — 비대상일 때의 추가검사 영역
+        // 목적: 03 §8.5 — 비대상이면 추가검사를 고를 수 없다. 열어 두면 조작자가 고른 뒤 저장
+        //       시점에 막혀 고른 것을 잃는다.
+        // 확인: 추가검사 영역이 닫힌다.
         [TestMethod]
         public void 비대상이면_AEX_를_닫는다()
         {
@@ -566,6 +604,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsFalse(view.AexEnabled);
         }
 
+        // 대상: ReservationPresenter (WF-RSV-01) — 일정 평가가 불가능할 때의 대상판정
+        // 목적: 05 §9.8 에서 일정 평가가 불가능하면 RS3 이 0행이다. 그 0행을 「비대상」으로
+        //       읽으면 아직 묻지 않은 것을 답이 나온 것처럼 보여 주게 된다.
+        // 확인: 대상판정이 「미판정」이고 추가검사가 닫혀 있다.
         [TestMethod]
         public void 일정을_아직_못_잡으면_미판정이다()
         {
@@ -580,7 +622,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §8.10 AEX 유지 규칙
 
-        // 예약일이 바뀌면 **유효 선택만 유지**한다. 무엇이 살아남았는지는 DB 의 `유효선택여부` 다.
+        // 대상: ReservationPresenter (WF-RSV-01) — 예약일 변경 시 추가검사 선택의 유지
+        // 목적: 03 §8.10 — 예약일이 바뀌면 만나이가 바뀌어 국가검사 구성이 달라지고, 그에 따라
+        //       고를 수 있는 추가검사도 달라진다. 무엇이 살아남았는지는 DB 의 유효선택여부가
+        //       알려 주며, 화면이 임의로 유지하면 SP 가 411·412 로 막는 조합이 화면에 남는다.
+        // 확인: 인정받지 못한 선택은 해제되고 인정된 선택만 체크된 채 남는다.
         [TestMethod]
         public void 예약일이_바뀌면_유효_선택만_남는다()
         {
@@ -600,8 +646,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 조회 횟수
 
-        // [X] DateEdit 은 글자를 칠 때마다 값이 바뀐다. 같은 일정으로 동기 SP 를 되풀이해
-        //     부르면 그때마다 화면이 얼어붙는다.
+        // 대상: ReservationPresenter (WF-RSV-01) — 같은 예약일·시간대 재조회 억제
+        // 목적: DateEdit 은 글자를 칠 때마다 값이 바뀐다. 같은 일정으로 동기 SP 를 되풀이해
+        //       부르면 타이핑하는 내내 화면이 얼어붙는다.
+        // 확인: 같은 예약일·시간대로 이벤트가 여러 번 올라와도 가용성 조회가 1회에 머문다.
         [TestMethod]
         public void 같은_일정으로는_다시_묻지_않는다()
         {
@@ -617,6 +665,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(1, service.AvailabilityCalls, "같은 예약일·시간대로 SP 를 다시 불렀다");
         }
 
+        // 대상: ReservationPresenter (WF-RSV-01) — 시간대 변경 시 재조회
+        // 목적: 05 §9.7 에서 정원과 마감은 시간대마다 다르다. 시간대를 바꾸고 묻지 않으면
+        //       AM 값으로 PM 을 저장하러 가고, 정원이 찬 시간대에 예약이 나간다.
+        // 확인: 시간대를 PM 으로 바꾸면 가용성 조회가 2회가 되고 마지막 조회의 시간대가 PM 이다.
         [TestMethod]
         public void 시간대를_고르면_다시_묻는다()
         {
@@ -634,6 +686,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §8.11 2단계 저장
 
+        // 대상: ReservationPresenter (WF-RSV-01) — 저장 성공 뒤의 화면 초기화와 착지
+        // 목적: 03 §8.10 — 저장한 값이 화면에 남아 있으면 다음 수검자에게 앞 사람 값이 섞인다.
+        //       저장 뒤에 갈 곳이 예약 Workbench 인 것은 방금 만든 건을 확인하는 자리이기 때문이다.
+        // 확인: 새 업무ID 91 로 예약 Workbench 를 가리키고, 수검자·저장 버튼이 초기화되며,
+        //       저장 요청에 조작자명이 실렸다.
         [TestMethod]
         public void 저장에_성공하면_전체를_비우고_예약_Workbench_로_간다()
         {
@@ -659,13 +716,13 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("창구", service.LastSave.OperatorName);
         }
 
-        /// <summary>
-        /// 00 RP-05 — 현장 내원자는 **당일예약 마감 전이면 일반, 그 뒤 접수 마감 전까지는 현장**
-        /// 당일예약이다. 같은 사람·같은 행동이고 시각만 다르다.
-        ///
-        /// [X] 조작자에게 시계를 읽히면 10:00 직전·직후에 틀린 구분이 기록된다. 그래서 화면이
-        ///     일반으로 묻고, `304 마감경과` 로 막혔을 때만 현장으로 한 번 더 묻는다.
-        /// </summary>
+        // 대상: ReservationPresenter (WF-RSV-01) — 일반예약 마감 후의 예약구분 판정
+        // 목적: 00 RP-05 — 현장 내원자는 당일예약 마감 전이면 일반, 그 뒤 접수 마감 전까지는
+        //       현장 당일예약이다. 같은 사람·같은 행동이고 시각만 다르다. 조작자에게 시계를
+        //       읽히면 10:00 직전·직후에 틀린 구분이 기록되므로, 화면이 일반으로 묻고 304
+        //       마감경과로 막혔을 때만 현장으로 한 번 더 묻는다.
+        // 확인: 가용성 조회가 2회(일반 한 번, 현장 한 번)이고, 마지막 조회와 저장의 예약구분이
+        //       모두 현장 당일예약이다.
         [TestMethod]
         public void 마감이_지나면_현장_당일예약으로_한_번_더_묻는다()
         {
@@ -692,7 +749,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(DbReserveType.WalkIn, service.LastSave.ReserveType);
         }
 
-        // 마감 전이면 한 번만 묻는다 — 되묻는 것은 마감으로 막혔을 때뿐이다.
+        // 대상: ReservationPresenter (WF-RSV-01) — 마감 전의 예약구분 판정
+        // 목적: 되묻는 것은 마감으로 막혔을 때뿐이다. 늘 두 번 물으면 SP 왕복이 배로 늘고
+        //       마감 전인데도 현장 당일예약으로 기록될 길이 생긴다.
+        // 확인: 가용성 조회가 1회이고 예약구분이 일반 예약이다.
         [TestMethod]
         public void 마감_전이면_일반으로_한_번만_묻는다()
         {
@@ -706,12 +766,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(DbReserveType.Normal, service.LastAvailability.ReserveType);
         }
 
-        /// <summary>
-        /// 저장 뒤 착지는 **예약구분이 아니라 날짜**로 가른다 (2026-09-11 grilling).
-        ///
-        /// [X] 오늘인지를 화면이 `DateTime.Today` 로 재지 않는다. 마감시각은 `@예약일=오늘날짜`
-        ///     일 때만 채워지므로(`03_Functions.sql`) 마감시각이 있다는 것이 곧 오늘이라는 뜻이다.
-        /// </summary>
+        // 대상: ReservationPresenter (WF-RSV-01) — 저장 뒤 착지 창구 판정
+        // 목적: 2026-09-11 grilling — 저장 뒤 착지는 예약구분이 아니라 날짜로 가른다. 오늘 건은
+        //       바로 접수로 이어지기 때문이다. 오늘인지를 화면이 PC 시계로 재지 않는 것도 규칙이다:
+        //       마감시각은 예약일이 오늘일 때만 채워지므로 마감시각이 있다는 것이 곧 오늘이라는
+        //       뜻이다.
+        // 확인: 일반 예약으로 저장해도 오늘 건이면 접수 Workbench 로 간다.
         [TestMethod]
         public void 오늘_예약은_예약구분과_무관하게_접수_Workbench_로_간다()
         {
@@ -735,15 +795,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 "일반 예약이어도 오늘이면 다음 할 일은 접수다");
         }
 
-        /// <summary>
-        /// **오늘 건의 추가검사만 바꿔도 접수 Workbench 로 간다** (2026-09-14).
-        ///
-        /// 예약일을 안 바꾸면 시간대정보가 끝까지 비어 있어 마감시각으로는 「오늘인가」를
-        /// 판정할 수 없었고, 그래서 오늘 건이 예약 Workbench 로 떨어졌다 (`session-20` §6).
-        ///
-        /// [X] **DB 오늘날짜를 따로 묻지 않는다.** 진입에서 이미 받는 RS4 의
-        ///     `START_RECEPTION` 사유코드가 그 답이다 — SP 왕복이 늘지 않는다.
-        /// </summary>
+        // 대상: ReservationPresenter (DLG-RSV-01) — 추가검사만 바꾼 오늘 건의 착지
+        // 목적: 2026-09-14 수정. 예약일을 안 바꾸면 시간대정보가 끝까지 비어 있어 마감시각으로는
+        //       「오늘인가」를 판정할 수 없었고, 그래서 오늘 건이 예약 Workbench 로 떨어졌다
+        //       (session-20 §6). DB 오늘날짜를 따로 묻지 않는다 — 진입에서 이미 받는 RS4 의
+        //       START_RECEPTION 사유코드가 그 답이라 SP 왕복이 늘지 않는다.
+        // 확인: 일정을 건드리지 않고 추가검사만 바꿔 저장해도 접수 Workbench 로 간다.
         [TestMethod]
         public void 오늘_건은_일정을_안_바꿔도_접수_Workbench_로_간다()
         {
@@ -768,7 +825,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 "오늘 건인데 예약 Workbench 로 떨어졌다 — 다음에 할 일은 접수다");
         }
 
-        // 마감이 지난 것은 그 날이 오늘이라는 뜻이다 — 503 을 이미 통과했으므로 착지는 접수다.
+        // 대상: ReservationPresenter — 접수 마감이 지난 오늘 건의 착지
+        // 목적: 마감이 지났다는 것은 그 날이 오늘이라는 뜻이다 — 503(오늘이 아님)을 이미
+        //       통과했으므로 착지는 접수다. 마감을 「오늘이 아니다」로 읽으면 오늘 건이 예약
+        //       창구로 떨어져 조작자가 한 번 더 옮겨야 한다.
+        // 확인: 접수 Workbench 로 간다.
         [TestMethod]
         public void 마감이_지난_오늘_건도_접수_Workbench_로_간다()
         {
@@ -792,7 +853,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(WorkContext.Reception, view.WorkbenchContext);
         }
 
-        // 503 은 「오늘이 아니다」이고, 그때만 예약 Workbench 가 맞다.
+        // 대상: ReservationPresenter — 미래 예약의 착지
+        // 목적: 503 은 「오늘이 아니다」이고, 그때만 예약 Workbench 가 맞다. 위 두 갈래와 한
+        //       묶음이라 셋을 함께 재야 판정이 뒤집히지 않는다.
+        // 확인: 예약 Workbench 로 간다.
         [TestMethod]
         public void 오늘이_아닌_건은_예약_Workbench_로_간다()
         {
@@ -816,7 +880,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(WorkContext.Reservation, view.WorkbenchContext);
         }
 
-        // 05 §9.6 — 예약구분은 DB 가 돌려준 값을 그대로 읽어 준다.
+        // 대상: ReservationPresenter (WF-RSV-01) — 예약구분 문구
+        // 목적: 05 §9.6 — 예약구분은 DB 가 돌려준 값을 그대로 읽어 준다. 화면이 시각으로 다시
+        //       판정하면 저장된 값과 보이는 값이 달라진다.
+        // 확인: 문구가 「현장 당일예약」이다.
         [TestMethod]
         public void 예약구분은_DB_가_돌려준_값을_그대로_적는다()
         {
@@ -833,14 +900,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("현장 당일예약", view.ReserveTypeText);
         }
 
-        /// <summary>
-        /// H1 결함의 회귀 시험 (`docs/phase5/2026-09-11-Deadline-Field-Check.md` §4,
-        /// 2026-09-12 수정). 예전에는 *시간대 중 하나라도 `304`* 면 현장으로 넘어갔고, 마감은
-        /// 시간대마다 다르므로(`03_Functions.sql` 의 `기본마감시각` CASE) **AM 이 마감이고 PM 은
-        /// 아직 마감 전인 구간**에서 PM 예약이 `WALKIN` 으로 저장되었다. 막히지 않아 조용했다.
-        ///
-        /// 지금은 **고른 시간대**가 판정한다. PM 을 고르면 PM 의 마감만 본다.
-        /// </summary>
+        // 대상: ReservationPresenter (WF-RSV-01) — 시간대별 마감 판정 (H1 결함 회귀)
+        // 목적: 2026-09-11 Deadline-Field-Check §4 의 결함이다. 예전에는 시간대 중 하나라도 304 면
+        //       현장으로 넘어갔는데, 마감은 시간대마다 다르므로(AM 10:00 · PM 15:00) AM 이 마감이고
+        //       PM 은 아직 마감 전인 구간에서 PM 예약이 현장으로 저장되었다. 막히지 않아 조용히
+        //       틀린 구분이 기록됐다. 지금은 고른 시간대가 판정한다.
+        // 확인: PM 을 고르면 가용성 조회가 1회이고 예약구분이 일반 예약으로 남는다.
         [TestMethod]
         public void PM_을_고르면_AM_이_마감이어도_일반으로_남는다()
         {
@@ -862,11 +927,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("일반 예약", view.ReserveTypeText);
         }
 
-        /// <summary>
-        /// 시간대를 아직 고르지 않은 최초 조회의 기준 — **하나라도 고를 수 있으면 일반이다.**
-        /// RS1 의 `시간대코드` 는 보낸 값 그대로이고 미선택이면 NULL 이라(05 §9.6), DB 가 대신
-        /// 골라 주지 않는다. 고르는 순간 같은 판정이 그 시간대로 다시 돈다.
-        /// </summary>
+        // 대상: ReservationPresenter (WF-RSV-01) — 시간대 미선택 상태의 최초 조회
+        // 목적: 시간대를 아직 고르지 않은 최초 조회의 기준이다 — 하나라도 고를 수 있으면 일반이다.
+        //       RS1 의 시간대코드는 보낸 값 그대로이고 미선택이면 NULL 이라 (05 §9.6) DB 가 대신
+        //       골라 주지 않는다. 여기서 현장으로 넘기면 아직 고를 수 있는 시간대가 있는데도
+        //       현장 당일예약으로 기록된다.
+        // 확인: 가용성 조회가 1회이고 예약구분이 일반 예약이다.
         [TestMethod]
         public void 시간대_미선택이면_하나라도_열려_있는_동안은_일반이다()
         {
@@ -887,10 +953,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(DbReserveType.Normal, service.LastAvailability.ReserveType);
         }
 
-        /// <summary>
-        /// 미선택이고 **둘 다 마감**이면 남은 길은 현장뿐이다 — 그때는 되묻는다.
-        /// 되묻지 않으면 늦게 온 현장 내원자가 예약할 자리를 잃는다 (00 RP-05).
-        /// </summary>
+        // 대상: ReservationPresenter (WF-RSV-01) — 시간대 미선택이고 AM·PM 둘 다 마감인 경우
+        // 목적: 미선택이고 둘 다 마감이면 남은 길은 현장뿐이다. 되묻지 않으면 늦게 온 현장
+        //       내원자가 예약할 자리를 잃는다 (00 RP-05).
+        // 확인: 가용성 조회가 2회가 되고 예약구분이 현장 당일예약으로 바뀌며 문구도 따라간다.
         [TestMethod]
         public void 시간대_미선택이고_둘_다_마감이면_현장으로_묻는다()
         {
@@ -930,13 +996,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             return read;
         }
 
-        /// <summary>
-        /// 03 §8.5 — 이 수검자로는 더 진행할 수 없다 (RP-06). 남은 선택은 「그 예약을 보러 갈까」
-        /// 하나이고, **묻고 간다** (2026-09-11 사용자 지시).
-        ///
-        /// [X] 예전에는 알리고 곧바로 데려갔다. 명단을 연달아 예약하는 중이면 잘못 누른 한 번이
-        ///     흐름을 끊는다.
-        /// </summary>
+        // 대상: ReservationPresenter (WF-RSV-01) — 유효예약 안내 후의 이동 확인
+        // 목적: 03 §8.5 — 이 수검자로는 더 진행할 수 없다 (RP-06). 남은 선택은 「그 예약을 보러
+        //       갈까」 하나이고, 묻고 간다 (2026-09-11 사용자 지시). 예전에는 알리고 곧바로
+        //       데려갔는데, 명단을 연달아 예약하는 중이면 잘못 누른 한 번이 흐름을 끊는다.
+        // 확인: 「아니오」면 창이 닫히고 Workbench 로 데려가지 않으며, 물음에 그 예약의
+        //       일정(2026-09-14)이 들어 있다.
         [TestMethod]
         public void 기존_유효예약은_묻고_아니오면_그냥_닫는다()
         {
@@ -957,7 +1022,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.LastQuestion, "2026-09-14", "물음에 그 예약의 일정이 없다");
         }
 
-        // 저장으로 생긴 건과 보러 가는 건은 착지 규칙이 다르다 — 그 구분이 화면까지 가야 한다.
+        // 대상: ReservationPresenter — Workbench 로 넘길 때의 「저장에서 왔는가」 표시
+        // 목적: 저장으로 생긴 건과 보러 가는 건은 착지 규칙이 다르다 — 저장 건은 그 날짜로 좁혀
+        //       겨누고, 보러 가는 건은 그렇지 않다. 그 구분이 화면까지 가야 부모가 옳게 연다.
+        // 확인: 저장으로 넘길 때 그 표시가 참으로 함께 올라간다.
         [TestMethod]
         public void 저장으로_생긴_건인지가_함께_올라간다()
         {
@@ -979,8 +1047,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(true, view.WorkbenchFromSave);
         }
 
-        // 03 §8.10 — 모달을 닫을 때 폐기를 묻는 근거. **수검자가 확정된 순간부터** 화면에는
-        // 사용자가 들인 것이 있고(일정·AEX), 저장이 끝나면 Reset 이 그것을 내린다.
+        // 대상: ReservationPresenter (WF-RSV-01) — 폐기 확인 여부의 기준
+        // 목적: 03 §8.10 — 수검자가 확정된 순간부터 화면에는 조작자가 들인 것이 있고(일정·추가
+        //       검사), 저장이 끝나면 초기화가 그것을 내린다. 확정 전에도 물으면 아무것도 안 한
+        //       창을 닫을 때마다 확인창이 뜬다.
+        // 확인: 확정 전에는 미저장 입력이 없다고 판정한다.
         [TestMethod]
         public void 수검자가_확정되기_전에는_폐기를_묻지_않는다()
         {
@@ -991,6 +1062,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsFalse(presenter.HasUnsavedInput);
         }
 
+        // 대상: ReservationPresenter (WF-RSV-01) — 확정 뒤의 미저장 입력 판정
+        // 목적: 위와 한 쌍이다. 확정 뒤에는 화면에 입력값이 있으므로, 묻지 않고 닫으면 조작자가
+        //       적은 것이 조용히 사라진다.
+        // 확인: 확정 뒤에는 미저장 입력이 있다고 판정한다.
         [TestMethod]
         public void 수검자가_확정되면_폐기를_묻는다()
         {
@@ -1003,7 +1078,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsTrue(presenter.HasUnsavedInput);
         }
 
-        // 03 §8.11 실패 — Commit 없음. 사유를 보이고 일정·대상·검사구성을 최신값으로 다시 읽는다.
+        // 대상: ReservationPresenter (WF-RSV-01) — 저장이 업무 판정으로 막힌 경우
+        // 목적: 03 §8.11 실패 경로 — Commit 이 없으므로 Workbench 로 넘기면 안 되고, 일정·대상·
+        //       검사구성을 최신값으로 다시 읽어야 조작자가 남이 채운 정원을 보고 다시 고른다.
+        // 확인: DB 가 준 사유가 화면에 서고 Workbench 로 가지 않으며 가용성 조회가 한 번 더 난다.
         [TestMethod]
         public void 저장이_DB_에서_막히면_사유를_보이고_최신값을_다시_읽는다()
         {
@@ -1032,7 +1110,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(before + 1, service.AvailabilityCalls, "최신값을 다시 읽지 않았다");
         }
 
-        // 05 §11 — 성공이면 RS1 이 온다. 없으면 계약 위반이므로 업무ID 를 지어내지 않는다.
+        // 대상: ReservationPresenter (WF-RSV-01) — 성공인데 RS1 이 없는 계약 위반
+        // 목적: 05 §11 에서 성공이면 RS1 이 온다. 없으면 계약 위반이므로 업무ID 를 지어내지
+        //       않는다 — 지어내면 없는 업무를 겨눈 Workbench 가 열린다.
+        // 확인: Workbench 로 넘기지 않는다.
         [TestMethod]
         public void 성공인데_업무ID_가_없으면_Workbench_로_넘기지_않는다()
         {
@@ -1050,7 +1131,9 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.WorkbenchWorkId);
         }
 
-        // 킷 §6 — provider 메시지는 DB·머신 정보를 드러낸다. 화면에 원문을 싣지 않는다.
+        // 대상: ReservationPresenter (WF-RSV-01) — 조회에서 예외가 올라온 경우
+        // 목적: 킷 §6 — provider 메시지는 DB 이름·서버명을 드러내므로 화면에 원문을 싣지 않는다.
+        // 확인: 안내가 화면용 문장이고 예외에 든 서버명(DESKTOP…)이 문구에 없다.
         [TestMethod]
         public void 예외가_나도_예외_본문을_화면에_싣지_않는다()
         {

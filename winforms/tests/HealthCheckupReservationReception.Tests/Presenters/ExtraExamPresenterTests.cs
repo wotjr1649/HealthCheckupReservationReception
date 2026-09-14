@@ -17,6 +17,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
     [TestClass]
     public class ExtraExamPresenterTests
     {
+        // 대상: ExtraExamPresenter (DLG-RCP-02) — 진입 시 추가검사 일곱 항목 구성
+        // 목적: 05 §8.2 RS5 가 안 고른 것까지 일곱을 주는 것이 R18 재봉인의 이유다. 화면이 고른
+        //       것만 그리면 접수 뒤에 추가검사를 **더하는** 길이 사라져, 이 화면의 존재 이유가
+        //       없어진다.
+        // 확인: 선택 후보가 7건 실리고, 저장 버튼이 열리며, 제목이 「추가검사 변경」이고
+        //       오류 메시지가 없다.
         [TestMethod]
         public void 열면_RS5_일곱을_그대로_싣는다()
         {
@@ -31,7 +37,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.ValidationMessage);
         }
 
-        // 05 §8.2 RS4 `EDIT_EXTRA` 가 허용여부를 준다 — 화면이 상태로 다시 재지 않는다.
+        // 대상: ExtraExamPresenter (DLG-RCP-02) — RS4 의 EDIT_EXTRA 가 불허일 때
+        // 목적: 05 §8.2 RS4 의 EDIT_EXTRA 가 허용여부와 사유를 함께 준다. 화면이 상태코드를 보고
+        //       다시 재면 판정이 두 곳이 되고, DB 가 막은 것을 화면이 열어 버리는 날이 온다.
+        // 확인: 저장 버튼이 닫히고, DB 가 준 사유(「현재 상태에서는 …」)가 화면에 선다.
         [TestMethod]
         public void 허용되지_않으면_사유를_적고_닫는다()
         {
@@ -44,9 +53,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.ValidationMessage, "현재 상태에서는");
         }
 
-        /// <summary>
-        /// 05 §12.2 — 화면이 고른 일곱을 **순서 그대로** 보낸다. 동일 집합인지는 SP 가 잰다.
-        /// </summary>
+        // 대상: ExtraExamPresenter (DLG-RCP-02) — 저장 시 선택 집합과 동시성 값 전달
+        // 목적: 05 §12.2 는 화면이 고른 일곱을 순서 그대로 보내도록 정했다 — 동일 집합인지
+        //       (No-op 인지)는 SP 가 잰다. 화면이 순서를 바꾸거나 고른 것만 추리면 SP 의 집합
+        //       비교가 어긋나 바뀐 것이 없는데도 저장이 나가거나 그 반대가 된다.
+        // 확인: 선택 배열이 화면 순서 그대로 전달되고, 업무ID 77 과 행버전이 함께 실리며,
+        //       성공하면 창이 닫힌다.
         [TestMethod]
         public void 저장은_일곱_선택을_순서대로_보낸다()
         {
@@ -67,6 +79,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsTrue(view.Closed);
         }
 
+        // 대상: ExtraExamPresenter (DLG-RCP-02) — 저장이 업무 판정으로 막힌 경우
+        // 목적: 05 §12.2 에서 411 성별조건처럼 막히는 이유가 여럿이다. 창이 닫히면 사유를 읽을
+        //       새가 없고 조작자는 고른 것을 처음부터 다시 골라야 한다. 막힌 뒤 최신값을 다시
+        //       읽어야 화면이 남의 변경을 반영한 상태로 이어진다.
+        // 확인: 창이 열린 채로 남고 사유에 「성별 조건」이 들어 있으며, 상세 조회가 한 번 더
+        //       불려 최신값으로 갱신된다.
         [TestMethod]
         public void DB_가_막으면_사유가_남고_창은_열려_있다()
         {

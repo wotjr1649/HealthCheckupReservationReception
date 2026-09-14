@@ -17,6 +17,11 @@ namespace HealthCheckupReservationReception.Tests
     [TestClass]
     public class MainFormTests
     {
+        // 대상: MainForm (WF-00) — 글꼴과 AutoScale 기준
+        // 목적: 킷 §1 의 굴림 9pt · AutoScaleMode.Font 는 Program.cs 가 정하는데 그것이
+        //       디자인타임에는 돌지 않는다. 폼이 자기 Font 를 직렬화해 두지 않으면 다음 디자이너
+        //       저장에서 치수가 다시 계산되어 화면 전체가 통째로 재조정된다.
+        // 확인: AutoScaleMode 가 Font 이고 Font 가 굴림 9pt 다.
         [TestMethod]
         public void MainForm_은_킷_UI_베이스라인을_따른다()
         {
@@ -31,9 +36,12 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // 화면 제목은 여기서 문자열로 비교하지 않는다. 05 §1.1 이 단일 출처이고
-        // scripts/verify-contract-names.sh 의 CFG-007 이 Designer 와 대조한다 —
-        // 여기 적으면 같은 값이 세 곳에 있게 된다 (ROOT AGENTS.md §6).
+        // 대상: MainForm (WF-00) — Ribbon 과 StatusBar 의 상호 참조
+        // 목적: DevExpress 는 둘을 서로 연결해야 상태바가 Ribbon 스킨을 따르고 Page 전환에
+        //       반응한다. 한쪽만 걸려 있으면 상태바가 딴 모양으로 뜨거나 갱신되지 않는다.
+        //       화면 제목 문자열은 여기서 비교하지 않는다 — 05 §1.1 이 단일 출처이고
+        //       verify-contract-names.sh 의 CFG-007 이 Designer 와 대조한다.
+        // 확인: Ribbon 과 StatusBar 가 둘 다 있고, 서로를 같은 인스턴스로 가리킨다.
         [TestMethod]
         public void MainForm_의_Ribbon_과_StatusBar_는_서로_연결된다()
         {
@@ -49,18 +57,14 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        /// <summary>
-        /// **Page 는 「가는 곳」이고, 예외는 열리지 않는 문 하나다** (2026-09-14 사용자 지시).
-        ///
-        /// [X] 그룹 없는 Page 가 예전에는 「눌러도 아무 데도 안 가는 Page」였다. 그런 것이
-        ///     둘(`신규 예약` · `휴무일 관리`) 있었고 눌리면 탭이 바뀌었다 제자리로 돌아와
-        ///     예측이 되지 않았다 — 사용자가 「기능 배치가 중구난방」이라 보고한 자리다.
-        ///     지금 `휴무일 관리` 는 **탭이 아예 바뀌지 않는다**: 전환을 취소하고 Modal 만 연다.
-        ///     그래서 재는 것이 "그룹이 있는가" 가 아니라 **"그룹이 없으면 정말 안 열리는가"** 다.
-        ///
-        /// Page 의 개수·이름은 적지 않는다 — `MainPresenterTests` 가 `BusinessNavigation`
-        /// 전체를 돌며 「가지 않는 Page」를 잡고, 그것이 단일 출처다 (ROOT AGENTS.md §6).
-        /// </summary>
+        // 대상: MainForm (WF-00) — Ribbon Page 중 그룹이 없는 Page 의 동작
+        // 목적: 2026-09-14 사용자 지시로 Page 는 모두 「가는 곳」이다. 예전에는 그룹 없는 Page 가
+        //       「눌러도 아무 데도 안 가는 Page」였고 그런 것이 둘(신규 예약·휴무일 관리) 있었다 —
+        //       눌리면 탭이 바뀌었다 제자리로 돌아와 예측이 되지 않았고, 사용자가 「기능 배치가
+        //       중구난방」이라 보고한 자리다. 지금 휴무일 관리는 전환 자체를 취소하고 Modal 만
+        //       연다. 그래서 재는 것이 「그룹이 있는가」가 아니라 「그룹이 없으면 정말 안 열리는가」다.
+        // 확인: Shell 핸들이 만들어지고, 그룹 없는 Page 를 누르면 선택된 Page 가 바뀌지 않으며,
+        //       그렇게 열리지 않는 문은 「휴무일 관리」 하나뿐이다.
         [TestMethod]
         public void 그룹_없는_Page_는_열리지_않는_문_하나뿐이다()
         {
@@ -95,14 +99,14 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // 03 §4.2 는 Ribbon Group 순서를 [검색] → [현재 업무 Action] → [보기] 로 적었다.
-        // 2026-09-10 사용자 결정으로 **[검색] 그룹이 Ribbon 에서 사라졌다** — [조회] 는 화면
-        // 안에 있고 같은 버튼이 두 곳에 있을 이유가 없다. [컬럼설정] 도 같은 이유로 Grid 옆
-        // 드롭다운이 되었다. 남은 규칙은 "[보기] 가 있으면 그것이 마지막" 이다.
-        //
-        // 휴무일 관리에는 [보기] 가 없다 — 03 §24.7 이 그 화면에 변경이력을 두지 않는다.
-        // 그래서 "있으면" 이고, **있어야 하는 셋은 아래에서 이름으로 확인한다** — 건너뛰는
-        // 조건은 곧 아무것도 재지 않는 green 으로 자란다.
+        // 대상: MainForm (WF-00) — 업무 Page 세 곳의 Ribbon Group 구성과 순서
+        // 목적: 03 §4.2 는 [검색] → [현재 업무 Action] → [보기] 순서를 적었는데, 2026-09-10
+        //       사용자 결정으로 [검색] 그룹이 Ribbon 에서 사라졌다 — [조회] 는 화면 안에 있고
+        //       같은 버튼이 두 곳에 있을 이유가 없다. 남은 규칙은 「[보기] 가 있으면 그것이
+        //       마지막」이다. 휴무일 관리에는 [보기] 가 없으므로(03 §24.7) 「있으면」이고,
+        //       건너뛰는 조건은 곧 아무것도 재지 않는 green 으로 자라므로 훑은 Page 이름을 함께 잰다.
+        // 확인: 어느 Page 에도 [검색]·[기준정보] 그룹이 없고, [보기] 가 있으면 마지막 자리다.
+        //       훑은 목록에 수검자 관리·예약 관리·접수 관리 셋이 들어 있다.
         [TestMethod]
         public void 보기_그룹이_있으면_마지막이고_검색_그룹은_없다()
         {
@@ -155,10 +159,11 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // 03 §1.3 · §5.2 · §9.6 · §9.7 — 공통 업무불가여도 업무 Action 은 닫히지 않는다.
-        // [R12] 공통 업무불가는 Action 을 닫지 않는다 (`00` §1.1 · 03 §1.3 · §5.2 · §9.6 · §9.7).
-        //       화면이 미리 닫으면 저장 시점의 DB 판정을 사용자가 받아볼 수 없다.
-        //       R12 이전에는 이 자리가 "변경이력·컬럼설정만 남는다" 를 재는 시험이었다.
+        // 대상: MainForm (WF-00) — 공통 업무상태가 업무불가일 때의 Ribbon Action
+        // 목적: R12 가 되돌린 자리다. 00 §1.1 · 03 §1.3·§5.2·§9.6·§9.7 에 따라 공통 업무불가는
+        //       Action 을 닫지 않는다 — 화면이 미리 닫으면 조작자가 저장 시점의 DB 판정(사유가
+        //       담긴 결과코드)을 받아볼 길이 사라진다.
+        // 확인: 업무불가 상태에서도 업무 Action 버튼들과 [변경이력] 이 열려 있다.
         [TestMethod]
         public void 공통_업무불가여도_업무_Action_이_닫히지_않는다()
         {
@@ -209,8 +214,11 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // 03 §5.2 표 — 행 미선택이면 [정보수정]·[예약]·[변경이력]이 닫히고
-        // 행을 고르면 셋이 함께 열린다. [R12] 이제 이 표에 다른 축은 없다.
+        // 대상: MainForm (WF-00) — 수검자 관리 Page 의 Action 과 Grid 선택의 연동
+        // 목적: 03 §5.2 표대로 대상이 없는 Action 은 닫혀 있어야 한다. 열려 있으면 직전에 고른
+        //       사람에게 정보수정·예약이 나간다. [신규등록] 만은 행과 무관하다.
+        // 확인: 행 미선택이면 [정보수정]·[예약]·[변경이력] 이 닫히고 [신규등록] 은 열려 있다.
+        //       행을 고르면 셋이 함께 열린다.
         [TestMethod]
         public void 행_미선택이면_정보수정_예약_변경이력이_닫힌다()
         {
@@ -232,8 +240,11 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // 2026-09-10 사용자 결정 — 업무 화면은 한 번에 하나만 뜬다. Tab 스트립을 걷었으므로
-        // 담는 자리는 PanelControl 하나이고, 같은 화면을 다시 불러도 하나를 넘지 않는다.
+        // 대상: MainForm (WF-00) — 업무 화면을 담는 PanelControl
+        // 목적: 2026-09-10 사용자 결정으로 업무 화면은 한 번에 하나만 뜬다 (Tab 스트립을 걷었다).
+        //       같은 화면을 다시 불렀을 때 판에 겹쳐 쌓이면 메모리에 화면이 쌓이고 이벤트가
+        //       중복 발화한다.
+        // 확인: 판의 자식이 정확히 1개이고 그것이 UcPatientManagement 이며 Dock=Fill 이다.
         [TestMethod]
         public void 수검자_관리_화면은_업무_판_하나에_선다()
         {
@@ -253,8 +264,10 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // 03 §9.1 — 예약 관리와 접수 관리는 화면 하나를 나눠 쓴다. Context 를 바꿔 다시 열어도
-        // 판에는 하나뿐이고, 갈리는 것은 넘겨준 WorkContext 뿐이다.
+        // 대상: MainForm (WF-00) — 예약 관리·접수 관리 두 Page 가 같은 UcWorkbench 를 쓰는 구조
+        // 목적: 03 §9.1 에서 두 창구는 화면 하나를 나눠 쓴다. Context 마다 화면을 새로 세우면
+        //       같은 화면이 둘 쌓이고, 조회조건과 선택이 창구 사이에서 새어 나간다.
+        // 확인: Context 를 바꿔 다시 열어도 판의 자식이 1개이고 UcWorkbench 이며 Dock=Fill 이다.
         [TestMethod]
         public void Workbench_는_두_Context_가_화면_하나를_나눠_쓴다()
         {
@@ -274,11 +287,12 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // 03 §9.6 · §9.7 미선택 행 — 다섯 업무 Action 과 [변경이력] 이 전부 닫혀 있다.
-        //
-        // 예전에는 `[현장 당일예약]` 만 선택행과 무관한 독립 Action 이라 열린 채였다. 2026-09-11
-        // grilling 으로 그 버튼이 사라졌다 — 예약으로 들어가는 자리는 수검자 관리의 [예약]
-        // 하나이고, 일반/현장은 조작자가 아니라 시각이 가른다 (00 RP-05).
+        // 대상: MainForm (WF-00) — 예약·접수 두 Page 의 업무 Action 과 Grid 선택의 연동
+        // 목적: 03 §9.6·§9.7 미선택 행 규칙이다. 예전에는 [현장 당일예약] 만 선택행과 무관한
+        //       독립 Action 이라 열린 채였는데, 2026-09-11 grilling 으로 그 버튼이 사라졌다 —
+        //       예약으로 들어가는 자리는 수검자 관리의 [예약] 하나이고, 일반/현장은 조작자가
+        //       아니라 시각이 가른다 (00 RP-05).
+        // 확인: 행 미선택이면 두 Page 모두에서 다섯 업무 Action 과 [변경이력] 이 전부 닫혀 있다.
         [TestMethod]
         public void 행_미선택이면_Workbench_업무_Action_이_전부_닫힌다()
         {
@@ -306,11 +320,14 @@ namespace HealthCheckupReservationReception.Tests
             });
         }
 
-        // [X] VS 디자이너는 설계 대상 타입을 **매개변수 없는 생성자**로 만든다. 그것이 없으면
-        //     「디자이너에 대한 문서를 로드하지 않았으므로 디자이너를 표시할 수 없습니다」로
-        //     화면이 아예 열리지 않는다 — 컴파일도 시험도 통과하므로 디자이너를 열기 전까지
-        //     아무도 모른다(실측 2026-09-10: MainForm · FrmPatientEditor · FrmPatientSelect(당시)
-        //     셋이 그랬다). 서비스를 생성자로 받는 화면을 새로 만들 때마다 되풀이된다.
+        // 대상: 어셈블리의 Form·UserControl 전부 — 매개변수 없는 생성자
+        // 목적: VS 디자이너는 설계 대상 타입을 매개변수 없는 생성자로 만든다. 그것이 없으면
+        //       「디자이너를 표시할 수 없습니다」로 화면이 아예 열리지 않는데, 컴파일도 시험도
+        //       통과하므로 디자이너를 열기 전까지 아무도 모른다 (2026-09-10 실측: MainForm ·
+        //       FrmPatientEditor 등 셋이 그랬다). 서비스를 생성자로 받는 화면을 새로 만들 때마다
+        //       되풀이되는 부류다.
+        // 확인: 모든 화면 타입에 매개변수 없는 생성자가 있다. 훑은 목록에 Form 과 UserControl 이
+        //       둘 다 들어 있어 검사가 헛돌지 않았음을 함께 잰다.
         [TestMethod]
         public void 모든_화면이_디자이너용_생성자를_갖는다()
         {
@@ -393,13 +410,14 @@ namespace HealthCheckupReservationReception.Tests
             throw new AssertFailedException("수검자 Page 에 변경이력이 없다");
         }
 
-        // [X] 쓰지 않는 리본 크롬은 RibbonControl 을 만들면 자동으로 켜진다 — 내가 넣은 것이
-        //     아니라 끄지 않았던 것이다. 배치 게이트(SCR-*)는 설계 소스에 **있는** 것만 보므로
-        //     "설계에 없는데 켜진 것" 은 잡지 못한다. 그 자리를 이 시험이 맡는다.
-        //
-        // Application Button 은 2026-09-11 에 「휴무일 관리가 거기 산다」는 이유로 이 목록에서
-        // 빠졌는데, 실제로 거기 산 적이 없다 — Designer 는 그때도 끈 채였다. 2026-09-14 로
-        // 휴무일 관리가 탭 자리를 받아 이유가 완전히 사라졌으므로 목록에 되돌린다.
+        // 대상: MainForm (WF-00) — RibbonControl 이 기본으로 켜 두는 부가 UI
+        // 목적: 쓰지 않는 리본 크롬은 RibbonControl 을 만들면 자동으로 켜진다 — 넣은 것이 아니라
+        //       끄지 않은 것이다. 배치 게이트(SCR-*)는 설계 소스에 있는 것만 보므로 「설계에
+        //       없는데 켜진 것」은 잡지 못하고, 그 자리를 이 시험이 맡는다. 켜져 있으면 조작자가
+        //       리본을 접거나 도구모음을 바꿔 놓고 되돌리는 길을 모른다.
+        // 확인: Application Button · 표시옵션 메뉴 · 확장/축소 버튼이 모두 False 이고, 빠른 실행
+        //       도구모음이 Hidden 이며, 도구모음 사용자 지정·리본 최소화 경로가 막혀 있고
+        //       리본이 펼친 상태로 고정이다.
         [TestMethod]
         public void 쓰지_않는_리본_크롬은_꺼져_있다()
         {

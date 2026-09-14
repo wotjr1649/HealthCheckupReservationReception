@@ -26,6 +26,13 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class ActionLockTests
     {
+        // 대상: 접수·추가검사·예약·수검자·휴무일 다섯 화면의 Action 버튼 (DataRow 5건)
+        // 목적: 조회·저장은 UI 스레드에서 동기로 SP 를 부른다. 그동안 쌓인 클릭은 핸들러가 끝난 뒤
+        //       그대로 발화하므로, 버튼을 잠그지 않으면 두 번 누른 만큼 저장이 두 번 간다.
+        //       Presenter 시험은 이벤트를 직접 올려 버튼을 거치지 않고 화면 시험은 배치만 보므로,
+        //       그 틈을 보는 것은 이 시험뿐이다.
+        // 확인: 각 화면에서 버튼을 눌러 핸들러가 도는 동안 그 버튼의 Enabled 가 false 이고,
+        //       핸들러가 실제로 한 번 발화했다.
         [DataTestMethod]
         [DataRow(typeof(FrmReception), "btnReceive", "ReceiveRequested", "DLG-RCP-01 접수처리")]
         [DataRow(typeof(FrmExtraExam), "btnSave", "SaveRequested", "DLG-RCP-02 추가검사 저장")]

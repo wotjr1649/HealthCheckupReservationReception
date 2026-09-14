@@ -14,6 +14,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
     [TestClass]
     public class ChangeLogPresenterTests
     {
+        // 대상: ChangeLogPresenter (DLG-LOG-01) — 진입 시 조회 대상 전달과 화면 구성
+        // 목적: 05 §8.3 은 대상테이블·대상키를 그대로 넘기도록 정했다. 화면이 대상을 바꿔 물으면
+        //       다른 행의 이력이 이 창에 뜬다 — 감사 기록에서는 그것이 가장 나쁜 실패다.
+        //       틀린 줄도 모르고 남의 기록을 읽게 된다.
+        // 확인: 수검자·11 로 열면 Service 가 받은 값도 수검자·11 이고, 목록 1행이 실리며,
+        //       제목줄에 「수검자 홍길동 (2026-000123)」이 서고 오류 메시지가 없다.
         [TestMethod]
         public void 열면_대상을_그대로_물어_목록을_채운다()
         {
@@ -35,10 +41,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.ValidationMessage);
         }
 
-        /// <summary>
-        /// 03 §23.4 — 0건은 오류가 아니다. 계약이 `결과코드=0` 을 주므로 (05 §8.3) 화면도
-        /// 오류로 말하지 않는다. 빈 Grid 안내는 화면이 갖는다.
-        /// </summary>
+        // 대상: ChangeLogPresenter (DLG-LOG-01) — 이력이 0건일 때의 화면 표시
+        // 목적: 03 §23.4 와 05 §8.3 에서 0건은 결과코드=0 이다. 화면이 오류로 말하면 조작자는
+        //       조회가 실패한 줄 알고 다시 누르고, 실제로 기록이 없다는 사실을 못 배운다.
+        //       빈 Grid 안내는 화면이 갖는다.
+        // 확인: 목록이 0건이고 오류 메시지가 null 이다.
         [TestMethod]
         public void 기록이_0건이어도_오류로_말하지_않는다()
         {
@@ -57,6 +64,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.ValidationMessage, "0건을 오류라고 적었다");
         }
 
+        // 대상: ChangeLogPresenter (DLG-LOG-01) — 조회가 실패로 온 경우
+        // 목적: 이력은 「없다」와 「못 읽었다」가 다르다. 실패에 앞 결과가 남으면 조작자는
+        //       못 읽은 것을 그 대상의 이력으로 읽는다.
+        // 확인: DB 가 준 사유 문장이 화면에 그대로 서고 목록이 0건으로 비워진다.
         [TestMethod]
         public void 조회가_실패하면_사유를_적고_목록을_비운다()
         {
@@ -72,7 +83,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(0, view.Rows.Count);
         }
 
-        // 킷 §6 — provider 메시지는 DB·머신 정보를 드러낸다. 본문을 화면에 싣지 않는다.
+        // 대상: ChangeLogPresenter (DLG-LOG-01) — Service 에서 예외가 올라온 경우
+        // 목적: 킷 §6 — provider 메시지는 DB 이름·서버 이름 같은 내부 정보를 드러낸다. 그것을
+        //       화면에 실으면 조작자 화면에 서버명이 노출되고, 캡처가 밖으로 나가면 그대로 샌다.
+        // 확인: 예외 메시지에 든 서버명(SQLDEV01)이 화면 문구에 없고 목록은 0건이다.
         [TestMethod]
         public void 예외가_나도_예외_본문을_화면에_싣지_않는다()
         {
@@ -85,6 +99,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(0, view.Rows.Count);
         }
 
+        // 대상: ChangeLogPresenter (DLG-LOG-01) — 대상 없이 창을 연 경우
+        // 목적: 05 §8.3 에서 대상테이블·대상키는 필수다. 없이 부르면 계약 위반이 DB 에서 101 로
+        //       드러나는데, 그전에 화면이 막는 편이 왕복 한 번을 아낀다 (킷 §6).
+        // 확인: Service 가 호출되지 않고(LastTargetTable 이 null) 화면에 안내가 선다.
         [TestMethod]
         public void 대상이_없으면_묻지_않는다()
         {

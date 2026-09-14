@@ -17,6 +17,10 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class clsActionRunnerTests
     {
+        // 대상: clsActionRunner — 조회 재진입 가드 (R17 로 두 화면에서 이리 모았다)
+        // 목적: 조회는 UI 스레드에서 동기로 SP 를 부른다. 그동안 쌓인 클릭·Enter 는 핸들러가
+        //       끝난 뒤 그대로 발화하므로, 가드가 없으면 두 번 누른 만큼 SP 가 두 번 나간다.
+        // 확인: 핸들러가 도는 중에 같은 Run 을 다시 불러도 안쪽 동작이 정확히 1회만 실행된다.
         [TestMethod]
         public void 도는_동안_다시_불러도_한_번만_돈다()
         {
@@ -44,6 +48,10 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 대상: clsActionRunner — 가드 해제
+        // 목적: 재진입을 막는 것과 한 번만 도는 것은 다르다. 가드가 풀리지 않으면 화면이 한 번
+        //       조회하고 영영 굳어, 조작자는 프로그램이 죽은 것으로 본다.
+        // 확인: Run 을 끝낸 뒤 다시 부르면 동작이 2회 실행된다 — 가드는 도는 동안만이다.
         [TestMethod]
         public void 끝나고_나면_다시_돌_수_있다()
         {
@@ -60,6 +68,11 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 대상: clsActionRunner — 안쪽 동작이 예외를 던졌을 때의 가드 복구
+        // 목적: 예외가 가드를 켜 둔 채로 빠져나가면 실패 한 번에 화면이 죽는다. 되돌리기는
+        //       finally 의 몫이고, 그것이 실제로 도는지는 시험이 아니면 드러나지 않는다.
+        // 확인: 안쪽에서 던진 예외가 호출자까지 그대로 올라오고, 그 뒤 다시 부르면 동작이
+        //       실행된다 (가드가 풀려 있다).
         [TestMethod]
         public void 안에서_터져도_다음_조회가_열린다()
         {
@@ -83,10 +96,13 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 대상: clsActionRunner — 이벤트 핸들러가 아닌 직접 호출 경로
+        // 목적: 조회는 [조회] 버튼·Enter·화면 진입 세 길로 들어온다. 한 길만 가드를 받으면
+        //       나머지 길로 들어온 중복 호출이 그대로 SP 로 나간다.
+        // 확인: Action 경로로 재진입해도 안쪽 동작이 1회만 실행된다.
         [TestMethod]
         public void 이벤트가_아닌_동작도_같은_가드를_받는다()
         {
-            // 휴무일 추가·수정·삭제는 이벤트가 아니라 Presenter 를 바로 부른다 (FrmHoliday.Run).
             using (var host = new Control())
             {
                 var runner = new clsActionRunner(host);
@@ -105,6 +121,10 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 대상: clsActionRunner — 아직 아무도 구독하지 않은 상태에서의 호출
+        // 목적: 화면을 만드는 중에는 이벤트에 구독자가 붙기 전인 순간이 있다. 그때 null 참조로
+        //       터지면 화면이 열리지도 않는다.
+        // 확인: 구독자 없이 Run(null, host) 을 불러도 예외 없이 지나간다.
         [TestMethod]
         public void 구독자가_없으면_아무_일도_하지_않는다()
         {
@@ -114,6 +134,11 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 대상: clsActionRunner — 조회조건 입력칸의 KeyDown 처리
+        // 목적: 03 §5.2 는 조회를 Enter 로 정했다. 처리한 키를 위로 흘려보내면 폼의 AcceptButton
+        //       이 한 번 더 반응해 같은 조회가 두 번 나가고, 처리 표시를 안 하면 경고음이 난다.
+        // 확인: Tab 은 조회를 부르지 않고 Handled=false 로 그대로 흘려보낸다. Enter 는 조회를
+        //       1회 부르고 Handled·SuppressKeyPress 가 모두 true 다 (위로 새지 않고 경고음도 없다).
         [TestMethod]
         public void Enter_만_조회이고_그_키는_위로_새지_않는다()
         {

@@ -25,6 +25,10 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class clsBusyScopeTests
     {
+        // 대상: clsBusyScope — 동작 중 컨트롤 잠금과 해제 시 복원
+        // 목적: 잠금의 기본 계약이다. 도는 동안 꺼져야 쌓인 클릭이 버려지고, 끝나면 들어올 때
+        //       값으로 돌아와야 조작자가 이어서 쓸 수 있다.
+        // 확인: 스코프 안에서 버튼의 Enabled 가 false 이고, 스코프를 벗어나면 다시 true 다.
         [TestMethod]
         public void 도는_동안_잠기고_끝나면_원래대로_돌아온다()
         {
@@ -42,6 +46,12 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 대상: clsBusyScope — 스코프 안에서 Presenter 가 Enabled 를 바꾼 경우의 복원 규칙
+        // 목적: 실제 결함에서 나왔다 (2026-09-14 코드리뷰). 되돌리기가 스코프 안의 변경을 덮으면
+        //       Presenter 가 정한 Enabled 가 사라진다 — 화면도 Presenter 시험도 초록인데 버튼만
+        //       죽는 형태라 이 시험이 아니면 드러나지 않는다. DLG-HOL-01 의 [추가] 가 그 경우다:
+        //       눌린 시점에는 꺼져 있고 등록이 끝나면 Presenter 가 켠다.
+        // 확인: 꺼진 채로 들어가 스코프 안에서 켠 버튼이, 스코프를 벗어난 뒤에도 켜져 있다.
         [TestMethod]
         public void 스코프_안에서_남이_켠_것을_덮지_않는다()
         {
@@ -61,6 +71,10 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 대상: clsBusyScope — 위와 반대 방향의 복원 규칙
+        // 목적: DLG-HOL-01 의 [삭제] 가 그 경우다 — 눌린 시점에는 켜져 있고 삭제가 끝나면 선택이
+        //       풀려 꺼진다. 되돌리기가 켜 버리면 이미 지워진 행에 대고 삭제 버튼이 열린다.
+        // 확인: 켜진 채로 들어가 스코프 안에서 끈 버튼이, 스코프를 벗어난 뒤에도 꺼져 있다.
         [TestMethod]
         public void 스코프_안에서_남이_끈_것을_덮지_않는다()
         {
@@ -80,6 +94,10 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 대상: clsBusyScope.SetEnabled — 잠금 스코프 밖에서의 호출
+        // 목적: 호출부가 「지금 잠겨 있나」를 따져야 하면 그 판단이 화면마다 복사된다.
+        //       잠금 밖에서는 그냥 통하게 두는 것이 이 함수를 한 곳에 두는 이유다.
+        // 확인: 스코프 없이 SetEnabled(button, false) 를 부르면 버튼이 그대로 꺼진다.
         [TestMethod]
         public void 잠겨_있지_않으면_그대로_쓴다()
         {
@@ -91,6 +109,10 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 대상: clsBusyScope — 잠글 컨트롤이 주어지지 않은 경로
+        // 목적: 잠글 컨트롤이 없는 호출 경로가 있다. 거기서 null 참조로 터지면 잠금을 쓰는
+        //       화면 전부가 못 연다.
+        // 확인: 컨트롤 자리에 null 을 넘겨 스코프를 열고 닫아도 예외가 나지 않는다.
         [TestMethod]
         public void null_은_건너뛴다()
         {

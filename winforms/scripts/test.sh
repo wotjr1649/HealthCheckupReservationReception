@@ -96,6 +96,15 @@ run node tools/verify-screen-design.js source
 run ./scripts/verify-ui-db-matrix.sh selftest
 run ./scripts/verify-ui-db-matrix.sh
 
+# 단위시험 목록 엑셀(`docs/phase5/output/`)의 「이유」 칸은 [TestMethod] 위의 주석이 그대로
+# 간다 — 값이 두 곳에 있지 않다 (ROOT AGENTS.md §6). 그래서 이유 없는 시험이 들어오면
+# 산출물에 빈칸이 생기고, 빈칸은 다음 사람에게 「이 시험은 이유가 없다」로 읽힌다.
+# [!] `--check` 는 이유 주석만 본다. 결과 대조(TI-002·003)는 trx 에 기대고 `TestResults/`
+#     는 추적 밖이라 기계마다 있고 없다 — 이 회귀의 「어디서나 같은 판정」을 깬다.
+#     그 둘은 엑셀을 찍는 자리에서 돈다.
+run node tools/build-test-inventory.js selftest
+run node tools/build-test-inventory.js --check
+
 echo
 if [ "$FAIL" -eq 0 ]; then
   echo "=== winforms 회귀 PASS ==="

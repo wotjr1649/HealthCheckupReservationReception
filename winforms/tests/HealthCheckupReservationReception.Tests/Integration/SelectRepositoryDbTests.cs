@@ -30,10 +30,13 @@ namespace HealthCheckupReservationReception.Tests.Integration
     {
         private const string ProbeChartNo = "존재하지-않는-차트번호";
 
-        /// <summary>
-        /// 05 §8.2 — RS0~RS5 여섯이고 **RS5 는 R18 이 더한 자리**다. 그 일곱 컬럼이 실제로
-        /// 그 이름으로 오는지는 여기서만 드러난다.
-        /// </summary>
+        // 대상: 실물 DB — WorkRepository 가 부르는 예약접수상세 조회(SP-WRK-02), RS0~RS5 여섯
+        // 목적: 05 §8.2 의 Result Set 여섯이 실제로 그 순서·그 이름으로 오는지는 붙어 봐야 안다.
+        //       특히 RS5 추가검사구성은 R18 재봉인이 더한 자리이고, 그것이 없으면 DLG-RCP-02 가
+        //       안 고른 추가검사의 이름과 가용성을 읽을 길이 없어 화면이 통째로 서지 못한다.
+        // 확인: RS0 결과코드 0, RS1 업무상세·RS2 국가검사·RS3 추가검사·RS5 추가검사구성이 모두
+        //       null 이 아니고, RS4 가능한업무가 정확히 5행이다. 예약접수가 0건인 DB 에서는
+        //       판정할 것이 없으므로 Inconclusive 로 남기고 PASS 로 세지 않는다.
         [TestMethod]
         [TestCategory("Db")]
         public void SP_WRK_02_는_RS0부터_RS5까지_계약대로_돌려준다()
@@ -77,7 +80,11 @@ namespace HealthCheckupReservationReception.Tests.Integration
             }
         }
 
-        // 05 §8.1 — 조건 하나를 실어 성공 경로로 간다. 0건이어도 RS1 컬럼 열한 개가 검증된다.
+        // 대상: 실물 DB — 예약접수목록 조회(SP-WRK-01) 의 RS1 컬럼 매핑
+        // 목적: 05 §8.1 의 컬럼 이름을 C# 이 그대로 읽는지를 잰다. ReadRows 가 ordinal 을 루프
+        //       밖에서 잡으므로 0건이어도 컬럼 이름이 틀리면 그 자리에서 터진다 — 그래서 없는
+        //       차트번호로 물어도 검증이 성립한다.
+        // 확인: RS0 결과코드 0 이고 RS1 이 null 이 아니며, 없는 차트번호이므로 0건이다.
         [TestMethod]
         [TestCategory("Db")]
         public void SP_WRK_01_은_RS1_열한_컬럼을_계약대로_돌려준다()
@@ -91,10 +98,11 @@ namespace HealthCheckupReservationReception.Tests.Integration
             Assert.AreEqual(0, read.Rows.Count, "없는 차트번호인데 행이 나왔다");
         }
 
-        /// <summary>
-        /// 05 §8.3 — 대상 행이 없어도 `결과코드=0` + RS1 0행이다. `200` 을 쓰지 않는다:
-        /// 감사 기록은 대상 행보다 오래 살기 때문이다. **계약의 그 문장을 실물로 잰다.**
-        /// </summary>
+        // 대상: 실물 DB — 존재하지 않는 대상키로 변경이력 조회(SP-LOG-01)
+        // 목적: 05 §8.3 이 「대상 행이 없어도 결과코드=0 · RS1 0행」으로 정했다. 200
+        //       PatientNotFound 를 쓰지 않기로 한 것은 감사 기록이 대상 행보다 오래 살기
+        //       때문이며, 계약의 그 문장이 실물에서도 참인지를 여기서 잰다.
+        // 확인: 없는 대상키로 물어도 결과코드가 0 이고 RS1 이 null 이 아닌 0건이다.
         [TestMethod]
         [TestCategory("Db")]
         public void SP_LOG_01_은_없는_대상에도_0_과_0행을_돌려준다()
@@ -108,7 +116,11 @@ namespace HealthCheckupReservationReception.Tests.Integration
             Assert.AreEqual(0, read.Rows.Count);
         }
 
-        // 05 §8.3 — 허용값 둘 밖은 101 이다. DbLogTarget 이 그 둘이라는 것을 실물이 확인한다.
+        // 대상: 실물 DB — 허용값 밖의 대상테이블로 변경이력 조회(SP-LOG-01)
+        // 목적: 05 §8.3 의 허용값은 둘뿐이고 그 밖은 101 이다. C# 쪽 DbLogTarget 상수가 실제로
+        //       그 둘과 같은 문자열인지는 실행해야 드러난다 — 오타는 컴파일도 되고 Fake 시험도
+        //       통과한다.
+        // 확인: 허용 밖 문자열로 부르면 결과코드가 101(잘못된 값)이다.
         [TestMethod]
         [TestCategory("Db")]
         public void SP_LOG_01_은_허용밖_대상테이블에_101_이다()
@@ -120,7 +132,11 @@ namespace HealthCheckupReservationReception.Tests.Integration
             Assert.AreEqual((int)DbCode.BadValue, read.Result.Code, "RS0: " + read.Result.Message);
         }
 
-        /// <summary>05 §12.5 — RS1 은 0행일 수 있지만 RS2 공휴일등재현황은 **항상 1행**이다.</summary>
+        // 대상: 실물 DB — 휴무일목록 조회(SP-HOL-01) 의 RS1·RS2
+        // 목적: 05 §12.5 에서 RS1 휴무일 목록은 0행일 수 있지만 RS2 공휴일등재현황은 항상 1행이다.
+        //       화면은 RS2 의 잔여일수와 경고임계일수를 비교해 경고를 띄우므로, RS2 가 비면
+        //       DLG-HOL-01 이 판단 근거를 잃는다.
+        // 확인: 결과코드 0 이고 RS1 이 null 이 아니며, RS2 공휴일등재현황이 null 이 아니다.
         [TestMethod]
         [TestCategory("Db")]
         public void SP_HOL_01_은_RS1_과_RS2_를_계약대로_돌려준다()
@@ -138,15 +154,13 @@ namespace HealthCheckupReservationReception.Tests.Integration
             Assert.IsNotNull(read.Registry, "RS2 공휴일등재현황은 항상 1행이다 (05 §12.5)");
         }
 
-        /// <summary>
-        /// [R22] 05 §12.6 — 등록·수정이 SP 하나가 되며 `@휴무동작코드` 가 생겼다.
-        ///
-        /// **허용 밖 코드는 `101` 이고 오류항목이 그 Parameter 이름이다.** 이 갈래를 실물로
-        /// 재는 이유는, 문자열 오타가 컴파일도 되고 Fake 시험도 통과하기 때문이다 —
-        /// 실행해야 드러난다 (`DbWorkAction` 이 같은 이유로 게이트를 갖는다).
-        ///
-        /// [!] **아무것도 쓰지 않는다.** 코드 검증이 잠금·Transaction 앞이라 DB 에 닿지 않는다.
-        /// </summary>
+        // 대상: 실물 DB — 허용값 밖의 @휴무동작코드로 자체휴무일 저장(SP-HOL-02)
+        // 목적: R22 로 등록·수정이 SP 하나가 되며 @휴무동작코드 가 생겼다 (05 §12.6). C# 이 보내는
+        //       문자열이 계약의 허용값과 같은지는 실행해야 드러난다 — 오타는 컴파일도 되고 Fake
+        //       시험도 통과한다 (DbWorkAction 이 같은 이유로 게이트를 갖는다). 이 시험은 코드
+        //       검증이 잠금·Transaction 앞이라 DB 에 아무것도 쓰지 않는다.
+        // 확인: 결과코드가 101 이고 오류항목이 Parameter 이름 「휴무동작코드」이며, 실패이므로
+        //       RS1 을 읽지 않았다 (HolidayDate 가 null).
         [TestMethod]
         [TestCategory("Db")]
         public void SP_HOL_02_는_허용밖_휴무동작코드에_101_이다()

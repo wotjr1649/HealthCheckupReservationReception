@@ -17,6 +17,12 @@ namespace HealthCheckupReservationReception.Tests.Services
     [TestClass]
     public class WorkServiceTests
     {
+        // 대상: WorkService.CompleteReception — 요청 전달과 업무 판정 결과의 성패 규약
+        // 목적: 05 §12.1 에서 310(마감경과)처럼 막히는 것은 SP 가 낸 업무 판정이지 호출 실패가
+        //       아니다 (05 §3.3). Service 가 이것을 실패로 접으면 화면이 사유를 읽을 길이 사라져
+        //       「접수가 안 됩니다」만 뜨고 왜 안 되는지는 어디에도 남지 않는다.
+        // 확인: 업무ID·행버전·조작자명이 Repository 에 그대로 전달되고, 310 이 온 경우에도
+        //       IsSuccess=true 이며 result.Value.Result.Code 가 310 이다.
         [TestMethod]
         public void 접수는_요청을_그대로_넘기고_결과코드를_올려보낸다()
         {
@@ -34,6 +40,10 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.AreEqual(310, result.Value.Result.Code);
         }
 
+        // 대상: WorkService.CancelWork — 접수취소(SP-RCP-03) 의 성패 규약
+        // 목적: 05 §12.3 에서 취소도 완료와 같은 규약이다. 두 경로가 성패를 다르게 다루면 같은
+        //       502 가 한쪽에서는 사유로, 다른 쪽에서는 오류창으로 보여 조작자가 규칙을 못 배운다.
+        // 확인: 업무ID 가 그대로 전달되고, 502 가 온 경우에도 IsSuccess=true 이며 결과코드가 502 다.
         [TestMethod]
         public void 접수취소도_같은_길로_간다()
         {
@@ -47,7 +57,10 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.AreEqual(502, result.Value.Result.Code);
         }
 
-        // 05 §12.1 `@조작자명 NVARCHAR(50)`. 길이는 Service 가 본다 (킷 §6).
+        // 대상: WorkService — 05 §12.1 의 @조작자명 NVARCHAR(50) 길이 검증
+        // 목적: 킷 §6 은 SP 계약의 길이를 Service 에서 한 번만 본다. 넘치는 값을 보내면 DB 가
+        //       자르고, 잘린 이름이 변경이력에 감사 기록으로 남는다 (04 §14).
+        // 확인: 51자 조작자명으로 부르면 IsSuccess=false 이고 Repository 가 호출되지 않는다.
         [TestMethod]
         public void 조작자명이_50자를_넘으면_부르지_않는다()
         {
@@ -63,6 +76,12 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.IsNull(repository.LastReception, "길이를 넘겼는데 SP 를 불렀다");
         }
 
+        // 대상: WorkService.CompleteReception — 접수완료(SP-RCP-01) 호출 결과 해석
+        // 목적: 05 §3.1 은 모든 SP 가 RS0 를 정확히 1행 낸다고 정했다. 그것이 없다는 것은 계약이
+        //       깨졌다는 뜻인데, Service 가 성공으로 넘기면 빈 DTO 가 정상값처럼 화면에 올라가고
+        //       조작자는 접수가 된 줄로 읽는다.
+        // 확인: Repository 가 RS0 없는 결과를 돌려주면 IsSuccess=false 이고, 메시지는 예외 본문이
+        //       아니라 「접수하지 못했습니다.」 라는 화면용 문장이다.
         [TestMethod]
         public void RS0_을_못_읽으면_실패다()
         {

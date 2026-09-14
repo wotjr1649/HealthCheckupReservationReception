@@ -30,6 +30,12 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class LayoutBaselineTests
     {
+        // 대상: 어셈블리의 Form·UserControl 전부 — 컨트롤이 자리를 얻는 방식
+        // 목적: 2026-09-11 사용자 지시. 절대좌표로 놓인 컨트롤은 DPI 나 글꼴이 바뀌면 겹치거나
+        //       잘린다. 이것을 문장으로만 두면 새 화면 하나가 절대좌표로 들어와도 아무도 모른다.
+        // 확인: 화면을 실제로 만들어 컨트롤을 하나하나 훑었을 때, LayoutControl 항목이나 Dock
+        //       으로 자리를 얻지 않은 컨트롤이 0건이다. 훑은 목록에 Form(MainForm)과
+        //       UserControl(UcPatientManagement)이 둘 다 들어 있어 검사가 헛돌지 않았음을 함께 잰다.
         [TestMethod]
         public void 모든_화면이_LayoutControl_이나_Dock_으로만_자리를_잡는다()
         {
@@ -60,14 +66,12 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        /// <summary>
-        /// 배치가 화면 폭을 넘으면 LayoutControl 안에 가로 스크롤이 서고, 오른쪽 끝의 버튼들이
-        /// 밖으로 밀린다.
-        ///
-        /// [X] **이 부류를 세 번 밟았다** — WF-WRK-01 의 종료일 잘림, WF-PAT-01 의 조회조건
-        ///     다섯 넘침, DLG-PAT-03 의 가로 스크롤. 눈으로는 기본 상태에서만 보이고 캡처도
-        ///     늘 뜨지 않는다. 그래서 실제로 띄워서 잰다.
-        /// </summary>
+        // 대상: 어셈블리의 Form·UserControl 전부 — 기본 크기에서의 가로 넘침
+        // 목적: 배치가 화면 폭을 넘으면 LayoutControl 안에 가로 스크롤이 서고 오른쪽 끝 버튼들이
+        //       밖으로 밀린다. 이 부류를 세 번 밟았다 — WF-WRK-01 종료일 잘림, WF-PAT-01 조회조건
+        //       다섯 넘침, DLG-PAT-03 가로 스크롤. 눈으로는 기본 상태에서만 보이고 캡처에도 늘
+        //       잡히지 않아, 실제로 띄워서 재는 수밖에 없다.
+        // 확인: 화면을 띄워 재었을 때 가로로 넘치는 화면이 0건이다.
         [TestMethod]
         public void 어느_화면도_배치가_가로로_넘치지_않는다()
         {
