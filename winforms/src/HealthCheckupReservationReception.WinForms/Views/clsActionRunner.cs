@@ -28,6 +28,12 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>
         /// 인자는 <see cref="clsBusyScope"/> 에 그대로 넘어간다 — 대기 커서를 세울 화면과,
         /// 도는 동안 잠글 컨트롤들이다.
+        ///
+        /// [!] **쓰기는 `[닫기]` 까지 잠근다. 읽기는 그 버튼만 잠근다.**
+        ///     호출이 동기라 도는 동안 창은 얼어 있고, 그때 누른 `[닫기]` 는 끝난 뒤에야
+        ///     발화한다. 쓰기가 실패하면 창은 사유를 적은 채 남는데 — 그 사유는 모달이
+        ///     아니라 인라인 한 줄이다 — 뒤늦게 발화한 클릭 하나가 **사유와 입력을 함께
+        ///     지운다.** 조회는 다시 누르면 그만이므로 그 자리까지 잠그지 않는다.
         /// </summary>
         public clsActionRunner(Control cursorHost, params Control[] locked)
         {

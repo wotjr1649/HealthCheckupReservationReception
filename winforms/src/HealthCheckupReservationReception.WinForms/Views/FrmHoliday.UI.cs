@@ -25,7 +25,7 @@ namespace HealthCheckupReservationReception.Views
             clsSearchConditions.SetupBirthday(deTo);
             clsSearchConditions.SetupBirthday(deInputDate);
 
-            _action = new clsActionRunner(this, btnAdd, btnEdit, btnDelete);
+            _action = new clsActionRunner(this, btnAdd, btnEdit, btnDelete, btnClose);
             _search = new clsActionRunner(this, btnSearch);
 
             _picker = new clsGridRowPicker(gvHolidayList);
