@@ -558,41 +558,43 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// DLG-RCP-02 접수완료 추가검사 변경 (03 §12). 모달이 스스로 상세를 다시 읽는다 —
-        /// AEX 일곱은 `SP-WRK-02` RS5 가 준다 (05 §8.2, R18).
+        /// DLG-RCP-02 접수완료 추가검사 변경 (03 §12). **행을 고를 때 받아 둔 한 벌을 넘긴다**
+        /// (2026-09-14 사용자 지시) — AEX 일곱(RS5)까지 그 안에 있으므로 모달이 `SP-WRK-02` 를
+        /// 다시 부르지 않는다.
         /// </summary>
         private void BeginExtraExamChange()
         {
-            WorkDetailDto detail = _workView.CurrentDetail;
-            if (detail == null)
+            WorkDetailReadDto read = _workView.Read;
+            if (read == null || read.Detail == null)
             {
                 ShowMessage("먼저 목록에서 행을 선택하십시오.");
                 return;
             }
 
-            using (var extra = new FrmExtraExam(_workService, _operatorName, detail.WorkId))
+            using (var extra = new FrmExtraExam(_workService, _operatorName, read))
             {
                 if (extra.ShowDialog(this) == DialogResult.OK)
                 {
-                    _workView.OpenContext(WorkContext.Reception, detail.WorkId);
+                    _workView.OpenContext(WorkContext.Reception, read.Detail.WorkId);
                 }
             }
         }
 
+        /// <summary>DLG-RCP-01 접수 (03 §11). 같은 이유로 받아 둔 한 벌을 넘긴다.</summary>
         private void BeginReception()
         {
-            WorkDetailDto detail = _workView.CurrentDetail;
-            if (detail == null)
+            WorkDetailReadDto read = _workView.Read;
+            if (read == null || read.Detail == null)
             {
                 ShowMessage("먼저 목록에서 행을 선택하십시오.");
                 return;
             }
 
-            using (var reception = new FrmReception(_workService, _operatorName, detail.WorkId))
+            using (var reception = new FrmReception(_workService, _operatorName, read))
             {
                 if (reception.ShowDialog(this) == DialogResult.OK)
                 {
-                    _workView.OpenContext(WorkContext.Reception, detail.WorkId);
+                    _workView.OpenContext(WorkContext.Reception, read.Detail.WorkId);
                 }
             }
         }

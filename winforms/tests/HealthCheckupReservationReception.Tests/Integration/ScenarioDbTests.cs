@@ -35,6 +35,53 @@ namespace HealthCheckupReservationReception.Tests.Integration
         private const string Operator = "시나리오";
 
         /// <summary>
+        /// 이 시험이 만든 오늘 업무. **정원은 공유 자원이다** — 수검자는 매 실행 새로 만들어
+        /// 겹치지 않지만 시간대 정원 20 은 그렇지 않아서, 반복 실행이 그것을 먹어 치우면
+        /// 다음 실행이 통째로 `Inconclusive` 가 된다. 실제로 PM 이 20/20 이 되어 그렇게 됐다
+        /// (2026-09-14 실측). 그래서 만든 것은 시험이 되돌린다.
+        /// </summary>
+        private readonly List<long> _created = new List<long>();
+
+        [TestCleanup]
+        public void 만든_업무를_되돌린다()
+        {
+            foreach (long workId in _created)
+            {
+                // 이미 취소된 건은 502 를 낸다 — 정리이므로 결과를 따지지 않는다.
+                try
+                {
+                    WorkDetailReadDto read = Works().GetDetail(workId).Value;
+                    if (read == null || read.Detail == null)
+                    {
+                        continue;
+                    }
+
+                    var request = new WorkActionRequest
+                    {
+                        WorkId = workId,
+                        RowVersion = read.Detail.RowVersion,
+                        OperatorName = Operator,
+                    };
+
+                    if (DbWorkStatus.Received.Equals(read.Detail.StatusCode, StringComparison.Ordinal))
+                    {
+                        Works().CancelReception(request);
+                    }
+                    else if (DbWorkStatus.Reserved.Equals(read.Detail.StatusCode, StringComparison.Ordinal))
+                    {
+                        Reservations().Cancel(request);
+                    }
+                }
+                catch (SqlException)
+                {
+                    // DB 가 없으면 시험 자체가 Inconclusive 다 — 정리에서 다시 말하지 않는다.
+                }
+            }
+
+            _created.Clear();
+        }
+
+        /// <summary>
         /// **S01 — 브리프 §3 의 기본 흐름.** 수검자 등록 → 검진 예약 → 예약 조회 → 접수.
         /// </summary>
         [TestMethod]
@@ -254,9 +301,16 @@ namespace HealthCheckupReservationReception.Tests.Integration
             };
         }
 
-        private static WorkSaveReadDto SaveReservation(ReservationSaveRequest request)
+        private WorkSaveReadDto SaveReservation(ReservationSaveRequest request)
         {
-            return Ok(() => Reservations().Register(request));
+            WorkSaveReadDto saved = Ok(() => Reservations().Register(request));
+            if (saved.Row != null)
+            {
+                // 정리 대상으로 적어 둔다 (TestCleanup). 성공한 것만 실제 행이 된다.
+                _created.Add(saved.Row.WorkId);
+            }
+
+            return saved;
         }
 
         /// <summary>

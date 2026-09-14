@@ -488,7 +488,7 @@ namespace HealthCheckupReservationReception.Tests.Visual
         public void DLGRCP01_실행_화면을_PNG_로_뜬다()
         {
             string path = Capture("dlg_rcp_01.png", () => new FrmReception(
-                new FakeWorkService { DetailResult = SampleReceptionDetail() }, "접수1번창구", 77));
+                new FakeWorkService(), "접수1번창구", SampleReceptionDetail().Value));
 
             var info = new FileInfo(path);
             Assert.IsTrue(info.Exists && info.Length > 5 * 1024,
@@ -502,7 +502,7 @@ namespace HealthCheckupReservationReception.Tests.Visual
         public void DLGRCP02_실행_화면을_PNG_로_뜬다()
         {
             string path = Capture("dlg_rcp_02.png", () => new FrmExtraExam(
-                new FakeWorkService { DetailResult = SampleExtraDetail() }, "접수1번창구", 77));
+                new FakeWorkService(), "접수1번창구", SampleExtraDetail().Value));
 
             var info = new FileInfo(path);
             Assert.IsTrue(info.Exists && info.Length > 5 * 1024,

@@ -36,16 +36,26 @@ namespace HealthCheckupReservationReception.Presenters
             _view.ReceiveRequested += OnReceiveRequested;
         }
 
-        public void Begin(long workId)
+        /// <summary>
+        /// **부모가 읽어 둔 한 벌을 받아서 연다** (2026-09-14 사용자 지시). 이 창이 그리는 것은
+        /// RS1·RS2·RS3·RS4 넷이고 넷 다 `WF-WRK-01` 이 행을 고를 때 이미 받은 것이다 —
+        /// 같은 업무ID 로 `SP-WRK-02` 를 한 번 더 부르지 않는다.
+        ///
+        /// [!] **낡을 수 있다.** 그 사이 마감이 지났으면 `[접수]` 가 열린 채로 남고, 저장이
+        ///     `304` 로 막는다. 화면이 미리 닫지 않는 것이 R12 다 — 판정은 SP 가 한다.
+        /// </summary>
+        public void Begin(WorkDetailReadDto read)
         {
-            Load(workId);
+            Load(read);
         }
 
-        private void Load(long workId)
+        /// <summary>
+        /// **저장이 막힌 뒤 최신값을 다시 세운다.** 진입은 부모가 준 한 벌로 열지만, `601`·`304`
+        /// 로 막혔다는 것은 그 스냅샷이 낡았다는 뜻이므로 여기서만 DB 를 다시 본다
+        /// (2026-09-14). 이것이 낡은 스냅샷을 받아들이는 대가를 갚는 자리다.
+        /// </summary>
+        private void Reload(long workId)
         {
-            _detail = null;
-            _view.ReceiveEnabled = false;
-
             OperationResult<WorkDetailReadDto> result;
             try
             {
@@ -64,7 +74,20 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
-            WorkDetailReadDto read = result.Value;
+            Load(result.Value);
+        }
+
+        private void Load(WorkDetailReadDto read)
+        {
+            _detail = null;
+            _view.ReceiveEnabled = false;
+
+            if (read == null || read.Detail == null)
+            {
+                Clear("업무 상세를 받지 못했습니다.");
+                return;
+            }
+
             _detail = read.Detail;
             _view.Detail = read.Detail;
             _view.NexItems = read.NexItems;
@@ -119,7 +142,7 @@ namespace HealthCheckupReservationReception.Presenters
             {
                 // [X] **사유를 적기 전에 다시 읽는다.** Load 가 ValidationMessage 를 지우므로
                 //     순서가 뒤집히면 사유가 사라진다 — WF-RSV-01 이 같은 함정을 밟았다.
-                Load(workId);
+                Reload(workId);
                 _view.ValidationMessage = result.Value.Result.Message;
                 return;
             }

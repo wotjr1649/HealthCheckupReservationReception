@@ -661,6 +661,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public string ValidationMessage { get; set; }
         public IList<WorkListItemDto> Rows { get; set; }
         public WorkDetailDto Detail { get; set; }
+        public WorkDetailReadDto Read { get; set; }
         public IList<WorkExamItemDto> NexItems { get; set; }
         public IList<WorkExamItemDto> AexItems { get; set; }
         public WorkActionState Actions { get; set; }

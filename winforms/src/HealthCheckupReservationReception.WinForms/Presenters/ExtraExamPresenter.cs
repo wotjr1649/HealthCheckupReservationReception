@@ -34,16 +34,23 @@ namespace HealthCheckupReservationReception.Presenters
             _view.SaveRequested += OnSaveRequested;
         }
 
-        public void Begin(long workId)
+        /// <summary>
+        /// **부모가 읽어 둔 한 벌을 받아서 연다** (2026-09-14 사용자 지시). 이 창이 쓰는
+        /// RS1·RS2·RS5·RS4 는 `WF-WRK-01` 이 행을 고를 때 이미 받은 것이다.
+        ///
+        /// [!] 낡을 수 있고, 그때는 저장이 `601`·`304` 로 막는다 — 판정은 SP 가 한다.
+        /// </summary>
+        public void Begin(WorkDetailReadDto read)
         {
-            Load(workId);
+            Load(read);
         }
 
-        private void Load(long workId)
+        /// <summary>
+        /// **저장이 막힌 뒤 최신값을 다시 세운다** (2026-09-14). 진입은 부모가 준 한 벌로 열고,
+        /// `601`·`304` 로 막혔을 때만 DB 를 다시 본다 — 그때가 스냅샷이 낡았다는 뜻이다.
+        /// </summary>
+        private void Reload(long workId)
         {
-            _detail = null;
-            _view.SaveEnabled = false;
-
             OperationResult<WorkDetailReadDto> result;
             try
             {
@@ -62,7 +69,20 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
-            WorkDetailReadDto read = result.Value;
+            Load(result.Value);
+        }
+
+        private void Load(WorkDetailReadDto read)
+        {
+            _detail = null;
+            _view.SaveEnabled = false;
+
+            if (read == null || read.Detail == null)
+            {
+                Clear("업무 상세를 받지 못했습니다.");
+                return;
+            }
+
             _detail = read.Detail;
             _view.Detail = read.Detail;
             _view.NexItems = read.NexItems;
@@ -117,7 +137,7 @@ namespace HealthCheckupReservationReception.Presenters
             if (result.Value.Result != null && !result.Value.Result.Success)
             {
                 // [X] **사유를 적기 전에 다시 읽는다** — Load 가 메시지 칸을 지운다.
-                Load(workId);
+                Reload(workId);
                 _view.ValidationMessage = result.Value.Result.Message;
                 return;
             }

@@ -77,6 +77,12 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         public WorkDetailDto CurrentDetail { get { return _detail; } }
 
+        /// <summary>
+        /// 03 §9.5 — 마지막 선택행의 `SP-WRK-02` 한 벌. 모달을 여는 Action 이 이것을 그대로
+        /// 넘겨받는다 (2026-09-14). 그리기는 <see cref="Detail"/> 이 하고 여기는 보관만 한다.
+        /// </summary>
+        public WorkDetailReadDto Read { get; set; }
+
         public bool Confirm(string message)
         {
             Form owner = FindForm();
