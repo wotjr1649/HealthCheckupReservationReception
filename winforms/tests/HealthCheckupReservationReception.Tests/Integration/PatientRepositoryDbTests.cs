@@ -33,7 +33,7 @@ namespace HealthCheckupReservationReception.Tests.Integration
 
         [TestMethod]
         [TestCategory("Db")]
-        public void SP_PAT_01_은_RS0_와_RS1_열한_컬럼을_계약대로_돌려준다()
+        public void SP_PAT_01_은_RS0_와_RS1_열아홉_컬럼을_계약대로_돌려준다()
         {
             IPatientRepository repository = NewRepository();
 
@@ -42,23 +42,9 @@ namespace HealthCheckupReservationReception.Tests.Integration
             Assert.IsNotNull(read.Result, "RS0 을 읽지 못했다 (05 §3.1)");
             Assert.AreEqual((int)DbCode.Ok, read.Result.Code, "결과코드: " + read.Result.Message);
 
-            // 여기까지 왔다는 것은 GetOrdinal 열한 번이 전부 이름을 찾았다는 뜻이다.
+            // 여기까지 왔다는 것은 GetOrdinal 열아홉 번이 전부 이름을 찾았다는 뜻이다.
             Assert.IsNotNull(read.Rows, "RS1 을 읽지 못했다");
             Assert.AreEqual(0, read.Rows.Count, "없는 차트번호인데 행이 나왔다");
-        }
-
-        // 05 §7.3 — Patient 가 없으면 결과코드 200 이다. 값을 넣지 않고 실패 경로를 잰다.
-        [TestMethod]
-        [TestCategory("Db")]
-        public void SP_PAT_02_는_없는_수검자에_200_을_돌려준다()
-        {
-            IPatientRepository repository = NewRepository();
-
-            PatientDetailReadDto read = Run(() => repository.ReadDetail(-1));
-
-            Assert.IsNotNull(read.Result, "RS0 을 읽지 못했다 (05 §3.1)");
-            Assert.AreEqual((int)DbCode.PatientNotFound, read.Result.Code, "결과코드: " + read.Result.Message);
-            Assert.IsNull(read.Detail, "실패인데 RS1 을 읽었다");
         }
 
         /// <summary>
@@ -97,14 +83,19 @@ namespace HealthCheckupReservationReception.Tests.Integration
             Assert.AreEqual("F", row.Gender);
             Assert.AreEqual(8, row.RowVersion.Length);
 
-            // ── 상세 (05 §7.3). 수검자 한 행이 생겼으므로 RS1 열다섯 컬럼을 이제 잴 수 있다.
-            PatientDetailReadDto detail = Run(() => repository.ReadDetail(row.PatientId));
-            Assert.AreEqual((int)DbCode.Ok, detail.Result.Code, "결과코드: " + detail.Result.Message);
-            Assert.IsNotNull(detail.Detail, "RS1 을 읽지 못했다");
-            Assert.AreEqual(name, detail.Detail.Name);
-            Assert.AreEqual("메모", detail.Detail.Memo);
-            Assert.IsTrue(detail.Detail.HepatitisBExcluded, "B형간염 제외값이 저장되지 않았다 (03 §6.2a)");
-            Assert.AreEqual(8, detail.Detail.RowVersion.Length);
+            // ── [R21] 상세를 목록 SP 로 읽는다 (05 §7.2). `SELECT_수검자상세` 가 사라졌고,
+            //    그 RS1 이 목록 RS1 안으로 들어왔다. 차트번호는 `UQ_수검자_CHART_NO` 라 1행이다.
+            PatientListReadDto back = Run(() => repository.Search(
+                new PatientSearchRequest { ChartNo = row.ChartNo }));
+            Assert.AreEqual((int)DbCode.Ok, back.Result.Code, "결과코드: " + back.Result.Message);
+            Assert.AreEqual(1, back.Rows.Count, "차트번호 한 건이 아니다");
+
+            PatientDto detail = back.Rows[0];
+            Assert.AreEqual(name, detail.Name);
+            Assert.AreEqual("메모", detail.Memo);
+            Assert.IsTrue(detail.HepatitisBExcluded, "B형간염 제외값이 저장되지 않았다 (03 §6.2a)");
+            Assert.AreEqual(8, detail.RowVersion.Length);
+            Assert.IsNull(detail.ValidWork, "방금 만든 수검자에게 유효업무가 붙었다 (00 RP-06)");
 
             // ── 같은 주민번호 + 같은 이름 → 신규 INSERT 없이 기존 1행 (05 §10.1 결과표).
             PatientSaveReadDto again = Run(() => repository.Register(NewRequest(social, name, true)));
@@ -114,13 +105,13 @@ namespace HealthCheckupReservationReception.Tests.Integration
             // ── 수정 (05 §10.2). RS1 은 세 컬럼이고 행버전이 바뀐다 (05 §16.3).
             PatientSaveRequest update = NewRequest(social, name, false);
             update.PatientId = row.PatientId;
-            update.RowVersion = detail.Detail.RowVersion;
+            update.RowVersion = detail.RowVersion;
             update.ChartNo = row.ChartNo;
             update.Memo = "고친 메모";
             PatientSaveReadDto updated = Run(() => repository.Update(update));
             Assert.AreEqual((int)DbCode.Ok, updated.Result.Code, "결과코드: " + updated.Result.Message);
             Assert.AreEqual(1, updated.Rows.Count);
-            CollectionAssert.AreNotEqual(detail.Detail.RowVersion, updated.Rows[0].RowVersion,
+            CollectionAssert.AreNotEqual(detail.RowVersion, updated.Rows[0].RowVersion,
                 "실제로 고쳤는데 행버전이 그대로다");
 
             // ── 옛 행버전으로 다시 고치면 601 이다 (05 §16.3 · 03 §16).

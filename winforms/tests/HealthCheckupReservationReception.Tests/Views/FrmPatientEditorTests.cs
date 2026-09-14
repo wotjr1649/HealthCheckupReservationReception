@@ -55,7 +55,7 @@ namespace HealthCheckupReservationReception.Tests.Views
             {
                 WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
 
-                using (var form = new FrmPatientEditor(new FakePatientService(), "접수1번창구", new PatientDetailDto { PatientId = 7, ChartNo = "2026-000007" }))
+                using (var form = new FrmPatientEditor(new FakePatientService(), "접수1번창구", new PatientDto { PatientId = 7, ChartNo = "2026-000007" }))
                 {
                     IPatientEditorView view = form;
                     Assert.IsTrue(view.AutoChartNo, "New 의 기본값은 자동발급이다 (03 §6.3)");

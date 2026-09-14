@@ -42,7 +42,7 @@ namespace HealthCheckupReservationReception.Views
         private WorkDetailReadDto _read;
 
         // 부모가 받아 둔 수검자 상세. 신규예약 진입이 SP-PAT-02 를 다시 부르지 않게 한다.
-        private PatientDetailDto _patient;
+        private PatientDto _patient;
 
         partial void ConfigureUI();
 
@@ -63,7 +63,7 @@ namespace HealthCheckupReservationReception.Views
         /// 일반/현장을 가르는 인자가 없다. 그것은 조작자가 아니라 시각이 정한다 (00 RP-05).
         /// </summary>
         public FrmReservation(IReservationService service, IPatientService patientService,
-            IWorkService workService, string operatorName, long patientId, PatientDetailDto patient)
+            IWorkService workService, string operatorName, long patientId, PatientDto patient)
             : this()
         {
             _presenter = new ReservationPresenter(this, service, patientService, workService, operatorName);
@@ -135,7 +135,7 @@ namespace HealthCheckupReservationReception.Views
         public event EventHandler ScheduleChanged;
         public event EventHandler SaveRequested;
 
-        public PatientDetailDto Patient
+        public PatientDto Patient
         {
             set
             {

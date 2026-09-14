@@ -48,7 +48,7 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>
         /// Edit 진입값 (SP-PAT-02 · 07 §3.3). `HepatitisBExcluded` 현재값도 여기서 온다 (03 §6.2a).
         /// </summary>
-        void LoadDetail(PatientDetailDto detail);
+        void LoadDetail(PatientDto detail);
 
         void ClearFieldErrors();
 

@@ -34,7 +34,7 @@ namespace HealthCheckupReservationReception.Views
         private bool _searching;
 
         // 마지막으로 그린 상세. 모달을 여는 Action 이 그대로 받아 간다 (2026-09-14).
-        private PatientDetailDto _detail;
+        private PatientDto _detail;
 
         partial void ConfigureUI();
 
@@ -48,9 +48,11 @@ namespace HealthCheckupReservationReception.Views
         /// Presenter 를 붙인다. UserControl 은 디자이너가 만들어야 하므로 생성자로 받지 않는다
         /// (킷 `references/mvp-wiring.md`).
         /// </summary>
-        public void Attach(IPatientService service, IWorkService workService, ICommonStatusService statusService)
+        // [R21] ICommonStatusService 를 더 받지 않는다 — 목록 SP 가 유효업무를 실어 주면서
+        //       화면이 「오늘이 며칠인가」를 물을 일이 없어졌다.
+        public void Attach(IPatientService service, IWorkService workService)
         {
-            _presenter = new PatientManagementPresenter(this, service, workService, statusService);
+            _presenter = new PatientManagementPresenter(this, service, workService);
         }
 
         /// <summary>
@@ -100,7 +102,7 @@ namespace HealthCheckupReservationReception.Views
 
         public string MobilePhone { get { return null; } }
 
-        public IList<PatientListItemDto> Rows
+        public IList<PatientDto> Rows
         {
             set { _picker.Rebind(gcPatientList, value); }
         }
@@ -109,7 +111,7 @@ namespace HealthCheckupReservationReception.Views
         /// 03 §5.5 우측 상세. **모달이 이것을 받아 열린다** (2026-09-14) — 그리기와 함께
         /// 보관한다. 행버전까지 들어 있으므로 `[정보수정]` 이 저장에 쓸 수 있다.
         /// </summary>
-        public PatientDetailDto Detail
+        public PatientDto Detail
         {
             get { return _detail; }
             set
@@ -162,7 +164,7 @@ namespace HealthCheckupReservationReception.Views
         {
             for (int i = 0; i < gvPatientList.RowCount; i++)
             {
-                var row = gvPatientList.GetRow(i) as PatientListItemDto;
+                var row = gvPatientList.GetRow(i) as PatientDto;
                 if (row != null && row.PatientId == patientId)
                 {
                     _picker.Select(i);
@@ -211,7 +213,7 @@ namespace HealthCheckupReservationReception.Views
         {
             get
             {
-                var row = _picker.Row as PatientListItemDto;
+                var row = _picker.Row as PatientDto;
                 return row == null ? (long?)null : row.PatientId;
             }
         }
@@ -224,7 +226,7 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         public ChangeLogTarget CurrentLogTarget()
         {
-            var row = _picker.Row as PatientListItemDto;
+            var row = _picker.Row as PatientDto;
             if (row == null)
             {
                 return null;
@@ -342,7 +344,7 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>03 §5.5 — 행 선택 즉시 우측 상세를 갱신한다. 판정은 Presenter 가 한다.</summary>
         private void Picker_PickChanged(object sender, EventArgs e)
         {
-            var row = _picker.Row as PatientListItemDto;
+            var row = _picker.Row as PatientDto;
             EventHandler<long?> handler = SelectionChanged;
             if (handler != null)
             {

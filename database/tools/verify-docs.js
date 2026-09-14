@@ -276,7 +276,9 @@ function splitFences(src) {
   //       V11 의 목적은 그대로다 — 오타와 존재한 적 없는 객체를 잡는 것이고, 아래 둘은
   //       실제로 존재했던 이름이다. 새 이름을 여기 더하지 마라: 여기 있다는 것은 "지금은
   //       없지만 그때는 있었다" 는 뜻이다.
-  const RETIRED = ['USP_HC_예약_취소', 'USP_HC_접수_취소'];
+  // [R21] 같은 이유로 둘을 더한다 — 수검자상세·수검자유효업무가 수검자목록 RS1 로 들어갔다.
+  const RETIRED = ['USP_HC_예약_취소', 'USP_HC_접수_취소',
+                   'USP_HC_수검자상세_조회', 'USP_HC_수검자유효업무_조회'];
   const known = new Set([
     ...(spec.match(OBJ) || []),
     ...[...sec04Summary.matchAll(/\`([가-힣][가-힣A-Za-z_0-9]*)\`/g)].map(x => x[1]),

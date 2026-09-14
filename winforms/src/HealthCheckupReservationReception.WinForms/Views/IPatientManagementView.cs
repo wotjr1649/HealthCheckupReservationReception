@@ -39,7 +39,7 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         bool ReservableOnly { get; }
 
-        IList<PatientListItemDto> Rows { set; }
+        IList<PatientDto> Rows { set; }
 
         /// <summary>우측 상세. null 이면 비운다 (03 §5.5 재조회 시 상세 Clear).</summary>
         /// <summary>
@@ -47,7 +47,7 @@ namespace HealthCheckupReservationReception.Views
         /// `[정보수정]`·`[예약]` 이 같은 수검자를 `SP-PAT-02` 로 다시 읽지 않는다.
         /// null 이면 비운다.
         /// </summary>
-        PatientDetailDto Detail { get; set; }
+        PatientDto Detail { get; set; }
 
         /// <summary>
         /// 우측 상세의 `예약 상태` 한 줄. 목록 컬럼은 `가능`/`불가` 두 값뿐이라 훑기에는 좋지만

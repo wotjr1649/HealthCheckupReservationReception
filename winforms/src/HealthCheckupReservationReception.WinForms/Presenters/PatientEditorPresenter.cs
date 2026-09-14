@@ -25,7 +25,7 @@ namespace HealthCheckupReservationReception.Presenters
         private readonly long? _patientId;
 
         // 부모(WF-PAT-01)가 행을 고를 때 받아 둔 상세. Edit 진입은 이것으로 연다 (2026-09-14).
-        private readonly PatientDetailDto _patient;
+        private readonly PatientDto _patient;
 
         // 03 §16 · 05 §16.3 — Modal 진입 때 받은 원본 동시성값을 숨은 값으로 들고 있는다.
         private byte[] _rowVersion;
@@ -41,7 +41,7 @@ namespace HealthCheckupReservationReception.Presenters
         private string _confirmedKey;
 
         public PatientEditorPresenter(
-            IPatientEditorView view, IPatientService service, string operatorName, PatientDetailDto patient)
+            IPatientEditorView view, IPatientService service, string operatorName, PatientDto patient)
         {
             _view = view;
             _service = service;
@@ -348,10 +348,10 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
-            OperationResult<PatientDetailDto> latest;
+            OperationResult<PatientDto> latest;
             try
             {
-                latest = _service.GetDetail(_patientId.Value);
+                latest = _service.GetByChartNo(_patient.ChartNo);
             }
             catch (Exception)
             {

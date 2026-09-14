@@ -355,7 +355,7 @@ namespace HealthCheckupReservationReception.Views
             // colReserveStatus
             //
             // SP 컬럼이 아니다 — 화면이 SP-WRK-01 결과를 수검자ID 로 이어 붙인 값이다
-            // (2026-09-11 grilling · PatientListItemDto 주석).
+            // (2026-09-11 grilling · PatientDto 주석).
             this.colReserveStatus.Caption = "예약";
             this.colReserveStatus.FieldName = "ReserveStatus";
             this.colReserveStatus.Name = "colReserveStatus";

@@ -138,27 +138,6 @@ namespace HealthCheckupReservationReception.Tests.Integration
             Assert.IsNotNull(read.Registry, "RS2 공휴일등재현황은 항상 1행이다 (05 §12.5)");
         }
 
-        /// <summary>
-        /// 05 §7.4 — 조회범위는 `예약일 >= 오늘날짜` 이고 정상 Cardinality 는 0행 또는 1행이다.
-        ///
-        /// [X] **없는 수검자는 `200` 이다.** §7.4 본문은 그 말을 하지 않고 §13 의 허용
-        ///     결과코드 표(`SELECT_수검자유효업무 | 0, 100, 200, 701`)만 갖고 있다 — 실측으로
-        ///     확인했다. 같은 SELECT 계열이라도 `SP-LOG-01` 은 반대다(대상이 없어도 `0`):
-        ///     감사 기록은 대상 행보다 오래 살기 때문이고, 이쪽은 그 수검자로 예약을
-        ///     이어 갈 수 있는지를 묻는 자리라 존재를 따진다.
-        /// </summary>
-        [TestMethod]
-        [TestCategory("Db")]
-        public void SP_PAT_05_는_없는_수검자에_200_이다()
-        {
-            IPatientRepository repository = new PatientRepository(ConnectionString());
-
-            PatientValidWorkReadDto read = Run(() => repository.ReadValidWork(-1));
-
-            Assert.AreEqual((int)DbCode.PatientNotFound, read.Result.Code, "RS0: " + read.Result.Message);
-            Assert.IsNull(read.Work, "실패인데 유효업무가 나왔다");
-        }
-
         private static T Run<T>(Func<T> call)
         {
             try

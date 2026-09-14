@@ -344,7 +344,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakePatientEditorView();
             var service = new FakePatientService
             {
-                DetailResult = OperationResult<PatientDetailDto>.Success(Detail(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 })),
+                DetailResult = OperationResult<PatientDto>.Success(Detail(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 })),
                 UpdateResult = Read(DbCode.Ok, Saved(7, "2026-000007")),
             };
             new PatientEditorPresenter(view, service, "접수1번창구", service.DetailResult.Value);
@@ -367,7 +367,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakePatientEditorView();
             var service = new FakePatientService
             {
-                DetailResult = OperationResult<PatientDetailDto>.Success(Detail(new byte[] { 9, 9, 9, 9, 9, 9, 9, 9 })),
+                DetailResult = OperationResult<PatientDto>.Success(Detail(new byte[] { 9, 9, 9, 9, 9, 9, 9, 9 })),
                 UpdateResult = Read(DbCode.RowChanged),
             };
             new PatientEditorPresenter(view, service, "접수1번창구", service.DetailResult.Value);
@@ -398,9 +398,9 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             };
         }
 
-        private static PatientDetailDto Detail(byte[] rowVersion)
+        private static PatientDto Detail(byte[] rowVersion)
         {
-            return new PatientDetailDto
+            return new PatientDto
             {
                 PatientId = 7,
                 ChartNo = "2026-000007",
@@ -501,7 +501,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             EditModeShown = true;
         }
 
-        public void LoadDetail(PatientDetailDto detail)
+        public void LoadDetail(PatientDto detail)
         {
             LoadCalls++;
 

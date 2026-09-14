@@ -259,9 +259,10 @@ namespace HealthCheckupReservationReception.Tests.Integration
             Assert.AreNotEqual((int)DbCode.Ok, again.Result.Code,
                 "같은 수검자가 두 번 예약됐다 (RP-06)");
 
-            // 화면이 갈 곳을 아는가 — 기존 유효예약을 물으면 그 업무를 되돌려 준다.
-            PatientValidWorkDto valid = Ok(() => Patients().GetValidWork(patient.PatientId));
-            Assert.AreEqual(booked.Row.WorkId, valid.WorkId, "기존 유효예약을 가리키지 못한다");
+            // 화면이 갈 곳을 아는가 — [R21] 목록 SP 한 행이 그 업무를 싣고 온다.
+            PatientDto row = Ok(() => Patients().GetByChartNo(patient.ChartNo));
+            Assert.IsNotNull(row.ValidWork, "유효업무가 목록에 실리지 않았다 (05 §7.2)");
+            Assert.AreEqual(booked.Row.WorkId, row.ValidWork.WorkId, "기존 유효예약을 가리키지 못한다");
         }
 
         // ── 여기서부터는 조립용이다.

@@ -153,21 +153,9 @@ namespace HealthCheckupReservationReception.Tests.Services
         public PatientSaveReadDto RegisterResult { get; set; }
         public PatientSaveReadDto UpdateResult { get; set; }
 
-        public PatientValidWorkReadDto ValidWorkResult { get; set; }
-
         public PatientListReadDto Search(PatientSearchRequest request)
         {
             return new PatientListReadDto();
-        }
-
-        public PatientValidWorkReadDto ReadValidWork(long patientId)
-        {
-            return ValidWorkResult;
-        }
-
-        public PatientDetailReadDto ReadDetail(long patientId)
-        {
-            return new PatientDetailReadDto();
         }
 
         public PatientSaveReadDto Register(PatientSaveRequest request)

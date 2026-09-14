@@ -38,7 +38,7 @@ namespace HealthCheckupReservationReception.Tests.Views
             RunSta(delegate
             {
                 var screen = new UcPatientManagement();
-                screen.Attach(service, new FakeWorkService(), Status());
+                screen.Attach(service, new FakeWorkService());
                 Host(screen);
             });
 

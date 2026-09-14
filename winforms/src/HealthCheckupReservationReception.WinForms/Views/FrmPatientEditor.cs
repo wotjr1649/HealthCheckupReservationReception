@@ -36,7 +36,7 @@ namespace HealthCheckupReservationReception.Views
         /// <paramref name="patient"/> 가 null 이면 New, 값이 있으면 Edit 다 (03 §6.3 · §6.4).
         /// Edit 진입값은 **부모가 받아 둔 상세**다 — 여기서 다시 읽지 않는다 (2026-09-14).
         /// </summary>
-        public FrmPatientEditor(IPatientService service, string operatorName, PatientDetailDto patient)
+        public FrmPatientEditor(IPatientService service, string operatorName, PatientDto patient)
         {
             InitializeComponent();
             ConfigureUI();
@@ -103,7 +103,7 @@ namespace HealthCheckupReservationReception.Views
             ApplyChartMode();
         }
 
-        public void LoadDetail(PatientDetailDto detail)
+        public void LoadDetail(PatientDto detail)
         {
             txtChartNo.Text = detail.ChartNo;
             txtName.Text = detail.Name;

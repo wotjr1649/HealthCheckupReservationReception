@@ -32,7 +32,7 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         string Title { set; }
 
-        PatientDetailDto Patient { set; }
+        PatientDto Patient { set; }
 
         // ── 일정 (03 §8.5 — 수검자 확정 전에는 Disabled)
 

@@ -46,10 +46,10 @@ namespace HealthCheckupReservationReception.Tests.Views
                     host.Show();
                     Application.DoEvents();
 
-                    ((IPatientManagementView)screen).Rows = new List<PatientListItemDto>
+                    ((IPatientManagementView)screen).Rows = new List<PatientDto>
                     {
-                        new PatientListItemDto { PatientId = 11, ChartNo = "2026-000123", Name = "홍길동" },
-                        new PatientListItemDto { PatientId = 12, ChartNo = "2026-000124", Name = "수검자4" },
+                        new PatientDto { PatientId = 11, ChartNo = "2026-000123", Name = "홍길동" },
+                        new PatientDto { PatientId = 12, ChartNo = "2026-000124", Name = "수검자4" },
                     };
                     Application.DoEvents();
 

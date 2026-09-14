@@ -26,15 +26,14 @@ EXEC [dbo].[USP_HC_공통업무상태_조회];
 EXEC [dbo].[USP_HC_수검자목록_조회] N'T001', NULL, NULL, NULL, NULL;
 EXEC [dbo].[USP_HC_수검자목록_조회] NULL, NULL, NULL, NULL, NULL;
 
-EXEC [dbo].[USP_HC_수검자상세_조회] NULL;
--- EXEC sp (SELECT …) 는 인자가 아니라 별도 SELECT 문으로 파싱된다 — SP 는 인자를 못 받아 실패한다(실측).
--- 인자는 변수로 받는다.
-DECLARE @P15 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T015');
-EXEC [dbo].[USP_HC_수검자상세_조회] @P15;
+-- [R21] 상세도 유효업무도 목록 SP 가 낸다. 차트번호는 UQ 라 정확검색 한 건이다.
+--       예전에는 여기서 SELECT_수검자상세·SELECT_수검자유효업무를 따로 불렀다.
+EXEC [dbo].[USP_HC_수검자목록_조회] N'T015', NULL, NULL, NULL, NULL;
+EXEC [dbo].[USP_HC_수검자목록_조회] N'T012', NULL, NULL, NULL, NULL;
 
-DECLARE @P12 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T012');
-EXEC [dbo].[USP_HC_수검자유효업무_조회] @P15;
-EXEC [dbo].[USP_HC_수검자유효업무_조회] @P12;
+-- EXEC sp (SELECT …) 는 인자가 아니라 별도 SELECT 문으로 파싱된다 — SP 는 인자를 못 받아 실패한다(실측).
+-- 인자는 변수로 받는다. 아래 SP-RSV-01·SP-LOG-01 이 이 수검자로 묻는다.
+DECLARE @P15 BIGINT = (SELECT [수검자ID] FROM [dbo].[수검자] WHERE [차트번호] = N'T015');
 
 EXEC [dbo].[USP_HC_예약접수목록_조회] '2026-11-01', '2026-11-30', NULL, NULL, NULL;
 EXEC [dbo].[USP_HC_예약접수목록_조회] NULL, NULL, NULL, NULL, NULL;

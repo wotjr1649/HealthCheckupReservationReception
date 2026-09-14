@@ -62,7 +62,6 @@ static class Probe
             // CS-004  한글 SqlParameter 로 명시 전달. 이름 앞에 @ 를 붙인다.
             //         선택 Parameter 는 누락하지 않고 DBNull 로 넘긴다 (05 §2.1).
             //   특정 Fixture 에 매이지 않는다 — 있는 수검자 하나를 집는다.
-            long pid = 0;
             string chart = null;
             using (var q = new SqlCommand("SELECT TOP (1) [차트번호] FROM [dbo].[수검자] ORDER BY [수검자ID]", cn))
                 chart = q.ExecuteScalar() as string;
@@ -87,28 +86,19 @@ static class Probe
                     r.NextResult();
                     if (r.Read())
                     {
-                        pid = (long)r["수검자ID"];
                         Eq("CS-005", "RS1 차트번호", (string)r["차트번호"], chart);
                         Pass("CS-006", "RS1 성명 = " + (string)r["성명"]);
+
+                        // CS-007  동시성값 타입. 05 §16.3 — R7 부터 세 Entity 가 전부 행버전 -> byte[8] 이다.
+                        //         R7 이전에는 수검자만 최종수정일시(DateTime)였고, 그래서 C# 쪽
+                        //         동시성 처리가 Entity 마다 두 벌이었다. 여기서 그 통일을 확인한다.
+                        // [R21]   이 둘은 SELECT_수검자상세 RS1 에서 재던 것이다. 그 SP 가
+                        //         사라지고 두 컬럼이 목록 RS1 로 들어와 같은 reader 에서 잰다.
+                        var edit = (byte[])r["행버전"];
+                        Eq("CS-007", "수검자 행버전 길이", edit.Length, 8);
+                        Eq("CS-008", "B형간염제외여부 CLR 타입", r["B형간염제외여부"].GetType().Name, "Boolean");
                     }
                     else Fail("CS-005", "차트번호 " + chart + " 를 SP 가 찾지 못했다");
-                }
-            }
-
-            // CS-007  동시성값 타입. 05 §16.3 — R7 부터 세 Entity 가 전부 행버전 -> byte[8] 이다.
-            //         R7 이전에는 수검자만 최종수정일시(DateTime)였고, 그래서 C# 쪽 동시성 처리가
-            //         Entity 마다 두 벌이었다. 여기서 그 통일을 확인한다.
-            if (pid > 0)
-            using (var cmd = new SqlCommand("dbo.USP_HC_수검자상세_조회", cn))
-            {
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Add("@수검자ID", SqlDbType.BigInt).Value = pid;
-                using (var r = cmd.ExecuteReader())
-                {
-                    r.Read(); r.NextResult(); r.Read();
-                    var edit = (byte[])r["행버전"];
-                    Eq("CS-007", "수검자 행버전 길이", edit.Length, 8);
-                    Eq("CS-008", "B형간염제외여부 CLR 타입", r["B형간염제외여부"].GetType().Name, "Boolean");
                 }
             }
 
@@ -127,15 +117,17 @@ static class Probe
 
             // CS-010  실패 경로. RS0.오류항목 이 **한글 Parameter 이름**을 담는가.
             //         화면이 입력항목을 찾는 키이므로 Parameter 이름과 같아야 한다 (05 §16.2).
-            using (var cmd = new SqlCommand("dbo.USP_HC_수검자상세_조회", cn))
+            //         [R21] SELECT_수검자상세로 재던 것을 SELECT_예약접수상세로 옮겼다.
+            //         목록 SP 에는 필수 Parameter 가 없어 이 성질을 잴 수 없다.
+            using (var cmd = new SqlCommand("dbo.USP_HC_예약접수상세_조회", cn))
             {
                 cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Add("@수검자ID", SqlDbType.BigInt).Value = DBNull.Value;
+                cmd.Parameters.Add("@업무ID", SqlDbType.BigInt).Value = DBNull.Value;
                 using (var r = cmd.ExecuteReader())
                 {
                     r.Read();
                     Eq("CS-010", "실패 RS0 결과코드", (int)r["결과코드"], 100);
-                    Eq("CS-011", "실패 RS0 오류항목", (string)r["오류항목"], "수검자ID");
+                    Eq("CS-011", "실패 RS0 오류항목", (string)r["오류항목"], "업무ID");
                 }
             }
 
@@ -166,7 +158,7 @@ static class Probe
             const string SPFILTER = "FROM sys.parameters pa JOIN sys.procedures p ON p.object_id = pa.object_id " +
                                     "WHERE p.name LIKE 'USP[_]HC[_]%'";
             using (var cmd = new SqlCommand("SELECT COUNT(*) " + SPFILTER, cn))
-                Eq("CS-014", "계약 SP Parameter 전건", (int)cmd.ExecuteScalar(), 111);
+                Eq("CS-014", "계약 SP Parameter 전건", (int)cmd.ExecuteScalar(), 109);
             using (var cmd = new SqlCommand(
                 "SELECT COUNT(*) " + SPFILTER + " AND pa.name NOT LIKE '%[가-힣]%'", cn))
                 Eq("CS-015", "한글을 담지 않는 Parameter", (int)cmd.ExecuteScalar(), 0);

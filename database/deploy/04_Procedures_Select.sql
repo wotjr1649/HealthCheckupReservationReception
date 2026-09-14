@@ -60,6 +60,8 @@ BEGIN
     SET NOCOUNT ON;
 
     DECLARE @서버시각 DATETIME2(7) = SYSDATETIME();
+    -- [R21] 유효업무 판정 기준일. RP-06 의 유효집합이 `예약일 >= DB 현재일` 이다.
+    DECLARE @오늘날짜 DATE = CONVERT(DATE, @서버시각);
 
     -- 1. 정규화 — 공백 제거, 빈 문자열은 NULL, 전화·주민번호의 '-' 제거
     SET @차트번호      = NULLIF(LTRIM(RTRIM(@차트번호)), N'');
@@ -133,152 +135,53 @@ BEGIN
         , [이메일]        = CAST(p.[이메일]        AS VARCHAR(200))
         , [우편번호]      = CAST(p.[우편번호]      AS VARCHAR(10))
         , [주소]      = CAST(p.[주소]      AS NVARCHAR(200))
+        -- [R21] 여기부터가 예전 SELECT_수검자상세(SP-PAT-02) 가 더 주던 넷이다.
+        --       상세를 보려고 SP 를 한 번 더 부르던 것을 없앴다 (2026-09-14 사용자 지시).
+        , [상세주소]    = CAST(p.[상세주소]    AS NVARCHAR(200))
+        , [비고]        = CAST(p.[비고]        AS NVARCHAR(MAX))
+        , [B형간염제외여부] = CAST(p.[B형간염제외여부] AS BIT)
+        , [행버전]      = CAST(p.[행버전]      AS BINARY(8))
+        -- [R21] 여기부터가 예전 SELECT_수검자유효업무(SP-PAT-05) 가 주던 것이다.
+        --       RP-06 유효업무는 `예약일 >= 오늘 AND 상태 IN (RSV, RCP)` 하나뿐이고,
+        --       그 판정을 화면이 두 번 조회해 이어 붙이던 것을 DB 로 되돌렸다.
+        -- [!] 없으면 NULL 이다. 「예약 가능」을 DB 가 말하는 것이 아니라 **유효업무가 있는지**를
+        --     말한다 — 가능/불가 문구는 화면이 만든다 (03 §5.5).
+        , [유효업무ID]   = CAST(v.[업무ID]     AS BIGINT)
+        , [유효예약일]   = CAST(v.[예약일]     AS DATE)
+        , [유효시간대코드] = CAST(v.[시간대코드] AS CHAR(2))
+        , [유효상태코드] = CAST(v.[상태코드]   AS CHAR(3))
     FROM [dbo].[수검자] p
+    -- [R21] **CROSS/OUTER APPLY 를 쓰지 않는다** (2026-09-14 사용자 지시). 유효업무만 미리
+    --       추린 파생표를 만들어 수검자ID 로 붙인다 — 읽는 법이 한 줄이다:
+    --       "왼쪽에 짝이 없으면 NULL".
+    --       가장 이른 예약일 하나를 고르는 이유는 RP-06 이 유효업무를 최대 1건으로 보기
+    --       때문이다. 2건 이상이면 그 불변조건이 이미 깨진 상태이고 SP-RSV-02 가 701 로 막는다.
+    --       IX_예약접수_PATIENT_STATE_DATE([수검자ID],[상태코드],[예약일]) 가 이 모양을 위한
+    --       인덱스다 (04 §8.2.3).
+    -- [!] **한 걸음인 이유 — 실측이다.** 「업무ID 를 먼저 고르고 그 ID 로 한 행을 다시 붙인다」
+    --     는 두 걸음도 써 봤다. 값이 언제나 한 행에서 온다는 점은 그쪽이 낫지만, 수검자마다
+    --     예약접수를 한 번씩 찾아 들어가 **논리적 읽기가 2 에서 204 가 됐다**(수검자 40행 기준).
+    --     그래서 한 걸음으로 되돌렸다. 여기 `MIN()` 넷이 서로 다른 행에서 올 수 있는 경우는
+    --     한 수검자에게 유효업무가 2건 이상일 때뿐인데, 그것은 RP-06 불변조건이 이미 깨진
+    --     상태다(`SP-RSV-02` 가 저장 시점에 `701` 로 막는다). 그때도 `유효업무ID` 는 채워지므로
+    --     화면은 여전히 **예약 불가**로 판정한다 — 틀리는 것은 함께 보여 주는 일정 문구뿐이다.
+    LEFT JOIN (
+        SELECT w.[수검자ID]
+             , [업무ID]     = MIN(w.[업무ID])
+             , [예약일]     = MIN(w.[예약일])
+             , [시간대코드] = MIN(w.[시간대코드])
+             , [상태코드]   = MIN(w.[상태코드])
+          FROM [dbo].[예약접수] w
+         WHERE w.[예약일] >= @오늘날짜
+           AND w.[상태코드] IN ('RSV', 'RCP')
+         GROUP BY w.[수검자ID]
+    ) v ON v.[수검자ID] = p.[수검자ID]
     WHERE (@차트번호      IS NULL OR p.[차트번호]      LIKE @차트번호패턴   )
       AND (@성명         IS NULL OR p.[성명]         LIKE @성명패턴       )
       AND (@주민번호 IS NULL OR p.[주민번호] =  @주민번호)
       AND (@생년월일     IS NULL OR p.[생년월일]     =  @생년월일)
       AND (@휴대전화  IS NULL OR REPLACE(p.[휴대전화], '-', '') = @휴대전화)
     ORDER BY p.[성명] ASC, p.[생년월일] ASC, p.[차트번호] ASC;
-END
-GO
--- 허용 결과코드 0 / 100 / 200 (05 §13). RS1 은 정확히 1행이다.
-CREATE OR ALTER PROCEDURE [dbo].[USP_HC_수검자상세_조회]
-    @수검자ID BIGINT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @서버시각 DATETIME2(7) = SYSDATETIME();
-
-    IF @수검자ID IS NULL
-    BEGIN
-        SELECT
-              CAST(0 AS BIT)                    AS [성공여부]
-            , CAST(100 AS INT)                  AS [결과코드]
-            , CAST(N'필수값을 입력하십시오.' AS NVARCHAR(300)) AS [결과메시지]
-            , CAST(N'수검자ID' AS NVARCHAR(50))  AS [오류항목]
-            , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-        RETURN;
-    END
-
-    IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [수검자ID] = @수검자ID)
-    BEGIN
-        SELECT
-              CAST(0 AS BIT)                    AS [성공여부]
-            , CAST(200 AS INT)                  AS [결과코드]
-            , CAST(N'수검자를 찾을 수 없습니다.' AS NVARCHAR(300)) AS [결과메시지]
-            , CAST(N'수검자ID' AS NVARCHAR(50))  AS [오류항목]
-            , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-        RETURN;
-    END
-
-    -- RS0
-    SELECT
-          CAST(1 AS BIT)                    AS [성공여부]
-        , CAST(0 AS INT)                    AS [결과코드]
-        , CAST(N'정상 처리되었습니다.' AS NVARCHAR(300)) AS [결과메시지]
-        , CAST(NULL AS NVARCHAR(50))         AS [오류항목]
-        , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-
-    -- RS1 (15컬럼, 정확히 1행)
-    SELECT
-          [수검자ID]     = CAST(p.[수검자ID]     AS BIGINT)
-        , [차트번호]       = CAST(p.[차트번호]       AS NVARCHAR(100))
-        , [성명]          = CAST(p.[성명]          AS NVARCHAR(100))
-        , [주민번호]  = CAST(p.[주민번호]  AS VARCHAR(13))
-        , [생년월일]      = CAST(p.[생년월일]      AS VARCHAR(8))
-        , [성별]        = CAST(p.[성별]        AS CHAR(1))
-        , [휴대전화]   = CAST(p.[휴대전화]     AS VARCHAR(13))
-        , [전화번호]         = CAST(p.[전화번호]     AS VARCHAR(13))
-        , [이메일]         = CAST(p.[이메일]         AS VARCHAR(200))
-        , [우편번호]       = CAST(p.[우편번호]       AS VARCHAR(10))
-        , [주소]       = CAST(p.[주소]       AS NVARCHAR(200))
-        , [상세주소] = CAST(p.[상세주소] AS NVARCHAR(200))
-        , [비고]          = CAST(p.[비고]          AS NVARCHAR(MAX))
-        -- [X] 15컬럼이다. R3 이 05 §9.2 RS1 에 B형간염제외여부 를 넣었는데 SQL 이 따라오지 않았고,
-        --     expected-contracts.json 도 14컬럼으로 같이 틀려 있어 게이트가 영원히 못 잡았다.
-        --     DLG-PAT-01 수정 화면이 현재값을 못 받으면 @B형간염제외여부(NULL 불가)에
-        --     체크박스 초기값 0 이 실려 제외 플래그가 조용히 1->0 이 된다 (05 §9.2 명문).
-        , [B형간염제외여부] = CAST(p.[B형간염제외여부] AS BIT)
-        , [행버전]        = CAST(p.[행버전]        AS BINARY(8))
-    FROM [dbo].[수검자] p
-    WHERE p.[수검자ID] = @수검자ID;
-END
-GO
--- 허용 결과코드 0 / 100 / 200 / 701. RP-06 은 유효업무를 0~1건으로 제한한다.
--- 2건 이상은 조회로 고칠 수 없는 데이터 손상이므로 701 로 알린다 (00 RP-06, 05 §7.4).
-CREATE OR ALTER PROCEDURE [dbo].[USP_HC_수검자유효업무_조회]
-    @수검자ID BIGINT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @서버시각 DATETIME2(7) = SYSDATETIME();
-    DECLARE @오늘날짜 DATE = CONVERT(DATE, @서버시각);
-
-    IF @수검자ID IS NULL
-    BEGIN
-        SELECT
-              CAST(0 AS BIT)                    AS [성공여부]
-            , CAST(100 AS INT)                  AS [결과코드]
-            , CAST(N'필수값을 입력하십시오.' AS NVARCHAR(300)) AS [결과메시지]
-            , CAST(N'수검자ID' AS NVARCHAR(50))  AS [오류항목]
-            , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-        RETURN;
-    END
-
-    IF NOT EXISTS (SELECT 1 FROM [dbo].[수검자] WHERE [수검자ID] = @수검자ID)
-    BEGIN
-        SELECT
-              CAST(0 AS BIT)                    AS [성공여부]
-            , CAST(200 AS INT)                  AS [결과코드]
-            , CAST(N'수검자를 찾을 수 없습니다.' AS NVARCHAR(300)) AS [결과메시지]
-            , CAST(N'수검자ID' AS NVARCHAR(50))  AS [오류항목]
-            , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-        RETURN;
-    END
-
-    DECLARE @건수 INT = (SELECT COUNT(*) FROM [dbo].[예약접수] w
-                         WHERE w.[수검자ID] = @수검자ID
-                           AND w.[예약일] >= @오늘날짜
-                           AND w.[상태코드] IN ('RSV','RCP'));
-    IF @건수 >= 2
-    BEGIN
-        SELECT
-              CAST(0 AS BIT)                    AS [성공여부]
-            , CAST(701 AS INT)                  AS [결과코드]
-            , CAST(N'예약·접수 업무의 검사구성 또는 유효업무 데이터가 올바르지 않습니다.' AS NVARCHAR(300)) AS [결과메시지]
-            , CAST(N'업무ID' AS NVARCHAR(50))     AS [오류항목]
-            , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-        RETURN;
-    END
-
-    -- RS0
-    SELECT
-          CAST(1 AS BIT)                    AS [성공여부]
-        , CAST(0 AS INT)                    AS [결과코드]
-        , CAST(N'정상 처리되었습니다.' AS NVARCHAR(300)) AS [결과메시지]
-        , CAST(NULL AS NVARCHAR(50))         AS [오류항목]
-        , CAST(@서버시각 AS DATETIME2(7)) AS [서버시각];
-
-    -- RS1 (7컬럼, 0행 또는 1행)
-    SELECT
-          [업무ID]          = CAST(w.[업무ID] AS BIGINT)
-        , [예약일] = CAST(w.[예약일] AS DATE)
-        , [시간대코드]        = CAST(w.[시간대코드] AS CHAR(2))
-        , [상태코드]          = CAST(w.[상태코드] AS CHAR(3))
-        , [상태명]      = CAST(CASE w.[상태코드]
-                                     WHEN 'RSV' THEN N'예약'
-                                     WHEN 'RCP' THEN N'접수완료'
-                                     WHEN 'CNR' THEN N'예약취소'
-                                     ELSE N'접수취소' END AS NVARCHAR(10))
-        , [오늘여부]         = CAST(CASE WHEN w.[예약일] = @오늘날짜 THEN 1 ELSE 0 END AS BIT)
-        , [행버전]      = CAST(w.[행버전] AS BINARY(8))
-    FROM [dbo].[예약접수] w
-    WHERE w.[수검자ID] = @수검자ID
-      AND w.[예약일] >= @오늘날짜
-      AND w.[상태코드] IN ('RSV','RCP');
 END
 GO
 -- 허용 결과코드 0 / 101 / 103 / 104 (05 §8.1).

@@ -1,17 +1,18 @@
 ﻿// ── 수검자 모델 ──────────────────────────────────────────────────────────────
 // 화면 ID: WF-PAT-01 (03 §5) · DLG-PAT-01 (03 §6) · DLG-PAT-03 (03 §6.5)
 //
+// **[R21] 수검자는 형식 하나다** (2026-09-14 사용자 지시). 목록 SP 가 상세 칸과
+// 유효업무까지 함께 주므로 `SELECT_수검자상세`·`SELECT_수검자유효업무` 가 사라졌고,
+// 목록 한 행과 상세가 같은 것이 되었다 — 형식을 둘로 둘 이유도 함께 사라졌다.
+//
 //   형식                       SP · Result Set          무엇
 //   PatientSearchRequest       SP-PAT-01 입력           조회조건
-//   PatientListItemDto         SP-PAT-01 RS1            수검자 목록 한 행
+//   PatientDto                 SP-PAT-01 RS1            **목록 한 행이자 상세**
 //   PatientListReadDto         SP-PAT-01 RS0+RS1        한 호출의 결과
-//   PatientDetailDto           SP-PAT-02 RS1            수검자 상세
-//   PatientDetailReadDto       SP-PAT-02 RS0+RS1        한 호출의 결과
 //   PatientSaveRequest         SP-PAT-03·04 입력        등록·수정 한 벌
 //   PatientSaveResultDto       SP-PAT-03·04 RS1         저장된 수검자
 //   PatientSaveReadDto         RS0+RS1                  한 호출의 결과
-//   PatientValidWorkDto        SP-PAT-05 RS1            기존 유효예약
-//   PatientValidWorkReadDto    SP-PAT-05 RS0+RS1        한 호출의 결과
+//   PatientValidWorkDto        SP-PAT-01 RS1 안         기존 유효예약. 없으면 null
 //   PatientActionState         (SP 아님)                화면 Action 의 열림·닫힘
 
 using System;
@@ -32,50 +33,18 @@ namespace HealthCheckupReservationReception.Models
         public string MobilePhone { get; set; }    // `-` 제거 후 정확검색
     }
 
-    /// <summary>
-    /// SP-PAT-01 `[dbo].[USP_HC_수검자목록_조회]` 의 RS1 (05 §7.2).
-    /// 영문 이름은 05 §16.5 대응표가 정한다 — 여기서 새로 짓지 않는다.
-    ///
-    /// [X] **끝 둘은 SP 컬럼이 아니다.** `SP-PAT-01` 은 예약을 모른다(RS1 아홉 칸이 전부
-    ///     수검자 기준정보다). 계약이 동결이라 컬럼을 붙일 수 없으므로, 화면이 `SP-WRK-01`
-    ///     결과를 `수검자ID` 로 이어 붙여 채운다 (2026-09-11 grilling). 그래서 Repository 는
-    ///     이 둘을 읽지 않는다 — `verify-rs-columns.sh` 가 보는 `GetOrdinal` 목록에 없다.
-    /// </summary>
-    public sealed class PatientListItemDto
-    {
-        public long PatientId { get; set; }        // [수검자ID]   내부키. Grid 에 노출하지 않는다 (03 §5.5)
-        public string ChartNo { get; set; }        // [차트번호]
-        public string Name { get; set; }           // [성명]
-        public string SocialNumber { get; set; }   // [주민번호]   테스트 전체값 (03 §5.6)
-        public string Birthday { get; set; }       // [생년월일]   yyyyMMdd 계산열
-        public string Gender { get; set; }         // [성별]       M/F 계산열
-        public string MobilePhone { get; set; }    // [휴대전화]
-        public string Phone { get; set; }          // [전화번호]
-        public string Email { get; set; }          // [이메일]
-        public string Zipcode { get; set; }        // [우편번호]
-        public string Address { get; set; }        // [주소]
-
-        // ── 아래 둘은 화면이 이어 붙인 것이다 (SP 컬럼이 아니다)
-
-        /// <summary>목록 컬럼 — `가능` / `불가`.</summary>
-        public string ReserveStatus { get; set; }
-
-        /// <summary>상세 한 줄 — `예약 불가 — 2026-09-14 오전 예약` 처럼 이유까지 적는다.</summary>
-        public string ReserveStatusDetail { get; set; }
-    }
-
     /// <summary>SP-PAT-01 한 번의 호출이 낸 두 Result Set (05 §7.2).</summary>
     public sealed class PatientListReadDto
     {
         public DbResult Result { get; set; }                  // RS0
-        public IList<PatientListItemDto> Rows { get; set; }   // RS1. RS0 실패면 null
+        public IList<PatientDto> Rows { get; set; }   // RS1. RS0 실패면 null
     }
 
     /// <summary>
     /// SP-PAT-02 `[dbo].[USP_HC_수검자상세_조회]` 의 RS1 (05 §7.3). 정확히 1행이다.
-    /// 목록(<see cref="PatientListItemDto"/>)보다 네 값이 많다 — 상세주소·비고·B형간염제외여부·행버전.
+    /// 목록(<see cref="PatientDto"/>)보다 네 값이 많다 — 상세주소·비고·B형간염제외여부·행버전.
     /// </summary>
-    public sealed class PatientDetailDto
+    public sealed class PatientDto
     {
         public long PatientId { get; set; }            // [수검자ID]
         public string ChartNo { get; set; }            // [차트번호]
@@ -96,13 +65,21 @@ namespace HealthCheckupReservationReception.Models
 
         /// <summary>[행버전] 동시성값. 화면이 들고 있되 표시하지 않는다 (03 §18 · 05 §16.3).</summary>
         public byte[] RowVersion { get; set; }
-    }
 
-    /// <summary>SP-PAT-02 한 번의 호출이 낸 두 Result Set (05 §7.3).</summary>
-    public sealed class PatientDetailReadDto
-    {
-        public DbResult Result { get; set; }          // RS0
-        public PatientDetailDto Detail { get; set; }  // RS1. RS0 실패면 null
+        /// <summary>
+        /// [R21] 이 수검자의 **기존 유효예약**. 없으면 null 이다 (SP-PAT-01 RS1 의 유효업무 4칸).
+        /// RP-06 판정(`예약일 >= DB 현재일 AND 상태 IN (RSV, RCP)`)은 SP 가 한다 — 예전에는
+        /// 화면이 예약접수 목록을 두 번 조회해 이어 붙였고, 그것이 판정을 화면으로 옮긴 자리였다.
+        /// </summary>
+        public PatientValidWorkDto ValidWork { get; set; }
+
+        // ── 아래 둘은 화면이 이어 붙인 것이다 (SP 컬럼이 아니다)
+
+        /// <summary>목록 컬럼 — `가능` / `불가`.</summary>
+        public string ReserveStatus { get; set; }
+
+        /// <summary>상세 한 줄 — `예약 불가 — 2026-09-14 오전 예약` 처럼 이유까지 적는다.</summary>
+        public string ReserveStatusDetail { get; set; }
     }
 
     /// <summary>
@@ -199,14 +176,6 @@ namespace HealthCheckupReservationReception.Models
         public string StatusCode { get; set; }     // [상태코드]
         public bool IsToday { get; set; }          // [오늘여부]
         public byte[] RowVersion { get; set; }     // [행버전]
-    }
-
-    // 화면 ID: WF-RSV-01 — 신규 예약 (03 §8.5 중복판단)
-    /// <summary>SP-PAT-05 한 번의 호출이 낸 두 Result Set (05 §7.4).</summary>
-    public sealed class PatientValidWorkReadDto
-    {
-        public DbResult Result { get; set; }        // RS0
-        public PatientValidWorkDto Work { get; set; } // RS1. 0행이면 null — 유효업무가 없다는 뜻이다
     }
 
     // 화면 ID: WF-PAT-01 — 수검자 관리 (03 §5)

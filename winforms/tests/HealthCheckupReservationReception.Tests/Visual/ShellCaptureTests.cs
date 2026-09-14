@@ -99,7 +99,7 @@ namespace HealthCheckupReservationReception.Tests.Visual
                 WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
 
                 var screen = new UcPatientManagement();
-                screen.Attach(new FakePatientService(), new FakeWorkService(), new FakeCommonStatusService());
+                screen.Attach(new FakePatientService(), new FakeWorkService());
 
                 using (var host = new Form())
                 {
@@ -416,25 +416,14 @@ namespace HealthCheckupReservationReception.Tests.Visual
                 WindowsFormsSettings.DefaultFont = new Font("굴림", 9F);
                 WindowsFormsSettings.DefaultMenuFont = new Font("굴림", 9F);
 
-                var patients = new FakePatientService
-                {
-                    DetailResult = OperationResult<PatientDetailDto>.Success(new PatientDetailDto
-                    {
-                        PatientId = 1000,
-                        ChartNo = "C000001",
-                        Name = "홍길동",
-                        Birthday = "19800101",
-                        Gender = "M",
-                    }),
-                };
-
                 // 모달이다 — 생성자가 곧 03 §3 의 `BeginNewReservation` 이다.
                 //
                 // [X] `SilentReservationForm` 을 쓴다. 실물 폼은 닫을 때 폐기 확인을 띄우고
                 //     캡처가 **사람이 Yes 를 누를 때까지 멈춘다** (2026-09-11 사용자 보고).
                 using (var screen = new SilentReservationForm(
                     new FakeReservationService { Availability = SampleAvailability() },
-                    patients, new FakeWorkService(), "접수1번창구", 1000, true))
+                    new FakePatientService(), new FakeWorkService(), "접수1번창구",
+                    FrmReservationTests.Patient(), true))
                 {
                     screen.StartPosition = FormStartPosition.Manual;
                     screen.Location = new Point(-32000, -32000);
@@ -703,9 +692,9 @@ namespace HealthCheckupReservationReception.Tests.Visual
         }
 
         // 설계 wf_pat_01.js 의 예시 행 그대로다. 계약이 아니라 눈으로 견주기 위한 값이다.
-        private static IList<PatientListItemDto> SampleRows()
+        private static IList<PatientDto> SampleRows()
         {
-            return new List<PatientListItemDto>
+            return new List<PatientDto>
             {
                 Row(1, "2026-000121", "수검자1", "19800511", "M", "010-0000-0001"),
                 Row(2, "2026-000122", "수검자2", "19721103", "F", "010-0000-0002"),
@@ -714,9 +703,9 @@ namespace HealthCheckupReservationReception.Tests.Visual
             };
         }
 
-        private static PatientListItemDto Row(long id, string chartNo, string name, string birthday, string gender, string mobile)
+        private static PatientDto Row(long id, string chartNo, string name, string birthday, string gender, string mobile)
         {
-            return new PatientListItemDto
+            return new PatientDto
             {
                 PatientId = id,
                 ChartNo = chartNo,
@@ -728,9 +717,9 @@ namespace HealthCheckupReservationReception.Tests.Visual
             };
         }
 
-        private static PatientDetailDto SampleDetail()
+        private static PatientDto SampleDetail()
         {
-            return new PatientDetailDto
+            return new PatientDto
             {
                 PatientId = 3,
                 ChartNo = "2026-000123",
