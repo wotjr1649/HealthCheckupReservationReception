@@ -25,6 +25,8 @@ namespace HealthCheckupReservationReception.Views
 
             clsGridColumns.ShowEmptyText(gvPatientList, "조회 결과가 없습니다.");
 
+            _search = new clsSearchRunner(this, btnSearch);
+
             // 부품 셋은 Grid·조회조건 칸이 다 선 **뒤에** 만든다 — 그 시점의 Grid 가
             // `[기본값 복원]` 이 되돌릴 기준이다.
             _picker = new clsGridRowPicker(gvPatientList);

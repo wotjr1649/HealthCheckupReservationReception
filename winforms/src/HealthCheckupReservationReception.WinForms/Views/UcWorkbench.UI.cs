@@ -63,6 +63,8 @@ namespace HealthCheckupReservationReception.Views
             // 03 §9.3 Inline 오류. 붉은 글씨가 이 자리가 오류라는 유일한 단서다.
             clsNotice.Error(lblValidation);
 
+            _search = new clsSearchRunner(this, btnSearch);
+
             // 부품 셋은 Grid·조회조건 칸이 다 선 **뒤에** 만든다 — 그 시점의 Grid 가
             // `[기본값 복원]` 이 되돌릴 기준이다.
             _picker = new clsGridRowPicker(gvWorkList);
