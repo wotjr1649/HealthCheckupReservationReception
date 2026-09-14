@@ -749,31 +749,12 @@ namespace HealthCheckupReservationReception.Tests.Visual
 
         private static string Save(Bitmap bmp, string name)
         {
-            // bin/Debug 에서 winforms/ 까지 올라간다.
-            string dir = Path.GetFullPath(Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "artifacts", "logs"));
-            Directory.CreateDirectory(dir);
-            string path = Path.Combine(dir, name);
-            bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
-            return path;
+            return clsCapture.Save(bmp, name);
         }
 
         private static void RunSta(Action action)
         {
-            Exception failure = null;
-            var thread = new Thread(() =>
-            {
-                try { action(); }
-                catch (Exception ex) { failure = ex; }
-            });
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            thread.Join();
-
-            if (failure != null)
-            {
-                throw new AssertFailedException(failure.Message, failure);
-            }
+            clsCapture.RunSta(action);
         }
     }
 }
