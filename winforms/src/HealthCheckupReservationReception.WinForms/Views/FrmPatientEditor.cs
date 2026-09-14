@@ -33,13 +33,14 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// <paramref name="patientId"/> 가 null 이면 New, 값이 있으면 Edit 다 (03 §6.3 · §6.4).
+        /// <paramref name="patient"/> 가 null 이면 New, 값이 있으면 Edit 다 (03 §6.3 · §6.4).
+        /// Edit 진입값은 **부모가 받아 둔 상세**다 — 여기서 다시 읽지 않는다 (2026-09-14).
         /// </summary>
-        public FrmPatientEditor(IPatientService service, string operatorName, long? patientId)
+        public FrmPatientEditor(IPatientService service, string operatorName, PatientDetailDto patient)
         {
             InitializeComponent();
             ConfigureUI();
-            _presenter = new PatientEditorPresenter(this, service, operatorName, patientId);
+            _presenter = new PatientEditorPresenter(this, service, operatorName, patient);
         }
 
         /// <summary>03 §6.3 — 저장 성공 후 호출 화면이 받아 가는 값. 취소면 null 이다.</summary>

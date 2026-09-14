@@ -240,6 +240,28 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         private static readonly DateTime Today = new DateTime(2026, 9, 11);
 
         /// <summary>
+        /// **조회를 되풀이해도 오늘날짜는 한 번만 묻는다** (2026-09-14 사용자 지시).
+        /// 예전에는 `[조회]` 를 누를 때마다 `SP-COM-01` 이 한 번씩 더 나갔다.
+        ///
+        /// 값은 여전히 DB 것이다 — PC 시계는 **하루가 바뀌었는가**만 정한다. 그 판정이
+        /// 틀려도 SP 를 한 번 더 부를 뿐이라 안전하다.
+        /// </summary>
+        [TestMethod]
+        public void 조회를_되풀이해도_오늘날짜는_한_번만_묻는다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService { SearchResult = Rows(), DetailResult = Detail() };
+            FakeCommonStatusService status = Status(Today);
+            var presenter = new PatientManagementPresenter(view, service, new FakeWorkService(), status);
+
+            presenter.LoadInitial();
+            view.RaiseSearchRequested();
+            view.RaiseSearchRequested();
+
+            Assert.AreEqual(1, status.Calls, "조회마다 오늘날짜를 다시 물었다");
+        }
+
+        /// <summary>
         /// 노쇼 — 지난 예약을 접수도 검사도 하지 않아 `RSV` 인 채로 남았다. 그 사람이 오늘
         /// 다시 예약할 수 있어야 한다 (2026-09-11 사용자 지시).
         ///

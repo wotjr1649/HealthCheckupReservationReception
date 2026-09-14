@@ -41,6 +41,9 @@ namespace HealthCheckupReservationReception.Views
         // 쥐고 있던 행버전은 그 사이 낡을 수 있다 (03 §11.3).
         private WorkDetailReadDto _read;
 
+        // 부모가 받아 둔 수검자 상세. 신규예약 진입이 SP-PAT-02 를 다시 부르지 않게 한다.
+        private PatientDetailDto _patient;
+
         partial void ConfigureUI();
 
         /// <summary>
@@ -60,11 +63,12 @@ namespace HealthCheckupReservationReception.Views
         /// 일반/현장을 가르는 인자가 없다. 그것은 조작자가 아니라 시각이 정한다 (00 RP-05).
         /// </summary>
         public FrmReservation(IReservationService service, IPatientService patientService,
-            IWorkService workService, string operatorName, long patientId)
+            IWorkService workService, string operatorName, long patientId, PatientDetailDto patient)
             : this()
         {
             _presenter = new ReservationPresenter(this, service, patientService, workService, operatorName);
             _patientId = patientId;
+            _patient = patient;
         }
 
         /// <summary>
@@ -118,7 +122,7 @@ namespace HealthCheckupReservationReception.Views
             using (new clsBusyScope(this))
             {
                 if (_read != null) { _presenter.BeginChange(_read); }
-                else { _presenter.Begin(_patientId); }
+                else { _presenter.Begin(_patientId, _patient); }
             }
         }
 

@@ -347,7 +347,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 DetailResult = OperationResult<PatientDetailDto>.Success(Detail(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 })),
                 UpdateResult = Read(DbCode.Ok, Saved(7, "2026-000007")),
             };
-            new PatientEditorPresenter(view, service, "접수1번창구", 7);
+            new PatientEditorPresenter(view, service, "접수1번창구", service.DetailResult.Value);
 
             view.RaiseViewLoaded();
             view.RaiseSaveRequested();
@@ -370,7 +370,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 DetailResult = OperationResult<PatientDetailDto>.Success(Detail(new byte[] { 9, 9, 9, 9, 9, 9, 9, 9 })),
                 UpdateResult = Read(DbCode.RowChanged),
             };
-            new PatientEditorPresenter(view, service, "접수1번창구", 7);
+            new PatientEditorPresenter(view, service, "접수1번창구", service.DetailResult.Value);
 
             view.RaiseViewLoaded();
 
@@ -379,7 +379,9 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             view.RaiseInputChanged();
             view.RaiseSaveRequested();
 
-            Assert.AreEqual(2, service.DetailCalls, "601 인데 최신 상세를 다시 읽지 않았다");
+            // 2026-09-14 — 진입은 부모가 준 상세로 열므로 조회는 **충돌 복구 한 번**뿐이다.
+            // 예전에는 진입에서도 읽어 둘이었다.
+            Assert.AreEqual(1, service.DetailCalls, "601 인데 최신 상세를 다시 읽지 않았다");
             Assert.AreEqual(1, view.LoadCalls, "사용자 입력을 자동으로 덮어썼다");
             Assert.AreEqual("고친 이름", view.Name, "601 이 사용자 입력을 되돌렸다");
             Assert.IsFalse(view.Closed);

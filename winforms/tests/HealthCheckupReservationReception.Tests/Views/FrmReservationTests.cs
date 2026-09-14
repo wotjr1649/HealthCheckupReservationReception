@@ -153,7 +153,7 @@ namespace HealthCheckupReservationReception.Tests.Views
         internal SilentReservationForm(
             IReservationService service, IPatientService patientService,
             IWorkService workService, string operatorName, long patientId, bool answer)
-            : base(service, patientService, workService, operatorName, patientId)
+            : base(service, patientService, workService, operatorName, patientId, null)
         {
             _answer = answer;
         }

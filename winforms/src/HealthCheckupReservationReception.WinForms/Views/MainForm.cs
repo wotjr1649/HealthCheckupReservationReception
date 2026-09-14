@@ -181,7 +181,8 @@ namespace HealthCheckupReservationReception.Views
         public void BeginNewReservation(long patientId)
         {
             using (var reservation = new FrmReservation(
-                _reservationService, _patientService, _workService, _operatorName, patientId))
+                _reservationService, _patientService, _workService, _operatorName, patientId,
+                _patientView == null ? null : _patientView.Detail))
             {
                 if (reservation.ShowDialog(this) != DialogResult.OK || reservation.Result == null)
                 {
@@ -434,16 +435,26 @@ namespace HealthCheckupReservationReception.Views
                 return;
             }
 
-            OpenPatientEditor(_patientView.SelectedPatientId);
+            // 03 §6.4 Edit 진입값은 **행을 고를 때 받아 둔 상세**다 (2026-09-14 사용자 지시) —
+            // 행버전까지 그 안에 있으므로 모달이 `SP-PAT-02` 를 다시 부르지 않는다.
+            PatientDetailDto detail = _patientView.Detail;
+            if (detail == null || detail.PatientId != _patientView.SelectedPatientId.Value)
+            {
+                // 고른 행과 그려진 상세가 어긋났다. 0 을 저장 SP 에 보내느니 말한다.
+                ShowMessage("수검자 상세를 아직 읽지 못했습니다. 행을 다시 선택하십시오.");
+                return;
+            }
+
+            OpenPatientEditor(detail);
         }
 
         /// <summary>
         /// DLG-PAT-01 을 연다 (03 §6). 03 §5 는 저장 뒤 수검자 관리 화면이 할 일을 정하지
         /// 않으므로 목록을 자동으로 다시 읽지 않는다 (07 §14.3 A-11).
         /// </summary>
-        private void OpenPatientEditor(long? patientId)
+        private void OpenPatientEditor(PatientDetailDto patient)
         {
-            using (var editor = new FrmPatientEditor(_patientService, _operatorName, patientId))
+            using (var editor = new FrmPatientEditor(_patientService, _operatorName, patient))
             {
                 editor.ShowDialog(this);
             }

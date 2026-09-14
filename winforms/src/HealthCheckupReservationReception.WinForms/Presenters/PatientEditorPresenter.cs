@@ -24,6 +24,9 @@ namespace HealthCheckupReservationReception.Presenters
         /// <summary>null 이면 New 다 (03 §6.3). 값이 있으면 Edit 다 (§6.4).</summary>
         private readonly long? _patientId;
 
+        // 부모(WF-PAT-01)가 행을 고를 때 받아 둔 상세. Edit 진입은 이것으로 연다 (2026-09-14).
+        private readonly PatientDetailDto _patient;
+
         // 03 §16 · 05 §16.3 — Modal 진입 때 받은 원본 동시성값을 숨은 값으로 들고 있는다.
         private byte[] _rowVersion;
 
@@ -38,12 +41,13 @@ namespace HealthCheckupReservationReception.Presenters
         private string _confirmedKey;
 
         public PatientEditorPresenter(
-            IPatientEditorView view, IPatientService service, string operatorName, long? patientId)
+            IPatientEditorView view, IPatientService service, string operatorName, PatientDetailDto patient)
         {
             _view = view;
             _service = service;
             _operatorName = operatorName;
-            _patientId = patientId;
+            _patient = patient;
+            _patientId = patient == null ? (long?)null : patient.PatientId;
 
             _view.ViewLoaded += OnViewLoaded;
             _view.InputChanged += OnInputChanged;
@@ -60,31 +64,16 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
-            // 07 §3.3 — Edit Mode 진입값은 SP-PAT-02 가 준다.
+            // 07 §3.3 — Edit Mode 진입값은 `SP-PAT-02` 가 준다. **2026-09-14 사용자 지시로
+            // 그것을 여기서 다시 읽지 않는다** — 수검자 관리가 행을 고를 때 이미 받아 두었고
+            // (`행버전`까지 그 안에 있다) 그대로 넘겨받는다.
+            //
+            // [!] 낡을 수 있다. 그 사이 다른 창구가 고쳤으면 저장이 `601` 로 막고,
+            //     RefreshRowVersion 이 그때 최신값을 다시 읽는다 — 복구에서만 조회한다.
             _view.ShowEditMode();
 
-            OperationResult<PatientDetailDto> result;
-            try
-            {
-                result = _service.GetDetail(_patientId.Value);
-            }
-            catch (Exception)
-            {
-                // 예외 본문을 화면에 싣지 않는다 (킷 §6).
-                _view.ShowMessage("수검자 상세를 조회하지 못했습니다.");
-                _view.CloseWith(null, null);
-                return;
-            }
-
-            if (!result.IsSuccess)
-            {
-                _view.ShowMessage(result.Message);
-                _view.CloseWith(null, null);
-                return;
-            }
-
-            _rowVersion = result.Value.RowVersion;
-            _view.LoadDetail(result.Value);
+            _rowVersion = _patient.RowVersion;
+            _view.LoadDetail(_patient);
             Refresh();
         }
 

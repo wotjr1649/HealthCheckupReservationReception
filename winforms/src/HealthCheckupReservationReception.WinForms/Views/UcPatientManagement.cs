@@ -33,6 +33,9 @@ namespace HealthCheckupReservationReception.Views
         // [R17] 조회 재진입 가드. 동기 SP 호출 동안 쌓인 클릭이 되돌아오는 것을 막는다.
         private bool _searching;
 
+        // 마지막으로 그린 상세. 모달을 여는 Action 이 그대로 받아 간다 (2026-09-14).
+        private PatientDetailDto _detail;
+
         partial void ConfigureUI();
 
         public UcPatientManagement()
@@ -102,10 +105,16 @@ namespace HealthCheckupReservationReception.Views
             set { _picker.Rebind(gcPatientList, value); }
         }
 
+        /// <summary>
+        /// 03 §5.5 우측 상세. **모달이 이것을 받아 열린다** (2026-09-14) — 그리기와 함께
+        /// 보관한다. 행버전까지 들어 있으므로 `[정보수정]` 이 저장에 쓸 수 있다.
+        /// </summary>
         public PatientDetailDto Detail
         {
+            get { return _detail; }
             set
             {
+                _detail = value;
                 txtDetailChartNo.Text = value == null ? string.Empty : value.ChartNo;
                 txtDetailName.Text = value == null ? string.Empty : value.Name;
                 txtDetailSocialNumber.Text = value == null ? string.Empty : clsPatientText.FormatSocialNumber(value.SocialNumber);

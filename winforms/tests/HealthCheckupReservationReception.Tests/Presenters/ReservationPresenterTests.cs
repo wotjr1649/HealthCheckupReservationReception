@@ -43,7 +43,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var service = new FakeReservationService { Availability = Availability() };
             var presenter = new ReservationPresenter(view, service, patients, Works(), "창구");
 
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             Assert.AreEqual("C000001", view.Patient.ChartNo);
             Assert.IsTrue(view.ScheduleEnabled);
@@ -67,11 +67,59 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var service = new FakeReservationService { Availability = Availability() };
             var presenter = new ReservationPresenter(view, service, patients, Works(), "창구");
 
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             Assert.IsTrue(view.ScheduleEnabled, "지난 노쇼 하나로 신규예약이 막혔다");
             Assert.IsNull(view.WorkbenchWorkId, "Workbench 로 보냈다");
             Assert.AreEqual(1, service.AvailabilityCalls);
+        }
+
+        /// <summary>
+        /// **부모가 준 수검자 상세로 열면 `SP-PAT-02` 를 부르지 않는다** (2026-09-14 사용자 지시).
+        /// 수검자 관리가 행을 고를 때 이미 받아 우측 상세에 그려 둔 그 사람이다.
+        ///
+        /// [!] 기존 유효예약 확인(`SP-PAT-05`)은 그대로 부른다 — 그것은 표시값이 아니라
+        ///     RP-06 판정이고, 판정은 화면이 대신하지 않는다.
+        /// </summary>
+        [TestMethod]
+        public void 수검자_상세를_받아_열면_다시_읽지_않는다()
+        {
+            var view = new FakeReservationView();
+            var patients = Patients();
+            var service = new FakeReservationService { Availability = Availability() };
+            var presenter = new ReservationPresenter(view, service, patients, Works(), "창구");
+
+            presenter.Begin(PatientId, new PatientDetailDto
+            {
+                PatientId = PatientId,
+                ChartNo = "C000001",
+                Name = "홍길동",
+                Birthday = "19820315",
+                Gender = "M",
+            });
+
+            Assert.AreEqual(0, patients.DetailCalls, "받아 온 상세가 있는데 다시 읽었다");
+            Assert.AreEqual(1, patients.ValidWorkCalls, "RP-06 판정은 건너뛰면 안 된다");
+            Assert.AreEqual("C000001", view.Patient.ChartNo);
+            Assert.IsTrue(view.ScheduleEnabled);
+        }
+
+        /// <summary>
+        /// 다른 사람의 상세가 넘어오면 그것을 쓰지 않고 다시 읽는다. 넘어온 값과 대상이
+        /// 어긋나면 **엉뚱한 사람의 예약**이 되므로, 화면에 세우기 전에 대상으로 확인한다.
+        /// </summary>
+        [TestMethod]
+        public void 다른_수검자의_상세가_오면_무시하고_다시_읽는다()
+        {
+            var view = new FakeReservationView();
+            var patients = Patients();
+            var service = new FakeReservationService { Availability = Availability() };
+            var presenter = new ReservationPresenter(view, service, patients, Works(), "창구");
+
+            presenter.Begin(PatientId, new PatientDetailDto { PatientId = PatientId + 1, ChartNo = "C000999" });
+
+            Assert.AreEqual(1, patients.DetailCalls, "어긋난 상세를 그대로 썼다");
+            Assert.AreEqual("C000001", view.Patient.ChartNo, "화면에 다른 사람이 섰다");
         }
 
         // ── 2026-09-11: DLG-RSV-01 예약 변경 (03 §10)
@@ -419,7 +467,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var service = new FakeReservationService { Availability = Availability() };
             var presenter = new ReservationPresenter(view, service, patients, Works(), "창구");
 
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             Assert.AreEqual(55L, view.WorkbenchWorkId);
             Assert.AreEqual(WorkContext.Reservation, view.WorkbenchContext);
@@ -437,7 +485,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var service = new FakeReservationService { Availability = read };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             Assert.AreEqual(77L, view.WorkbenchWorkId);
         }
@@ -565,7 +613,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakeReservationView();
             var service = new FakeReservationService { Availability = Availability() };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
             Assert.AreEqual(1, service.AvailabilityCalls);
 
             view.RaiseScheduleChanged();
@@ -580,7 +628,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakeReservationView();
             var service = new FakeReservationService { Availability = Availability() };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             view.SlotCode = "PM";
             view.RaiseScheduleChanged();
@@ -605,7 +653,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 }),
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             view.RaiseSaveRequested();
 
@@ -639,7 +687,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             Assert.AreEqual(2, service.AvailabilityCalls, "일반으로 한 번, 현장으로 한 번이다");
             Assert.AreEqual(DbReserveType.WalkIn, service.LastAvailability.ReserveType);
@@ -657,7 +705,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var service = new FakeReservationService { Availability = TodayAvailability() };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             Assert.AreEqual(1, service.AvailabilityCalls);
             Assert.AreEqual(DbReserveType.Normal, service.LastAvailability.ReserveType);
@@ -683,7 +731,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 }),
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             view.RaiseSaveRequested();
 
@@ -785,7 +833,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             Assert.AreEqual("현장 당일예약", view.ReserveTypeText);
         }
@@ -812,7 +860,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             Assert.AreEqual(1, service.AvailabilityCalls, "PM 은 아직 마감 전이라 되묻지 않는다");
             Assert.AreEqual(DbReserveType.Normal, service.LastAvailability.ReserveType);
@@ -838,7 +886,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             Assert.AreEqual(1, service.AvailabilityCalls);
             Assert.AreEqual(DbReserveType.Normal, service.LastAvailability.ReserveType);
@@ -866,7 +914,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             Assert.AreEqual(2, service.AvailabilityCalls);
             Assert.AreEqual(DbReserveType.WalkIn, service.LastAvailability.ReserveType);
@@ -910,7 +958,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var presenter = new ReservationPresenter(
                 view, new FakeReservationService { Availability = Availability() }, patients, Works(), "창구");
 
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             Assert.IsTrue(view.Dismissed, "아니오인데 창을 안 닫았다");
             Assert.IsNull(view.WorkbenchWorkId, "아니오인데 데려갔다");
@@ -932,7 +980,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 }),
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             view.RaiseSaveRequested();
 
@@ -958,7 +1006,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var presenter = new ReservationPresenter(
                 view, new FakeReservationService { Availability = Availability() }, Patients(), Works(), "창구");
 
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             Assert.IsTrue(presenter.HasUnsavedInput);
         }
@@ -982,7 +1030,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 }),
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
             int before = service.AvailabilityCalls;
 
             view.RaiseSaveRequested();
@@ -1003,7 +1051,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 Save = OperationResult<WorkSaveReadDto>.Success(new WorkSaveReadDto { Result = Ok() }),
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             view.RaiseSaveRequested();
 
@@ -1021,7 +1069,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
 
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
 
             Assert.AreEqual("예약 가능정보를 조회하지 못했습니다.", view.BlockMessage);
             StringAssert.DoesNotMatch(view.BlockMessage, new System.Text.RegularExpressions.Regex("DESKTOP"));
@@ -1033,7 +1081,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         {
             var presenter = new ReservationPresenter(
                 view, new FakeReservationService { Availability = read }, Patients(), Works(), "창구");
-            presenter.Begin(PatientId);
+            presenter.Begin(PatientId, null);
             return presenter;
         }
 

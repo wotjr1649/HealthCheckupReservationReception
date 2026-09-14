@@ -80,10 +80,17 @@ namespace HealthCheckupReservationReception.Presenters
         /// 고른 값을 들고 온다 (2026-09-10 grilling 2회차). 화면 안에서 수검자를 바꾸지 않으므로
         /// 03 §8.10 의 「다른 PatientId 로 재호출」 트리거는 `모달을 닫고 다시 여는 것` 이 된다.
         /// </summary>
-        public void Begin(long patientId)
+        /// <summary>
+        /// <paramref name="patient"/> 는 부모(`WF-PAT-01`)가 행을 고를 때 받아 둔 상세다
+        /// (2026-09-14 사용자 지시). 있으면 `SP-PAT-02` 를 다시 부르지 않는다.
+        ///
+        /// [!] **기존 유효예약 확인(`SP-PAT-05`)은 그대로 부른다.** 그것은 표시값이 아니라
+        ///     RP-06 판정이고, 판정은 화면이 대신하지 않는다.
+        /// </summary>
+        public void Begin(long patientId, PatientDetailDto patient)
         {
             Reset();
-            ConfirmPatient(patientId);
+            ConfirmPatient(patientId, patient != null && patient.PatientId == patientId ? patient : null);
         }
 
         /// <summary>
@@ -237,7 +244,7 @@ namespace HealthCheckupReservationReception.Presenters
         /// 03 §8.5 — PatientId 확정 후 **중복판단 유효예약 확인**이 먼저다.
         /// 기존 유효예약이 있으면 신규예약을 중단하고 그 WorkId 로 Workbench 로 간다.
         /// </summary>
-        private void ConfirmPatient(long patientId)
+        private void ConfirmPatient(long patientId, PatientDetailDto known)
         {
             OperationResult<PatientValidWorkDto> valid;
             try
@@ -269,25 +276,33 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
-            OperationResult<PatientDetailDto> detail;
-            try
+            // 부모가 이미 받아 둔 그 사람이면 다시 읽지 않는다 (2026-09-14). 받지 못한
+            // 경로로 들어오면 그때만 조회한다 — 빈 화면을 띄우느니 한 번 더 묻는다.
+            PatientDetailDto patient = known;
+            if (patient == null)
             {
-                detail = _patientService.GetDetail(patientId);
-            }
-            catch (Exception)
-            {
-                _view.BlockMessage = "수검자 상세를 조회하지 못했습니다.";
-                return;
-            }
+                OperationResult<PatientDetailDto> detail;
+                try
+                {
+                    detail = _patientService.GetDetail(patientId);
+                }
+                catch (Exception)
+                {
+                    _view.BlockMessage = "수검자 상세를 조회하지 못했습니다.";
+                    return;
+                }
 
-            if (detail == null || !detail.IsSuccess)
-            {
-                _view.BlockMessage = detail == null ? "수검자 상세를 조회하지 못했습니다." : detail.Message;
-                return;
+                if (detail == null || !detail.IsSuccess)
+                {
+                    _view.BlockMessage = detail == null ? "수검자 상세를 조회하지 못했습니다." : detail.Message;
+                    return;
+                }
+
+                patient = detail.Value;
             }
 
             _patientId = patientId;
-            _view.Patient = detail.Value;
+            _view.Patient = patient;
             _view.ScheduleEnabled = true;
 
             // 03 §8.5 — 여기서 일정영역이 열린다. 예약일 칸에 값이 이미 서 있으므로 그 일정으로

@@ -18,7 +18,12 @@ namespace HealthCheckupReservationReception.Presenters
         private const string Open = "가능";
         private const string Blocked = "불가";
 
-        private DateTime _today;
+        // DB 오늘날짜. 조회 때마다 다시 묻지 않으려고 들고 있는다 (2026-09-14).
+        private DateTime? _today;
+
+        // 그 값을 **PC 시계 기준 어느 날** 물었는가. 날짜가 바뀌면 다시 묻는다 —
+        // 값 자체는 DB 것이고 PC 시계는 무효화 시점만 정한다.
+        private DateTime _todayAskedOn;
 
         private readonly IPatientManagementView _view;
         private readonly IPatientService _service;
@@ -165,7 +170,7 @@ namespace HealthCheckupReservationReception.Presenters
                 return rows;
             }
 
-            DateTime today = _today;
+            DateTime today = _today.Value;
             var latestValid = new Dictionary<long, WorkListItemDto>();
 
             foreach (WorkListItemDto work in works)
@@ -213,22 +218,13 @@ namespace HealthCheckupReservationReception.Presenters
         /// </summary>
         private IList<WorkListItemDto> LoadWorks()
         {
-            OperationResult<CommonWorkStatusDto> status;
-            try
-            {
-                status = _statusService.GetCurrent();
-            }
-            catch (Exception)
+            DateTime? today = Today();
+            if (today == null)
             {
                 return null;
             }
 
-            if (status == null || !status.IsSuccess || status.Value == null)
-            {
-                return null;
-            }
-
-            _today = status.Value.Today.Date;
+            _today = today.Value;
 
             IList<WorkListItemDto> reserved = Works(DbWorkStatus.Reserved, _today);
             if (reserved == null)
@@ -245,6 +241,43 @@ namespace HealthCheckupReservationReception.Presenters
             var all = new List<WorkListItemDto>(reserved);
             all.AddRange(received);
             return all;
+        }
+
+        /// <summary>
+        /// DB 오늘날짜. **조회 버튼을 누를 때마다 다시 묻지 않는다** (2026-09-14 사용자 지시) —
+        /// 예전에는 목록을 새로 고칠 때마다 `SP-COM-01` 이 한 번씩 더 나갔다.
+        ///
+        /// [!] **하루가 바뀌면 다시 묻는다.** 업무 화면은 `_screens` 에 캐시되어 한 번만
+        ///     만들어지므로(`MainForm.ShowBusinessScreen`) 프로그램을 끄지 않으면 며칠이든
+        ///     산다 — 무효화가 없으면 다음날 아침에 **어제 날짜로 예약 칸을 만든다**.
+        ///
+        /// [X] **PC 시계로 날짜를 정하지 않는다.** 값은 여전히 DB 것이고, PC 시계는
+        ///     「다시 물을 때인가」만 정한다. 그것이 틀려도 SP 를 한 번 더 부를 뿐이다.
+        /// </summary>
+        private DateTime? Today()
+        {
+            if (_today != null && _todayAskedOn == DateTime.Today)
+            {
+                return _today;
+            }
+
+            OperationResult<CommonWorkStatusDto> status;
+            try
+            {
+                status = _statusService.GetCurrent();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+
+            if (status == null || !status.IsSuccess || status.Value == null)
+            {
+                return null;
+            }
+
+            _todayAskedOn = DateTime.Today;
+            return status.Value.Today.Date;
         }
 
         private IList<WorkListItemDto> Works(string statusCode, DateTime? from)
