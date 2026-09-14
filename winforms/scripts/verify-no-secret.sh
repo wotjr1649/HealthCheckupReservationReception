@@ -45,16 +45,22 @@ fi
 # (verify-winforms-unchanged.sh 가 같은 이유로 같은 목록을 쓴다.)
 mapfile -t FILES < <(git -C .. ls-files --cached --others --exclude-standard -- winforms | sed 's|^winforms/||')
 
+# [!] **두 번만 훑는다.** 예전에는 파일마다 grep 둘을 띄웠고, git 이 나르는 161개면
+#     프로세스가 322개였다 — Windows 에서 19초다(실측 2026-09-14).
+#     셈은 그대로다: 파일마다 `PAT 줄수 + PAT2 줄수` 이고, 두 패턴에 다 걸린 줄은 둘로 센다.
+#     그래서 패턴을 `|` 로 합치지 않는다 — 합치면 그런 줄이 하나로 세어져 수가 달라진다.
+#     `-H` 는 xargs 가 목록을 쪼개 한 파일만 넘긴 배치에서도 이름을 붙이게 한다.
 HITS=0
-for f in "${FILES[@]}"; do
-  [ -f "$f" ] || continue
-  n=$(grep -IicE "$PAT" "$f" 2>/dev/null || true)
-  n=$((n + $(grep -IicE "$PAT2" "$f" 2>/dev/null || true)))
-  if [ "${n:-0}" -ne 0 ]; then
+SUMS=$( { printf '%s\n' "${FILES[@]}" | xargs grep -IicHE "$PAT"  -- 2>/dev/null
+          printf '%s\n' "${FILES[@]}" | xargs grep -IicHE "$PAT2" -- 2>/dev/null
+        } | awk '{ n = $0; sub(/:[0-9]+$/, "", n); c = $0; sub(/^.*:/, "", c); s[n] += c }
+                 END { for (f in s) if (s[f] > 0) print f "\t" s[f] }' | sort )
+if [ -n "$SUMS" ]; then
+  while IFS=$'\t' read -r f n; do
     echo "HIT  winforms/$f  ($n 줄)"
     HITS=$((HITS + n))
-  fi
-done
+  done <<< "$SUMS"
+fi
 
 echo "검사 ${#FILES[@]} 개 · HIT $HITS"
 if [ "$HITS" -eq 0 ]; then

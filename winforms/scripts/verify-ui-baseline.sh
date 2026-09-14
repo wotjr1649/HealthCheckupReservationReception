@@ -144,19 +144,29 @@ CSFILES=$(find "$SRC" "${TESTS:-tests}" -name '*.cs' -not -path '*/obj/*' -not -
 if [ -z "$CSFILES" ]; then
   say FAIL "UIB-005 .cs 파일을 하나도 못 찾았다"
 else
-  N=0; BAD=
-  while IFS= read -r f; do
-    N=$((N + 1))
-    [ "$(head -c3 "$f" | od -An -tx1 | tr -d ' \n')" = "efbbbf" ] || BAD="$BAD\n    $f — BOM 없음"
-    # CR 로 끝나지 **않는** 줄이 하나라도 있으면 LF 가 섞인 것이다.
-    # "CR 이 있는 줄이 하나라도 있는가" 로 재면 한 줄만 CRLF 인 파일이 통과한다.
-    [ "$(grep -cUvP '\r$' "$f" || true)" -eq 0 ] || BAD="$BAD\n    $f — LF"
-  done <<< "$CSFILES"
+  # [!] **두 번만 훑는다.** 예전에는 파일마다 head·od·tr·grep 넷을 띄웠고, .cs 110개면
+  #     프로세스가 440개였다 — Windows 에서 21초다(실측 2026-09-14). 판정은 그대로다.
+  #
+  #   BOM   첫 줄의 앞 3바이트가 EF BB BF 인가. awk 한 번 (LC_ALL=C 라 바이트로 본다)
+  #   CRLF  CR 로 끝나지 **않는** 줄이 하나라도 있으면 LF 가 섞인 것이다. grep 한 번.
+  #         "CR 이 있는 줄이 하나라도 있는가" 로 재면 한 줄만 CRLF 인 파일이 통과한다.
+  #
+  #   [X] 줄바꿈을 awk 로 보려다 틀렸다 — MSYS awk 는 텍스트 모드로 열어 CR 을 걷어내고,
+  #       그래서 **.cs 전건이 LF 로 보였다**(실측).
+  #   [X] `grep -l -v` 로도 안 된다 — 같은 파일에 `-c -v` 는 0 을 내면서 `-l -v` 는 그 파일을
+  #       **낸다**(실측). 개수로 본다. `-H` 는 xargs 가 목록을 쪼개 한 파일만 넘긴 배치에서도
+  #       이름을 붙이게 한다 — 없으면 그 배치의 출력이 숫자만 남아 파일명이 사라진다.
+  N=$(printf '%s\n' "$CSFILES" | wc -l)
+  BOMBAD=$(printf '%s\n' "$CSFILES" | LC_ALL=C xargs awk \
+    'FNR == 1 && substr($0, 1, 3) != "\357\273\277" { print "    " FILENAME " — BOM 없음" }')
+  LFBAD=$(printf '%s\n' "$CSFILES" | xargs grep -cHUvP '\r$' -- 2>/dev/null \
+    | grep -v ':0$' | sed 's|:[0-9]*$||; s|^|    |; s|$| — LF|')
+  BAD=$(printf '%s\n%s\n' "$BOMBAD" "$LFBAD" | sed '/^$/d' | sort)
   if [ -z "$BAD" ]; then
     say PASS "UIB-005 .cs $N 건 전부 UTF-8 BOM + CRLF 다"
   else
     say FAIL "UIB-005 인코딩·줄바꿈 위반"
-    printf '%b\n' "$BAD"
+    printf '%s\n' "$BAD"
   fi
 fi
 

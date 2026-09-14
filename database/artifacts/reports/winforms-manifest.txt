@@ -35,11 +35,11 @@ ea07b3bc39f03f7e6bf662aeb7b9a4612f9fae111491531984f5281ffc77840a *../winforms/sc
 f8846954aab7c520622acdb25d40441f4febeea805553d5211f3271ad9b242fd *../winforms/scripts/verify-contract-names.sh
 2a41f96e6a49ca74b53af27a624dac47b21467e0189457ac43bd62ddc6ed299c *../winforms/scripts/verify-db-frozen.sh
 238bea461312c28627480f3d42978f74a3aadca841176207cdde9864c04c8989 *../winforms/scripts/verify-dbcode.sh
-b735273e9c0c998520836b792bdbecbc837237f471273e420a31edb90d91e83a *../winforms/scripts/verify-layering.sh
-a3f39ed64290a89495ad68c907c21d2e215cafd7bb762bb889dd1515a1d78fa1 *../winforms/scripts/verify-no-secret.sh
+d3d7f4be7bff6df5ab863b1d2f06b01bca6e3607d383bc97462af00b83602485 *../winforms/scripts/verify-layering.sh
+8dd7617c704b841aca394282c2582f96d98ef2fb74edb8390f5f3aec44c64a0b *../winforms/scripts/verify-no-secret.sh
 693e227611682cadb3023a93571203f0186464fda4bea3f1ce016d8867c346bb *../winforms/scripts/verify-rs-columns.sh
 379db84d548e44e5ca9c4904faaba9c11acbc0b87b0725db76f2fc3f5f85c615 *../winforms/scripts/verify-social-century.sh
-0815fbde95c9b7b3b25a639185f417f165fd4d4d02d84ba8048fd28d368d48d8 *../winforms/scripts/verify-ui-baseline.sh
+e10a3669ae64ce67cbdddc3d37542934b22f02738be697d8a465db95e41985c3 *../winforms/scripts/verify-ui-baseline.sh
 d87d9c8da61680223271130e309a8ca42cab2a34073392bda38f6155b9e56788 *../winforms/scripts/verify-ui-db-matrix.sh
 157c778171ab8d1d77ed0e2c12d04ed85351bea839c997a29dad14aa35944700 *../winforms/scripts/verify-work-actions.sh
 fd5d981c29657e55536646581ec3c3cb1e8d7f094ece085f88e60b7636ac4529 *../winforms/scripts/verify-work-status.sh
