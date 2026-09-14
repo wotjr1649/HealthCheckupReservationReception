@@ -30,8 +30,11 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class ScreenInitializationTests
     {
-        // 실제 결함에서 나온 검사다 — 초기화가 아무도 부르지 않는 메서드 안에만 있으면
-        // 화면은 열리는데 빈 Grid 만 남고, 그것이 「조회 결과가 없다」로 읽힌다.
+        // 대상: UcPatientManagement (WF-PAT-01) — 화면이 열릴 때의 초기 조회
+        // 목적: 실제 결함에서 나왔다 (2026-09-11). 초기화가 아무도 부르지 않는 메서드 안에만
+        //       있으면 화면은 열리는데 빈 Grid 만 남고, 조작자는 그것을 「조회 결과가 없다」로
+        //       읽는다 — 아직 아무것도 묻지 않았는데도.
+        // 확인: 화면을 띄우면 Service 에 조회 요청이 들어와 있다 (LastRequest 가 null 이 아니다).
         [TestMethod]
         public void 수검자_관리는_열리면_스스로_조회한다()
         {
@@ -48,8 +51,10 @@ namespace HealthCheckupReservationReception.Tests.Views
                 "화면이 섰는데 SP-PAT-01 을 한 번도 부르지 않았다 — 목록이 영원히 빈다");
         }
 
-        // 세 목록 화면이 같은 규칙이다. 한 화면만 안 하면 그 화면만 다르게 동작하고,
-        // 조작자는 어느 쪽이 정상인지 알 수 없다.
+        // 대상: UcWorkbench (WF-WRK-01) — 화면이 열릴 때의 초기 조회
+        // 목적: 세 목록 화면이 같은 규칙을 따라야 한다. 한 화면만 안 하면 그 화면만 다르게
+        //       동작하고, 조작자는 어느 쪽이 정상인지 알 수 없다.
+        // 확인: 화면을 띄우면 Service 에 목록 조회 요청이 들어와 있다.
         [TestMethod]
         public void 예약접수_관리는_열리면_스스로_조회한다()
         {
@@ -66,7 +71,10 @@ namespace HealthCheckupReservationReception.Tests.Views
                 "화면이 섰는데 SP-WRK-01 을 한 번도 부르지 않았다");
         }
 
-        // 세 화면 중 이것만 `OnLoad` 가 없었다. 규칙을 문장으로 두면 다음 화면도 같은 자리에서 빠진다.
+        // 대상: FrmHoliday (DLG-HOL-01) — 화면이 열릴 때의 초기 조회
+        // 목적: 세 화면 중 이것만 OnLoad 가 없었고 초기화가 아무도 부르지 않는 Begin 안에만
+        //       있었다. 규칙을 문장으로만 두면 다음 화면도 같은 자리에서 빠진다.
+        // 확인: 화면을 띄우면 조회가 정확히 1회 불린다 (0회도 2회도 아니다).
         [TestMethod]
         public void 휴무일_관리는_열리면_스스로_조회한다()
         {
@@ -84,10 +92,10 @@ namespace HealthCheckupReservationReception.Tests.Views
                 "모달이 떴는데 SP-HOL-01 을 부르지 않았다 — 2026-09-11 에 실제로 이랬다");
         }
 
-        /// <summary>
-        /// 03 §24.4 — 조회기간 기본값은 **DB 오늘**부터 두 해다. PC 시계를 쓰면 창구 PC 가
-        /// 하루 어긋났을 때 목록도 등재 경고도 같이 어긋난다.
-        /// </summary>
+        // 대상: FrmHoliday (DLG-HOL-01) — 초기 조회기간 기본값
+        // 목적: 03 §24.4 가 기본 조회기간을 DB 오늘부터 두 해로 정했다. PC 시계를 쓰면 창구 PC 가
+        //       하루 어긋났을 때 목록도 공휴일 등재 경고도 같이 어긋난다 — 기준 날짜는 DB 것이다.
+        // 확인: 초기 조회의 시작일이 DB 오늘이고 종료일이 그로부터 2년 뒤다.
         [TestMethod]
         public void 휴무일_관리의_조회기간은_DB_오늘부터_두_해다()
         {

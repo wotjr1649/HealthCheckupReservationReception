@@ -20,8 +20,12 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class FrmPatientEditorTests
     {
-        // 05 §16.2 — `오류항목` 은 어느 칸이 틀렸는지를 DB 가 알려 주는 값이다.
-        // 그것을 입력칸에 매지 않으면 조작자는 무엇을 고쳐야 하는지 모른 채 메시지만 본다.
+        // 대상: FrmPatientEditor (DLG-PAT-01) — RS0 의 오류항목 을 입력칸에 매는 배선
+        // 목적: 05 §16.2 에서 오류항목 은 어느 칸이 틀렸는지를 DB 가 알려 주는 값이다. 그것을
+        //       입력칸에 매지 않으면 조작자는 메시지만 보고 무엇을 고쳐야 하는지 모른다.
+        //       Presenter 시험은 메시지 문자열까지만 보므로 이 배선은 화면에서만 드러난다.
+        // 확인: 오류항목이 이름이면 txtName 에, 주민번호면 txtSocialNumber 에, 차트번호면
+        //       txtChartNo 에 해당 문구가 붙는다. 오류가 풀리면 그 칸의 문구가 빈 문자열로 지워진다.
         [TestMethod]
         public void 오류항목이_가리키는_입력칸에_Inline_오류가_붙는다()
         {
@@ -49,7 +53,12 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // 03 §6.3 · §6.4 — New 의 기본값은 자동발급이고, Edit 에는 그 선택 자체가 없다.
+        // 대상: FrmPatientEditor (DLG-PAT-01) — New 와 Edit 두 모드의 차트번호 입력 상태
+        // 목적: 03 §6.3·§6.4 가 두 모드를 다르게 정했다. New 의 기본값은 자동발급이고 Edit 에는
+        //       그 선택 자체가 없다 — 이미 발급된 차트번호를 자동발급으로 다시 만들 수는 없기
+        //       때문이다. 모드를 섞으면 수정 창에서 차트번호가 새로 발급되거나 잠겨 못 고친다.
+        // 확인: New 로 열면 자동발급이 켜져 있고, Edit 로 열면 자동발급이 꺼져 있으며
+        //       txtChartNo 가 ReadOnly 가 아니다 (고칠 수 있다).
         [TestMethod]
         public void Edit_는_자동발급_전환이_없고_차트번호를_연다()
         {

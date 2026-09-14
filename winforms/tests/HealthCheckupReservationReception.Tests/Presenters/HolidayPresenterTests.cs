@@ -17,7 +17,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 조회 (05 §12.5)
 
-        // 05 §12.5 — 두 날짜는 필수다. 비어 있음 판정은 Presenter 가 한다 (킷 §6).
+        // 대상: HolidayPresenter (DLG-HOL-01) — 조회기간 필수값 검증
+        // 목적: 05 §12.5 에서 시작일·종료일 두 날짜는 필수다. 비어 있음 판정은 화면 입력만으로
+        //       답이 나오므로 Presenter 가 한다 (킷 §6) — 보내 두고 100 을 받아 오면 왕복이 헛돈다.
+        // 확인: 기간이 비면 SP 를 부르지 않고, 화면 안내에 「조회기간」이 들어 있다.
         [TestMethod]
         public void 조회기간이_비면_SP_를_부르지_않는다()
         {
@@ -34,8 +37,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.BlockMessage, "조회기간");
         }
 
-        // 화면 입력만으로 답이 나오는 검사다 (킷 §6). 뒤집힌 기간을 그대로 보내면
-        // DB 는 0건을 성공으로 돌려주고 조작자는 「휴무일이 없다」로 읽는다.
+        // 대상: HolidayPresenter (DLG-HOL-01) — 뒤집힌 조회기간 검증
+        // 목적: 뒤집힌 기간을 그대로 보내면 DB 는 0건을 성공으로 돌려주고 조작자는 그것을
+        //       「휴무일이 없다」로 읽는다 — 조건이 잘못된 것을 아무도 말해 주지 않는다.
+        // 확인: 시작일이 종료일보다 늦으면 SP 를 부르지 않는다.
         [TestMethod]
         public void 시작일이_종료일보다_늦으면_SP_를_부르지_않는다()
         {
@@ -50,7 +55,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(service.LastSearch);
         }
 
-        // 05 §12.5 — RS2 는 항상 1행이다. 없으면 계약 위반이므로 성공으로 보지 않는다.
+        // 대상: HolidayPresenter (DLG-HOL-01) — 조회 성공 시 RS1 목록과 RS2 등재현황
+        // 목적: 05 §12.5 에서 RS2 는 항상 1행이다. 없으면 계약 위반이므로 성공으로 보지 않는다.
+        //       구분을 고르지 않은 것은 「전부」라는 뜻이고, 화면이 임의로 한 구분을 채우면
+        //       조작자가 보지 못하는 행이 생긴다.
+        // 확인: 목록 2행이 실리고, SP 에 넘긴 휴무구분이 null 이다 (세 구분 전부).
         [TestMethod]
         public void 목록과_등재현황이_함께_온다()
         {
@@ -64,10 +73,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(service.LastSearch.HolidayType, "구분 미선택은 세 구분 전부다");
         }
 
-        /// <summary>
-        /// 03 §24.6 — **임계 숫자를 화면이 갖지 않는다.** DB 가 `잔여일수` 와 `경고임계일수` 를
-        /// 함께 주고 화면은 둘을 비교만 한다. 여기에 `180` 을 적으면 같은 값이 세 곳에 생긴다.
-        /// </summary>
+        // 대상: HolidayPresenter (DLG-HOL-01) — 공휴일 등재 잔여일수 경고
+        // 목적: 03 §24.6 — 임계 숫자를 화면이 갖지 않는다. DB 가 잔여일수와 경고임계일수를 함께
+        //       주고 화면은 둘을 비교만 한다. 여기에 180 을 적으면 같은 값이 00 · DB · 화면
+        //       세 곳에 생긴다.
+        // 확인: 잔여가 임계 이상이면 경고 문구가 빈 문자열이고, 임계보다 적으면 그 잔여일수(120)가
+        //       경고 문구에 들어 있다.
         [TestMethod]
         public void 잔여일수가_임계보다_적을_때만_경고한다()
         {
@@ -95,8 +106,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.RegistryWarning, "120");
         }
 
-        // 05 §12.5 RS2 공휴일등재현황 — 0건은 조회 실패가 아니라 「등재가 없다」는 답이다.
-        // 빈 칸으로 두면 조회가 안 된 것인지 등재가 없는 것인지 구분되지 않는다.
+        // 대상: HolidayPresenter (DLG-HOL-01) — 등재된 공휴일이 0건인 경우
+        // 목적: 05 §12.5 RS2 에서 0건은 조회 실패가 아니라 「등재가 없다」는 답이다. 빈 칸으로
+        //       두면 조회가 안 된 것인지 등재가 없는 것인지 구분되지 않고, 공휴일을 등재해야
+        //       한다는 신호가 사라진다.
+        // 확인: 경고 문구에 「등재되어 있지 않」이 들어 있다.
         [TestMethod]
         public void 공휴일이_하나도_없으면_그렇다고_적는다()
         {
@@ -113,10 +127,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 선택 (03 §24.4)
 
-        /// <summary>
-        /// 03 §24.4 — **법정·대체 행은 선택해도 입력행에 싣지 않는다.** 보여 주는 이유는 그 날짜가
-        /// 왜 업무 불가인지 확인하는 것과, 같은 날짜에 자체휴무일을 넣으려는 시도를 막는 것이다.
-        /// </summary>
+        // 대상: HolidayPresenter (DLG-HOL-01) — 법정·대체 공휴일 행을 고른 경우
+        // 목적: 03 §24.4 — 법정·대체 행은 선택해도 입력행에 싣지 않는다. 보여 주는 이유는 그
+        //       날짜가 왜 업무 불가인지 확인하는 것과, 같은 날짜에 자체휴무일을 넣으려는 시도를
+        //       막는 것이다. 입력행에 실으면 조작자가 고칠 수 있다고 오해한다 (05 §12.6 802).
+        // 확인: 행 Action 이 닫히고 입력행의 휴무일명이 빈 문자열로 남는다.
         [TestMethod]
         public void 법정공휴일_행을_고르면_수정_삭제가_닫힌다()
         {
@@ -129,8 +144,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(string.Empty, view.InputName, "법정공휴일이 입력행에 실렸다");
         }
 
-        // 03 §24.4 — 고른 행을 입력행에 실어야 수정이 「지우고 다시 적기」가 되지 않는다.
-        // 법정·대체 행은 싣지 않는 것과 한 쌍이다 (05 §12.6 `802`).
+        // 대상: HolidayPresenter (DLG-HOL-01) — 자체휴무일 행을 고른 경우
+        // 목적: 03 §24.4 — 고른 행을 입력행에 실어야 수정이 「지우고 다시 적기」가 되지 않는다.
+        //       법정·대체 행을 싣지 않는 것과 한 쌍이며, 둘을 함께 재야 규칙이 완성된다.
+        // 확인: 행 Action 이 열리고 입력행에 휴무일명 「센터 휴진일」과 날짜 2026-12-26 이 실린다.
         [TestMethod]
         public void 자체휴무일_행을_고르면_입력행에_실린다()
         {
@@ -146,8 +163,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 저장 (05 §12.6~§12.8)
 
-        // 05 §12.6 — `휴무일명` 은 `NOT NULL` 이다. 공백만 있는 값은 화면이 막는다 (킷 §6).
-        // 보내 두고 `100` 을 받아 오면 왕복 한 번이 헛돈다.
+        // 대상: HolidayPresenter (DLG-HOL-01) — 자체휴무일 등록 시 필수값 검증
+        // 목적: 05 §12.6 에서 휴무일명은 NOT NULL 이다. 공백만 있는 값을 보내 두고 100 을 받아
+        //       오면 왕복 한 번이 헛돈다 — 비어 있음 판정은 화면 몫이다 (킷 §6).
+        // 확인: 공백만 넣으면 SP 를 부르지 않고 안내에 「휴무일명」이 들어 있다.
         [TestMethod]
         public void 휴무일명이_비면_SP_를_부르지_않는다()
         {
@@ -163,10 +182,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.BlockMessage, "휴무일명");
         }
 
-        /// <summary>
-        /// 05 §12.7 — `휴무일자` 는 PK 이고 바꾸지 않는다. 입력칸의 날짜가 무엇이든 **잡아 둔 행의
-        /// 날짜**로 보낸다 — 날짜를 옮기려면 삭제 후 등록이다 (03 §24.5).
-        /// </summary>
+        // 대상: HolidayPresenter (DLG-HOL-01) — 자체휴무일 수정 시 전달값
+        // 목적: 05 §12.7 에서 휴무일자는 PK 이고 바꾸지 않는다. 입력칸의 날짜가 무엇이든 잡아 둔
+        //       행의 날짜로 보내야 하며, 날짜를 옮기려면 삭제 후 등록이다 (03 §24.5). 입력칸 값을
+        //       그대로 보내면 다른 날짜의 행을 고치려 들어 802 나 엉뚱한 갱신이 된다.
+        // 확인: 입력칸을 바꿔도 SP 에 가는 휴무일자가 잡아 둔 행의 2026-12-26 이고, 행버전도
+        //       그 행의 값이 그대로 실린다.
         [TestMethod]
         public void 수정은_잡아_둔_행의_날짜와_행버전으로_보낸다()
         {
@@ -183,8 +204,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             CollectionAssert.AreEqual(new byte[] { 9 }, service.LastSave.RowVersion);
         }
 
-        // 05 §12.6 `802` — 법정·대체 공휴일은 고쳐도 지워도 안 된다.
-        // 화면이 버튼을 열어 두면 조작자가 눌러 놓고 왜 안 되는지 묻게 된다.
+        // 대상: HolidayPresenter (DLG-HOL-01) — 법정공휴일이 선택된 상태의 수정·삭제
+        // 목적: 05 §12.6 802 에서 법정·대체 공휴일은 고쳐도 지워도 안 된다. 화면이 버튼을 열어
+        //       두면 조작자가 눌러 놓고 왜 안 되는지 묻게 되고, 삭제는 확인창까지 뜬 뒤 막힌다.
+        // 확인: 수정·삭제 둘 다 SP 를 부르지 않고, 삭제 확인창도 뜨지 않는다.
         [TestMethod]
         public void 자체휴무일_행이_없으면_수정도_삭제도_아무_일도_하지_않는다()
         {
@@ -200,7 +223,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsFalse(view.Confirmed, "법정공휴일인데 삭제를 물었다");
         }
 
-        // 03 §24.5 — 물리 삭제라 되돌릴 수 없다. 한 번 묻고, 아니라면 부르지 않는다.
+        // 대상: HolidayPresenter (DLG-HOL-01) — 자체휴무일 삭제의 확인 절차
+        // 목적: 03 §24.5 에서 자체휴무일 삭제는 물리 삭제라 되돌릴 수 없다. 묻기만 하고 답을
+        //       무시하면 「아니오」를 눌러도 지워지는데, 그 결함은 지워진 뒤에야 드러난다.
+        // 확인: 확인창이 뜨고, 거절하면 삭제 SP 가 불리지 않는다.
         [TestMethod]
         public void 삭제는_한_번_묻고_거절하면_부르지_않는다()
         {
@@ -216,13 +242,13 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(service.LastDeleteDate);
         }
 
-        /// <summary>
-        /// [X] 사유를 먼저 적고 재조회하면 재조회가 그 칸을 지운다 — WF-RSV-01 에서 실측한
-        ///     자리다. **재조회를 먼저 하고 사유를 마지막에 적는다.**
-        ///
-        /// `801`(중복)·`802`(법정공휴일)·`601`(충돌)은 전부 목록이 낡았다는 뜻이므로 실패해도
-        /// 다시 읽는다 — 다른 창구가 그 사이 무엇을 했는지 사용자가 보아야 한다.
-        /// </summary>
+        // 대상: HolidayPresenter (DLG-HOL-01) — 저장이 801·802·601 로 막힌 경우
+        // 목적: 801(중복)·802(법정공휴일)·601(충돌)은 전부 「목록이 낡았다」는 뜻이므로 실패해도
+        //       다시 읽어야 한다 — 다른 창구가 그 사이 무엇을 했는지 조작자가 보아야 한다.
+        //       순서도 규칙이다: 사유를 먼저 적고 재조회하면 재조회가 그 칸을 지운다 —
+        //       WF-RSV-01 에서 실제로 밟은 자리라 재조회를 먼저 하고 사유를 마지막에 적는다.
+        // 확인: 실패인데도 조회가 한 번 더 불리고, 그 뒤에도 사유 「이미 등록된 휴무일입니다.」가
+        //       화면에 남아 있다.
         [TestMethod]
         public void 저장이_DB_에서_막히면_사유를_보이고_목록을_다시_읽는다()
         {
@@ -253,8 +279,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("이미 등록된 휴무일입니다.", view.BlockMessage);
         }
 
-        // 저장한 줄이 목록에 반영되지 않으면 조작자는 저장이 안 된 줄 알고 다시 누른다.
-        // 그 줄로 돌아가는 것까지 해야 방금 넣은 것이 무엇인지 눈으로 확인된다.
+        // 대상: HolidayPresenter (DLG-HOL-01) — 저장 성공 뒤의 목록 갱신과 선택 복원
+        // 목적: 저장한 줄이 목록에 반영되지 않으면 조작자는 저장이 안 된 줄 알고 다시 누른다.
+        //       그 줄로 돌아가는 것까지 해야 방금 넣은 것이 무엇인지 눈으로 확인된다.
+        // 확인: 목록을 다시 읽은 뒤 선택이 방금 저장한 2026-12-26 으로 서 있고 안내 칸이 비어 있다.
         [TestMethod]
         public void 저장에_성공하면_목록을_다시_읽고_그_줄로_돌아간다()
         {
@@ -270,7 +298,9 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(string.Empty, view.BlockMessage ?? string.Empty);
         }
 
-        // 예외 본문을 화면에 싣지 않는다 (킷 §6).
+        // 대상: HolidayPresenter (DLG-HOL-01) — Service 에서 예외가 올라온 경우
+        // 목적: 킷 §6 — provider 메시지는 DB·머신 정보를 드러내므로 원문을 화면에 싣지 않는다.
+        // 확인: 화면 안내에 예외 본문의 문구가 들어 있지 않다.
         [TestMethod]
         public void 예외가_나도_예외_본문을_화면에_싣지_않는다()
         {

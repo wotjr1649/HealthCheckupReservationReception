@@ -19,11 +19,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
     [TestClass]
     public class ReceptionPresenterTests
     {
-        /// <summary>
-        /// **진입에서 SP 를 부르지 않는다** (2026-09-14 사용자 지시). 부모(`WF-WRK-01`)가 행을
-        /// 고를 때 받은 `SP-WRK-02` 한 벌을 그대로 받아 연다 — 같은 업무ID 로 같은 여섯을
-        /// 다시 읽던 자리다.
-        /// </summary>
+        // 대상: ReceptionPresenter (DLG-RCP-01) — 진입 시 부모가 넘긴 상세 한 벌의 사용
+        // 목적: 2026-09-14 사용자 지시로 진입에서 SP 를 부르지 않는다. 부모(WF-WRK-01)가 행을
+        //       고를 때 이미 SP-WRK-02 로 여섯을 받았고, 같은 업무ID 로 같은 값을 다시 읽으면
+        //       창이 열리는 동안 화면이 한 번 더 멈춘다.
+        // 확인: 상세 조회가 0회이고, 받아 온 값으로 차트번호가 서며, 접수 버튼이 열리고
+        //       판정 문구가 「접수 가능」이다.
         [TestMethod]
         public void 열면_받아온_한_벌로_RS4_그대로_버튼을_연다()
         {
@@ -38,8 +39,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("접수 가능", view.EligibilityText);
         }
 
-        // 05 §8.2 RS4 — 접수 가능 여부와 사유를 DB 가 함께 준다. 03 §11.3 의 다섯 조건을
-        // 화면에 다시 적으면 판정이 두 곳이 되고 차단 우선순위도 둘이 된다.
+        // 대상: ReceptionPresenter (DLG-RCP-01) — RS4 가 접수 불가를 준 경우
+        // 목적: 05 §8.2 RS4 가 허용여부와 사유를 함께 준다. 03 §11.3 의 다섯 조건을 화면에 다시
+        //       적으면 판정이 두 곳이 되고 차단 우선순위(502 → 308/309 → 503 → 304)도 둘이 된다.
+        // 확인: 접수 버튼이 닫히고 문구가 「접수 불가 — 접수 마감시각이 지났습니다.」다 —
+        //       사유 문장이 DB 것 그대로다.
         [TestMethod]
         public void 불가면_DB_가_준_사유를_그대로_붙이고_버튼을_닫는다()
         {
@@ -55,7 +59,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("접수 불가 — 접수 마감시각이 지났습니다.", view.EligibilityText);
         }
 
-        // 이유 없이 닫힌 버튼은 고장으로 읽힌다 — 메시지가 비면 코드라도 보인다.
+        // 대상: ReceptionPresenter (DLG-RCP-01) — 사유코드는 있는데 사유메시지가 빈 경우
+        // 목적: 이유 없이 닫힌 버튼은 조작자에게 고장으로 읽힌다. 메시지가 비어 있어도 코드라도
+        //       보여야 무엇을 물어볼지 알 수 있다.
+        // 확인: 판정 문구에 사유코드 503 이 들어 있다.
         [TestMethod]
         public void 사유메시지가_비면_사유코드라도_보인다()
         {
@@ -67,8 +74,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.EligibilityText, "503");
         }
 
-        // 창이 남아 있으면 조작자가 같은 건을 한 번 더 접수하려 든다 — 그때 돌아오는 것은
-        // `502` 이고, 성공한 일을 실패로 기억하게 된다.
+        // 대상: ReceptionPresenter (DLG-RCP-01) — 접수 성공 시의 전달값과 창 닫기
+        // 목적: 창이 남아 있으면 조작자가 같은 건을 한 번 더 접수하려 든다 — 그때 돌아오는 것은
+        //       502 이고, 성공한 일을 실패로 기억하게 된다. 행버전을 실어야 남이 그 사이 바꾼
+        //       경우를 DB 가 잡는다.
+        // 확인: 업무ID 77 · 조작자명 · 행버전이 모두 전달되고, 성공하면 창이 닫힌다.
         [TestMethod]
         public void 접수에_성공하면_창을_닫는다()
         {
@@ -88,10 +98,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsTrue(view.Closed, "성공했는데 창이 안 닫혔다");
         }
 
-        /// <summary>
-        /// [X] **사유를 적기 전에 다시 읽는다.** 다시 읽기가 ValidationMessage 를 지우므로
-        ///     순서가 뒤집히면 사유가 사라진다 — WF-RSV-01 이 밟은 함정이다.
-        /// </summary>
+        // 대상: ReceptionPresenter (DLG-RCP-01) — 접수가 601 행버전 충돌로 막힌 경우
+        // 목적: 막힌 뒤에는 최신값을 다시 읽어야 조작자가 남이 바꾼 상태를 보고 판단할 수 있다.
+        //       그런데 다시 읽기가 ValidationMessage 를 지우므로 순서가 뒤집히면 사유가 사라진다 —
+        //       WF-RSV-01 이 실제로 밟은 함정이라 순서를 시험으로 고정한다.
+        // 확인: 창이 열린 채 남고, 사유에 「다른 사용자가」가 들어 있으며, 상세 조회가 한 번 더
+        //       불린다 (사유가 지워지지 않은 채로).
         [TestMethod]
         public void DB_가_막으면_사유가_남고_창은_열려_있다()
         {
@@ -111,10 +123,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsTrue(service.DetailCalls > before, "막힌 뒤 최신값을 다시 읽지 않았다");
         }
 
-        /// <summary>
-        /// 부모가 빈손으로 열면 비우고 닫는다. 예전에는 「상세를 못 읽으면」이었고, 진입이
-        /// 조회를 하지 않게 된 뒤로는 **받은 것이 없을 때**가 그 자리다 (2026-09-14).
-        /// </summary>
+        // 대상: ReceptionPresenter (DLG-RCP-01) — 부모가 빈손으로 창을 연 경우
+        // 목적: 진입이 조회를 하지 않게 된 뒤로는 「받은 것이 없을 때」가 곧 열 수 없는 때다.
+        //       그때 스스로 SP 를 불러 메우면 진입 계약이 깨지고, 버튼을 열어 두면 대상 없는
+        //       접수가 나간다.
+        // 확인: 상세가 null 이고 접수 버튼이 닫히며, SP 를 부르지 않았다 (DetailCalls=0).
         [TestMethod]
         public void 받은_것이_없으면_비우고_버튼을_닫는다()
         {
@@ -128,7 +141,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(0, service.DetailCalls, "빈손인데 SP 를 불렀다");
         }
 
-        // 05 §8.2 RS4 는 정확히 5행이고 코드가 고정이다. 없으면 계약 위반이다.
+        // 대상: ReceptionPresenter (DLG-RCP-01) — RS4 에 START_RECEPTION 행이 없는 경우
+        // 목적: 05 §8.2 RS4 는 정확히 5행이고 코드가 고정이다. 없다는 것은 계약 위반이며,
+        //       화면이 그것을 「허용」으로 기본값 삼으면 DB 가 판단하지 않은 접수가 나간다.
+        // 확인: 접수 버튼이 닫히고 안내 메시지가 선다 — 조용히 넘기지 않는다.
         [TestMethod]
         public void RS4_에_접수_행이_없으면_계약_위반이다()
         {

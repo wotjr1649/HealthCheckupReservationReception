@@ -81,9 +81,13 @@ namespace HealthCheckupReservationReception.Tests.Integration
             _created.Clear();
         }
 
-        /// <summary>
-        /// **S01 — 브리프 §3 의 기본 흐름.** 수검자 등록 → 검진 예약 → 예약 조회 → 접수.
-        /// </summary>
+        // 대상: 실물 DB 전 구간 — 수검자 등록(SP-PAT-03) → 예약(SP-RSV-02) → 목록 조회(SP-WRK-01)
+        //       → 접수완료(SP-RCP-01) 를 Service 계층으로 이어 부른다
+        // 목적: 과제 브리프 §3 이 그린 기본 업무 흐름이다. 네 단계를 한 시험에 이은 것은
+        //       단계 사이의 값이 실제로 흘러야 하기 때문이다 — 등록이 준 수검자ID 로 예약하고,
+        //       예약이 준 업무ID·행버전으로 접수한다. 나누면 그 이음매가 시험되지 않는다.
+        // 확인: 예약이 결과코드 0 · 상태 RSV 이고, 그 업무ID 가 목록 조회에 정확히 1건 나오며,
+        //       접수가 결과코드 0 · 상태 RCP 로 전이된다.
         [TestMethod]
         [TestCategory("Db")]
         public void S01_등록에서_접수까지_한_흐름으로_통한다()
@@ -119,7 +123,12 @@ namespace HealthCheckupReservationReception.Tests.Integration
             Assert.AreEqual(DbWorkStatus.Received, received.Row.StatusCode);
         }
 
-        /// <summary>**S02 — 동일한 수검자가 이미 등록되어 있는 경우** (브리프 §4).</summary>
+        // 대상: 실물 DB — 같은 주민번호·같은 이름으로 수검자를 다시 등록(SP-PAT-03)
+        // 목적: 브리프 §4 「동일한 수검자가 이미 등록되어 있는 경우」다. 00 EP 정책은 같은 사람을
+        //       두 행으로 만들지 않고 기존 행으로 확정한다 — 두 행이 되면 예약·접수 이력이 갈려
+        //       한 사람의 검진 주기(TGT-04)를 계산할 수 없다.
+        // 확인: 결과코드가 2(기존 수검자)이고, RS1 이 가리키는 수검자ID 가 처음 등록한 그 행이다
+        //       — 새 행이 생기지 않는다.
         [TestMethod]
         [TestCategory("Db")]
         public void S02_같은_주민번호로_다시_등록하면_기존_수검자로_확정된다()
@@ -141,7 +150,12 @@ namespace HealthCheckupReservationReception.Tests.Integration
             Assert.AreEqual(first.PatientId, again.Rows[0].PatientId, "기존 수검자로 확정하지 않았다");
         }
 
-        /// <summary>**S03 — 예약 취소** (브리프 §4 「예약 정보를 변경하거나 취소하는 경우」).</summary>
+        // 대상: 실물 DB — 예약(SP-RSV-02) 뒤 예약취소(SP-WRK-03)
+        // 목적: 브리프 §4 「예약 정보를 변경하거나 취소하는 경우」다. 취소는 행을 지우는 것이
+        //       아니라 상태를 옮기는 것이며, 물리삭제하면 그 사람이 언제 무엇을 취소했는지가
+        //       감사 기록에서 사라진다.
+        // 확인: 예약이 결과코드 0 으로 선 뒤 취소도 결과코드 0 이고, 상태코드가 CNR 이다
+        //       (행은 그대로 남는다).
         [TestMethod]
         [TestCategory("Db")]
         public void S03_예약을_취소하면_예약취소_상태가_된다()
@@ -162,7 +176,12 @@ namespace HealthCheckupReservationReception.Tests.Integration
                 "취소인데 상태가 CNR 이 아니다 — 물리삭제하지 않는다 (RP-10)");
         }
 
-        /// <summary>**S04 — 이미 접수된 예약을 다시 접수하려는 경우** (브리프 §4).</summary>
+        // 대상: 실물 DB — 접수완료(SP-RCP-01) 를 같은 업무에 두 번
+        // 목적: 브리프 §4 「이미 접수된 예약을 다시 접수하려는 경우」다. 두 번 접수되면 같은
+        //       수검자가 두 번 온 것으로 집계되고 정원도 두 번 깎인다. 막는 것은 화면이 아니라
+        //       SP 의 상태 검증이어야 한다 — 창을 두 개 띄우면 화면 가드는 소용이 없다.
+        // 확인: 첫 접수는 결과코드 0 이고, 같은 업무에 두 번째 접수는 502(현재 상태에서 처리 불가)로
+        //       막힌다.
         [TestMethod]
         [TestCategory("Db")]
         public void S04_이미_접수된_예약은_다시_접수되지_않는다()
@@ -192,7 +211,11 @@ namespace HealthCheckupReservationReception.Tests.Integration
                 "재접수가 막히지 않았다: " + twice.Result.Message);
         }
 
-        /// <summary>**S05 — 접수 후 취소가 필요한 경우** (브리프 §4).</summary>
+        // 대상: 실물 DB — 접수완료 뒤 접수취소(SP-RCP-03)
+        // 목적: 브리프 §4 「접수 후 취소가 필요한 경우」다. 접수취소는 예약(RSV)으로 되돌리는
+        //       것이 아니라 CNC 로 간다 — 되돌리면 그 사람이 내원했다는 사실이 지워지고 정원
+        //       계산과 실적 집계가 어긋난다.
+        // 확인: 예약·접수·접수취소가 모두 결과코드 0 이고, 최종 상태코드가 RSV 가 아니라 CNC 다.
         [TestMethod]
         [TestCategory("Db")]
         public void S05_접수_후_취소하면_접수취소_상태가_된다()
@@ -222,7 +245,10 @@ namespace HealthCheckupReservationReception.Tests.Integration
                 "접수취소는 예약으로 되돌리지 않는다 (RCP-06)");
         }
 
-        /// <summary>**S06 — 필수 정보가 입력되지 않은 경우** (브리프 §4).</summary>
+        // 대상: 실물 DB — 이름을 비운 채 수검자 등록(SP-PAT-03)
+        // 목적: 브리프 §4 「필수 정보가 입력되지 않은 경우」다. 05 §10.1 이 이름을 NOT NULL 로
+        //       정했고, 화면 검증을 우회해 들어와도 DB 가 막아야 한다는 것이 이 시험의 자리다.
+        // 확인: 결과코드가 100(필수값 누락)이고 수검자 행이 생기지 않는다.
         [TestMethod]
         [TestCategory("Db")]
         public void S06_이름_없이_등록하면_필수값으로_막힌다()
@@ -241,10 +267,12 @@ namespace HealthCheckupReservationReception.Tests.Integration
                 "이름이 비었는데 저장됐다: " + saved.Result.Message);
         }
 
-        /// <summary>
-        /// **S07 — 동일 수검자 중복예약** (00 RP-06). 브리프 §4 가 열거하지 않았지만
-        /// 「업무상 발생할 수 있는 상황」으로 정의해 넣은 것이다.
-        /// </summary>
+        // 대상: 실물 DB — 유효예약이 있는 수검자에게 예약(SP-RSV-02) 을 한 번 더
+        // 목적: 00 RP-06 동일 수검자 중복예약 금지다. 브리프 §4 가 열거하지 않았지만 「업무상
+        //       발생할 수 있는 상황」으로 정의해 넣었다. 두 예약이 서면 둘 중 어느 것으로 내원할지
+        //       알 수 없고 정원이 한 사람에게 두 자리 나간다.
+        // 확인: 첫 예약은 결과코드 0 이고 두 번째는 0 이 아니며, 수검자 목록 RS1 의 유효업무가
+        //       비어 있지 않고 그 업무ID 가 첫 예약을 가리킨다 (조작자가 기존 건을 찾아갈 수 있다).
         [TestMethod]
         [TestCategory("Db")]
         public void S07_유효예약이_있는_수검자는_또_예약하지_못한다()

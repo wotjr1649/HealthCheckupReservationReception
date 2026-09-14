@@ -18,9 +18,11 @@ namespace HealthCheckupReservationReception.Tests.Services
     [TestClass]
     public class ChangeLogServiceTests
     {
-        // 05 §8.3 — 0건은 `결과코드=0` 이다. 감사 기록은 대상 행보다 오래 살기 때문에
-        // `200 PatientNotFound` 를 쓰지 않기로 계약이 정했다. Service 가 0건을 실패로 바꾸면
-        // 화면이 그 설계를 뒤집는다.
+        // 대상: ChangeLogService — 변경이력 조회(SP-LOG-01) 가 0건을 돌려준 경우
+        // 목적: 05 §8.3 이 0건을 결과코드=0 으로 정했다. 감사 기록은 대상 행보다 오래 살기
+        //       때문에 200 PatientNotFound 를 쓰지 않기로 계약이 결정한 것이고, Service 가 0건을
+        //       실패로 바꾸면 화면이 그 설계를 뒤집는다.
+        // 확인: IsSuccess=true 이고 Rows.Count=0 이다 — 「기록이 없다」와 「못 읽었다」를 가른다.
         [TestMethod]
         public void 기록이_0건이어도_성공이고_빈_목록이다()
         {
@@ -35,7 +37,10 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.AreEqual(0, result.Value.Rows.Count);
         }
 
-        // RS1 자체가 없어도 화면이 null 을 만나지 않는다.
+        // 대상: ChangeLogService — RS1 자체가 오지 않은 경우의 목록 초기화
+        // 목적: 화면이 null 목록을 Grid 에 바인딩하면 그 자리에서 터진다. 0건과 null 을 같은
+        //       모양(빈 목록)으로 내보내 화면이 한 가지만 다루게 한다.
+        // 확인: IsSuccess=true 이고 Rows 가 null 이 아니라 0건짜리 목록이다.
         [TestMethod]
         public void RS1_이_없으면_빈_목록으로_채운다()
         {
@@ -51,8 +56,10 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.AreEqual(0, result.Value.Rows.Count);
         }
 
-        // 05 §3.1 · §4.3 — 실패 사유의 문장은 DB 가 갖는다. Service 가 바꿔 쓰면 같은 결과코드에
-        // 두 가지 안내가 생긴다.
+        // 대상: ChangeLogService — RS0 가 실패로 온 경우
+        // 목적: 05 §3.1·§4.3 에서 실패 사유의 문장은 DB 가 갖는다. Service 가 바꿔 쓰면 같은
+        //       결과코드에 두 가지 안내가 생긴다.
+        // 확인: IsSuccess=false 이고 메시지가 「입력값이 올바르지 않습니다.」 그대로다.
         [TestMethod]
         public void RS0_실패면_그_메시지로_실패한다()
         {
@@ -75,8 +82,11 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.AreEqual("입력값이 올바르지 않습니다.", result.Message);
         }
 
-        // 05 §3.1 — RS0 는 모든 SP 가 정확히 1행 낸다. 없다는 것은 계약이 깨진 것이므로
-        // 성공으로 넘기지 않는다.
+        // 대상: ChangeLogService — RS0 자체를 못 읽은 경우
+        // 목적: 05 §3.1 에서 RS0 는 모든 SP 가 정확히 1행 낸다. 없다는 것은 계약이 깨졌다는
+        //       뜻이므로 성공으로 넘기지 않는다.
+        // 확인: IsSuccess=false 이고 메시지가 예외 본문이 아니라 「변경이력을 조회하지 못했습니다.」
+        //       라는 화면용 문장이다.
         [TestMethod]
         public void RS0_을_못_읽으면_실패다()
         {
@@ -91,8 +101,11 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.AreEqual("변경이력을 조회하지 못했습니다.", result.Message);
         }
 
-        // 05 §8.3 — 대상은 둘뿐이고 그 밖의 값은 SP 가 101 이다. 화면이 무엇을 보내는지는
-        // 값이 아니라 **그대로 전달되는가**를 본다.
+        // 대상: ChangeLogService — 조회 대상(대상테이블·대상키) 전달
+        // 목적: 05 §8.3 에서 대상은 둘뿐이고 그 밖의 값은 SP 가 101 로 막는다. Service 가 대상을
+        //       바꿔 넘기면 다른 행의 이력이 이 창에 뜨는데, 감사 기록에서는 그것이 가장 나쁜
+        //       실패다 — 틀린 줄도 모르고 남의 기록을 읽는다.
+        // 확인: 예약접수·4242 를 넘기면 Repository 가 받은 값도 예약접수·4242 다.
         [TestMethod]
         public void 대상테이블과_대상키를_그대로_넘긴다()
         {

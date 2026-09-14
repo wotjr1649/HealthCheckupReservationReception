@@ -16,8 +16,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §9.3 조회조건
 
-        // 05 §8.1 — 조회조건은 화면이 담아 SP 로 넘긴다. 화면이 여는 순간 스스로 한 번 조회하는
-        // 것이 WF-WRK-01 의 기본 동작이다 — 빈 Grid 는 「무엇을 검색해야 하는지 모르겠다」로 읽힌다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 진입 시 기본 기간으로 하는 초기 조회
+        // 목적: 05 §8.1 에서 조회조건은 화면이 담아 SP 로 넘긴다. 화면이 여는 순간 스스로 한 번
+        //       조회하는 것이 이 화면의 기본 동작이다 — 빈 Grid 는 조작자에게 「무엇을 검색해야
+        //       하는지 모르겠다」로 읽힌다.
+        // 확인: 기본 기간(오늘~오늘)으로 SP 가 불리고 목록 1행이 실리며 안내가 없다.
         [TestMethod]
         public void 기간이_서_있으면_조회하고_목록을_채운다()
         {
@@ -33,7 +36,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.ValidationMessage);
         }
 
-        // 03 §9.3 — From>To 는 Inline 오류다. 왕복하지 않는다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 뒤집힌 조회기간
+        // 목적: 03 §9.3 은 From>To 를 Inline 오류로 정했다. 왕복하면 DB 가 0건을 성공으로 주고
+        //       조작자는 「예약이 없다」로 읽는다. 모달로 내면 조회할 때마다 창을 닫아야 한다.
+        // 확인: 안내가 「시작일이 종료일보다 늦습니다.」로 Inline 에 서고 SP 가 불리지 않으며,
+        //       모달 메시지는 뜨지 않는다.
         [TestMethod]
         public void 시작일이_종료일보다_늦으면_Inline_오류를_내고_조회하지_않는다()
         {
@@ -48,7 +55,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.LastMessage, "Inline 오류를 모달로 내지 않는다");
         }
 
-        // 03 §9.3 — 최소 하나의 실질 조건이 필요하고 상태 `전체` 만 고른 것은 조건이 아니다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 상태 「전체」만 고른 상태의 조회
+        // 목적: 03 §9.3 은 최소 하나의 실질 조건을 요구한다. 상태 「전체」는 조건이 아니므로 그
+        //       상태로 조회하면 전 기간 전건을 긁는다.
+        // 확인: 안내가 「기간·차트번호·이름 중 하나 이상을 입력하세요.」이고 SP 가 불리지 않는다.
         [TestMethod]
         public void 상태만_골라서는_조건이_되지_않는다()
         {
@@ -62,8 +72,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(service.LastSearch, "SP 를 불렀다");
         }
 
-        // 05 §8.1 — 조건 조합에 최소 개수를 두지 않는다. 화면이 「기간도 넣으십시오」로 막으면
-        // 계약이 허락한 조회를 화면이 좁히는 것이 된다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 기간 없이 차트번호만 넣은 조회
+        // 목적: 05 §8.1 은 조건 조합에 최소 개수를 두지 않는다. 화면이 「기간도 넣으십시오」로
+        //       막으면 계약이 허락한 조회를 화면이 좁히는 것이 되고, 그 사람의 전 이력을 볼 길이
+        //       사라진다.
+        // 확인: 차트번호만으로 SP 가 불리고 그 값이 그대로 전달되며 안내가 없다.
         [TestMethod]
         public void 차트번호만_있어도_조건이_된다()
         {
@@ -78,7 +91,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.ValidationMessage);
         }
 
-        // 03 §9.4 — 재조회 시 선택·상세·Transaction Action 을 Clear 한다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 재조회 시 선택·상세·Action 초기화
+        // 목적: 03 §9.4 — 목록이 바뀌었는데 앞의 상세와 Action 이 남으면, 새 목록에 없는 업무에
+        //       대고 취소·접수가 나간다.
+        // 확인: 상세가 서 있던 상태에서 재조회하면 상세가 null 이 되고 검사구성 두 목록이 0건이
+        //       되며 업무 Action 과 [변경이력] 이 닫힌다.
         [TestMethod]
         public void 재조회하면_상세와_Action_이_함께_닫힌다()
         {
@@ -103,8 +120,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §9.5 · §9.6 · §9.7 선택과 Action
 
-        // 05 §8.2 RS4 · 07 §3.6.1 — Ribbon 활성화의 출처는 RS4 `가능한업무` 다.
-        // 화면이 상태코드를 보고 다시 판정하면 DB 가 막은 것을 화면이 열어 버린다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 행 선택 시 상세·검사구성·Ribbon Action 구성
+        // 목적: 05 §8.2 RS4 · 07 §3.6.1 에서 Ribbon 활성화의 출처는 RS4 가능한업무 다. 화면이
+        //       상태코드를 보고 다시 판정하면 DB 가 막은 것을 화면이 열어 버리고, 조작자는 눌러
+        //       봐야 막힌 것을 안다.
+        // 확인: 그 업무ID 로 상세를 읽고 차트번호·국가검사 1건·추가검사 1건이 서며, RS4 가 허용한
+        //       예약변경·예약취소만 열리고 접수·추가검사·접수취소는 닫힌다.
         [TestMethod]
         public void 행을_고르면_상세와_검사구성이_서고_RS4_가_Ribbon_상태가_된다()
         {
@@ -128,8 +149,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsFalse(view.Actions.CancelReception);
         }
 
-        // 03 §9.6 · §23.4 — [변경이력] 은 상태와 무관하게 행이 선택되면 열린다.
-        // 취소된 업무는 다섯 동작이 전부 닫히지만 변경 내역은 남아 있고 그것을 보는 것이 목적이다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 취소된 업무를 고른 경우의 [변경이력]
+        // 목적: 03 §9.6·§23.4 에서 [변경이력] 은 상태와 무관하게 행이 선택되면 열린다. 취소된
+        //       업무는 다섯 동작이 전부 닫히지만 변경 내역은 남아 있고, 그것을 보는 것이 바로
+        //       이 상황에서 조작자가 하려는 일이다.
+        // 확인: 다섯 업무 Action 이 모두 닫혀도 [변경이력] 은 열린다.
         [TestMethod]
         public void 모든_업무동작이_닫혀도_변경이력은_열린다()
         {
@@ -147,8 +171,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsTrue(view.Actions.ChangeLog, "행이 선택되면 열려야 한다");
         }
 
-        // [X] 화면이 허용여부를 다시 계산하지 않는다 (05 §8.2). DB 가 1 을 주면 1 이다 —
-        //     상태·마감·공통 업무조건의 조합은 이미 거기서 판정된 것이다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — RS4 허용여부의 무가공 반영
+        // 목적: 05 §8.2 에서 상태·마감·공통 업무조건의 조합은 이미 DB 에서 판정된 것이다. 화면이
+        //       다시 계산하면 판정이 두 곳이 되고, 계약이 바뀔 때마다 둘을 함께 고쳐야 한다.
+        // 확인: DB 가 접수·추가검사·접수취소를 허용으로 주면 셋이 열리고, 불허인 예약변경은
+        //       닫힌다 — 화면이 상태코드로 되재지 않는다.
         [TestMethod]
         public void 허용여부는_DB_가_준_값_그대로다()
         {
@@ -168,8 +195,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsFalse(view.Actions.EditReservation);
         }
 
-        // 고른 행이 없는데 Action 이 열려 있으면 직전 행에 대고 SP 가 나간다.
-        // 상세를 다시 조회하지 않는 것도 함께 잰다 — 선택 해제는 조회할 일이 아니다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 선택 해제 시의 상세·Action
+        // 목적: 고른 행이 없는데 Action 이 열려 있으면 직전 행에 대고 SP 가 나간다. 선택 해제는
+        //       조회할 일이 아니므로 상세를 다시 읽지도 않아야 한다.
+        // 확인: 상세가 null 이고 [변경이력] 이 닫히며, 상세 조회 횟수가 늘지 않는다.
         [TestMethod]
         public void 선택이_풀리면_상세와_Action_이_닫힌다()
         {
@@ -185,8 +214,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(1, service.DetailCalls, "선택이 없는데 상세를 다시 조회했다");
         }
 
-        // RS4 를 못 읽었는데 Action 을 남겨 두면 무엇이 허용되는지 모르는 채 버튼이 열린다.
-        // 모르는 것을 「가능」으로 기본값 삼지 않는다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 상세 조회가 실패한 경우
+        // 목적: RS4 를 못 읽었는데 Action 을 남겨 두면 무엇이 허용되는지 모르는 채 버튼이 열린다.
+        //       모르는 것을 「가능」으로 기본값 삼지 않는다.
+        // 확인: 상세가 null 이고 Action 이 닫히며 DB 가 준 사유가 전해진다.
         [TestMethod]
         public void 상세_조회가_실패하면_Action_을_닫고_사유를_알린다()
         {
@@ -204,7 +235,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("대상 업무를 찾을 수 없습니다.", view.LastMessage);
         }
 
-        // 킷 §6 — provider 메시지는 DB·머신 정보를 드러낸다. 화면에 원문을 싣지 않는다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 목록 조회에서 예외가 올라온 경우
+        // 목적: 킷 §6 — provider 메시지는 DB·머신 정보를 드러낸다. 목록 화면은 늘 열려 있는
+        //       자리라 그대로 실으면 화면 캡처마다 서버명이 따라 나간다.
+        // 확인: 안내가 화면용 문장이고 예외에 든 서버명(DESKTOP…)이 문구에 없다.
         [TestMethod]
         public void 예외가_나도_예외_본문을_화면에_싣지_않는다()
         {
@@ -221,9 +255,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.DoesNotMatch(view.ValidationMessage, new System.Text.RegularExpressions.Regex("DESKTOP"));
         }
 
-        // [X] **조회 실패는 모달이 아니라 Inline 이다.** 모달이면 창을 열자마자 뜨는 것을
-        //     막느라 조용히 삼켜야 하고, 그러면 실패가 아예 보이지 않는다 — 2026-09-10 에
-        //     성공한 0건과 구별이 안 돼 "조회가 안 된다" 로 보고됐다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 조회 실패의 표시 방식
+        // 목적: 모달이면 창을 열자마자 뜨는 것을 막느라 조용히 삼켜야 하고, 그러면 실패가 아예
+        //       보이지 않는다 — 2026-09-10 에 성공한 0건과 구별이 안 돼 「조회가 안 된다」로
+        //       보고된 자리다.
+        // 확인: 실패 사유가 Inline 안내에 서고 모달 메시지는 뜨지 않는다.
         [TestMethod]
         public void 조회_실패는_모달이_아니라_Inline_이다()
         {
@@ -242,7 +278,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §9.1 Context
 
-        // 03 §9.1 — 두 창구가 한 화면을 쓰므로 어느 쪽으로 열렸는지가 제목에 남아야 한다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 기본 Context 와 제목
+        // 목적: 03 §9.1 에서 두 창구가 한 화면을 쓰므로 어느 쪽으로 열렸는지가 제목에 남아야
+        //       한다. 안 남으면 조작자가 지금 어느 창구에서 일하는지 모른다.
+        // 확인: 제목이 「예약 관리」다.
         [TestMethod]
         public void 기본_Context_는_예약_관리다()
         {
@@ -252,8 +291,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("예약 관리", view.ContextTitle);
         }
 
-        // 03 §9.1 — Context 를 바꾸면 기존 SelectedRow 를 해제하고 우측 Detail 을 Clear 한다.
-        // 같은 행이 다른 Context 에서 다른 Action 을 갖기 때문이다 (§9.6 · §9.7).
+        // 대상: WorkbenchPresenter (WF-WRK-01) — Context 전환 시 선택·상세 초기화
+        // 목적: 03 §9.1 — 같은 행이 다른 Context 에서 다른 Action 을 갖는다 (§9.6·§9.7).
+        //       선택을 승계하면 예약 창구에서 고른 행에 접수 Action 이 붙는 순간이 생긴다.
+        // 확인: 제목이 「접수 관리」로 바뀌고 상세가 null 이 되며 Action 이 모두 닫힌다.
         [TestMethod]
         public void Context_를_바꾸면_선택을_승계하지_않는다()
         {
@@ -272,8 +313,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §9.1 WorkId Targeted Navigation
 
-        // 신규예약 저장 성공(03 §8.11)과 접수 Shortcut 이 이 길로 돌아온다.
-        // [X] 조회조건을 그대로 두면 방금 저장한 건이 목록에 없을 수 있다 — 그 날 하루로 좁힌다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 저장 직후 한 건을 겨누는 진입
+        // 목적: 신규예약 저장 성공(03 §8.11)과 접수 Shortcut 이 이 길로 돌아온다. 조회조건을
+        //       그대로 두면 방금 저장한 건이 목록에 없을 수 있고, 상태 조건이 남으면 더 그렇다 —
+        //       그 날 하루로 좁히고 상태를 푼다.
+        // 확인: 그 업무의 예약일로 기간이 오늘~오늘로 좁혀지고 상태 조건이 null 이며,
+        //       업무ID 77 이 선택되고 목록이 채워진다.
         [TestMethod]
         public void WorkId_로_열면_그_날짜로_좁혀_조회하고_그_행을_고른다()
         {
@@ -295,8 +340,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNotNull(view.Rows);
         }
 
-        // 저장 직후 그 건을 겨누는 길이다 (07 §3.6.2). 조회조건이 그 건을 담지 못하면 못 찾는데,
-        // 조용히 넘기면 조작자는 저장이 안 된 줄로 읽는다. 오류창이 아니라 Inline 인 것도 규칙이다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 겨눈 업무가 목록에 없는 경우
+        // 목적: 07 §3.6.2 의 저장 직후 겨누기다. 조회조건이 그 건을 담지 못하면 못 찾는데,
+        //       조용히 넘기면 조작자는 저장이 안 된 줄로 읽는다. 오류창이 아니라 Inline 인 것도
+        //       규칙이다 — 저장은 성공했으므로 오류가 아니다.
+        // 확인: 안내가 「방금 저장한 업무를 목록에서 찾지 못했습니다.」로 Inline 에 선다.
         [TestMethod]
         public void WorkId_를_목록에서_못_찾으면_Inline_으로_알린다()
         {
@@ -313,11 +361,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("방금 저장한 업무를 목록에서 찾지 못했습니다.", view.ValidationMessage);
         }
 
-        /// <summary>
-        /// 2026-09-11 — **뒤집힌 규칙이다.** 예전에는 상단 전환이 조회조건을 건드리지 않았고,
-        /// 그래서 두 탭이 같은 목록을 보고 있었다. 이제 탭을 열면 그 창구의 기간으로 세우고
-        /// 다시 조회한다. `FocusSearchOn` 은 여전히 안 쓴다 — 그쪽은 저장 뒤 한 건을 겨누는 길이다.
-        /// </summary>
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 겨눌 업무 없이 탭만 연 경우
+        // 목적: 2026-09-11 에 뒤집힌 규칙이다. 예전에는 상단 전환이 조회조건을 건드리지 않아
+        //       두 탭이 같은 목록을 보고 있었다. 이제 탭을 열면 그 창구의 기간으로 세우고 다시
+        //       조회한다 — 겨누기(FocusedDay)는 쓰지 않는다. 그쪽은 저장 뒤 한 건을 겨누는 길이다.
+        // 확인: 겨눈 날짜가 없고 기간이 그 창구 기본값으로 서며, 조회가 실제로 나간다.
         [TestMethod]
         public void WorkId_가_없으면_그_창구의_기간으로_세우고_다시_조회한다()
         {
@@ -342,9 +390,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 2026-09-11: 03 §13 취소 둘
 
-        /// <summary>
-        /// 03 §13.1 — 묻고, 부르고, 다시 읽는다. 문구의 핵심은 **되돌릴 수 없다**는 것이다.
-        /// </summary>
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 예약취소(SP-WRK-03) 실행 경로
+        // 목적: 03 §13.1 — 묻고, 부르고, 다시 읽는다. 문구의 핵심은 되돌릴 수 없다는 것이다.
+        //       행버전을 안 실으면 남이 그 사이 바꾼 건을 덮어쓰며 취소한다.
+        // 확인: 확인창이 1회 뜨고 문구에 「복원할 수 없습니다」가 있으며, 예약취소 동작으로
+        //       업무ID 77 · 행버전 · 조작자명이 전달된다.
         [TestMethod]
         public void 예약취소는_묻고_행버전을_실어_보낸다()
         {
@@ -371,8 +421,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("접수1번창구", service.LastCancel.OperatorName);
         }
 
-        // 03 §13 CNF-RSV-01 — 취소는 되돌릴 수 없다. 확인창의 「아니오」가 실제로 SP 를 막는지는
-        // 물어보기만 하고 부르는 구현에서도 화면은 똑같아 보이므로 시험이 아니면 드러나지 않는다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 취소 확인에서 「아니오」를 고른 경우
+        // 목적: 03 §13 CNF-RSV-01 에서 취소는 되돌릴 수 없다. 물어보기만 하고 부르는 구현에서도
+        //       화면은 똑같아 보이므로, 「아니오」가 실제로 SP 를 막는지는 시험이 아니면 드러나지
+        //       않는다 — 그 결함은 취소된 뒤에 알게 된다.
+        // 확인: 확인창이 1회 뜨고 취소 SP 가 불리지 않는다.
         [TestMethod]
         public void 아니오라고_하면_부르지_않는다()
         {
@@ -389,8 +442,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(reservation.LastCancel, "아니오라고 했는데 SP 를 불렀다");
         }
 
-        // 05 §11.3 · §12.3 — 예약취소와 접수취소는 상태전이가 다르다(CNR vs CNC).
-        // 같은 버튼처럼 보이지만 부르는 SP 가 다르고, 잘못 부르면 상태가 한 칸 어긋난 채 저장된다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 접수취소(SP-RCP-03) 실행 경로
+        // 목적: 05 §11.3·§12.3 에서 예약취소와 접수취소는 상태전이가 다르다 (CNR vs CNC).
+        //       같은 버튼처럼 보이지만 부르는 SP 가 다르고, 잘못 부르면 상태가 한 칸 어긋난 채
+        //       저장된다. 확인 문구도 그 차이를 말해야 한다.
+        // 확인: 확인 문구에 「되돌아가지 않으며」가 들어 있고 접수 계열 SP 로 업무ID 77 이 간다.
         [TestMethod]
         public void 접수취소는_접수_계열_SP_로_간다()
         {
@@ -411,10 +467,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(77L, service.LastCancel.WorkId);
         }
 
-        /// <summary>
-        /// [X] **DB 가 막아도 최신값을 다시 읽는다.** 행버전 충돌(601)이면 그 다시 읽기가 곧
-        ///     복구다 — 사유만 적고 옛 값을 두면 다음 Action 도 같은 이유로 막힌다.
-        /// </summary>
+        // 대상: WorkbenchPresenter (WF-WRK-01) — Action 이 601 등으로 막힌 경우
+        // 목적: 행버전 충돌이면 그 다시 읽기가 곧 복구다 — 사유만 적고 옛 값을 두면 다음 Action
+        //       도 같은 이유로 막혀 조작자가 빠져나올 길이 없다.
+        // 확인: 안내에 「최신 정보를 다시 조회」가 들어 있고 상세 조회가 한 번 더 불린다.
         [TestMethod]
         public void DB_가_막으면_사유를_적고_최신값을_다시_읽는다()
         {
@@ -445,8 +501,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsTrue(service.DetailCalls > before, "막힌 뒤 최신값을 다시 읽지 않았다");
         }
 
-        // 대상 없이 확인창을 띄우면 조작자가 「예」를 눌러도 아무 일이 없다 — 무엇이 취소됐는지
-        // 모르는 채로 남는다. 물어보기 전에 대상이 있어야 한다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 선택 행 없이 Action 을 실행한 경우
+        // 목적: 대상 없이 확인창을 띄우면 조작자가 「예」를 눌러도 아무 일이 없다 — 무엇이
+        //       취소됐는지 모르는 채로 남는다. 물어보기 전에 대상이 있어야 한다.
+        // 확인: 확인창이 0회이고 SP 도 불리지 않는다.
         [TestMethod]
         public void 행이_없으면_묻지도_않는다()
         {
@@ -471,10 +529,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 2026-09-11: 탭은 창구다
 
-        /// <summary>
-        /// 접수 창구의 목록에 **오늘의 `RSV`** 가 있어야 한다 — 접수의 입력이 예약 건이므로
-        /// 그것이 안 보이면 창구는 자기 탭에서 할 일이 없다. `CNR` 은 예약 창구의 것이다.
-        /// </summary>
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 접수 Context 의 목록 상태 필터
+        // 목적: 접수 창구의 목록에 오늘의 RSV 가 있어야 한다 — 접수의 입력이 예약 건이므로 그것이
+        //       안 보이면 창구는 자기 탭에서 할 일이 없다. CNR 은 예약 창구의 것이라 여기 섞이면
+        //       안 된다.
+        // 확인: 접수 창구 목록의 상태가 예약완료·접수완료·접수취소 셋이다.
         [TestMethod]
         public void 접수_창구는_예약완료와_접수완료와_접수취소만_본다()
         {
@@ -492,8 +551,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 new List<string>(view.StatusChoices));
         }
 
-        // 00 RP-01 · 03 §9.6 — 창구가 다루는 상태가 다르다. 접수 창구의 건이 예약 창구 목록에
-        // 섞이면 조작자가 남의 창구 건을 고르게 된다.
+        // 대상: WorkbenchPresenter (WF-WRK-01) — 예약 Context 의 목록 상태 필터
+        // 목적: 00 RP-01 · 03 §9.6 에서 창구가 다루는 상태가 다르다. 접수 창구의 건이 예약 창구
+        //       목록에 섞이면 조작자가 남의 창구 건을 고르게 된다.
+        // 확인: 예약 창구 목록의 상태가 예약완료·예약취소 둘이다.
         [TestMethod]
         public void 예약_창구는_예약완료와_예약취소만_본다()
         {
@@ -508,10 +569,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 Codes(view.Rows));
         }
 
-        /// <summary>
-        /// 접수는 당일 업무다 (05 §8.2 `START_RECEPTION` 이 `예약일=오늘`) — 오늘 하루로 선다.
-        /// 예약은 앞으로의 일정이라 종료일을 비워 둔다. 둘 다 기본값일 뿐 사용자가 바꾼다.
-        /// </summary>
+        // 대상: WorkbenchPresenter (WF-WRK-01) — Context 별 기본 조회기간
+        // 목적: 접수는 당일 업무다 (05 §8.2 START_RECEPTION 이 예약일=오늘) — 오늘 하루로 선다.
+        //       예약은 앞으로의 일정이라 종료일을 비워 둔다. 둘 다 기본값일 뿐 조작자가 바꾸지만,
+        //       기본값이 창구와 안 맞으면 탭을 열 때마다 조건부터 고쳐야 한다.
+        // 확인: 접수 창구는 오늘~오늘이고, 예약 창구는 오늘부터 종료일이 열려 있다.
         [TestMethod]
         public void 창구마다_기간_기본값이_다르다()
         {
@@ -528,10 +590,10 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.RangeTo, "예약은 앞이 열려 있어야 한다");
         }
 
-        /// <summary>
-        /// [X] **오늘을 PC 시계에서 얻지 않는다.** DB 오늘날짜를 못 읽으면 기간을 건드리지 않고
-        ///     사유만 적는다 — 잘못된 날로 세우느니 사용자가 고르게 둔다.
-        /// </summary>
+        // 대상: WorkbenchPresenter (WF-WRK-01) — DB 오늘날짜 조회가 실패한 경우
+        // 목적: 오늘을 PC 시계에서 얻지 않는다. 창구 PC 가 하루 어긋나면 목록도 접수 가능 판정도
+        //       같이 어긋나므로, 못 읽었으면 잘못된 날로 세우느니 조작자가 고르게 둔다.
+        // 확인: 기간이 세워지지 않고 안내가 「오늘 날짜를 확인하지 못해 기간을 세우지 못했습니다.」다.
         [TestMethod]
         public void 오늘_날짜를_못_읽으면_기간을_건드리지_않는다()
         {

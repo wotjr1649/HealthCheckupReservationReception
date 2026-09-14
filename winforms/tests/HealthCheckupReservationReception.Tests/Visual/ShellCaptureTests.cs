@@ -32,9 +32,11 @@ namespace HealthCheckupReservationReception.Tests.Visual
     [TestClass]
     public class ShellCaptureTests
     {
-        // VS 디자인 표면은 실행 화면이 아니다 — Program.cs 와 Presenter 가 디자인타임에 돌지 않아
-        // 글꼴·업무 Tab·상태바가 나타나지 않는다. 배치를 눈으로 보려면 실행해서 떠야 한다.
-        // 판정이 아니라 증거다.
+        // 대상: MainForm (WF-00) 셸 — 실행 화면 PNG 캡처
+        // 목적: VS 디자인 표면은 실행 화면이 아니다. Program.cs 와 Presenter 가 디자인타임에
+        //       돌지 않아 글꼴·업무 판·상태바가 나타나지 않으므로, 배치를 눈으로 보려면 실제로
+        //       띄워서 떠야 한다. 이 시험이 내는 것은 판정이 아니라 증거다 — 사람이 보는 자료다.
+        // 확인: PNG 경로가 만들어지고 파일이 존재하며 크기가 10KB 를 넘는다 (빈 이미지가 아니다).
         [TestMethod]
         [TestCategory("Visual")]
         public void WF00_실행_화면을_PNG_로_뜬다()
@@ -87,10 +89,10 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Console.WriteLine("캡처: " + path);
         }
 
-        /// <summary>
-        /// WF-PAT-01 을 목록·상세가 찬 상태로 뜬다. 빈 화면으로는 컬럼 폭과 좌우 비율을
-        /// 볼 수 없다 — 설계(wf_pat_01.js)와 견주려면 값이 들어 있어야 한다.
-        /// </summary>
+        // 대상: UcPatientManagement (WF-PAT-01) — 목록·상세가 찬 상태의 실행 화면 캡처
+        // 목적: 빈 화면으로는 컬럼 폭과 좌우 비율을 볼 수 없다. 설계(wf_pat_01.js)와 견주려면
+        //       값이 들어 있어야 한다.
+        // 확인: PNG 가 존재하고 10KB 를 넘는다.
         [TestMethod]
         [TestCategory("Visual")]
         public void WFPAT01_실행_화면을_PNG_로_뜬다()
@@ -137,10 +139,10 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Console.WriteLine("캡처: " + path);
         }
 
-        /// <summary>
-        /// WF-WRK-01 을 목록·상세가 찬 상태로 뜬다. 빈 화면으로는 조회 한 줄의 칸 폭도
-        /// 좌우 비율도 볼 수 없다 — 종료일 DateEdit 이 잘린 것이 실제로 그렇게 드러났다.
-        /// </summary>
+        // 대상: UcWorkbench (WF-WRK-01) — 목록·상세가 찬 상태의 실행 화면 캡처
+        // 목적: 빈 화면으로는 조회 한 줄의 칸 폭도 좌우 비율도 볼 수 없다 — 종료일 DateEdit 이
+        //       잘린 결함이 실제로 이 캡처에서 드러났다.
+        // 확인: PNG 가 존재하고 10KB 를 넘는다.
         [TestMethod]
         [TestCategory("Visual")]
         public void WFWRK01_실행_화면을_PNG_로_뜬다()
@@ -197,10 +199,10 @@ namespace HealthCheckupReservationReception.Tests.Visual
             };
         }
 
-        /// <summary>
-        /// 화면 ID: DLG-RSV-01 — 예약 변경. `FrmReservation` 의 다른 갈래이고 진입값만 다르다
-        /// (03 §10.2). 신규(`WF-RSV-01`)와 한 장씩 떠야 **무엇이 달라 보이는지**를 눈으로 견준다.
-        /// </summary>
+        // 대상: FrmReservation (DLG-RSV-01 예약 변경) — 실행 화면 캡처
+        // 목적: 03 §10.2 에서 예약 변경은 FrmReservation 의 다른 갈래이고 진입값만 다르다.
+        //       신규(WF-RSV-01)와 한 장씩 떠야 무엇이 달라 보이는지를 눈으로 견줄 수 있다.
+        // 확인: PNG 가 존재하고 10KB 를 넘는다.
         [TestMethod]
         [TestCategory("Visual")]
         public void DLGRSV01_실행_화면을_PNG_로_뜬다()
@@ -237,9 +239,10 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Console.WriteLine("캡처: " + path);
         }
 
-        /// <summary>
-        /// 화면 ID: DLG-HOL-01 — 휴무일 관리. 탭 하나를 통째로 차지하는데 캡처가 없었다.
-        /// </summary>
+        // 대상: FrmHoliday (DLG-HOL-01) — 실행 화면 캡처
+        // 목적: 탭 하나를 통째로 차지하는 화면인데 캡처가 없었다. 배치를 눈으로 확인할 자료가
+        //       없으면 이 화면만 검토에서 빠진다.
+        // 확인: PNG 가 존재하고 10KB 를 넘는다.
         [TestMethod]
         [TestCategory("Visual")]
         public void DLGHOL01_실행_화면을_PNG_로_뜬다()
@@ -405,10 +408,10 @@ namespace HealthCheckupReservationReception.Tests.Visual
             };
         }
 
-        /// <summary>
-        /// WF-RSV-01 을 수검자·일정·검사구성이 찬 상태로 뜬다. 03 §8.4 의 상단 30~35% ·
-        /// 하단 65~70% 비율과 AEX 의 `선택불가 사유` 칸은 값이 들어 있어야 보인다.
-        /// </summary>
+        // 대상: FrmReservation (WF-RSV-01 신규 예약) — 수검자·일정·검사구성이 찬 상태의 캡처
+        // 목적: 03 §8.4 의 상단 30~35% · 하단 65~70% 비율과 추가검사의 「선택불가 사유」 칸은
+        //       값이 들어 있어야 보인다. 빈 화면 캡처로는 그 비율을 잴 수 없다.
+        // 확인: PNG 가 존재하고 10KB 를 넘는다.
         [TestMethod]
         [TestCategory("Visual")]
         public void WFRSV01_실행_화면을_PNG_로_뜬다()
@@ -449,7 +452,10 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Console.WriteLine("캡처: " + path);
         }
 
-        /// <summary>DLG-LOG-01 — 진입점 둘이 같은 창을 연다. 수검자 쪽으로 한 장 뜬다.</summary>
+        // 대상: FrmChangeLog (DLG-LOG-01) — 수검자 쪽 진입으로 뜬 실행 화면 캡처
+        // 목적: 진입점 둘(수검자·예약접수)이 같은 창을 연다. 한 장을 떠 두면 그 창이 어느
+        //       진입에서도 같은 모양인지 눈으로 확인할 기준이 생긴다.
+        // 확인: PNG 가 존재하고 5KB 를 넘는다 (모달이라 셸보다 작다).
         [TestMethod]
         [TestCategory("Visual")]
         public void DLGLOG01_실행_화면을_PNG_로_뜬다()
@@ -475,7 +481,10 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Console.WriteLine("캡처: " + path);
         }
 
-        /// <summary>DLG-RCP-01 — 읽기 전용 화면에 버튼 하나다.</summary>
+        // 대상: FrmReception (DLG-RCP-01) — 실행 화면 캡처
+        // 목적: 읽기 전용 화면에 버튼 하나뿐인 단순한 창이지만, 접수 가능/불가 문구와 버튼
+        //       상태가 한눈에 보이는지는 떠 봐야 안다.
+        // 확인: PNG 가 존재하고 5KB 를 넘는다.
         [TestMethod]
         [TestCategory("Visual")]
         public void DLGRCP01_실행_화면을_PNG_로_뜬다()
@@ -489,7 +498,10 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Console.WriteLine("캡처: " + path);
         }
 
-        /// <summary>DLG-RCP-02 — AEX 한 칸만 열린다. 선택 불가는 회색 + 사유.</summary>
+        // 대상: FrmExtraExam (DLG-RCP-02) — 실행 화면 캡처
+        // 목적: 추가검사 한 칸만 열리는 화면이고, 선택 불가 항목이 회색 + 사유로 보이는지가
+        //       이 화면의 핵심이다. 그것은 값이 든 상태로 떠야 확인된다.
+        // 확인: PNG 가 존재하고 5KB 를 넘는다.
         [TestMethod]
         [TestCategory("Visual")]
         public void DLGRCP02_실행_화면을_PNG_로_뜬다()
@@ -608,10 +620,10 @@ namespace HealthCheckupReservationReception.Tests.Visual
             };
         }
 
-        /// <summary>
-        /// DLG-PAT-01 New Mode. 설계 `dlg_pat_01.js` 와 견주려면 구획 다섯이 한 화면에
-        /// 들어가는지가 먼저다 — 값이 비어 있어도 배치는 보인다.
-        /// </summary>
+        // 대상: FrmPatientEditor (DLG-PAT-01 New Mode) — 실행 화면 캡처
+        // 목적: 설계 dlg_pat_01.js 와 견주려면 구획 다섯이 한 화면에 들어가는지가 먼저다 —
+        //       값이 비어 있어도 배치는 보인다.
+        // 확인: PNG 가 존재하고 2KB 를 넘는다.
         [TestMethod]
         [TestCategory("Visual")]
         public void DLGPAT01_실행_화면을_PNG_로_뜬다()
@@ -623,10 +635,11 @@ namespace HealthCheckupReservationReception.Tests.Visual
             Console.WriteLine("캡처: " + path);
         }
 
-        /// <summary>
-        /// DLG-PAT-03. 설계 `dlg_pat_03.js` 는 후보 둘의 주민번호가 서로 달라야 한다고 적는다 —
-        /// 이 화면의 존재 이유가 `이름 + 생년월일 동일 / 주민번호 상이` 이기 때문이다.
-        /// </summary>
+        // 대상: FrmPatientDuplicate (DLG-PAT-03) — 후보 둘이 실린 상태의 실행 화면 캡처
+        // 목적: 설계 dlg_pat_03.js 는 후보 둘의 주민번호가 서로 달라야 한다고 적는다 — 이 화면의
+        //       존재 이유가 「이름 + 생년월일 동일 / 주민번호 상이」이기 때문이다. 같은 값으로
+        //       뜨면 화면이 무엇을 보여 주려는지가 캡처에 드러나지 않는다.
+        // 확인: PNG 가 존재하고 2KB 를 넘는다.
         [TestMethod]
         [TestCategory("Visual")]
         public void DLGPAT03_실행_화면을_PNG_로_뜬다()

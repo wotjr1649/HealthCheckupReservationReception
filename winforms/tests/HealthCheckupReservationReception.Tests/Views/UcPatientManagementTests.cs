@@ -22,9 +22,12 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class UcPatientManagementTests
     {
-        // 03 §5.3 · §5.5 — 재조회 시 SelectedRow 를 해제한다.
-        // [X] Grid 는 DataSource 를 받으면 0행을 잡는다. 그 선택이 그대로 올라오면
-        //     방금 비운 상세를 곧바로 다시 채우게 된다.
+        // 대상: UcPatientManagement (WF-PAT-01) — Grid 에 DataSource 를 실었을 때의 선택 상태
+        // 목적: 03 §5.3·§5.5 는 재조회 시 선택을 해제하라고 정했다. 그런데 DevExpress Grid 는
+        //       DataSource 를 받으면 스스로 0행을 잡고, 그 선택이 이벤트로 올라오면 방금 비운
+        //       상세를 곧바로 다시 채운다 — 조작자가 고르지도 않은 사람의 상세가 선다.
+        // 확인: 목록만 실었을 때 선택 이벤트로 올라온 수검자ID 가 null 이고, 화면에도 선택으로
+        //       보이지 않는다.
         [TestMethod]
         public void 목록을_실어도_행이_선택되지_않는다()
         {
@@ -69,9 +72,12 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // [X] **다섯을 다 켜면 한 줄이 넘칠 수 있다.** 항목마다 Min=Max 로 못 박혀 있어
-        //     좁아지지 않고, 넘치면 LayoutControl 안에 가로 스크롤이 서서 [조회] 무리가
-        //     화면 밖으로 밀린다. 조건을 더하거나 폭을 늘릴 때 여기서 걸린다.
+        // 대상: UcPatientManagement (WF-PAT-01) — 조회조건 영역의 가로 폭
+        // 목적: 항목마다 Min=Max 로 못 박혀 있어 좁아지지 않는다. 다섯을 다 켜서 한 줄이 넘치면
+        //       LayoutControl 안에 가로 스크롤이 서고 [조회] 무리가 화면 밖으로 밀린다. 조건을
+        //       더하거나 폭을 늘릴 때 이 시험에서 먼저 걸린다.
+        // 확인: 조회 영역에 항목이 있고(검사가 헛돌지 않았다), 각 줄의 오른쪽 끝이 그룹 폭 안에
+        //       들어간다.
         [TestMethod]
         public void 조회조건_다섯을_다_켜도_한_줄에_들어간다()
         {
@@ -109,9 +115,11 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // 03 §18 — Column Chooser 가 제공하는 것은 표시/숨김과 기본값 복원 둘뿐이다.
-        // 여기서는 그 둘이 실제로 Grid 를 움직이는지만 본다. 폼을 띄우지 않고 화면이
-        // 노출한 복원 경로를 직접 부른다.
+        // 대상: UcPatientManagement (WF-PAT-01) — [컬럼설정] 의 기본값 복원
+        // 목적: 03 §18 이 Column Chooser 에 표시/숨김과 기본값 복원 둘만 주기로 했다. 복원이
+        //       실제로 Grid 를 움직이지 않으면 조작자는 컬럼을 잘못 만진 뒤 되돌릴 길이 없다.
+        // 확인: 복원 뒤 기본 컬럼(차트번호)이 보이고, 기본이 아닌 후보 컬럼(주민등록번호)은
+        //       다시 숨겨진다 — 양방향 모두 제자리로 간다.
         [TestMethod]
         public void 기본값_복원은_숨긴_컬럼을_되살리고_꺼낸_컬럼을_되돌린다()
         {
@@ -136,7 +144,10 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // 03 §18 — 컬럼을 숨기는 길은 [컬럼설정] 하나다. 헤더를 끌어내 숨기는 경로를 막는다.
+        // 대상: UcPatientManagement (WF-PAT-01) — Grid 의 AllowQuickHideColumns 옵션
+        // 목적: 03 §18 은 컬럼을 숨기는 길을 [컬럼설정] 하나로 정했다. 헤더를 끌어내 숨기는
+        //       경로가 열려 있으면 실수로 사라진 컬럼을 조작자가 되찾는 길을 모른다.
+        // 확인: Grid 의 OptionsCustomization.AllowQuickHideColumns 가 false 다.
         [TestMethod]
         public void 헤더를_끌어내_컬럼을_숨길_수_없다()
         {
@@ -147,12 +158,13 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // 03 §5.3 조회조건 다섯. 2026-09-10 에 생년월일·휴대전화를 걷었다가 grilling 2회차에서
-        // **끌 수 있는 조건**으로 되돌렸다 — 사라진 것이 아니라 기본이 꺼진 것이고, 그래서
-        // 01 P01-01 · 02 F-PAT-001 과의 이탈이 닫힌다.
-        //
-        // 여섯째 `예약 없는 수검자만` 은 2026-09-11 grilling 이 더한 것이다. SP 로 가지 않고
-        // 화면이 거르므로 여닫을 칸이 없다 — 앞 다섯과 성질이 다르다.
+        // 대상: UcPatientManagement (WF-PAT-01) — 조회조건의 기본 구성
+        // 목적: 03 §5.3 의 조회조건 다섯 중 기본으로 켜 두는 것은 셋이다. 2026-09-10 에
+        //       생년월일·휴대전화를 걷었다가 grilling 2회차에서 「끌 수 있는 조건」으로 되돌렸다 —
+        //       사라진 것이 아니라 기본이 꺼진 것이고, 그래서 01 P01-01 · 02 F-PAT-001 과의
+        //       이탈이 닫힌다.
+        // 확인: 조회조건 항목이 셋이고 차트번호·이름·주민등록번호가 모두 Always 로 보이며,
+        //       여섯째인 「예약 없는 수검자만」 체크박스는 기본이 꺼짐이다.
         [TestMethod]
         public void 조회조건은_셋이고_모두_켜져_있다()
         {
@@ -171,14 +183,13 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        /// <summary>
-        /// `[X]` **걷었다는 것을 화면 밖에서도 고정한다.** `SP-PAT-01` 은 `@생년월일`·
-        ///      `@휴대전화` 를 여전히 받으므로(`05` §7.2) 계약만 봐서는 화면이 그 둘을
-        ///      보내는지 알 수 없다. 화면이 `null` 을 내주는 것이 유일한 고리다.
-        ///
-        /// `[!]` 이 시험이 red 가 되면 둘이 되살아난 것이다. 그때는 `01` P01-01 ·
-        ///      `02` F-PAT-001 과의 이탈이 함께 사라지므로 session-17 §5 도 같이 고쳐라.
-        /// </summary>
+        // 대상: UcPatientManagement (WF-PAT-01) — 걷어 낸 두 조회조건이 SP 로 가지 않는지
+        // 목적: SP-PAT-01 은 @생년월일·@휴대전화를 여전히 받으므로 (05 §7.2) 계약만 봐서는 화면이
+        //       그 둘을 보내는지 알 수 없다. 화면이 null 을 내주는 것이 유일한 고리다. 이 시험이
+        //       red 가 되면 둘이 되살아난 것이고, 그때는 01 P01-01 · 02 F-PAT-001 과의 이탈도
+        //       함께 사라지므로 session-17 §5 를 같이 고쳐야 한다.
+        // 확인: 조회조건 드롭다운에 생년월일·휴대전화가 없고, 화면이 내주는 Birthday·MobilePhone
+        //       이 둘 다 null 이다.
         [TestMethod]
         public void 생년월일_휴대전화는_조회조건으로_가지_않는다()
         {
@@ -200,8 +211,11 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // [X] 끈 조건은 값도 버린다. 안 보이는 칸에 남은 글자가 조회에 섞이면
-        //     사용자는 왜 그 결과가 나왔는지 알 길이 없다 — Presenter 는 세 칸을 그대로 읽는다.
+        // 대상: UcPatientManagement (WF-PAT-01) — 조회조건을 껐을 때의 칸과 값
+        // 목적: 끈 조건은 값도 버려야 한다. Presenter 는 세 칸을 그대로 읽으므로, 안 보이는 칸에
+        //       남은 글자가 조회에 섞이면 조작자는 왜 그 결과가 나왔는지 알 길이 없다.
+        // 확인: 차트번호에 값을 넣은 뒤 그 조건을 끄면 칸이 Never 로 사라지고, 켜 둔 이름 조건은
+        //       그대로 Always 이며, 화면이 내주는 차트번호 값이 비어 있다.
         [TestMethod]
         public void 조회조건을_끄면_칸이_사라지고_값도_비워진다()
         {
@@ -221,8 +235,12 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // 03 §18 — 컬럼설정은 Ribbon 이 아니라 Grid 옆 드롭다운이 갖는다 (2026-09-10 사용자 결정).
-        // 목록은 Grid 가 가진 컬럼에서 만들고, 체크를 끄면 그 컬럼이 사라진다.
+        // 대상: UcPatientManagement (WF-PAT-01) — Grid 옆 [컬럼설정] 드롭다운과 Grid 의 연동
+        // 목적: 03 §18 에서 컬럼설정은 Ribbon 이 아니라 Grid 옆 드롭다운이 갖는다 (2026-09-10
+        //       사용자 결정). 목록과 Grid 가 어긋나면 체크는 켜져 있는데 컬럼은 없는 상태가 되어
+        //       조작자가 되돌릴 방법을 잃는다.
+        // 확인: 목록 항목 수가 Grid 컬럼 수와 같고, 차트번호 체크를 끄면 그 컬럼이 사라지며,
+        //       기본값 복원 뒤에는 컬럼과 체크가 함께 되살아난다.
         [TestMethod]
         public void 컬럼_체크를_끄면_그_컬럼이_사라지고_기본값_복원이_되살린다()
         {
@@ -259,10 +277,11 @@ namespace HealthCheckupReservationReception.Tests.Views
             method.Invoke(screen, new object[] { null, EventArgs.Empty });
         }
 
-        // [X] `OptionsView.ColumnAutoWidth` 는 기본이 true 라 Grid 가 컬럼을 뷰 폭에 욱여넣는다.
-        //     그래서 컬럼 폭을 아무리 넓혀도 가로 스크롤바가 서지 않는다(실측 2026-09-10:
-        //     컬럼폭합 3000 · 뷰폭 1140 인데 가로 스크롤 숨김). 가로로 미는 지렛대는 `MinWidth`
-        //     하나뿐이다 — 컬럼을 새로 더하면서 이것을 빼먹으면 그 컬럼은 20px 까지 찌그러진다.
+        // 대상: UcPatientManagement (WF-PAT-01) — Grid 컬럼의 MinWidth
+        // 목적: ColumnAutoWidth 는 기본이 true 라 Grid 가 컬럼을 뷰 폭에 욱여넣는다. 가로로 미는
+        //       지렛대는 MinWidth 하나뿐이고, 컬럼을 새로 더하면서 빼먹으면 그 컬럼이 찌그러져
+        //       값이 «...» 로만 보인다. WF-WRK-01 과 같은 규칙이라 두 화면을 함께 지킨다.
+        // 확인: 모든 컬럼의 MinWidth 가 20 보다 크다.
         [TestMethod]
         public void 모든_컬럼이_찌그러짐을_막을_MinWidth_를_갖는다()
         {

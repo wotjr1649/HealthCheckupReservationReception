@@ -106,6 +106,33 @@ function cleanComment(lines) {
   return text;
 }
 
+/*
+ * 주석 한 덩어리를 **대상 · 목적 · 확인** 셋으로 가른다.
+ *
+ * `[!]` **셋은 서로 다른 질문이다** (2026-09-15 사용자 지시).
+ *       대상 — 무엇을 테스트하는가. 시험 이름만으로는 이것이 안 보인다.
+ *       목적 — 왜 이 시험이 있는가. 없으면 무엇이 깨지는가.
+ *       확인 — 이 시험이 참이라고 주장하는 것이 무엇인가. 기대 결과다.
+ *       한 칸에 뭉쳐 두면 「동작을 다시 적은 문장」이 되고, 읽는 사람은 시험 이름에서
+ *       얻지 못한 것을 여기서도 얻지 못한다.
+ *
+ * 표기는 시험 위 주석의 `대상:` · `목적:` · `확인:` 세 머리말이다. 빠진 것이 있으면
+ * `TI-001` 이 잡는다.
+ */
+function splitPurpose(text) {
+  const pick = function (head, nexts) {
+    const stop = nexts.length ? '(?:' + nexts.join('|') + ')\\s*:' : '$';
+    const re = new RegExp(head + '\\s*:\\s*([\\s\\S]*?)\\s*(?:' + stop + '|$)');
+    const m = re.exec(text);
+    return m ? (m[1] || '').trim() : '';
+  };
+  return {
+    subject: pick('대상', ['목적', '확인']),
+    purpose: pick('목적', ['확인']),
+    verify: pick('확인', []),
+  };
+}
+
 function refsOf(text) {
   const out = [];
   let m;
@@ -182,13 +209,19 @@ function parseFile(file, relPath) {
      */
     let reason = cleanComment(commentAbove(i));
     if (!reason) reason = cleanComment(commentInBody(k));
+    const split = splitPurpose(reason);
     methods.push({
       file: rel,
       line: i + 1,
       layer: LAYER[folder],
       className: className,
       name: sig[1],
+      /* `_` 는 C# 식별자에서 띄어쓰기 자리다. 읽는 사람에게는 문장으로 보여 준다. */
+      title: sig[1].replace(/_/g, ' '),
       reason: reason,
+      subject: split.subject,
+      purpose: split.purpose,
+      verify: split.verify,
       refs: refsOf(reason),
     });
   }
@@ -274,16 +307,25 @@ function judge(methods, trxFile, trxMap, files, quiet, checkOnly) {
   const problems = [];
   const ok = function (line) { if (!quiet) console.log(line); };
 
-  /* TI-001 — 이유 없는 시험은 목록에 실을 수 없다. 이름만으로는 왜 있는지 알 수 없다. */
-  const bare = methods.filter(function (m) { return !m.reason; });
+  /*
+   * TI-001 — `목적:` 과 `확인:` 이 **둘 다** 있어야 목록에 실린다.
+   *
+   * 이름만으로는 무엇을 재는지 알 수 없고, 목적만 있으면 「왜 하는가」는 알아도
+   * 「무엇이 참이어야 하는가」를 모른다. 빈칸은 읽는 사람에게 「이 시험은 목적이 없다」로
+   * 읽히므로, 빈칸을 내보내지 않고 여기서 막는다 (2026-09-15 사용자 지시).
+   */
+  const bare = methods.filter(function (m) { return !m.subject || !m.purpose || !m.verify; });
   if (bare.length) {
-    problems.push('FAIL TI-001 이유 주석이 없는 시험 ' + bare.length + '건');
+    problems.push('FAIL TI-001 대상·목적·확인이 갖춰지지 않은 시험 ' + bare.length + '건');
     for (const m of bare.slice(0, 300)) {
-      problems.push('       ' + m.file + ':' + m.line + '  ' + m.name);
+      const miss = ['대상', '목적', '확인']
+        .filter(function (t, n) { return !([m.subject, m.purpose, m.verify][n]); })
+        .join('·') + ' 없음';
+      problems.push('       ' + m.file + ':' + m.line + '  [' + miss + ']  ' + m.name);
     }
     if (bare.length > 300) problems.push('       … 그 밖 ' + (bare.length - 300) + '건');
   } else {
-    ok('PASS TI-001 이유 주석 전건 있음 (' + methods.length + '건)');
+    ok('PASS TI-001 대상·목적·확인 전건 있음 (' + methods.length + '건)');
   }
 
   if (!trxFile) {
@@ -348,7 +390,10 @@ function write(methods, trxFile, trxMap) {
       layer: m.layer,
       area: m.area,
       name: m.name,
-      reason: m.reason,
+      title: m.title,
+      subject: m.subject,
+      purpose: m.purpose,
+      verify: m.verify,
       refs: m.refs,
       cases: e ? e.cases : 0,
       result: resultOf(e),
@@ -402,7 +447,7 @@ function write(methods, trxFile, trxMap) {
   s1.addRow([]);
   s1.addRow(['PASS · FAIL', '케이스 수다. 「미실행 시험」만 시험 수이며, 돌지 않아 케이스를 셀 수 없다.']);
   s1.addRow(['미실행', '그 시각에 판정하지 못한 것이다. 판정하지 못한 검사를 PASS 로 세지 않는다.']);
-  s1.addRow(['', '실물 DB 계열은 운영시간(09:00~18:00) 밖에서 예약·접수가 막혀 판정이 나오지 않는다.']);
+  s1.addRow(['', '실물 DB 계열은 운영시간 밖이거나 마감 뒤에는 예약·접수가 막혀 판정이 나오지 않는다. 그 창의 값은 DB 의 [운영기준] 이 갖는다.']);
   s1.addRow(['케이스', 'DataRow 로 값을 바꿔 가며 도는 시험은 한 행에 접고 케이스 수를 적었다.']);
 
   s1.getRow(1).font = { bold: true, size: 14 };
@@ -412,21 +457,31 @@ function write(methods, trxFile, trxMap) {
 
   /* ── 시트 2 전건 ─────────────────────────────────────────── */
   const s2 = wb.addWorksheet('전건');
-  s2.addRow(['층', '화면/영역', '시험 이름', '이유', '근거', '케이스', '결과', 'ms', '파일']);
+  s2.addRow([
+    '층', '화면/영역', '시험 항목',
+    '대상 — 무엇을 테스트하는가',
+    '목적 — 왜 이 시험이 있는가',
+    '확인 내용 — 무엇이 참이어야 하는가',
+    '근거', '케이스', '결과', 'ms', '파일',
+  ]);
   for (const r of rows) {
-    s2.addRow([r.layer, r.area, r.name, r.reason, r.refs, r.cases, r.result, r.ms, r.file]);
+    s2.addRow([r.layer, r.area, r.title, r.subject, r.purpose, r.verify,
+      r.refs, r.cases, r.result, r.ms, r.file]);
   }
   s2.getRow(1).font = { bold: true };
-  s2.views = [{ state: 'frozen', ySplit: 1 }];
-  s2.autoFilter = { from: 'A1', to: 'I1' };
+  s2.getRow(1).alignment = { wrapText: true, vertical: 'middle' };
+  s2.views = [{ state: 'frozen', ySplit: 1, xSplit: 3 }];
+  s2.autoFilter = { from: 'A1', to: 'K1' };
   s2.columns = [
-    { width: 11 }, { width: 16 }, { width: 46 }, { width: 80 },
-    { width: 18 }, { width: 8 }, { width: 9 }, { width: 8 }, { width: 46 },
+    { width: 11 }, { width: 15 }, { width: 40 }, { width: 44 },
+    { width: 60 }, { width: 60 },
+    { width: 17 }, { width: 8 }, { width: 8 }, { width: 8 }, { width: 42 },
   ];
   s2.eachRow(function (row, i) {
     if (i === 1) return;
-    row.getCell(4).alignment = { wrapText: true, vertical: 'top' };
-    row.getCell(3).alignment = { vertical: 'top' };
+    for (const c of [3, 4, 5, 6]) {
+      row.getCell(c).alignment = { wrapText: true, vertical: 'top' };
+    }
   });
 
   if (!fs.existsSync(OUTDIR)) fs.mkdirSync(OUTDIR, { recursive: true });
@@ -455,21 +510,42 @@ function selftest() {
   };
   const parse = function (body) { return parseFile(mk(body), 'Presenters/X.cs'); };
 
-  /* 이유가 있으면 읽어 낸다 */
+  /* 목적과 확인을 두 칸으로 가른다 */
   let r = parse([
     '[TestClass]',
     'public class XTests',
     '{',
-    '    // 05 §9.12 — 저장가능은 DB 것이다',
+    '    // 대상: ReservationPresenter — 저장 버튼 활성화',
+    '    // 목적: 05 §9.12 — 저장가능은 DB 것이다. 화면이 다시 세면 판정이 두 곳이 된다.',
+    '    // 확인: 저장가능=0 이면 저장 버튼이 닫히고 차단메시지가 화면에 뜬다.',
     '    [TestMethod]',
     '    public void 무엇을_잰다() { }',
     '}',
   ].join('\n'));
-  say(r.methods && r.methods.length === 1 && /저장가능은 DB 것이다/.test(r.methods[0].reason),
-    'TI-SELFTEST', '// 한 줄 주석을 이유로 읽는다');
+  say(r.methods && r.methods.length === 1 &&
+    /^ReservationPresenter — 저장 버튼 활성화$/.test(r.methods[0].subject) &&
+    /^05 §9.12 — 저장가능은 DB 것이다.*두 곳이 된다\.$/.test(r.methods[0].purpose) &&
+    /^저장가능=0 이면/.test(r.methods[0].verify),
+    'TI-SELFTEST', '대상·목적·확인을 세 칸으로 가른다');
+  say(r.methods && r.methods[0].title === '무엇을 잰다',
+    'TI-SELFTEST', '시험 이름의 _ 를 띄어쓰기로 읽는다');
   say(r.methods && r.methods[0].refs === '05 §9.12', 'TI-SELFTEST', '주석에서 근거를 뽑는다');
 
-  /* 위가 비면 본문 첫 줄을 이유로 읽는다 */
+  /* 확인만 빠져도 잡는다 — 목적만 있으면 무엇이 참이어야 하는지를 모른다 */
+  r = parse([
+    '[TestClass]',
+    'public class XTests',
+    '{',
+    '    // 대상: 무엇인가',
+    '    // 목적: 왜 하는지만 적었다.',
+    '    [TestMethod]',
+    '    public void 확인이_없다() { }',
+    '}',
+  ].join('\n'));
+  say(judge(r.methods, null, {}, [], true).problems.some(function (p) { return /확인 없음/.test(p); }),
+    'TI-SELFTEST', '목적만 있고 확인이 없으면 잡는다');
+
+  /* 위가 비면 본문 첫 줄을 읽는다 */
   r = parse([
     '[TestClass]',
     'public class XTests',
@@ -477,25 +553,29 @@ function selftest() {
     '    [TestMethod]',
     '    public void 본문에_적었다()',
     '    {',
-    '        // 지어내지 않는다',
+    '        // 대상: 무엇인가',
+    '        // 목적: 지어내지 않는다',
+    '        // 확인: 숫자만 남는다',
     '        Assert.AreEqual(1, 1);',
     '    }',
     '}',
   ].join('\n'));
-  say(r.methods && r.methods.length === 1 && r.methods[0].reason === '지어내지 않는다',
-    'TI-SELFTEST', '본문 첫 줄 주석도 이유로 읽는다');
+  say(r.methods && r.methods.length === 1 && r.methods[0].verify === '숫자만 남는다',
+    'TI-SELFTEST', '본문 첫 줄 주석도 읽는다');
 
   /* 저장소 라벨과 굵게 표기는 공개용 문장에서 걷는다 */
   r = parse([
     '[TestClass]',
     'public class XTests',
     '{',
-    '    // [X] **막힌 이유**를 적는다',
+    '    // 대상: 무엇인가',
+    '    // 목적: [X] **막힌 이유**를 적는다',
+    '    // 확인: 그대로다',
     '    [TestMethod]',
     '    public void 라벨을_건다() { }',
     '}',
   ].join('\n'));
-  say(r.methods && r.methods[0].reason === '막힌 이유를 적는다',
+  say(r.methods && r.methods[0].purpose === '막힌 이유를 적는다',
     'TI-SELFTEST', '[X] 와 ** 를 걷는다');
 
   /* 이유가 없으면 TI-001 이 잡는다 */
@@ -509,13 +589,13 @@ function selftest() {
   ].join('\n'));
   const j = judge(r.methods, null, {}, [], true);
   say(j.problems.some(function (p) { return /TI-001/.test(p); }),
-    'TI-SELFTEST', '이유 없는 시험을 잡는다');
+    'TI-SELFTEST', '목적·확인이 둘 다 없는 시험을 잡는다');
 
   /* trx 에만 있는 시험은 TI-002 가 잡는다 */
   const trxFile = path.join(tmp, 'old.trx');
   fs.writeFileSync(trxFile, '', 'utf8');
   const j2 = judge(
-    [{ className: 'XTests', name: '있다', reason: '이유', file: 'X.cs', line: 1 }],
+    [{ className: 'XTests', name: '있다', subject: '대', purpose: '목', verify: '확', file: 'X.cs', line: 1 }],
     trxFile, { 'XTests.사라진시험': { cases: 1, pass: 1, fail: 0, other: 0, ms: 0 } }, [], true);
   say(j2.problems.some(function (p) { return /TI-002/.test(p); }),
     'TI-SELFTEST', 'trx 에만 있는 시험을 잡는다 (옛 trx)');
@@ -525,7 +605,7 @@ function selftest() {
   fs.writeFileSync(newSrc, '// later', 'utf8');
   fs.utimesSync(newSrc, new Date(Date.now() + 60000), new Date(Date.now() + 60000));
   const j3 = judge(
-    [{ className: 'XTests', name: '있다', reason: '이유', file: 'X.cs', line: 1 }],
+    [{ className: 'XTests', name: '있다', subject: '대', purpose: '목', verify: '확', file: 'X.cs', line: 1 }],
     trxFile, {}, [newSrc], true);
   say(j3.problems.some(function (p) { return /TI-003/.test(p); }),
     'TI-SELFTEST', 'trx 보다 나중에 고친 소스를 잡는다');
@@ -587,4 +667,9 @@ function main() {
   });
 }
 
-main();
+/* 도구로 부르면 돌고, require 로 부르면 파서만 내준다 (미리보기·시험용). */
+if (require.main === module) {
+  main();
+} else {
+  module.exports = { parseFile: parseFile, splitPurpose: splitPurpose };
+}

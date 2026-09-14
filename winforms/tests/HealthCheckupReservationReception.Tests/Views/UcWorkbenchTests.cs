@@ -21,11 +21,13 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class UcWorkbenchTests
     {
-        // [X] **이 시험이 잘림을 막는다.** LayoutControl 은 기본값에서 한 줄 안의 라벨 폭을
-        //     **가장 긴 것에 맞춰 통일**한다. 그러면 `~` 한 글자짜리 라벨이 `예약/접수일` 만큼의
-        //     자리를 떠안고, 그 폭이 그대로 입력칸에서 깎여 종료일 DateEdit 이 잘린다
-        //     (2026-09-10 실측·사용자 보고). 항목마다 AutoSize 를 주는 것이 유일한 해법이고,
-        //     라벨 길이가 제각각인 줄에서는 하나라도 빠지면 다시 밟는다.
+        // 대상: UcWorkbench (WF-WRK-01) — 조회조건 항목의 TextAlignMode
+        // 목적: LayoutControl 은 기본값에서 한 줄 안의 라벨 폭을 가장 긴 것에 맞춰 통일한다.
+        //       그러면 ~ 한 글자짜리 라벨이 「예약/접수일」만큼의 자리를 떠안고, 그 폭이 그대로
+        //       입력칸에서 깎여 종료일 DateEdit 이 잘린다 (2026-09-10 사용자 보고). 항목마다
+        //       AutoSize 를 주는 것이 유일한 해법이고, 라벨 길이가 제각각인 줄에서는 하나라도
+        //       빠지면 다시 밟는다.
+        // 확인: 조회조건 항목이 모두 TextAlignMode=AutoSize 다.
         [TestMethod]
         public void 조회조건_라벨은_저마다_제_폭을_쓴다()
         {
@@ -41,8 +43,10 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // 2026-09-10 사용자 지적 — 조회 한 줄은 WF-PAT-01 과 같은 꼴이어야 한다.
-        // 오른쪽 끝 셋의 순서가 [조회] [조회 조건] [컬럼 설정] 이다.
+        // 대상: UcWorkbench (WF-WRK-01) — 조회 한 줄 오른쪽 끝 세 버튼의 순서
+        // 목적: 2026-09-10 사용자 지적 — 조회 한 줄은 WF-PAT-01 과 같은 꼴이어야 한다. 두 목록
+        //       화면에서 버튼 순서가 다르면 조작자가 화면마다 손을 다시 익혀야 한다.
+        // 확인: 오른쪽 끝 셋이 [조회] · [조회 조건] · [컬럼 설정] 순서다.
         [TestMethod]
         public void 조회_한_줄의_끝은_조회_조회조건_컬럼설정_순서다()
         {
@@ -65,9 +69,11 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // [X] **넷을 다 켜면 한 줄이 넘칠 수 있다.** 항목마다 Min=Max 로 못 박혀 있어 좁아지지
-        //     않고, 넘치면 LayoutControl 안에 가로 스크롤이 서서 [조회] 무리가 화면 밖으로
-        //     밀린다. WF-PAT-01 에서 실제로 넘친 자리다 (조건 다섯 · 실측 1176 > 1144).
+        // 대상: UcWorkbench (WF-WRK-01) — 조회조건 넷을 모두 켰을 때의 가로 폭
+        // 목적: 항목마다 Min=Max 로 못 박혀 있어 좁아지지 않는다. 넘치면 LayoutControl 안에
+        //       가로 스크롤이 서고 [조회] 무리가 화면 밖으로 밀린다 — WF-PAT-01 에서 실제로
+        //       넘친 자리다 (조건 다섯, 1176 > 1144).
+        // 확인: 조건을 모두 켠 상태에서 필요한 폭이 그룹 폭 안에 들어간다.
         [TestMethod]
         public void 조회조건을_다_켜도_한_줄에_들어간다()
         {
@@ -93,7 +99,11 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // 03 §9.3 — 조회조건 넷. 무엇을 낼지는 [조회 조건] 드롭다운이 정한다 (WF-PAT-01 과 같다).
+        // 대상: UcWorkbench (WF-WRK-01) — 조회조건의 기본 구성
+        // 목적: 03 §9.3 이 조회조건을 넷으로 정했고, 무엇을 낼지는 [조회 조건] 드롭다운이
+        //       정한다 (WF-PAT-01 과 같은 꼴). 기본이 꺼져 있으면 화면을 연 조작자가 조회할
+        //       수단이 없는 채로 시작한다.
+        // 확인: 조회조건 항목이 넷이고 모두 Always 로 보인다.
         [TestMethod]
         public void 조회조건은_넷이고_기본은_전부_켜져_있다()
         {
@@ -110,7 +120,11 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // [X] 기간은 조건 하나가 칸 **둘**을 여닫는다. 하나만 사라지면 반쪽짜리 조건이 남는다.
+        // 대상: UcWorkbench (WF-WRK-01) — 기간 조건(시작일·종료일 두 칸)의 여닫기
+        // 목적: 기간은 조건 하나가 칸 둘을 여닫는다. 하나만 사라지면 반쪽짜리 조건이 남고,
+        //       숨긴 칸에 값이 남으면 보이지 않는 조건이 조회에 섞여 결과를 설명할 수 없다.
+        // 확인: 처음에는 시작일·종료일이 서 있고, 기간 조건을 끄면 두 칸이 함께 Never 로
+        //       사라지며 값도 null 이 된다. 켜 둔 차트번호 조건은 그대로 Always 다.
         [TestMethod]
         public void 기간_조건을_끄면_두_칸이_함께_사라지고_값도_비워진다()
         {
@@ -136,8 +150,12 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // 2026-09-11 — 드롭다운의 내용은 Context 가 정한다. 붙기 전에는 `전체` 하나이고,
-        // Context 가 상태를 주면 그만큼 늘어난다. `전체` 는 언제나 값이 없다.
+        // 대상: UcWorkbench (WF-WRK-01) — 상태 드롭다운의 항목 구성
+        // 목적: 2026-09-11 — 드롭다운 내용은 Context(예약 창구 / 접수 창구)가 정한다. 화면이
+        //       상태 목록을 직접 갖고 있으면 창구가 늘 때마다 같은 목록이 두 곳이 되고,
+        //       남의 창구 상태가 드롭다운에 섞인다.
+        // 확인: Context 가 붙기 전에는 「전체」 하나뿐이고, 상태 둘을 받으면 3개가 된다.
+        //       기본 선택은 「전체」라 StatusCode 가 null 이고, 두 번째 항목은 「예약완료」다.
         [TestMethod]
         public void 상태_드롭다운은_Context_가_준_상태에_전체를_얹는다()
         {
@@ -158,7 +176,11 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // 03 §18 — 컬럼 목록은 Grid 가 가진 것에서 만들고, 되돌리는 길은 [기본값 복원] 하나다.
+        // 대상: UcWorkbench (WF-WRK-01) — [컬럼설정] 드롭다운과 Grid 의 연동
+        // 목적: 03 §18 에서 컬럼 목록은 Grid 가 가진 것에서 만들고 되돌리는 길은 [기본값 복원]
+        //       하나다. 목록과 Grid 가 어긋나면 체크는 켜져 있는데 컬럼은 없는 상태가 된다.
+        // 확인: 목록 항목 수가 Grid 컬럼 수와 같고, 차트번호 체크를 끄면 그 컬럼이 사라지며,
+        //       기본값 복원 뒤 컬럼과 체크가 함께 되살아난다.
         [TestMethod]
         public void 컬럼_체크를_끄면_그_컬럼이_사라지고_기본값_복원이_되살린다()
         {
@@ -185,7 +207,10 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // 03 §9.4 — 기본 다섯 · 선택 셋. 선택 컬럼은 처음에 숨어 있다.
+        // 대상: UcWorkbench (WF-WRK-01) — Grid 컬럼의 기본 표시 상태
+        // 목적: 03 §9.4 가 기본 다섯 · 선택 셋으로 정했다. 선택 컬럼까지 처음부터 보이면 한 줄이
+        //       좁아져 기본 다섯이 찌그러지고, 조작자가 늘 보는 값이 읽기 어려워진다.
+        // 확인: 기본 다섯은 Visible=true, 선택 셋은 Visible=false 다.
         [TestMethod]
         public void Grid_는_기본_다섯에_선택_컬럼_셋을_숨겨_둔다()
         {
@@ -206,8 +231,11 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
-        // [X] `ColumnAutoWidth` 는 기본이 true 라 Grid 가 컬럼을 뷰 폭에 욱여넣는다. 가로로
-        //     미는 지렛대는 `MinWidth` 하나뿐이다 — 컬럼을 새로 더하면서 빼먹으면 찌그러진다.
+        // 대상: UcWorkbench (WF-WRK-01) — Grid 컬럼의 MinWidth
+        // 목적: ColumnAutoWidth 는 기본이 true 라 Grid 가 컬럼을 뷰 폭에 욱여넣는다. 가로로 미는
+        //       지렛대는 MinWidth 하나뿐이고, 컬럼을 새로 더하면서 빼먹으면 그 컬럼이 찌그러져
+        //       값이 «...» 로만 보인다.
+        // 확인: 모든 컬럼의 MinWidth 가 20 보다 크다.
         [TestMethod]
         public void 모든_컬럼이_찌그러짐을_막을_MinWidth_를_갖는다()
         {
