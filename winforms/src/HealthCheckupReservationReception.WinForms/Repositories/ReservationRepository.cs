@@ -1,4 +1,11 @@
-﻿// 화면 ID: WF-RSV-01 — 신규 예약 (03 §8)
+﻿// ── 예약 리포지토리 ──────────────────────────────────────────────────────────
+// 계약과 구현을 한 파일에 둔다. **SqlClient 는 이 폴더 안에서만 산다** (킷 §2).
+//
+//   USP_HC_예약가능정보_조회   SP-RSV-01   RS0~RS5 — 여섯을 한 번에 받는다
+//   USP_HC_예약_등록           SP-RSV-02   RS0+RS1
+//   USP_HC_예약_변경           SP-RSV-03   RS0+RS1
+//   USP_HC_예약_취소           SP-RSV-04   RS0+RS1
+
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -8,6 +15,23 @@ using HealthCheckupReservationReception.Models;
 
 namespace HealthCheckupReservationReception.Repositories
 {
+    // 화면 ID: WF-RSV-01 — 신규 예약 (03 §8)
+    public interface IReservationRepository
+    {
+        /// <summary>SP-RSV-01 `[dbo].[USP_HC_예약가능정보_조회]` (05 §9).</summary>
+        ReservationAvailabilityReadDto ReadAvailability(ReservationAvailabilityRequest request);
+
+        /// <summary>SP-RSV-02 `[dbo].[USP_HC_예약_등록]` (05 §11.1).</summary>
+        WorkSaveReadDto Register(ReservationSaveRequest request);
+
+        /// <summary>SP-RSV-03 `[dbo].[USP_HC_예약_변경]` (05 §11.2).</summary>
+        WorkSaveReadDto Change(ReservationChangeRequest request);
+
+        /// <summary>SP-RSV-04 `[dbo].[USP_HC_예약_취소]` (05 §11.3).</summary>
+        WorkSaveReadDto Cancel(WorkActionRequest request);
+    }
+
+    // 화면 ID: WF-RSV-01 — 신규 예약 (03 §8)
     /// <summary>
     /// WF-RSV-01 이 쓰는 두 SP (05 §9 · §11.1).
     /// Parameter 는 이름·타입·크기를 계약 그대로 명시한다. AddWithValue 를 쓰지 않는다 (킷 §3).

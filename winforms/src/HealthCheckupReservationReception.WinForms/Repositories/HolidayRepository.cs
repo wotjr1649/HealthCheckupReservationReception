@@ -1,4 +1,11 @@
-﻿// 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
+﻿// ── 휴무일 리포지토리 ────────────────────────────────────────────────────────
+// 계약과 구현을 한 파일에 둔다. **SqlClient 는 이 폴더 안에서만 산다** (킷 §2).
+//
+//   USP_HC_휴무일목록_조회     SP-HOL-01   RS0~RS2
+//   USP_HC_자체휴무일_등록     SP-HOL-02   RS0+RS1
+//   USP_HC_자체휴무일_수정     SP-HOL-03   RS0+RS1
+//   USP_HC_자체휴무일_삭제     SP-HOL-04   RS0 만
+
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -7,6 +14,23 @@ using HealthCheckupReservationReception.Models;
 
 namespace HealthCheckupReservationReception.Repositories
 {
+    // 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
+    public interface IHolidayRepository
+    {
+        /// <summary>SP-HOL-01 목록 + 공휴일 등재현황 (05 §12.5).</summary>
+        HolidayListReadDto Search(HolidaySearchRequest request);
+
+        /// <summary>SP-HOL-02 자체휴무일 등록 (05 §12.6).</summary>
+        HolidaySaveReadDto Register(HolidaySaveRequest request);
+
+        /// <summary>SP-HOL-03 자체휴무일 수정 (05 §12.7).</summary>
+        HolidaySaveReadDto Update(HolidaySaveRequest request);
+
+        /// <summary>SP-HOL-04 자체휴무일 물리 삭제 (05 §12.8). RS1 이 없다.</summary>
+        HolidaySaveReadDto Delete(DateTime holidayDate, byte[] rowVersion);
+    }
+
+    // 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
     /// <summary>
     /// DLG-HOL-01 이 쓰는 네 SP (05 §12.5~§12.8).
     /// Parameter 는 이름·타입·크기를 계약 그대로 명시한다. AddWithValue 를 쓰지 않는다 (킷 §3).

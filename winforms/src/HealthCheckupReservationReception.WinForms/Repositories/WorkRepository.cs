@@ -1,4 +1,12 @@
-﻿// 화면 ID: WF-WRK-01 — 예약/접수 공통 Workbench (03 §9)
+﻿// ── 예약·접수 공통 업무 리포지토리 ───────────────────────────────────────────
+// 계약과 구현을 한 파일에 둔다. **SqlClient 는 이 폴더 안에서만 산다** (킷 §2).
+//
+//   USP_HC_예약접수목록_조회     SP-WRK-01   RS0+RS1
+//   USP_HC_예약접수상세_조회     SP-WRK-02   RS0~RS5 — 여섯을 한 번에 받는다
+//   USP_HC_접수_완료             SP-RCP-01   RS0+RS1
+//   USP_HC_접수추가검사_변경     SP-RCP-02   RS0+RS1
+//   USP_HC_접수_취소             SP-RCP-03   RS0+RS1
+
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -7,6 +15,26 @@ using HealthCheckupReservationReception.Models;
 
 namespace HealthCheckupReservationReception.Repositories
 {
+    // 화면 ID: WF-WRK-01 — 예약/접수 공통 Workbench (03 §9)
+    public interface IWorkRepository
+    {
+        /// <summary>SP-WRK-01 `[dbo].[USP_HC_예약접수목록_조회]` (05 §8.1).</summary>
+        WorkListReadDto Search(WorkSearchRequest request);
+
+        /// <summary>SP-WRK-02 `[dbo].[USP_HC_예약접수상세_조회]` (05 §8.2).</summary>
+        WorkDetailReadDto ReadDetail(long workId);
+
+        /// <summary>SP-RCP-01 `[dbo].[USP_HC_접수_완료]` (05 §12.1). RSV → RCP.</summary>
+        WorkSaveReadDto CompleteReception(WorkActionRequest request);
+
+        /// <summary>SP-RCP-03 `[dbo].[USP_HC_접수_취소]` (05 §12.3). RCP → CNC.</summary>
+        WorkSaveReadDto CancelReception(WorkActionRequest request);
+
+        /// <summary>SP-RCP-02 `[dbo].[USP_HC_접수추가검사_변경]` (05 §12.2). RCP 유지.</summary>
+        WorkSaveReadDto ChangeExtraExam(ExtraExamChangeRequest request);
+    }
+
+    // 화면 ID: WF-WRK-01 — 예약/접수 공통 Workbench (03 §9)
     /// <summary>
     /// WF-WRK-01 이 쓰는 두 조회 SP (05 §8.1 · §8.2).
     /// Parameter 는 이름·타입·크기를 계약 그대로 명시한다. AddWithValue 를 쓰지 않는다 (킷 §3).

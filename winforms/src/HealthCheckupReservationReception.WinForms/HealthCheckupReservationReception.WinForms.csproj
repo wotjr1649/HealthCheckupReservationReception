@@ -77,19 +77,11 @@
     <Compile Include="Program.cs" />
     <Compile Include="Repositories\CommonStatusRepository.cs" />
     <Compile Include="Repositories\DbResultReader.cs" />
-    <Compile Include="Repositories\IPatientRepository.cs" />
     <Compile Include="Repositories\PatientRepository.cs" />
-    <Compile Include="Repositories\ICommonStatusRepository.cs" />
-    <Compile Include="Repositories\IWorkRepository.cs" />
-    <Compile Include="Repositories\IReservationRepository.cs" />
     <Compile Include="Repositories\ReservationRepository.cs" />
     <Compile Include="Repositories\WorkRepository.cs" />
     <Compile Include="Services\CommonStatusService.cs" />
-    <Compile Include="Services\ICommonStatusService.cs" />
-    <Compile Include="Services\IPatientService.cs" />
     <Compile Include="Services\PatientService.cs" />
-    <Compile Include="Services\IWorkService.cs" />
-    <Compile Include="Services\IReservationService.cs" />
     <Compile Include="Services\ReservationService.cs" />
     <Compile Include="Services\WorkService.cs" />
     <Compile Include="Views\FrmExtraExam.cs">
@@ -178,9 +170,7 @@
       <DependentUpon>UcWorkbench.cs</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Repositories\IChangeLogRepository.cs" />
     <Compile Include="Repositories\ChangeLogRepository.cs" />
-    <Compile Include="Repositories\IHolidayRepository.cs" />
     <Compile Include="Repositories\HolidayRepository.cs" />
     <Compile Include="Presenters\ChangeLogPresenter.cs" />
     <Compile Include="Presenters\ReceptionPresenter.cs" />
@@ -188,9 +178,7 @@
     <Compile Include="Views\IChangeLogView.cs" />
     <Compile Include="Views\IReceptionView.cs" />
     <Compile Include="Views\IExtraExamView.cs" />
-    <Compile Include="Services\IChangeLogService.cs" />
     <Compile Include="Services\ChangeLogService.cs" />
-    <Compile Include="Services\IHolidayService.cs" />
     <Compile Include="Services\HolidayService.cs" />
     <Compile Include="Presenters\HolidayPresenter.cs" />
     <Compile Include="Views\IHolidayView.cs" />

@@ -1,9 +1,19 @@
-﻿using System.Data;
+﻿// ── 공통 업무상태 리포지토리 ─────────────────────────────────────────────────
+// 계약과 구현을 한 파일에 둔다. **SqlClient 는 이 폴더 안에서만 산다** (킷 §2).
+//
+//   USP_HC_공통업무상태_조회   SP-COM-01   RS0+RS1
+
+using System.Data;
 using System.Data.SqlClient;
 using HealthCheckupReservationReception.Models;
 
 namespace HealthCheckupReservationReception.Repositories
 {
+    public interface ICommonStatusRepository
+    {
+        CommonWorkStatusReadDto Read();
+    }
+
     /// <summary>
     /// SP-COM-01 `[dbo].[USP_HC_공통업무상태_조회]` (05 §7.1). 입력 Parameter 는 없다.
     /// </summary>

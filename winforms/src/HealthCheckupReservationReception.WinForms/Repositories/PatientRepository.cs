@@ -1,4 +1,13 @@
-﻿using System.Collections.Generic;
+﻿// ── 수검자 리포지토리 ────────────────────────────────────────────────────────
+// 계약과 구현을 한 파일에 둔다. **SqlClient 는 이 폴더 안에서만 산다** (킷 §2).
+//
+//   USP_HC_수검자목록_조회       SP-PAT-01   RS0+RS1
+//   USP_HC_수검자상세_조회       SP-PAT-02   RS0+RS1
+//   USP_HC_수검자_등록           SP-PAT-03   RS0+RS1
+//   USP_HC_수검자정보_수정       SP-PAT-04   RS0+RS1
+//   USP_HC_수검자유효업무_조회   SP-PAT-05   RS0+RS1
+
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using HealthCheckupReservationReception.Common;
@@ -6,6 +15,24 @@ using HealthCheckupReservationReception.Models;
 
 namespace HealthCheckupReservationReception.Repositories
 {
+    public interface IPatientRepository
+    {
+        /// <summary>SP-PAT-01 `[dbo].[USP_HC_수검자목록_조회]` (05 §7.2).</summary>
+        PatientListReadDto Search(PatientSearchRequest request);
+
+        /// <summary>SP-PAT-02 `[dbo].[USP_HC_수검자상세_조회]` (05 §7.3).</summary>
+        PatientDetailReadDto ReadDetail(long patientId);
+
+        /// <summary>SP-PAT-03 `[dbo].[USP_HC_수검자_등록]` (05 §10.1).</summary>
+        PatientSaveReadDto Register(PatientSaveRequest request);
+
+        /// <summary>SP-PAT-04 `[dbo].[USP_HC_수검자정보_수정]` (05 §10.2).</summary>
+        PatientSaveReadDto Update(PatientSaveRequest request);
+
+        /// <summary>SP-PAT-05 `[dbo].[USP_HC_수검자유효업무_조회]` (05 §7.4).</summary>
+        PatientValidWorkReadDto ReadValidWork(long patientId);
+    }
+
     /// <summary>
     /// WF-PAT-01 이 쓰는 두 조회 SP (05 §7.2 · §7.3).
     /// Parameter 는 이름·타입·크기를 계약 그대로 명시한다. AddWithValue 를 쓰지 않는다 (킷 §3).
