@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.IO;
-using System.Linq;
 using System.Threading;
-using System.Xml.Linq;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
 using HealthCheckupReservationReception.Repositories;
@@ -242,20 +238,7 @@ namespace HealthCheckupReservationReception.Tests.Integration
         /// </summary>
         private static string ConnectionString()
         {
-            string path = Path.GetFullPath(Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "..", "..", "..", "..", "src", "HealthCheckupReservationReception.WinForms", "App.config"));
-
-            if (!File.Exists(path))
-            {
-                Assert.Inconclusive("App.config 을 찾지 못했다: " + path);
-            }
-
-            List<XElement> entries = XDocument.Load(path)
-                .Root.Elements("connectionStrings").Elements("add").ToList();
-            Assert.AreEqual(1, entries.Count, "App.config 의 연결문자열이 하나가 아니다");
-
-            return entries[0].Attribute("connectionString").Value;
+            return DbFixture.ConnectionString();
         }
     }
 }
