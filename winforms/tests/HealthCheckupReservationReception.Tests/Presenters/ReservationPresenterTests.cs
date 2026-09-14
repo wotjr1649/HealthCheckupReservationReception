@@ -89,7 +89,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var service = new FakeReservationService { Availability = Availability() };
             var presenter = new ReservationPresenter(view, service, patients, Works(), "창구");
 
-            presenter.BeginChange(55);
+            presenter.BeginChange(Works().DetailResult.Value);
 
             Assert.AreEqual("예약 변경", view.Title);
             Assert.AreEqual("C000001", view.Patient.ChartNo, "수검자를 상세에서 채우지 않았다");
@@ -114,7 +114,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 }),
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
-            presenter.BeginChange(55);
+            presenter.BeginChange(Works().DetailResult.Value);
 
             view.RaiseSaveRequested();
 
@@ -140,10 +140,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var presenter = new ReservationPresenter(
                 view, new FakeReservationService { Availability = NoChange() }, Patients(), works, "창구");
 
-            presenter.BeginChange(55);
+            presenter.BeginChange(Works().DetailResult.Value);
 
-            Assert.AreEqual(1, works.DetailCalls, "상세를 스스로 읽지 않았다");
-            Assert.AreEqual(55L, works.LastDetailWorkId);
+            // 2026-09-14 — 진입은 부모가 준 한 벌로 연다. 예전에는 여기서 SP-WRK-02 를
+            // 스스로 불렀고, 부모가 같은 것을 방금 받아 둔 뒤였다.
+            Assert.AreEqual(0, works.DetailCalls, "진입에서 상세를 다시 읽었다");
             Assert.IsNotNull(view.NexItems);
             Assert.AreEqual(1, view.NexItems.Count, "NEX 가 비었다");
             Assert.IsNotNull(view.AexItems);
@@ -162,7 +163,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var view = new FakeReservationView();
             var service = new FakeReservationService { Availability = NoChange() };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
-            presenter.BeginChange(55);
+            presenter.BeginChange(Works().DetailResult.Value);
 
             int nexBefore = view.NexItems.Count;
             Assert.AreEqual(1, nexBefore, "진입에서 NEX 가 서지 않았다");
@@ -204,7 +205,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 }),
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
-            presenter.BeginChange(55);
+            presenter.BeginChange(Works().DetailResult.Value);
 
             Assert.IsTrue(view.SaveEnabled, "AEX 를 고를 수 있는데 저장이 닫혀 있다");
 
@@ -236,7 +237,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 }),
             };
             var presenter = new ReservationPresenter(view, service, Patients(), Works(), "창구");
-            presenter.BeginChange(55);
+            presenter.BeginChange(Works().DetailResult.Value);
 
             view.RaiseSaveRequested();
 
@@ -256,7 +257,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var presenter = new ReservationPresenter(
                 view, new FakeReservationService { Availability = NoChange() }, Patients(), Works(), "창구");
 
-            presenter.BeginChange(55);
+            presenter.BeginChange(Works().DetailResult.Value);
 
             Assert.IsNotNull(view.Slots);
             Assert.AreEqual(2, view.Slots.Count, "시간대를 고를 자리가 없다");
@@ -279,7 +280,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var presenter = new ReservationPresenter(
                 view, new FakeReservationService { Availability = NoChange() }, Patients(), Works(), "창구");
 
-            presenter.BeginChange(55);
+            presenter.BeginChange(Works().DetailResult.Value);
 
             StringAssert.Contains(view.BlockMessage, "아직 바꾼 것이 없습니다");
         }
@@ -295,26 +296,29 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             var presenter = new ReservationPresenter(
                 view, new FakeReservationService { Availability = NoChange() }, Patients(), Works(), "창구");
 
-            presenter.BeginChange(55);
+            presenter.BeginChange(Works().DetailResult.Value);
 
             StringAssert.Contains(view.TargetText, "예약일을 바꾸면");
         }
 
-        /// <summary>상세 조회가 실패하면 진입을 접는다 — 예외 본문은 싣지 않는다 (킷 §6).</summary>
+        /// <summary>
+        /// 부모가 빈손으로 열면 진입을 접는다. 예전에는 「상세 조회가 실패하면」이었고,
+        /// 진입이 조회를 하지 않게 된 뒤로는 **받은 것이 없을 때**가 그 자리다 (2026-09-14).
+        /// </summary>
         [TestMethod]
-        public void 상세를_못_읽으면_변경_진입을_접는다()
+        public void 받은_것이_없으면_변경_진입을_접는다()
         {
             var view = new FakeReservationView();
-            var works = new FakeWorkService { DetailFailure = new InvalidOperationException("boom") };
+            var works = new FakeWorkService();
             var service = new FakeReservationService { Availability = NoChange() };
             var presenter = new ReservationPresenter(view, service, Patients(), works, "창구");
 
-            presenter.BeginChange(55);
+            presenter.BeginChange(null);
 
             Assert.AreEqual(0, service.AvailabilityCalls, "상세도 없이 가용성을 물었다");
+            Assert.AreEqual(0, works.DetailCalls, "빈손인데 SP 를 불렀다");
             Assert.IsFalse(view.ScheduleEnabled);
             StringAssert.Contains(view.BlockMessage, "업무 상세");
-            Assert.IsFalse(view.BlockMessage.Contains("boom"), "예외 본문이 화면에 실렸다");
         }
 
         /// <summary>변경 진입의 실제 응답 — `변경범위=NONE`, RS2~RS5 전부 0행 (05 §9.11).</summary>
@@ -712,7 +716,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             };
             var presenter = new ReservationPresenter(
                 view, service, Patients(), WorksWithReception((int)DbCode.Ok), "창구");
-            presenter.BeginChange(55);
+            presenter.BeginChange(WorksWithReception((int)DbCode.Ok).DetailResult.Value);
 
             view.AexSelection = new[] { true, false, false, false, false, false, false };
             view.RaiseSaveRequested();
@@ -737,7 +741,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             };
             var presenter = new ReservationPresenter(
                 view, service, Patients(), WorksWithReception((int)DbCode.CutoffPassed), "창구");
-            presenter.BeginChange(55);
+            presenter.BeginChange(WorksWithReception((int)DbCode.CutoffPassed).DetailResult.Value);
 
             view.AexSelection = new[] { true, false, false, false, false, false, false };
             view.RaiseSaveRequested();
@@ -761,7 +765,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             };
             var presenter = new ReservationPresenter(
                 view, service, Patients(), WorksWithReception((int)DbCode.NotToday), "창구");
-            presenter.BeginChange(55);
+            presenter.BeginChange(WorksWithReception((int)DbCode.NotToday).DetailResult.Value);
 
             view.AexSelection = new[] { true, false, false, false, false, false, false };
             view.RaiseSaveRequested();

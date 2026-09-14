@@ -210,7 +210,8 @@ namespace HealthCheckupReservationReception.Tests.Visual
 
                 using (var screen = new SilentReservationForm(
                     new FakeReservationService { Availability = SampleChangeAvailability() },
-                    new FakePatientService(), SampleWorkDetailService(), "접수1번창구", 1, true, true))
+                    new FakePatientService(), SampleWorkDetailService(), "접수1번창구",
+                    SampleWorkDetailService().DetailResult.Value, true))
                 {
                     screen.StartPosition = FormStartPosition.Manual;
                     screen.Location = new Point(-32000, -32000);

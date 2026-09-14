@@ -161,8 +161,8 @@ namespace HealthCheckupReservationReception.Tests.Views
         /// <summary>DLG-RSV-01(예약 변경) 갈래. 같은 폼이고 진입값만 다르다 (03 §10.2).</summary>
         internal SilentReservationForm(
             IReservationService service, IPatientService patientService,
-            IWorkService workService, string operatorName, long workId, bool changing, bool answer)
-            : base(service, patientService, workService, operatorName, workId, changing)
+            IWorkService workService, string operatorName, WorkDetailReadDto read, bool answer)
+            : base(service, patientService, workService, operatorName, read)
         {
             _answer = answer;
         }

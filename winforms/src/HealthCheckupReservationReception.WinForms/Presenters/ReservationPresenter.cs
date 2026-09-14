@@ -108,31 +108,30 @@ namespace HealthCheckupReservationReception.Presenters
         ///     새 예약을 만들 수 있는가"* 이고, 변경은 이미 있는 그 예약을 고치는 일이다.
         ///     중복은 `SP-RSV-03` 이 **현재 Work 를 제외하고** 다시 본다 (05 §11.2).
         /// </summary>
-        public void BeginChange(long workId)
+        /// <summary>
+        /// **부모가 읽어 둔 한 벌을 받아서 연다** (2026-09-14 사용자 지시). `session-20` §6 이
+        /// 이 창을 `BeginChange(workId)` 로 바꾼 이유는 *부모가 RS1 만 넘겨서 화면이 비었기*
+        /// 때문이었다 — 여섯을 다 넘기면 그 결함 없이 조회 한 번이 준다.
+        ///
+        /// 진입 뒤의 `SP-RSV-01` 은 그대로다. 그것은 같은 값을 다시 읽는 것이 아니라
+        /// **변경범위·정원·재판정**을 묻는 다른 질문이다 (05 §9.11).
+        /// </summary>
+        public void BeginChange(WorkDetailReadDto read)
         {
             Reset();
 
-            OperationResult<WorkDetailReadDto> result;
-            try
+            if (read == null || read.Detail == null)
             {
-                result = _workService.GetDetail(workId);
-            }
-            catch (Exception)
-            {
-                // 예외 본문을 화면에 싣지 않는다 (킷 §6).
-                _view.BlockMessage = "업무 상세를 조회하지 못했습니다.";
+                _view.BlockMessage = "업무 상세를 받지 못했습니다.";
                 return;
             }
 
-            if (result == null || !result.IsSuccess || result.Value == null || result.Value.Detail == null)
-            {
-                _view.BlockMessage = result == null || result.IsSuccess
-                    ? "업무 상세를 조회하지 못했습니다."
-                    : result.Message;
-                return;
-            }
+            Render(read);
+        }
 
-            WorkDetailReadDto read = result.Value;
+        /// <summary>받은 한 벌로 변경 화면을 세운다. 조회는 하지 않는다.</summary>
+        private void Render(WorkDetailReadDto read)
+        {
             WorkDetailDto detail = read.Detail;
 
             _workId = detail.WorkId;

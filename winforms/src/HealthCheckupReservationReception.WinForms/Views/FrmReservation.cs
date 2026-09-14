@@ -39,7 +39,7 @@ namespace HealthCheckupReservationReception.Views
         // DLG-RSV-01 예약변경 (03 §10). 이것이 있으면 변경 모드다. 상세는 모달이 스스로
         // 읽으므로(Presenter.BeginChange) 여기서 들고 있는 것은 업무ID 하나다 — 목록이
         // 쥐고 있던 행버전은 그 사이 낡을 수 있다 (03 §11.3).
-        private long? _workId;
+        private WorkDetailReadDto _read;
 
         partial void ConfigureUI();
 
@@ -79,9 +79,9 @@ namespace HealthCheckupReservationReception.Views
         /// (`long` 하나가 수검자ID 인지 업무ID 인지) 호출부에서 구분이 사라진다.
         /// </remarks>
         public static FrmReservation ForChange(IReservationService service, IPatientService patientService,
-            IWorkService workService, string operatorName, long workId)
+            IWorkService workService, string operatorName, WorkDetailReadDto read)
         {
-            return new FrmReservation(service, patientService, workService, operatorName, workId, true);
+            return new FrmReservation(service, patientService, workService, operatorName, read);
         }
 
         /// <summary>
@@ -89,12 +89,12 @@ namespace HealthCheckupReservationReception.Views
         /// `changing` 같은 마법값을 호출부에 내놓지 않기 위해서다 — 바깥은 팩토리만 본다.
         /// </summary>
         protected FrmReservation(IReservationService service, IPatientService patientService,
-            IWorkService workService, string operatorName, long workId, bool changing)
+            IWorkService workService, string operatorName, WorkDetailReadDto read)
             : this()
         {
             _presenter = new ReservationPresenter(this, service, patientService, workService, operatorName);
-            _workId = changing ? (long?)workId : null;
-            _patientId = changing ? 0 : workId;
+            _read = read;
+            _patientId = 0;
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace HealthCheckupReservationReception.Views
 
             using (new clsBusyScope(this))
             {
-                if (_workId != null) { _presenter.BeginChange(_workId.Value); }
+                if (_read != null) { _presenter.BeginChange(_read); }
                 else { _presenter.Begin(_patientId); }
             }
         }
