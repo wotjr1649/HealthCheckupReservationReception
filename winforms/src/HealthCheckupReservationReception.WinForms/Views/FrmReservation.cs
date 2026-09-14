@@ -143,7 +143,7 @@ namespace HealthCheckupReservationReception.Views
                 txtPatientName.Text = value == null ? string.Empty : value.Name;
                 txtPatientBirthGender.Text = value == null
                     ? string.Empty
-                    : Pair(clsPatientText.FormatBirthday(value.Birthday), clsPatientText.FormatGender(value.Gender));
+                    : clsPatientText.FormatBirthGender(value.Birthday, value.Gender);
             }
         }
 
@@ -444,16 +444,6 @@ namespace HealthCheckupReservationReception.Views
             }
 
             return text;
-        }
-
-        /// <summary>한 칸에 둘을 넣은 자리다 (`생년월일 / 성별`). 한쪽이 비면 남는 쪽만 적는다.</summary>
-        private static string Pair(string left, string right)
-        {
-            bool hasLeft = !string.IsNullOrWhiteSpace(left);
-            bool hasRight = !string.IsNullOrWhiteSpace(right);
-            if (hasLeft && hasRight) { return left + " / " + right; }
-            if (hasLeft) { return left; }
-            return hasRight ? right : string.Empty;
         }
     }
 }

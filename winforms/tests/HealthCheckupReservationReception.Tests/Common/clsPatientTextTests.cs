@@ -53,7 +53,7 @@ namespace HealthCheckupReservationReception.Tests.Common
         {
             // 03 §5.6 No 7 — 과제는 임의 시험값만 쓰므로 가리지 않는다 (00 §2.1).
             Assert.AreEqual("990707-2000018", clsPatientText.FormatSocialNumber("9907072000018"));
-        }
+        }
         // [2026-09-10 사용자 요청] 자릿수는 **하이픈을 빼고** 센다.
         // 휴대전화 10~11 은 CK_수검자_CEL_DIGIT 이 정한 값 그대로다 (04 §8.1.3).
         [DataTestMethod]
@@ -70,6 +70,28 @@ namespace HealthCheckupReservationReception.Tests.Common
         public void 전화_자릿수는_하이픈을_빼고_센다(string input, bool mobile, bool expected, string why)
         {
             Assert.AreEqual(expected, clsPatientText.IsPhoneDigitCountValid(input, mobile), why);
+        }
+
+        // [2026-09-14] 화면 셋에 흩어져 있던 `Pair` 를 여기로 모았다. 한쪽이 비면 `/` 를
+        // 적지 않는 것이 이 함수의 전부이고, 그것이 틀리면 빈 값 옆에 남은 `/` 가
+        // 사용자에게 깨진 값으로 읽힌다.
+        [DataTestMethod]
+        [DataRow("19990707", "F", "1999-07-07 / 여", "둘 다 있으면 잇는다")]
+        [DataRow("19990707", null, "1999-07-07", "성별이 없으면 생년월일만")]
+        [DataRow(null, "M", "남", "생년월일이 없으면 성별만")]
+        [DataRow(null, null, "", "둘 다 없으면 빈 문자열")]
+        public void 생년월일과_성별은_한쪽이_비면_남는_쪽만_적는다(string birthday, string gender, string expected, string why)
+        {
+            Assert.AreEqual(expected, clsPatientText.FormatBirthGender(birthday, gender), why);
+        }
+
+        [DataTestMethod]
+        [DataRow("12345", "서울시", "12345 / 서울시", "둘 다 있으면 잇는다")]
+        [DataRow("12345", "   ", "12345", "공백은 없는 것이다")]
+        [DataRow("", "서울시", "서울시", "왼쪽이 비면 오른쪽만")]
+        public void 한_칸에_둘을_넣을_때도_같은_규칙이다(string left, string right, string expected, string why)
+        {
+            Assert.AreEqual(expected, clsPatientText.Pair(left, right), why);
         }
 
     }

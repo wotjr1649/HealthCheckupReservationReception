@@ -168,7 +168,7 @@ namespace HealthCheckupReservationReception.Views
                 txtDetailName.Text = value == null ? string.Empty : value.Name;
                 txtDetailBirthGender.Text = value == null
                     ? string.Empty
-                    : Pair(clsPatientText.FormatBirthday(value.Birthday), clsPatientText.FormatGender(value.Gender));
+                    : clsPatientText.FormatBirthGender(value.Birthday, value.Gender);
                 txtDetailReserveDate.Text = value == null
                     ? string.Empty
                     : clsWorkText.FormatDate(value.ReserveDate);
@@ -396,16 +396,6 @@ namespace HealthCheckupReservationReception.Views
         private static DateTime? DateOf(DateEdit editor)
         {
             return editor.EditValue is DateTime ? (DateTime?)editor.DateTime.Date : null;
-        }
-
-        /// <summary>한 칸에 둘을 넣은 자리다 (`생년월일 / 성별`). 한쪽이 비면 남는 쪽만 적는다.</summary>
-        private static string Pair(string left, string right)
-        {
-            bool hasLeft = !string.IsNullOrWhiteSpace(left);
-            bool hasRight = !string.IsNullOrWhiteSpace(right);
-            if (hasLeft && hasRight) { return left + " / " + right; }
-            if (hasLeft) { return left; }
-            return hasRight ? right : string.Empty;
         }
     }
 }

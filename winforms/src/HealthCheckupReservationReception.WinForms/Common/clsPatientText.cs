@@ -118,6 +118,30 @@ namespace HealthCheckupReservationReception.Common
             return null;
         }
 
+        /// <summary>
+        /// 03 §5.6 — `생년월일 / 성별` 한 칸. 수검자 상세를 그리는 화면 셋이 같은 조합을
+        /// 쓴다 (WF-PAT-01 · WF-WRK-01 · WF-RSV-01). 세 곳에 흩어져 있던 것을 모았다
+        /// (2026-09-14, ROOT AGENTS.md §6).
+        /// </summary>
+        public static string FormatBirthGender(string birthday, string gender)
+        {
+            return Pair(FormatBirthday(birthday), FormatGender(gender));
+        }
+
+        /// <summary>
+        /// 설계가 한 칸에 둘을 넣은 자리 (`생년월일 / 성별`, `전화 / 이메일`,
+        /// `우편번호 / 주소`). **한쪽이 비면 남는 쪽만 적는다** — 빈 값 옆에 남은 `/` 는
+        /// 사용자에게 값이 깨진 것으로 읽힌다.
+        /// </summary>
+        public static string Pair(string left, string right)
+        {
+            bool hasLeft = !string.IsNullOrWhiteSpace(left);
+            bool hasRight = !string.IsNullOrWhiteSpace(right);
+            if (hasLeft && hasRight) { return left + " / " + right; }
+            if (hasLeft) { return left; }
+            return hasRight ? right : string.Empty;
+        }
+
         /// <summary>05 §2.2 — 숫자만 남긴다. 하나도 없으면 미입력이다.</summary>
         public static string Digits(string value)
         {
