@@ -59,11 +59,11 @@ View (FrmXxx : XtraForm)   컨트롤·바인딩·포커스. 업무 규칙이 없
 
 ```text
 winforms/src/.../Views/         화면. cls* 는 화면들이 함께 쓰는 부품이다
-              /Presenters/      화면당 하나
+              /Presenters/      업무가 있는 화면마다. 확인창은 두지 않는다
               /Services/        업무 규칙
               /Repositories/    SP 호출
               /Models/          DTO · Request
-              /Common/          계약 코드값(DbCodes·DbSize) 과 표기(clsPatientText 등)
+              /Common/          계약 코드값(DbCodes·DbSize) · 표기(clsPatientText) · OperationResult
 ```
 
 ---
@@ -100,5 +100,6 @@ cd database  && ./scripts/test.sh          # SQL Server 가 필요하다
 `SqlParameter` 크기 양쪽과 대조한다. 코드가 크게 잡으면 DB 가 값을 자르고, 작게 잡으면
 계약이 허락한 입력을 화면이 막는다 — **어느 쪽이든 사용자는 이유를 못 본다.**
 
-게이트마다 `selftest` 가 있다. 「검사를 만들었다」가 아니라 **「검사가 실제로 잡는 것을 봤다」**
-가 기준이다.
+게이트를 만들면 **그것이 실제로 red 를 내는 것을 먼저 본다.** `winforms/scripts/` 의 게이트는
+저마다 `selftest` 를 갖고 가짜 입력으로 그것을 증명한다 — 「검사를 만들었다」가 아니라
+**「검사가 잡는 것을 봤다」**가 기준이다.
