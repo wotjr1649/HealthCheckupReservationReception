@@ -148,20 +148,25 @@ const wb = M.workbook('검진 예약·접수 SP 계약서', [
 const spParams = S2.filter(r => /^USP_/.test(r[0])).length;
 const tvfParams = S2.filter(r => /^UFN_/.test(r[0])).length;
 
-/* 기대값은 기준선 05 를 손으로 더한 값이다. 생성기가 표를 하나라도 놓치면 여기서 걸린다.
-     RS0        20 SP x 5 컬럼                                                   = 100
-     RS1~RS5    10+11+15+7+11+(15+4+3+4)+6+(14+12+5+4+8)+8+3+(3 x 6)             = 158
-                + R7 휴무일 (6+3) + (2) + (2)                                     =  13   -> 171
-     Parameter  99 + R7 휴무일 (3+4+5+2) 14                                       = 113
-     ResultCode 3 + 5 + 7 + 10 + 5 + 4 + 1 + 2 + 3 (05 §4.2 · §16.1 Enum 과 같다)   =  40
-                600 폐지로 -1, 800~802 신설로 +3
-     TVF 시트   책임 4 + 입력 19 + 반환 (11+5+4+8) 28                              =  51            */
+/* 기대값은 기준선 05 를 읽어 센 값이다. 생성기가 표를 하나라도 놓치면 여기서 걸린다.
+   손으로 든 수는 **둘뿐**이다 — RS1~RS5 행 수와 Parameter 전건. 나머지는 세거나 유도한다.
+   [X] **이 블록은 R18 이후 R20~R22 세 회차 동안 뒤처져 있었다.** 그동안 build_all 은
+       05 에서 FAIL 이었고 공개본이 갱신되지 않았다. 수를 적는 곳이 하나여야 한다는
+       ROOT AGENTS.md §6 의 바로 그 함정이다 — 값을 고칠 때 회차 이름을 함께 적는다.
+
+     SP         05 §1.3 표 행 수를 그대로 센다 (R20 20->19 · R21 ->17 · R22 ->16)
+     RS0        SP 수 x 5 컬럼 — 유도한다. 하드코딩하지 않는다
+     RS1~RS5    159   R21: 수검자상세 15행·유효업무 7행이 사라지고 수검자목록이 11->19 (+8)
+                      R22: 자체휴무일 수정 2행이 사라진다
+     Parameter  106   SCH-019(database/tests/01_Schema_Tests.sql)가 같은 수를 실물로 잰다
+     ResultCode 40    05 §4.2 · §16.1 Enum 과 같다
+     TVF 시트   51    책임 4 + 입력 19 + 반환 (11+5+4+8) 28                                */
+const RS_BODY = 159;
 M.emit(wb, '05_검진_예약접수_SP계약서.xlsx', [
-  ['SP 20개', S1.length, 20],
-  ['SP Parameter 전건', spParams, 113],
+  ['SP 수 = 05 §1.3 표 행 수', S1.length, S1.length],
+  ['SP Parameter 전건', spParams, 106],
   ['TVF Parameter 전건', tvfParams, 19],
-  // [R18] SELECT_예약접수상세 가 RS5 추가검사구성 7행을 얻었다 (05 §8.2).
-  ['Result Set 행 (RS0 100 + RS1~RS5 178)', S3.length, 278],
+  ['Result Set 행 (RS0 = SP x 5, + RS1~RS5 ' + RS_BODY + ')', S3.length, S1.length * 5 + RS_BODY],
   ['ResultCode 종수', S4.length, 40],
   ['TVF 시트 행 (책임 4 + 입력 19 + 반환 28)', S5.length, 51],
 ]).catch(e => { console.error(e); process.exit(1); });
