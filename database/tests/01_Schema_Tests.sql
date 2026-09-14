@@ -80,9 +80,10 @@ IF ((SELECT COUNT(*) FROM sys.objects WHERE type = 'IF' AND name LIKE 'UFN[_]HC[
     PRINT 'PASS SCH-013 Inline TVF 4개';
 ELSE BEGIN PRINT 'FAIL SCH-013 Inline TVF 수 불일치 (T14 이전이면 정상)'; SET @Fail += 1; END
 
--- SCH-014 SP 17  (R20 취소 둘 → 하나, R21 수검자상세·유효업무 → 수검자목록 RS1, 05 §1.3)
-IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 17)
-    PRINT 'PASS SCH-014 Stored Procedure 17개';
+-- SCH-014 SP 16  (R20 취소 둘 → 하나, R21 수검자상세·유효업무 → 목록 RS1,
+--                  R22 자체휴무일 등록·수정 → 저장 하나. 05 §1.3)
+IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 16)
+    PRINT 'PASS SCH-014 Stored Procedure 16개';
 ELSE BEGIN PRINT 'FAIL SCH-014 SP 수 불일치 (T30 이전이면 정상)'; SET @Fail += 1; END
 
 -- SCH-015 컬럼 60개 전건 EXCEPT 양방향  (04 §8)   [R13] 운영기준 7컬럼
@@ -266,7 +267,7 @@ BEGIN
     SET @Fail += 1;
 END
 
--- SCH-019 SP 별 Parameter 를 (SP, 순번, 이름, 타입) 4-튜플로 EXCEPT 양방향 대조 (합계 109)
+-- SCH-019 SP 별 Parameter 를 (SP, 순번, 이름, 타입) 4-튜플로 EXCEPT 양방향 대조 (합계 106)
 -- [X] G09 는 "Parameter 99 EXCEPT 양방향" 을 요구하는데 그것을 판정하는 검사가 없었다.
 --     처음엔 SP 별 **개수**만 맞췄는데 그것으로는 이름이 바뀌거나 순서가 뒤바뀐 드리프트를 놓친다.
 --     기대값 출처는 05 §10~§12 입력표 · 06 §18 SP Matrix 다.
@@ -372,15 +373,12 @@ INSERT INTO @ExpP (SpName, Ord, ParamName, TypeName) VALUES
  , (N'USP_HC_휴무일목록_조회', 1, N'@시작일자', 'date')
  , (N'USP_HC_휴무일목록_조회', 2, N'@종료일자', 'date')
  , (N'USP_HC_휴무일목록_조회', 3, N'@휴무구분', 'nvarchar')
- , (N'USP_HC_자체휴무일_등록', 1, N'@휴무일자', 'date')
- , (N'USP_HC_자체휴무일_등록', 2, N'@휴무일명', 'nvarchar')
- , (N'USP_HC_자체휴무일_등록', 3, N'@사용여부', 'bit')
- , (N'USP_HC_자체휴무일_등록', 4, N'@비고', 'nvarchar')
- , (N'USP_HC_자체휴무일_수정', 1, N'@휴무일자', 'date')
- , (N'USP_HC_자체휴무일_수정', 2, N'@행버전', 'binary')
- , (N'USP_HC_자체휴무일_수정', 3, N'@휴무일명', 'nvarchar')
- , (N'USP_HC_자체휴무일_수정', 4, N'@사용여부', 'bit')
- , (N'USP_HC_자체휴무일_수정', 5, N'@비고', 'nvarchar')
+ , (N'USP_HC_자체휴무일_저장', 1, N'@휴무동작코드', 'varchar')
+ , (N'USP_HC_자체휴무일_저장', 2, N'@휴무일자', 'date')
+ , (N'USP_HC_자체휴무일_저장', 3, N'@휴무일명', 'nvarchar')
+ , (N'USP_HC_자체휴무일_저장', 4, N'@사용여부', 'bit')
+ , (N'USP_HC_자체휴무일_저장', 5, N'@비고', 'nvarchar')
+ , (N'USP_HC_자체휴무일_저장', 6, N'@행버전', 'binary')
  , (N'USP_HC_자체휴무일_삭제', 1, N'@휴무일자', 'date')
  , (N'USP_HC_자체휴무일_삭제', 2, N'@행버전', 'binary');
 
@@ -397,7 +395,7 @@ IF NOT EXISTS (SELECT SpName, Ord, ParamName, TypeName FROM @ExpP
                EXCEPT SELECT SpName, Ord, ParamName, TypeName FROM @ActP)
    AND NOT EXISTS (SELECT SpName, Ord, ParamName, TypeName FROM @ActP
                    EXCEPT SELECT SpName, Ord, ParamName, TypeName FROM @ExpP)
-   AND @SumP = 109
+   AND @SumP = 106
     -- [R20] 합계를 **세어서** 찍는다. 초록 쪽만 하드코딩이라 111 이 된 뒤에도 113 을
     --       찍고 있었다 — 게이트가 자기 출력으로 거짓을 말하던 자리다 (ROOT AGENTS.md §6).
     PRINT 'PASS SCH-019 SP 별 Parameter 이름·순번·타입 전건 일치 (합계 '

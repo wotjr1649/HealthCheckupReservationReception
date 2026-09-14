@@ -4,7 +4,7 @@ SET NOCOUNT ON;
 PRINT N'--- 07a_Procedures_Holiday 시작 ---';
 GO
 ----------------------------------------------------------------------------
--- 기준정보 SP 4개 (05 §12.4~§12.8 · 06 §18).
+-- 기준정보 SP 3개 (05 §12.4~§12.8 · 06 §18).  [R22] 등록+수정 -> 저장 하나
 --
 -- 업무 SP 와 다른 점 셋을 여기 적어 둔다.
 --   [1] 공통 업무 가능조건(308·309)을 적용하지 않는다. 휴무일 관리는 검진 업무가 아니라
@@ -81,14 +81,32 @@ BEGIN
         , [경고임계일수]   = CAST(@경고임계일수 AS INT);
 END
 GO
-CREATE OR ALTER PROCEDURE [dbo].[USP_HC_자체휴무일_등록]
-    @휴무일자 DATE,
-    @휴무일명 NVARCHAR(100),
-    @사용여부 BIT,
-    @비고     NVARCHAR(500) = NULL
+CREATE OR ALTER PROCEDURE [dbo].[USP_HC_자체휴무일_저장]
+    @휴무동작코드 VARCHAR(30),
+    @휴무일자     DATE,
+    @휴무일명     NVARCHAR(100),
+    @사용여부     BIT,
+    @비고         NVARCHAR(500) = NULL,
+    @행버전       BINARY(8)     = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    ------------------------------------------------------------------------
+    -- [R21+1 = R22] 자체휴무일 등록·수정을 하나로 합친다 (2026-09-14 사용자 지시).
+    --
+    -- 두 SP 는 「같은 한 행을 쓴다」는 점과 잠금 자원·Transaction 형태·Result Set 이
+    -- 같았고, 다른 것은 **그 행이 이미 있어야 하는가**뿐이었다. 그 갈래를 코드 하나가
+    -- 고른다.
+    --
+    --   CREATE_HOLIDAY   없어야 한다.  있으면 801
+    --   UPDATE_HOLIDAY   있어야 한다.  없으면 800 · 법정/대체공휴일이면 802 · 낡은 행버전이면 601
+    --
+    -- [!] **동작을 현재 상태에서 유도하지 않는다** — R20 이 `@업무동작코드` 를 둔 이유
+    --     그대로다. 「행이 있으면 수정, 없으면 등록」으로 하면 사용자가 `[추가]` 를 눌렀는데
+    --     남의 행을 조용히 덮어쓴다. 801 은 그것을 막는 방어선이고, 그 방어선을 유지하려면
+    --     의도가 Parameter 로 와야 한다.
+    ------------------------------------------------------------------------
 
     IF @@TRANCOUNT > 0
         THROW 50003, N'이 프로시저는 호출자 트랜잭션 안에서 실행할 수 없습니다.', 1;
@@ -101,23 +119,39 @@ BEGIN
     DECLARE @결과메시지 NVARCHAR(300) = N'정상 처리되었습니다.';
     DECLARE @잠금결과 INT, @자원휴무일 NVARCHAR(255);
     DECLARE @결과행버전 BINARY(8) = NULL;
+    DECLARE @현재구분 NVARCHAR(10) = NULL, @현재행버전 BINARY(8) = NULL;
+    DECLARE @현재명 NVARCHAR(100) = NULL, @현재사용 BIT = NULL, @현재비고 NVARCHAR(500) = NULL;
 
+    SET @휴무동작코드 = NULLIF(LTRIM(RTRIM(@휴무동작코드)), '');
     SET @휴무일명 = NULLIF(LTRIM(RTRIM(@휴무일명)), N'');
     SET @비고     = NULLIF(LTRIM(RTRIM(@비고)), N'');
 
-    IF @휴무일자 IS NULL
+    -- 05 §5 — 필수값이 먼저, 값 형식이 뒤다.
+    IF @휴무동작코드 IS NULL
+    BEGIN SET @결과코드 = 100; SET @오류항목 = N'휴무동작코드'; END
+    ELSE IF @휴무일자 IS NULL
     BEGIN SET @결과코드 = 100; SET @오류항목 = N'휴무일자'; END
     ELSE IF @휴무일명 IS NULL
     BEGIN SET @결과코드 = 100; SET @오류항목 = N'휴무일명'; END
     ELSE IF @사용여부 IS NULL
     BEGIN SET @결과코드 = 100; SET @오류항목 = N'사용여부'; END
+    -- 수정에는 행버전이 필수다. 등록에는 없다 — 아직 행이 없기 때문이다.
+    ELSE IF @휴무동작코드 = 'UPDATE_HOLIDAY' AND @행버전 IS NULL
+    BEGIN SET @결과코드 = 100; SET @오류항목 = N'행버전'; END
 
     IF @결과코드 = 100 SET @결과메시지 = N'필수값을 입력하십시오.';
+
+    IF @결과코드 = 0 AND @휴무동작코드 NOT IN ('CREATE_HOLIDAY', 'UPDATE_HOLIDAY')
+    BEGIN
+        SET @결과코드 = 101; SET @오류항목 = N'휴무동작코드';
+        SET @결과메시지 = N'입력값이 올바르지 않습니다.';
+    END
+
     IF @결과코드 <> 0 SET @성공여부 = 0;
 
     IF @결과코드 = 0
     BEGIN
-        -- PK 가 중복을 막지만 잠금 없이 동시 INSERT 하면 한쪽이 Msg 2627 로 죽는다.
+        -- PK 가 중복을 막지만 잠금 없이 동시에 들어오면 한쪽이 Msg 2627 로 죽는다.
         -- G11 이 2627 **0건**을 요구하므로 제약 위반을 잡는 대신 앞에서 직렬화한다 (06 §23.0).
         SET @자원휴무일 = N'HC|HOL|' + CONVERT(NVARCHAR(8), @휴무일자, 112);
 
@@ -134,154 +168,82 @@ BEGIN
                 THROW 50001, N'잠금 획득에 실패했습니다. 잠시 후 다시 시도하십시오.', 1;
             END
 
-            IF EXISTS (SELECT 1 FROM [dbo].[휴무일] WHERE [휴무일자] = @휴무일자)
-            BEGIN
-                SET @성공여부 = 0; SET @결과코드 = 801; SET @오류항목 = N'휴무일자';
-                SET @결과메시지 = N'이미 등록된 휴무일입니다.';
-            END
-            ELSE
-            BEGIN
-                -- [휴무구분] 은 Parameter 가 아니다. 이 SP 는 자체휴무일만 만든다 (00 HOL-05).
-                INSERT INTO [dbo].[휴무일]
-                    ([휴무일자], [생성일시], [최종수정일시], [휴무일명], [휴무구분], [사용여부], [비고])
-                VALUES
-                    (@휴무일자, @저장시각, @저장시각, @휴무일명, N'자체휴무일', @사용여부, @비고);
-
-                SELECT @결과행버전 = h.[행버전] FROM [dbo].[휴무일] h WHERE h.[휴무일자] = @휴무일자;
-            END
-
-            IF @결과코드 = 0 COMMIT TRANSACTION;
-            ELSE ROLLBACK TRANSACTION;
-        END TRY
-        BEGIN CATCH
-            IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
-            THROW;
-        END CATCH
-    END
-
-    SELECT
-          CAST(@성공여부   AS BIT)             AS [성공여부]
-        , CAST(@결과코드   AS INT)             AS [결과코드]
-        , CAST(@결과메시지 AS NVARCHAR(300))   AS [결과메시지]
-        , CAST(@오류항목   AS NVARCHAR(50))    AS [오류항목]
-        , CAST(@서버시각   AS DATETIME2(7))    AS [서버시각];
-
-    IF @결과코드 = 0
-        SELECT
-              [휴무일자] = CAST(@휴무일자   AS DATE)
-            , [행버전]   = CAST(@결과행버전 AS BINARY(8));
-END
-GO
-CREATE OR ALTER PROCEDURE [dbo].[USP_HC_자체휴무일_수정]
-    @휴무일자 DATE,
-    @행버전   BINARY(8),
-    @휴무일명 NVARCHAR(100),
-    @사용여부 BIT,
-    @비고     NVARCHAR(500) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    IF @@TRANCOUNT > 0
-        THROW 50003, N'이 프로시저는 호출자 트랜잭션 안에서 실행할 수 없습니다.', 1;
-    SET XACT_ABORT ON;
-
-    DECLARE @서버시각 DATETIME2(7) = SYSDATETIME();
-    DECLARE @저장시각 DATETIME2(0) = CONVERT(DATETIME2(0), @서버시각);
-
-    DECLARE @성공여부 BIT = 1, @결과코드 INT = 0, @오류항목 NVARCHAR(50) = NULL;
-    DECLARE @결과메시지 NVARCHAR(300) = N'정상 처리되었습니다.';
-    DECLARE @잠금결과 INT, @자원휴무일 NVARCHAR(255);
-    DECLARE @결과행버전 BINARY(8) = NULL;
-    DECLARE @현재구분 NVARCHAR(10) = NULL, @현재행버전 BINARY(8) = NULL;
-    DECLARE @현재명 NVARCHAR(100) = NULL, @현재사용 BIT = NULL, @현재비고 NVARCHAR(500) = NULL;
-
-    SET @휴무일명 = NULLIF(LTRIM(RTRIM(@휴무일명)), N'');
-    SET @비고     = NULLIF(LTRIM(RTRIM(@비고)), N'');
-
-    IF @휴무일자 IS NULL
-    BEGIN SET @결과코드 = 100; SET @오류항목 = N'휴무일자'; END
-    ELSE IF @행버전 IS NULL
-    BEGIN SET @결과코드 = 100; SET @오류항목 = N'행버전'; END
-    ELSE IF @휴무일명 IS NULL
-    BEGIN SET @결과코드 = 100; SET @오류항목 = N'휴무일명'; END
-    ELSE IF @사용여부 IS NULL
-    BEGIN SET @결과코드 = 100; SET @오류항목 = N'사용여부'; END
-
-    IF @결과코드 = 100 SET @결과메시지 = N'필수값을 입력하십시오.';
-    IF @결과코드 <> 0 SET @성공여부 = 0;
-
-    IF @결과코드 = 0
-    BEGIN
-        SET @자원휴무일 = N'HC|HOL|' + CONVERT(NVARCHAR(8), @휴무일자, 112);
-
-        BEGIN TRY
-            BEGIN TRANSACTION;
-
-            EXEC @잠금결과 = sp_getapplock @Resource = @자원휴무일, @LockMode = 'Exclusive',
-                                     @LockOwner = 'Transaction', @LockTimeout = 5000;
-            PRINT 'INFO applock rc=' + CONVERT(VARCHAR(4), @잠금결과);
-            IF @잠금결과 < 0
-            BEGIN
-                ROLLBACK TRANSACTION;
-                IF @잠금결과 = -3 THROW 50002, N'잠금 교착이 발생했습니다. 다시 시도하십시오.', 1;
-                THROW 50001, N'잠금 획득에 실패했습니다. 잠시 후 다시 시도하십시오.', 1;
-            END
-
+            -- 두 갈래가 같은 한 행을 본다. 먼저 읽고 그 다음에 갈린다.
             SELECT @현재구분 = h.[휴무구분], @현재행버전 = h.[행버전]
                  , @현재명 = h.[휴무일명], @현재사용 = h.[사용여부], @현재비고 = h.[비고]
               FROM [dbo].[휴무일] h WHERE h.[휴무일자] = @휴무일자;
 
-            IF @현재구분 IS NULL
+            IF @휴무동작코드 = 'CREATE_HOLIDAY'
             BEGIN
-                SET @성공여부 = 0; SET @결과코드 = 800; SET @오류항목 = N'휴무일자';
-                SET @결과메시지 = N'휴무일을 찾을 수 없습니다.';
-            END
-            -- 휴무구분 확인이 행버전보다 **앞**이다. 법정공휴일 행에 낡은 토큰으로 요청이 와도
-            -- 601 이 아니라 802 를 돌려주는 편이 화면에 도움이 된다 - 다시 조회해도 결과가
-            -- 달라지지 않기 때문이다 (05 §12.7).
-            ELSE IF @현재구분 <> N'자체휴무일'
-            BEGIN
-                SET @성공여부 = 0; SET @결과코드 = 802; SET @오류항목 = N'휴무구분';
-                SET @결과메시지 = N'법정공휴일·대체공휴일은 화면에서 변경할 수 없습니다.';
-            END
-            ELSE IF @현재행버전 <> @행버전
-            BEGIN
-                SET @성공여부 = 0; SET @결과코드 = 601; SET @오류항목 = N'행버전';
-                SET @결과메시지 = N'다른 사용자가 먼저 변경했습니다. 최신 정보를 다시 조회하십시오.';
-            END
-            -- 실제 변경 여부. NULL-safe 만으로는 부족하다 — 정렬이 Korean_Wansung_CI_AS 라
-            -- N'HVAC 점검' 과 N'hvac 점검' 을 **같다고** 본다(실측). 대소문자만 고친 이름이
-            -- 결과코드=1 '변경된 내용이 없습니다' 로 돌아오고 편집이 조용히 사라진다.
-            -- [X] 05_Procedures_Patient_Write.sql 이 이미 같은 사고를 겪고 VARBINARY 바이트
-            --     비교로 고쳤는데(그 자리 [X] 주석), R7 이 이 SP 를 새로 쓰면서 그 교훈 이전으로
-            --     되돌아갔다. COLLATE 는 06 §9.2 허용목록 밖이므로 여기서도 VARBINARY 를 쓴다.
-            ELSE IF CONVERT(VARBINARY(200), @현재명) = CONVERT(VARBINARY(200), @휴무일명)
-                AND @현재사용 = @사용여부
-                AND ((@현재비고 IS NULL AND @비고 IS NULL)
-                     OR CONVERT(VARBINARY(1000), @현재비고) = CONVERT(VARBINARY(1000), @비고))
-            BEGIN
-                SET @결과코드 = 1;
-                SET @결과메시지 = N'변경된 내용이 없습니다.';
-                SET @결과행버전 = @현재행버전;
+                IF @현재구분 IS NOT NULL
+                BEGIN
+                    SET @성공여부 = 0; SET @결과코드 = 801; SET @오류항목 = N'휴무일자';
+                    SET @결과메시지 = N'이미 등록된 휴무일입니다.';
+                END
+                ELSE
+                BEGIN
+                    -- [휴무구분] 은 Parameter 가 아니다. 이 SP 는 자체휴무일만 만든다 (00 HOL-05).
+                    INSERT INTO [dbo].[휴무일]
+                        ([휴무일자], [생성일시], [최종수정일시], [휴무일명], [휴무구분], [사용여부], [비고])
+                    VALUES
+                        (@휴무일자, @저장시각, @저장시각, @휴무일명, N'자체휴무일', @사용여부, @비고);
+
+                    SELECT @결과행버전 = h.[행버전] FROM [dbo].[휴무일] h WHERE h.[휴무일자] = @휴무일자;
+                END
             END
             ELSE
             BEGIN
-                UPDATE [dbo].[휴무일]
-                   SET [휴무일명]     = @휴무일명
-                     , [사용여부]     = @사용여부
-                     , [비고]         = @비고
-                     , [최종수정일시] = @저장시각
-                 WHERE [휴무일자] = @휴무일자
-                   AND [행버전]   = @행버전;
-
-                IF @@ROWCOUNT = 0
+                IF @현재구분 IS NULL
+                BEGIN
+                    SET @성공여부 = 0; SET @결과코드 = 800; SET @오류항목 = N'휴무일자';
+                    SET @결과메시지 = N'휴무일을 찾을 수 없습니다.';
+                END
+                -- 휴무구분 확인이 행버전보다 **앞**이다. 법정공휴일 행에 낡은 토큰으로 요청이 와도
+                -- 601 이 아니라 802 를 돌려주는 편이 화면에 도움이 된다 - 다시 조회해도 결과가
+                -- 달라지지 않기 때문이다 (05 §12.6).
+                ELSE IF @현재구분 <> N'자체휴무일'
+                BEGIN
+                    SET @성공여부 = 0; SET @결과코드 = 802; SET @오류항목 = N'휴무구분';
+                    SET @결과메시지 = N'법정공휴일·대체공휴일은 화면에서 변경할 수 없습니다.';
+                END
+                ELSE IF @현재행버전 <> @행버전
                 BEGIN
                     SET @성공여부 = 0; SET @결과코드 = 601; SET @오류항목 = N'행버전';
                     SET @결과메시지 = N'다른 사용자가 먼저 변경했습니다. 최신 정보를 다시 조회하십시오.';
                 END
+                -- 실제 변경 여부. NULL-safe 만으로는 부족하다 — 정렬이 Korean_Wansung_CI_AS 라
+                -- N'HVAC 점검' 과 N'hvac 점검' 을 **같다고** 본다(실측). 대소문자만 고친 이름이
+                -- 결과코드=1 '변경된 내용이 없습니다' 로 돌아오고 편집이 조용히 사라진다.
+                -- [X] 05_Procedures_Patient_Write.sql 이 이미 같은 사고를 겪고 VARBINARY 바이트
+                --     비교로 고쳤는데(그 자리 [X] 주석), R7 이 이 SP 를 새로 쓰면서 그 교훈 이전으로
+                --     되돌아갔다. COLLATE 는 06 §9.2 허용목록 밖이므로 여기서도 VARBINARY 를 쓴다.
+                ELSE IF CONVERT(VARBINARY(200), @현재명) = CONVERT(VARBINARY(200), @휴무일명)
+                    AND @현재사용 = @사용여부
+                    AND ((@현재비고 IS NULL AND @비고 IS NULL)
+                         OR CONVERT(VARBINARY(1000), @현재비고) = CONVERT(VARBINARY(1000), @비고))
+                BEGIN
+                    SET @결과코드 = 1;
+                    SET @결과메시지 = N'변경된 내용이 없습니다.';
+                    SET @결과행버전 = @현재행버전;
+                END
                 ELSE
-                    SELECT @결과행버전 = h.[행버전] FROM [dbo].[휴무일] h WHERE h.[휴무일자] = @휴무일자;
+                BEGIN
+                    UPDATE [dbo].[휴무일]
+                       SET [휴무일명]     = @휴무일명
+                         , [사용여부]     = @사용여부
+                         , [비고]         = @비고
+                         , [최종수정일시] = @저장시각
+                     WHERE [휴무일자] = @휴무일자
+                       AND [행버전]   = @행버전;
+
+                    IF @@ROWCOUNT = 0
+                    BEGIN
+                        SET @성공여부 = 0; SET @결과코드 = 601; SET @오류항목 = N'행버전';
+                        SET @결과메시지 = N'다른 사용자가 먼저 변경했습니다. 최신 정보를 다시 조회하십시오.';
+                    END
+                    ELSE
+                        SELECT @결과행버전 = h.[행버전] FROM [dbo].[휴무일] h WHERE h.[휴무일자] = @휴무일자;
+                END
             END
 
             IF @결과코드 IN (0, 1) COMMIT TRANSACTION;
@@ -399,5 +361,16 @@ BEGIN
         , CAST(@서버시각   AS DATETIME2(7))    AS [서버시각];
 END
 GO
-PRINT N'PASS PROC-HOL 휴무일 SP 4개 배포 완료';
+-- [R22] 개수를 **세어서** 찍는다. 예전에는 '4개' 를 하드코딩해서, 이 회차로 3개가 된 뒤에도
+--       초록 쪽이 4 를 말했다 — 게이트가 자기 출력으로 거짓을 말하던 자리다 (ROOT AGENTS.md §6).
+DECLARE @휴무일SP INT = (SELECT COUNT(*) FROM sys.procedures
+                          WHERE name IN (N'USP_HC_휴무일목록_조회', N'USP_HC_자체휴무일_저장',
+                                         N'USP_HC_자체휴무일_삭제'));
+IF @휴무일SP = 3
+    PRINT N'PASS PROC-HOL 휴무일 SP ' + CONVERT(NVARCHAR(4), @휴무일SP) + N'개 배포 완료';
+ELSE
+BEGIN
+    PRINT N'FAIL PROC-HOL 휴무일 SP ' + CONVERT(NVARCHAR(4), @휴무일SP) + N'개 (기대 3)';
+    THROW 51000, N'휴무일 SP 배포 검증 실패', 1;
+END
 GO

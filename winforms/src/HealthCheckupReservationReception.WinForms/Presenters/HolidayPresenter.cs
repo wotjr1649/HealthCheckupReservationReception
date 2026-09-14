@@ -26,7 +26,7 @@ namespace HealthCheckupReservationReception.Presenters
         private readonly IHolidayService _service;
         private readonly ICommonStatusService _statusService;
 
-        // 지금 잡혀 있는 행. 수정·삭제가 요구하는 `행버전` 이 여기서 나온다 (05 §12.7 · §12.8).
+        // 지금 잡혀 있는 행. 수정·삭제가 요구하는 `행버전` 이 여기서 나온다 (05 §12.6 · §12.8).
         private HolidayListItemDto _picked;
 
         public HolidayPresenter(IHolidayView view, IHolidayService service, ICommonStatusService statusService)
@@ -221,7 +221,7 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
-            // 05 §12.7 — 날짜를 옮기려면 삭제 후 등록이다. 잡아 둔 행의 날짜로 보낸다.
+            // 05 §12.6 — 날짜를 옮기려면 삭제 후 등록이다. 잡아 둔 행의 날짜로 보낸다.
             request.HolidayDate = _picked.HolidayDate;
             Apply(Call(_service.Update, request, "휴무일을 수정하지 못했습니다."), request.HolidayDate);
         }

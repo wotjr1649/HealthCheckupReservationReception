@@ -138,6 +138,33 @@ namespace HealthCheckupReservationReception.Tests.Integration
             Assert.IsNotNull(read.Registry, "RS2 공휴일등재현황은 항상 1행이다 (05 §12.5)");
         }
 
+        /// <summary>
+        /// [R22] 05 §12.6 — 등록·수정이 SP 하나가 되며 `@휴무동작코드` 가 생겼다.
+        ///
+        /// **허용 밖 코드는 `101` 이고 오류항목이 그 Parameter 이름이다.** 이 갈래를 실물로
+        /// 재는 이유는, 문자열 오타가 컴파일도 되고 Fake 시험도 통과하기 때문이다 —
+        /// 실행해야 드러난다 (`DbWorkAction` 이 같은 이유로 게이트를 갖는다).
+        ///
+        /// [!] **아무것도 쓰지 않는다.** 코드 검증이 잠금·Transaction 앞이라 DB 에 닿지 않는다.
+        /// </summary>
+        [TestMethod]
+        [TestCategory("Db")]
+        public void SP_HOL_02_는_허용밖_휴무동작코드에_101_이다()
+        {
+            IHolidayRepository repository = new HolidayRepository(ConnectionString());
+
+            HolidaySaveReadDto read = Run(() => repository.Save(new HolidaySaveRequest
+            {
+                HolidayDate = new DateTime(2027, 5, 5),
+                HolidayName = "코드시험",
+                IsActive = true,
+            }, "UPSERT"));
+
+            Assert.AreEqual((int)DbCode.BadValue, read.Result.Code, "RS0: " + read.Result.Message);
+            Assert.AreEqual("휴무동작코드", read.Result.Field, "오류항목이 Parameter 이름이 아니다");
+            Assert.IsNull(read.HolidayDate, "실패인데 RS1 을 읽었다");
+        }
+
         private static T Run<T>(Func<T> call)
         {
             try

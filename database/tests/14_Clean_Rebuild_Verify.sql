@@ -40,7 +40,7 @@ DECLARE @FP VARCHAR(200) = 'INVENTORY|'
 -- [X] 위 주석이 값을 한 벌 더 갖고 있었고 R7 이후 CK 24 · DF 8 · SP 16 · Hol 2 로 썩어 있었다.
 --     아무도 그것을 보지 않았다. 자리 이름만 남기고 값은 아래 지문 하나가 갖는다 (ROOT AGENTS.md §6).
 -- [R13] 운영기준이 더해져 Table 6->7 · PK 6->7 · CK 26->28 이다 (04 §8.7).
-IF @FP = 'INVENTORY|7|4|17|1|7|2|2|1|5|28|10|0|0|19|41'
+IF @FP = 'INVENTORY|7|4|16|1|7|2|2|1|5|28|10|0|0|19|41'
     PRINT 'PASS RBD-004 인벤토리 지문 일치  ' + @FP;
 ELSE BEGIN PRINT 'FAIL RBD-004 인벤토리 지문 불일치  ' + @FP; SET @Fail += 1; END
 

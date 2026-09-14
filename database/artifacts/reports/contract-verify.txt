@@ -51,6 +51,7 @@ PASS HOL-004_휴무일목록_구분_허용밖 Result Set 계약 일치 (1개 RS 
 PASS HOL-005_자체휴무일_등록_날짜중복 Result Set 계약 일치 (1개 RS · RS0 Code=801)
 PASS HOL-006_자체휴무일_수정_법정공휴일 Result Set 계약 일치 (1개 RS · RS0 Code=802)
 PASS HOL-007_자체휴무일_삭제_미존재 Result Set 계약 일치 (1개 RS · RS0 Code=800)
+PASS HOL-008_자체휴무일_저장_동작코드_허용밖 Result Set 계약 일치 (1개 RS · RS0 Code=101)
 PASS OFF-308-01_업무일아님_예약등록 Result Set 계약 일치 (1개 RS · RS0 Code=308)
 PASS OFF-309-02_업무시간밖_예약등록 Result Set 계약 일치 (1개 RS · RS0 Code=309)
 PASS PWR-000_fixture Result Set 계약 일치 (0개 RS · RS0 Code=undefined)

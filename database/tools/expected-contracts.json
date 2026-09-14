@@ -2619,7 +2619,7 @@
     ]
   },
   "HOL-005_자체휴무일_등록_날짜중복": {
-    "sp": "USP_HC_자체휴무일_등록",
+    "sp": "USP_HC_자체휴무일_저장",
     "rs0Success": 0,
     "rs0Code": 801,
     "resultSets": [
@@ -2636,7 +2636,7 @@
     ]
   },
   "HOL-006_자체휴무일_수정_법정공휴일": {
-    "sp": "USP_HC_자체휴무일_수정",
+    "sp": "USP_HC_자체휴무일_저장",
     "rs0Success": 0,
     "rs0Code": 802,
     "resultSets": [
@@ -2656,6 +2656,23 @@
     "sp": "USP_HC_자체휴무일_삭제",
     "rs0Success": 0,
     "rs0Code": 800,
+    "resultSets": [
+      {
+        "columns": [
+          "성공여부",
+          "결과코드",
+          "결과메시지",
+          "오류항목",
+          "서버시각"
+        ],
+        "rows": 1
+      }
+    ]
+  },
+  "HOL-008_자체휴무일_저장_동작코드_허용밖": {
+    "sp": "USP_HC_자체휴무일_저장",
+    "rs0Success": 0,
+    "rs0Code": 101,
     "resultSets": [
       {
         "columns": [

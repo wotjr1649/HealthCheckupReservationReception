@@ -33,7 +33,7 @@ namespace HealthCheckupReservationReception.Models
     /// </summary>
     public sealed class HolidayListItemDto
     {
-        public DateTime HolidayDate { get; set; }   // [휴무일자]  PK. 바꾸지 않는다 (05 §12.7)
+        public DateTime HolidayDate { get; set; }   // [휴무일자]  PK. 바꾸지 않는다 (05 §12.6)
         public string HolidayName { get; set; }     // [휴무일명]
         public string HolidayType { get; set; }     // [휴무구분]  DbHolidayType 셋 중 하나
         public bool IsActive { get; set; }          // [사용여부]  0 은 삭제가 아니라 일시 무효화다
@@ -87,7 +87,7 @@ namespace HealthCheckupReservationReception.Models
 
     // 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
     /// <summary>
-    /// SP-HOL-02 · SP-HOL-03 의 RS1 휴무일결과 (05 §12.6 · §12.7).
+    /// SP-HOL-02 의 RS1 휴무일결과 (05 §12.6). [R22] 등록·수정이 한 SP 다.
     /// SP-HOL-04 삭제는 RS1 이 없다 — 지운 행의 행버전을 돌려줄 이유가 없다 (05 §12.8).
     /// </summary>
     public sealed class HolidaySaveReadDto

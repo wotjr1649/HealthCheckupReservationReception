@@ -70,13 +70,15 @@ namespace HealthCheckupReservationReception.Services
         public OperationResult<HolidaySaveReadDto> Register(HolidaySaveRequest request)
         {
             OperationResult<HolidaySaveReadDto> tooLong = Fits(request);
-            return tooLong ?? Saved(_repository.Register(request), "휴무일을 등록하지 못했습니다.");
+            return tooLong ?? Saved(_repository.Save(request, DbHolidayAction.Create),
+                "휴무일을 등록하지 못했습니다.");
         }
 
         public OperationResult<HolidaySaveReadDto> Update(HolidaySaveRequest request)
         {
             OperationResult<HolidaySaveReadDto> tooLong = Fits(request);
-            return tooLong ?? Saved(_repository.Update(request), "휴무일을 수정하지 못했습니다.");
+            return tooLong ?? Saved(_repository.Save(request, DbHolidayAction.Update),
+                "휴무일을 수정하지 못했습니다.");
         }
 
         /// <summary>

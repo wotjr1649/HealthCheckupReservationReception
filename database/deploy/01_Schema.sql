@@ -45,6 +45,9 @@ DROP PROCEDURE IF EXISTS [dbo].[USP_HC_예약_취소];
 DROP PROCEDURE IF EXISTS [dbo].[USP_HC_접수_취소];
 DROP PROCEDURE IF EXISTS [dbo].[USP_HC_수검자상세_조회];
 DROP PROCEDURE IF EXISTS [dbo].[USP_HC_수검자유효업무_조회];
+-- [R22] 자체휴무일 등록+수정이 [USP_HC_자체휴무일_저장] 하나가 되었다.
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_자체휴무일_등록];
+DROP PROCEDURE IF EXISTS [dbo].[USP_HC_자체휴무일_수정];
 GO
 CREATE TABLE [dbo].[수검자]
 (

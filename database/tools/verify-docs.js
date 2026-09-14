@@ -278,7 +278,8 @@ function splitFences(src) {
   //       없지만 그때는 있었다" 는 뜻이다.
   // [R21] 같은 이유로 둘을 더한다 — 수검자상세·수검자유효업무가 수검자목록 RS1 로 들어갔다.
   const RETIRED = ['USP_HC_예약_취소', 'USP_HC_접수_취소',
-                   'USP_HC_수검자상세_조회', 'USP_HC_수검자유효업무_조회'];
+                   'USP_HC_수검자상세_조회', 'USP_HC_수검자유효업무_조회',
+                   'USP_HC_자체휴무일_등록', 'USP_HC_자체휴무일_수정'];
   const known = new Set([
     ...(spec.match(OBJ) || []),
     ...[...sec04Summary.matchAll(/\`([가-힣][가-힣A-Za-z_0-9]*)\`/g)].map(x => x[1]),
