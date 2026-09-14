@@ -1,5 +1,4 @@
 ﻿// 화면 ID: DLG-RCP-02 — 접수완료 추가검사 변경 (03 §12)
-using System.Drawing;
 using DevExpress.Utils;
 using HealthCheckupReservationReception.Common;
 
@@ -17,8 +16,7 @@ namespace HealthCheckupReservationReception.Views
             clsGridColumns.ShowEmptyText(gvNex, "국가검사 구성이 없습니다.");
             clsGridColumns.ShowEmptyText(gvAex, "추가검사 목록을 받지 못했습니다.");
 
-            lblValidation.Appearance.ForeColor = Color.FromArgb(192, 0, 0);
-            lblValidation.Appearance.Options.UseForeColor = true;
+            clsNotice.Error(lblValidation);
         }
     }
 }

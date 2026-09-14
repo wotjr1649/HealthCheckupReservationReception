@@ -1,7 +1,6 @@
 ﻿// 화면 ID: WF-WRK-01 — 예약/접수 공통 Workbench (03 §9)
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using DevExpress.Utils;
 using DevExpress.XtraEditors.Controls;
 using DevExpress.XtraGrid.Views.Base;
@@ -62,8 +61,7 @@ namespace HealthCheckupReservationReception.Views
             clsGridColumns.ShowEmptyText(gvAexList, "선택한 업무가 없습니다.");
 
             // 03 §9.3 Inline 오류. 붉은 글씨가 이 자리가 오류라는 유일한 단서다.
-            lblValidation.Appearance.ForeColor = Color.Firebrick;
-            lblValidation.Appearance.Options.UseForeColor = true;
+            clsNotice.Error(lblValidation);
 
             // 부품 셋은 Grid·조회조건 칸이 다 선 **뒤에** 만든다 — 그 시점의 Grid 가
             // `[기본값 복원]` 이 되돌릴 기준이다.

@@ -243,7 +243,7 @@ namespace HealthCheckupReservationReception.Views
             var row = gvHolidayList.GetRow(e.RowHandle) as HolidayListItemDto;
             if (row != null && !DbHolidayType.Own.Equals(row.HolidayType, StringComparison.Ordinal))
             {
-                e.Appearance.ForeColor = System.Drawing.SystemColors.GrayText;
+                clsNotice.Disabled(e.Appearance);
             }
         }
 

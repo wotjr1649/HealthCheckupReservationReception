@@ -1,5 +1,4 @@
 ﻿// 화면 ID: DLG-HOL-01 — 휴무일 관리 (03 §24)
-using System.Drawing;
 using DevExpress.Utils;
 using DevExpress.XtraEditors.Controls;
 using HealthCheckupReservationReception.Common;
@@ -46,11 +45,8 @@ namespace HealthCheckupReservationReception.Views
             cboType.EditValue = null;
 
             // 03 §24.6 만료 경고는 경고일 뿐 편집을 막지 않는다 — 눈에는 띄어야 한다.
-            lblRegistry.Appearance.ForeColor = Color.DarkOrange;
-            lblRegistry.Appearance.Options.UseForeColor = true;
-
-            lblBlock.Appearance.ForeColor = Color.Firebrick;
-            lblBlock.Appearance.Options.UseForeColor = true;
+            clsNotice.Warn(lblRegistry);
+            clsNotice.Error(lblBlock);
         }
 
         /// <summary>

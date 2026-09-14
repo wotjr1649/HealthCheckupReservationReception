@@ -177,7 +177,7 @@ namespace HealthCheckupReservationReception.Views
             var row = gvAex.GetRow(e.RowHandle) as ReservationAexItemDto;
             if (row != null && !row.Selectable)
             {
-                e.Appearance.ForeColor = System.Drawing.Color.FromArgb(150, 150, 150);
+                clsNotice.Disabled(e.Appearance);
             }
         }
     }

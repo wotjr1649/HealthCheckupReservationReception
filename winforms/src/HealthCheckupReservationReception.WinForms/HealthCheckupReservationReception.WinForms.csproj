@@ -135,6 +135,7 @@
     <Compile Include="Views\IReservationView.cs" />
     <Compile Include="Views\clsBusyScope.cs" />
     <Compile Include="Views\clsGridColumns.cs" />
+    <Compile Include="Views\clsNotice.cs" />
     <Compile Include="Views\clsColumnChooser.cs" />
     <Compile Include="Views\clsGridRowPicker.cs" />
     <Compile Include="Views\clsSearchConditions.cs" />
