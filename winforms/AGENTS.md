@@ -123,17 +123,20 @@ and do not write "structurally impossible": an earlier draft of this section sai
 was wrong. Both closures (`§1.1` on implementation→`03`, `§4.19` on generator→screens) are
 decisions, and a decision can be changed. What differs is the cost, and it splits the three.
 
+`[!]` **Do not write the counts here.** An earlier draft carried three — ribbon mismatches,
+ribbon buttons, and SCR-004 labels, measured 2026-09-11. Two were wrong by 2026-09-14. Nothing
+judges a number written here, so it rots — that is ROOT `AGENTS.md` §6, and this section is where
+it happened. `node tools/verify-screen-design.js` prints the current ones. Read them there.
+
 ```text
-SCR-002·003   the ribbon: kit.js NAV, per-screen groups and buttons.  9 mismatches,
-              every one an intended change (신규예약 → 예약, DLG-PAT-02 removed,
-              [조회]·[컬럼설정] moved out of the ribbon, the 검색 group dropped).
-              **The target has settled** — 14 ribbon buttons, 14 wired (measured 2026-09-11).
-              That is a measurement, not a promise that none will be added.
+SCR-002·003   the ribbon: kit.js NAV, per-screen groups and buttons. Every mismatch is an
+              intended change (신규예약 → 예약, DLG-PAT-02 removed, [조회]·[컬럼설정] moved
+              out of the ribbon, the 검색 group dropped).
               Revivable by refreshing the design source. The price: the published 03 then
               draws the current ribbon, which reverses §4.19 for the ribbon alone.
 
-SCR-004       the screen interior: 62 labels over 10 screens. **Not revivable as written**,
-              for two reasons that refreshing the design source does not touch:
+SCR-004       the screen interior. **Not revivable as written**, for two reasons that
+              refreshing the design source does not touch:
                 - the check reads only files carrying that screen's 화면 ID marker, but the
                   commands moved to the shared ribbon. 휴무일 captions live in
                   MainForm.Designer.cs as 휴무일추가/휴무일수정/휴무일삭제; the design
