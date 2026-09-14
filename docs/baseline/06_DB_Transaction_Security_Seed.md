@@ -3,9 +3,10 @@
 - **문서명:** `06_DB_Transaction_Security_Seed.md`
 - **상태:** `FINAL / GO / READ-ONLY` — SQL 실행검증 완료. §42 Gate 판정은 전부 실측이다
 - **위치:** `docs/baseline/` — 2026-09-08 입주. 이제 이 문서를 고치는 것도 재봉인이다 (ROOT `AGENTS.md` §2)
-- **문서 버전:** v1.17  (`[R12]` 회차별 버전을 여기 적지 않는다 — §4.1 표가 단일 출처이고 무엇을 고쳤는지는 아래 `RN 개정 범위` 가 적는다. 걷어낸 사본은 R6 부터 한 칸씩 밀려 있었고 아무 게이트도 그것을 보지 않았다. ROOT `AGENTS.md` §6)
+- **문서 버전:** v1.20  (`[R12]` 회차별 버전을 여기 적지 않는다 — §4.1 표가 단일 출처이고 무엇을 고쳤는지는 아래 `RN 개정 범위` 가 적는다. 걷어낸 사본은 R6 부터 한 칸씩 밀려 있었고 아무 게이트도 그것을 보지 않았다. ROOT `AGENTS.md` §6)
 - **기준일:** 2026-09-08  ·  **실행검증일:** 2026-09-07(R3 회귀) · 2026-09-08(R4 회귀 · R5 회귀 회차 `C`) · 2026-09-09(R12 회귀 회차 `R12` 창 밖) · 2026-09-10(R13 회귀 회차 `R13` 창 밖) · 2026-09-11(R19 회귀 회차 `R19` 창 안) · 2026-09-14(R20 회귀 회차 `R20` 창 안 · R22 회귀 회차 `R22` 창 안 — R21·R22 를 함께 담는다)
-- **기준선 ID:** `HC-RSV-RCP-20260914-R22`  (직전 `HC-RSV-RCP-20260914-R21`)
+- **기준선 ID:** `HC-RSV-RCP-20260914-R24`  (직전 `HC-RSV-RCP-20260914-R22`)
+- **R24 개정 범위:** `06` 만 연다. **계약·SQL·시험은 한 줄도 바꾸지 않는다** — 고치는 것은 §18 이 말하던 거짓 수치와 §36.1 의 죽은 표뿐이다. `USP_HC_예약접수상세_조회` 의 Result Set 이 R18 부터 6 인데 `5 (RS0~RS4)` 로 남아 있었고, 합계 줄은 `20개 · Param 113개` 로 R20~R22 를 지나도록 뒤처졌으며, §36.1 의 「SP별 Parameter 수」 표는 합계 87 로 **같은 절 안에서 Matrix 와 어긋나** 있었다(실물 106). `[!]` **수를 고치는 것으로 끝내지 않는다** — 그러면 다음 회차에 또 썩는다. `verify-docs.js` `V27` 을 새로 놓아 §18 Matrix 의 `Param` 열을 `database/tests/01_Schema_Tests.sql` 의 `@ExpP` 와, `Result Set` 열을 `05` 의 RS 선언과, 합계 줄의 구분별 수를 Matrix 행과 대조한다. 음성시험 넷으로 잡는 것을 확인했다 (Param 한 칸 · RS 한 칸 · SP 행 삭제 · 합계 줄). §36.1 의 표는 걷었다 (ROOT `AGENTS.md` §6)
 - **R22 개정 범위:** `05` 재봉인과 한 쌍이다. 2026-09-14 사용자 지시로 **자체휴무일 등록·수정을 `USP_HC_자체휴무일_저장` 하나로 합쳤다** — 둘은 같은 한 행을 쓰고 잠금 자원·Transaction·Result Set 이 같았다. 여기서 고치는 것은 §1 문서정보 · §4.1 회차표 · §18 SP Matrix 두 행 → 한 행과 개수 · §42 회차 등재다. Transaction 형태(`sp_getapplock HOL|휴무일자` · `XACT_ABORT ON`)와 감사 규칙은 한 줄도 바뀌지 않는다 — 휴무일 SP 는 원래 `변경이력` 을 남기지 않는다(§18 각주)
 - **R21 개정 범위:** `05` 재봉인과 한 쌍이다. 2026-09-14 사용자 지시로 **`SELECT_수검자상세`(SP-PAT-02)와 `SELECT_수검자유효업무`(SP-PAT-05)를 `SELECT_수검자목록`(SP-PAT-01) RS1 안으로 들였다** — 화면이 목록을 한 번 받으면 행을 고를 때도 모달을 열 때도 다시 묻지 않는다. 여기서 고치는 것은 §1 문서정보 · §4.1 회차표 · §18 SP Matrix 두 행 삭제와 개수 · §18 Parameter 표 · §19 판정항목 한 줄이다. Transaction·잠금·감사 규칙은 한 줄도 바뀌지 않는다 — 사라진 둘은 `Transaction X · Lock X` 인 SELECT 였다
 - **R20 개정 범위:** `05` 재봉인과 한 쌍이다. 2026-09-14 사용자 지시로 **예약취소와 접수취소를 `USP_HC_업무_취소` 하나로 합쳤다** — 두 본문이 주석을 빼면 네 리터럴만 달랐다(실측). 여기서 고치는 것은 §1 문서정보 · §4.1 회차표 · SP 표 두 행 → 한 행 · `GRANT EXECUTE` 두 줄 → 한 줄 · §42 회차 등재다. 잠금 자원명(`WORK`)·Transaction 형태·감사 규칙은 한 줄도 바뀌지 않는다 — 합친 SP 가 예전 둘과 같은 것을 한다
@@ -112,11 +113,13 @@ Extended Events / trace flag 세션 (서버 수준 객체)
 | `03_Wireframe_Definition.md` | v1.10 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260910-R17` |
 | `04_DB_Design.md` | v3.7 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260910-R17` |
 | `05_DB_Rule_SP_Contract.md` | v4.2 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260914-R22` |
-| `06_DB_Transaction_Security_Seed.md` | v1.19 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260914-R22` |
+| `06_DB_Transaction_Security_Seed.md` | v1.20 | FINAL / GO / READ-ONLY | `HC-RSV-RCP-20260914-R24` |
 
 `[!]` **기준선 ID 는 문서마다 "마지막 봉인 회차" 다** — 세트 하나에 ID 하나가 아니다.
 R11 은 `01`·`03`·`05`·`06` 넷을 열었다. 수검자 동시성 토큰이 R7 에 `행버전` 으로 통일됐는데 `01` §P01-04 와 `03` §6.4·§16 이 따라오지 않아 **번호가 작은 쪽이 이기는 사슬 위쪽에 옛 문장이 남아 있었다**(ROOT `AGENTS.md` §1). 세 줄을 함께 고쳤고 `05` §4.2 의 `304` Enum 이름 한 칸도 얹었다. 회차의 단일 출처가 이 표이므로 `06` 도 따라 열린다(R5·R10 이 겪은 같은 연쇄다).
 R12 는 `00`·`03`·`05`·`06` 넷을 열었다. 공통 업무 가능조건이 예약·접수 업무의 것인데 같은 기준정보인 수검자만 휴무일과 다르게 묶여 있었고, 화면은 그 상태에서 Action 을 닫아 저장 시점의 DB 판정을 받아볼 수 없게 만들고 있었다.
+R24 는 `06` 만 열었다. §18 SP Matrix 가 자기 자신과 어긋나 있던 것을 고치고, 다시 어긋나지 않도록 `V27` 을 놓는 회차다 — `05` 는 고칠 문장이 0건이다(실측). 계약은 바뀌지 않았다.
+
 R22 도 `05`·`06` 둘을 열었다. 자체휴무일 등록·수정이 `USP_HC_자체휴무일_저장` 하나가 되어 SP 가 17 → 16 이 되는 회차다 — 왕복이 줄지는 않는다. 줄이는 것은 **설명할 표면**이다.
 
 R21 도 `05`·`06` 둘을 열었다. `SELECT_수검자상세`·`SELECT_수검자유효업무` 의 Result Set 이 `SELECT_수검자목록` RS1 로 들어가 SP 가 19 → 17 이 되는 회차다 — 화면의 조회 왕복을 줄이는 것이 목적이고, 판정은 그대로 DB 가 낸다. `03`·`04` 는 R17 표기를 유지한다.
@@ -1030,7 +1033,7 @@ NEX-06  EX013  나이 IN (56,66)
 | `USP_HC_예약_등록` | INSERT | 12 | 2 | RP-01~08 | **O** | `PAT` → `SLOT` | `06_Reservation_Write_Tests.sql` |
 | `USP_HC_예약_변경` | UPDATE | 12 | 2 | RP-03·06·09 | **O** | `PAT` → `WORK` → `SLOT`×n | `06_Reservation_Write_Tests.sql` |
 | `USP_HC_예약접수목록_조회` | SELECT | 5 | 2 | CP-05, 검색계약 | X | X | `04_Select_SP_Tests.sql` |
-| `USP_HC_예약접수상세_조회` | SELECT | 1 | **5** (RS0~RS4) | CP-05, 상태 Matrix | X | X | `04_Select_SP_Tests.sql` |
+| `USP_HC_예약접수상세_조회` | SELECT | 1 | **6** (RS0~RS5) | CP-05, 상태 Matrix | X | X | `04_Select_SP_Tests.sql` |
 | `USP_HC_변경이력_조회` | SELECT | 2 | 2 | CP-06 | X | X | `04_Select_SP_Tests.sql` |
 | `USP_HC_접수_완료` | UPDATE | 3 | 2 | RCP-01~04 | **O** | **`PAT` → `WORK` → `SLOT`** | `07_Reception_Write_Tests.sql` |
 | `USP_HC_접수추가검사_변경` | UPDATE | 10 | 2 | RCP-05, AEX | **O** | `WORK` | `07_Reception_Write_Tests.sql` |
@@ -1039,7 +1042,18 @@ NEX-06  EX013  나이 IN (56,66)
 | `USP_HC_자체휴무일_저장` | SAVE | 6 | 2 | HOL-04~05 | **O** | `HOL` | `15_Holiday_Tests.sql` |
 | `USP_HC_자체휴무일_삭제` | DELETE | 2 | 1 (RS0) | HOL-05 | **O** | `HOL` | `15_Holiday_Tests.sql` |
 
-합계: SELECT 9 / INSERT 3 / UPDATE 7 / DELETE 1 = **20개**. Param 합계 **113개**(§36).
+합계: SELECT 7 / INSERT 2 / UPDATE 5 / SAVE 1 / DELETE 1 — 외부 호출 Stored Procedure 16개.
+
+`[X]` **Param 합계를 여기 적지 않는다.** `Parameter 99`(R7) → `합계 87` → `합계 113` 이
+차례로 거짓이 되었고, R20~R22 로 SP 가 20 → 16 이 되는 동안에도 이 자리는 `113` 인 채였다.
+같은 절 안에서 Matrix 는 106 을, 아래 요약표는 87 을 말하고 있었다 — **한 문서가 자기 자신과
+어긋난 것**이다. §42 `G09` 가 *"건수를 여기 적지 않는다"* 로 이미 같은 결론에 와 있었는데
+이 자리만 따라오지 않았다 (ROOT `AGENTS.md` §6).
+
+`[!]` **위 Matrix 는 이제 베낀 표가 아니라 검사되는 표다.** `verify-docs.js` `V27` 이 매 회귀에서
+`Param` 열을 `database/tests/01_Schema_Tests.sql` 의 `@ExpP` 와, `Result Set` 열을 `05` 의 각 SP
+절이 선언한 `RSn` 개수와 대조한다. 그 `@ExpP` 는 다시 `SCH-019` 가 `sys.parameters` 와 `EXCEPT`
+양방향으로 지킨다. 구분별 합계와 SP 총수도 `V27`·`V25` 가 같은 줄에서 센다.
 
 `[R7]` **DELETE SP 가 0개에서 1개가 되었다.** `§2.2`·`G06` 이 *"DELETE SP 0개"* 를 금지 조건으로 들고 있었는데, 그것은 **업무 데이터를 지우는 SP** 를 막는 규칙이었다(취소는 상태전이이지 삭제가 아니다 — `00` CP-05). `USP_HC_자체휴무일_삭제` 는 기준정보 1행을 지우며 업무 데이터를 건드리지 않는다. `G06` 의 조건을 *"업무 테이블(`수검자`·`예약접수`·`완료이력`)을 지우는 SP 0개"* 로 좁힌다.
 
@@ -2154,20 +2168,17 @@ TVF 에 시각을 주입해 실측했다.
 
 ## 36.1 Parameter 검증 (SQL만) — `EXCEPT` 양방향 `[X 수정]`
 
-`05` §7~§12의 Parameter 113개를 `(SpName, ParamOrdinal, ParamName, TypeName, IsNullable)` 기대 `VALUES` 인라인 테이블로 두고 `sys.parameters` + `sys.types` 실측과 **`EXCEPT` 양방향** 대조한다. 차집합이 한 건이라도 있으면 `FAIL`.
+`05` §7~§12의 Parameter 전건을 `(SpName, ParamOrdinal, ParamName, TypeName, IsNullable)` 기대 `VALUES` 인라인 테이블로 두고 `sys.parameters` + `sys.types` 실측과 **`EXCEPT` 양방향** 대조한다. 차집합이 한 건이라도 있으면 `FAIL`.
 
 `[X]` 초안은 메타데이터를 `SELECT`만 하고 사람이 눈으로 보라고 했다. 자동 판정이 없으면 회귀에서 잡히지 않는다.
 
-| SP별 Parameter 수 | 값 |
-|---|---:|
-| `SELECT_공통업무상태` / `SELECT_예약접수상세` | 0 / 1 |
-| `SELECT_수검자목록` / `SELECT_예약접수목록` | 5 / 5 |
-| `INSERT_수검자` / `UPDATE_수검자정보` | 12 / 12 |
-| `SELECT_예약가능정보` | 13 |
-| `INSERT_예약` / `UPDATE_예약변경` | 11 / 11 |
-| `UPDATE_예약취소` / `UPDATE_접수완료` / `UPDATE_접수취소` | 2 / 2 / 2 |
-| `UPDATE_접수추가검사` | 9 |
-| **합계** | **87** |
+`[X]` **여기 있던 「SP별 Parameter 수」 표를 걷었다** (R24). R7 무렵 값(합계 87)이었고
+R20~R22 를 지나도록 아무도 고치지 않았다 — 사라진 SP(`UPDATE_예약취소`·`UPDATE_접수취소`)를
+여전히 세고, 생긴 SP(휴무일 넷·변경이력)는 아예 없었다. 실물은 106 이다.
+
+**SP별 Parameter 는 §18 Matrix 의 `Param` 열 하나가 갖는다.** 그 열은 `V27` 이 매 회귀에서
+`01_Schema_Tests.sql` 의 `@ExpP` 와 대조하고, `@ExpP` 는 `SCH-019` 가 `sys.parameters` 와
+`EXCEPT` 양방향으로 지킨다. 같은 값을 두 곳에 두지 않는다 (ROOT `AGENTS.md` §6).
 
 ## 36.2 RS0 검증 (SQL만) — NULL 안전 `[X 수정]`
 
@@ -3059,7 +3070,7 @@ Test ID·건수·계약 수치가 스펙과 9개 계획 문서에 **중복 기�
 | Prefix | 범위 | 건수 | 산출 파일 | 검증 대상 | Gate |
 |---|---|---:|---|---|---|
 | `PRE` | `001`~`006` | 6 | `deploy/00_Preflight.sql` | 배포 안전가드 `50010`~`50015` (§8.3) | G03 |
-| `SCH` | `001`~`019` | 19 | `tests/01_Schema_Tests.sql` | 6 Table · PK/FK/UQ/UX/NCI · 53컬럼 · 제약 26 · Default 10 · NCI Key · **SP 별 Parameter(합계 113)** (§34) | G05 |
+| `SCH` | `001`~`019` | 19 | `tests/01_Schema_Tests.sql` | 6 Table · PK/FK/UQ/UX/NCI · 53컬럼 · 제약 26 · Default 10 · NCI Key · **SP 별 Parameter 전건** (§34) | G05 |
 | `SED` | `001`~`011` | 11 | `tests/02_Seed_Tests.sql` | `검사코드` 19행 · `휴무일` 2행 · AEX 7건 Active (§13·§14) | G07 |
 | `SSN` | `001`~`006` | 6 | `tests/02_Seed_Tests.sql` | 실제 주민등록번호 미사용 — 체크디지트 전건 무효 (§16.2) | G12 |
 | `RUL` | `T01`~`T12` `N01`~`N12` `A01`~`A10` `G01`~`G08` `D01`~`D09` | 51 | `tests/03_Rule_Tests.sql` | 4개 TVF 결정적 경계 — 마감시각 · NEX 술어 · AEX 판정순서 · 휴무일 · `DATEFIRST` 불변 (§35) | G08 |
