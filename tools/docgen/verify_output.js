@@ -11,11 +11,11 @@
  *
  * 반대쪽도 본다 — `03` 은 **반드시 들어 있어야 하는 문장**이 있다 (REQUIRED).
  *
- *   node tools/docgen/verify_output.js            판정
+ *   node tools/docgen/verify_output.js            산출물 판정
+ *   node tools/docgen/verify_output.js source     설계 소스에 그 문장이 아직 있는가
  *   node tools/docgen/verify_output.js selftest   규칙이 실제로 잡는지
  */
 'use strict';
-const { all } = require('./scan_output.js');
 
 /*
  * rules: [이름, 정규식, 허용 문자열…]
@@ -74,10 +74,17 @@ const RULES = [
  *     `wireframe/screens/a0_list.js` 를 같은 커밋에서 함께 고친다.
  */
 const REQUIRED = [
-  ['03_검진_예약접수_화면설계서.pptx', '문서의 지위',
+  // 산출물 · 그 문장을 갖는 설계 소스 · 이름 · 조각들
+  ['03_검진_예약접수_화면설계서.pptx', 'wireframe/screens/a0_list.js', '문서의 지위',
     /설계 시점의 화면 정의/,
     /동작의 기준은 실행 프로그램/],
 ];
+
+/** 조각이 다 들어 있는가. 줄바꿈·연속 공백으로 끊겨도 같은 문장이다. */
+function missingIn(text, needs) {
+  const flat = String(text).replace(/\s+/g, ' ');
+  return needs.filter(re => !re.test(flat));
+}
 
 /** 판정만 한다 — 파일을 읽지 않으므로 selftest 가 가짜 입력으로 그대로 부를 수 있다. */
 function judge(map) {
@@ -106,7 +113,7 @@ function judge(map) {
     }
   }
 
-  for (const [file, label, ...needs] of REQUIRED) {
+  for (const [file, , label, ...needs] of REQUIRED) {
     const items = map[file];
     // [X] 산출물이 없으면 「없으니 통과」가 된다 — 조용히 통과하는 그 함정이다. FAIL 로 센다.
     if (!items) {
@@ -114,9 +121,7 @@ function judge(map) {
       lines.push('FAIL ' + file + ' — 산출물이 없다. ' + label + ' 을(를) 확인할 수 없다');
       continue;
     }
-    // 줄바꿈·연속 공백으로 끊겨도 같은 문장이다.
-    const text = items.map(i => i.text).join(' ').replace(/\s+/g, ' ');
-    const missing = needs.filter(re => !re.test(text));
+    const missing = missingIn(items.map(i => i.text).join(' '), needs);
     if (missing.length) {
       fail += missing.length;
       lines.push('FAIL ' + file + ' — ' + label + ' 문장이 없다 ' + missing.length + '건');
@@ -134,6 +139,40 @@ function judge(map) {
  * 이 파일에는 없던 것이다. 이 저장소의 다른 게이트는 전부 갖고 있고, fail-open 인 게이트를
  * 여러 번 겪었다. 판정을 judge() 로 떼어 낸 이유가 그것뿐이다.
  */
+/*
+ * source — 설계 소스에 그 문장이 아직 있는가.
+ *
+ * [X] **산출물만 보면 「지웠다」를 다음 재생성까지 아무도 모른다.** 그 사이의 커밋은 조용히
+ *     지나간다. 소스는 stdlib 만으로 볼 수 있으므로 상시 회귀가 여기를 본다
+ *     (`winforms/scripts/test.sh`). 산출물 쪽은 xlsx·pptx 판독 모듈이 필요해 그 회귀의
+ *     「어디서나 같은 판정」을 깨므로 `build_all.js` 가 생성 직후에 본다.
+ */
+if (process.argv[2] === 'source') {
+  const fs = require('fs');
+  const path = require('path');
+  let fail = 0;
+
+  for (const [, src, label, ...needs] of REQUIRED) {
+    const full = path.join(__dirname, src);
+    if (!fs.existsSync(full)) {
+      fail++;
+      console.log('FAIL ' + src + ' — 설계 소스가 없다. ' + label + ' 을(를) 확인할 수 없다');
+      continue;
+    }
+    const missing = missingIn(fs.readFileSync(full, 'utf8'), needs);
+    if (missing.length) {
+      fail += missing.length;
+      console.log('FAIL ' + src + ' — ' + label + ' 문장이 없다 ' + missing.length + '건');
+      for (const re of missing) console.log('        없는 것: ' + re);
+    } else {
+      console.log('PASS ' + src + ' — ' + label + ' 있다');
+    }
+  }
+
+  console.log('=== verify_output(source): FAIL ' + fail + ' ===');
+  process.exit(fail ? 1 : 0);
+}
+
 if (process.argv[2] === 'selftest') {
   const WF = '03_검진_예약접수_화면설계서.pptx';
   const NOTICE = '이 문서는 설계 시점의 화면 정의다. 개발 과정에서 사용성 판단에 따라 실제 화면과 '
@@ -157,6 +196,8 @@ if (process.argv[2] === 'selftest') {
 }
 
 (async () => {
+  // [!] 여기서 부른다 — `source` 모드는 stdlib 만으로 돌아야 한다.
+  const { all } = require('./scan_output.js');
   const { fail, checked, lines } = judge(await all());
   for (const l of lines) console.log(l);
   console.log('\n=== verify_output: 텍스트 ' + checked + '조각 · FAIL ' + fail + ' ===');

@@ -30,7 +30,7 @@ adf67b6e0a13850c1b178a1fea810afae8529255da10699902bafdb14985fde8 *../winforms/sc
 b1cb16ad24330cda0ead1899e6c632310fd300a95ca30bc20192a0eeb59900fb *../winforms/scripts/measure-cutoff.sh
 abf5f23dd8122f535e9873b965260b5fbbc9c20333f7452516e1763ce04517b9 *../winforms/scripts/seed-tgt-cases.sh
 8952512c39f1077dfce04262def2ee40a463f296709c49a8fa6f834fadd3af58 *../winforms/scripts/seed-today.sh
-3caf7fb36ee0519eaa4858bf23f61a944d65145695afd6a290ab976c4eef2a2c *../winforms/scripts/test.sh
+3d4808c570f6c90044e24f70ed61dd21f0a5413ffcde1b200d5197aec8eeb550 *../winforms/scripts/test.sh
 8d8dc9531106987297d44c8f822a821f57f66e4f96744d72e1f8f7392eb3dc72 *../winforms/scripts/verify-check-values.sh
 f8846954aab7c520622acdb25d40441f4febeea805553d5211f3271ad9b242fd *../winforms/scripts/verify-contract-names.sh
 2a41f96e6a49ca74b53af27a624dac47b21467e0189457ac43bd62ddc6ed299c *../winforms/scripts/verify-db-frozen.sh

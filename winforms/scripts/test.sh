@@ -75,6 +75,12 @@ run ./scripts/verify-rs-columns.sh
 # [X] `source` 모드만 돈다 — SCR-000·001(설계 소스 ↔ 03)이다. SCR-002·003·004 는
 #     ROOT AGENTS.md §1.1 이 놓아 준 *구현 ↔ 03* 이라 의도된 red 이고, 회귀에 두면
 #     다음 사람이 red 에 무뎌진다 (2026-09-11 사용자 결정). 되살릴 때는 인자를 뺀다.
+# [X] 공개본 `03` 은 자기 지위를 스스로 말한다 (ROOT AGENTS.md §3). **그 문장이 설계
+#     소스에서 사라지는 것은 여기서 잡는다** — 산출물만 보면 다음 재생성까지 아무도 모르고
+#     그 사이 커밋은 조용히 지나간다. 공개본에 실제로 실렸는지는 build_all.js 가 생성 직후에
+#     본다: 그쪽은 xlsx·pptx 판독 모듈이 필요해 이 회귀의 「어디서나 같은 판정」을 깬다.
+run node ../tools/docgen/verify_output.js source
+
 run node tools/verify-screen-design.js selftest source
 run node tools/verify-screen-design.js source
 run ./scripts/verify-ui-db-matrix.sh selftest
