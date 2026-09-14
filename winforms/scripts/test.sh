@@ -44,6 +44,12 @@ run ./scripts/verify-db-frozen.sh selftest
 run ./scripts/verify-db-frozen.sh
 run ./scripts/verify-no-secret.sh selftest
 run ./scripts/verify-no-secret.sh
+
+# [X] **스킬이 두 벌이다.** `.agents/` 는 Codex 가, `.claude/` 는 Claude Code 가 읽는다.
+#     PROJECT_INSTRUCTIONS.md 가 「byte-identical」이라 단언하는데 지키는 것이 없었고,
+#     킷 README 가 말하는 동기화 도구는 이 저장소에 없다. 값이 두 곳이면 검사를 함께 둔다
+#     (ROOT AGENTS.md §6). 한쪽만 고치면 두 호스트가 다른 지침으로 돈다.
+run diff -rq .agents/skills/winforms-devexpress-ui .claude/skills/winforms-devexpress-ui
 run ./scripts/verify-contract-names.sh selftest
 run ./scripts/verify-contract-names.sh
 run ./scripts/verify-ui-baseline.sh selftest

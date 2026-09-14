@@ -113,60 +113,38 @@ Running the script **without** `source` is still an intended red, and so is its 
 makes the copy red too). Do not go hunting there; that full mode is what a future round would
 run if §1.1 were ever revived.
 
-The stop was once written as seven gates, then one, and is now three checks inside one script.
-Each narrowing came from measuring rather than assuming — six of the original seven were green
-on 2026-09-10, and two of this script's five were green on 2026-09-11. Narrow it again the same
-way: measure first.
+The stop was once seven gates, then one, and is now three checks inside one script. Each
+narrowing came from measuring rather than assuming.
 
-**The three are not one decision either — 2026-09-11, measured.** Do not write "permanent" here,
-and do not write "structurally impossible": an earlier draft of this section said the latter and
-was wrong. Both closures (`§1.1` on implementation→`03`, `§4.19` on generator→screens) are
-decisions, and a decision can be changed. What differs is the cost, and it splits the three.
+**The three are not one decision.** Both closures (`§1.1` on implementation→`03`, `§4.19` on
+generator→screens) are decisions, and a decision can be changed. What differs is the cost.
 
-`[!]` **Do not write the counts here.** An earlier draft carried three — ribbon mismatches,
-ribbon buttons, and SCR-004 labels, measured 2026-09-11. Two were wrong by 2026-09-14. Nothing
-judges a number written here, so it rots — that is ROOT `AGENTS.md` §6, and this section is where
-it happened. `node tools/verify-screen-design.js` prints the current ones. Read them there.
+`[!]` **Do not write the counts here.** An earlier draft did, and they rotted within days —
+nothing judges a number written here (ROOT `AGENTS.md` §6).
+`node tools/verify-screen-design.js` prints the current ones.
 
 ```text
-SCR-002·003   the ribbon: kit.js NAV, per-screen groups and buttons. Every mismatch is an
-              intended change (신규예약 → 예약, DLG-PAT-02 removed, [조회]·[컬럼설정] moved
-              out of the ribbon, the 검색 group dropped).
-              Revivable by refreshing the design source. The price: the published 03 then
-              draws the current ribbon, which reverses §4.19 for the ribbon alone.
+SCR-002·003   the ribbon. Every mismatch is an intended change. Revivable by refreshing the
+              design source; the price is that the published 03 then draws the current ribbon,
+              which reverses §4.19 for the ribbon alone.
 
-SCR-004       the screen interior. **Not revivable as written**, for two reasons that
-              refreshing the design source does not touch:
-                - the check reads only files carrying that screen's 화면 ID marker, but the
-                  commands moved to the shared ribbon. 휴무일 captions live in
-                  MainForm.Designer.cs as 휴무일추가/휴무일수정/휴무일삭제; the design
-                  source says 추가/수정/삭제. Same button, different file, different string
-                - many "labels" are wireframe annotations, not UI strings - for example
-                  "휴무일 목록 - 휴무일자 오름차순 고정". Satisfying the check would mean
-                  planting explanatory prose into C# as string literals
-              Reviving this one is a redesign of the check, not a refresh of its expectations.
+SCR-004       the screen interior. **Not revivable as written.** The check reads only files
+              carrying that screen's 화면 ID marker while the commands moved to the shared
+              ribbon, and many of its "labels" are wireframe annotations rather than UI
+              strings. Reviving it is a redesign of the check, not a refresh of expectations.
 ```
 
-**Timing governs both.** While the UI/UX pass runs - screens change on every instruction -
-refreshing the design source only makes it stale again on the next one, and `screens/*.js`
-draws the published `03`, so refreshing costs the design-time record §4.19 chose to keep.
-Revisit after that pass ends, and measure again before deciding.
+**Timing governs both.** While the UI/UX pass runs, refreshing the design source only makes it
+stale again on the next instruction, and it costs the design-time record §4.19 chose to keep.
+Revisit after that pass ends, and measure before deciding.
 
 ```text
-runs, and catches what a unit test cannot
-  verify-no-secret.sh       credentials in winforms
-  verify-db-frozen.sh       a silent edit to the frozen contract — needed more, not less,
-                            while the UI is being torn up
-  verify-ui-baseline.sh     kit §1 technique (DPI, 굴림 9pt, BOM+CRLF)
-  verify-layering.sh        kit §2·§3 — SqlClient only in Repositories/, DevExpress only in
-                            Views/, no AddWithValue, no inline DML. Architecture, not design
-  verify-rs-columns.sh      `reader.GetOrdinal("오늘날짜")` typos: they compile, they pass the
-                            fake-repository tests, and they blow up only at runtime
-  verify-dbcode.sh          DbCode ↔ 05 §16.1 — the enum is copied, so it is checked
-  verify-social-century.sh  03 §6.2 주민번호 century table ↔ the presenter's branch
-  verify-contract-names.sh  05 §1.1 names ↔ App.config · csproj
-  verify-ui-db-matrix.sh    07 §3·§4 ID lists ↔ 03 §2 · 05 §1.3 (ID lists only, not status)
-  MSBuild + vstest          a build and unit tests are not a gate
+runs — `scripts/test.sh` is the list, and each script's own header says why it exists.
+Do not copy that list here; the copy that was here fell three gates behind.
+
+what those headers do not say
+  verify-db-frozen.sh   needed more, not less, while the UI is being torn up
+  MSBuild + vstest      a build and unit tests are not a gate
 ```
 
 ### What the toolchain writes follows the kit; the rest follows the repository
