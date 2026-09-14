@@ -174,10 +174,13 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// 예약이 하나 생겼다 — 목록의 `예약` 칸이 낡았으므로 되읽고 그 줄로 돌아간다.
-        /// MainForm 이 저장 뒤에 부른다.
+        /// **쓰기가 하나 끝났다 — 되읽고 그 줄로 돌아간다.** `MainForm` 이 저장 뒤에 부른다.
+        ///
+        /// [R23] 이름이 `ReloadAfterReservation` 이었다. 예약 저장만 쓰던 자리인데 수검자
+        /// 등록·수정도 같은 것이 필요해졌다 — 하는 일이 하나이므로 이름만 넓혔다
+        /// (2026-09-14 사용자 지시). 낡는 칸이 예약이든 이름이든 답은 같다: 다시 읽는다.
         /// </summary>
-        public void ReloadAfterReservation(long patientId, string notice)
+        public void ReloadAfterSave(long patientId, string notice)
         {
             if (_presenter == null)
             {

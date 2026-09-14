@@ -227,6 +227,27 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.History);
             Assert.IsFalse(view.RowActions.RowSelected);
         }
+        /// <summary>
+        /// [R23] **쓰기가 끝나면 다시 읽고 그 줄로 돌아간다** (2026-09-14 사용자 지시).
+        /// `MainForm` 이 수검자 저장·예약 저장 뒤에 이 길로 들어온다.
+        ///
+        /// [X] 되읽지 않으면 방금 고친 이름이 목록에 옛 값으로 남고, 그 행으로 `[정보수정]` 을
+        ///     다시 누르면 낡은 `행버전` 이 올라가 `601` 이 난다.
+        /// </summary>
+        [TestMethod]
+        public void 저장_뒤_되읽으면_목록을_다시_읽고_그_줄로_돌아간다()
+        {
+            var view = new FakePatientManagementView();
+            var service = new FakePatientService { SearchResult = Rows() };
+            PatientManagementPresenter presenter = Presenter(view, service);
+
+            presenter.Reload(11);
+
+            Assert.AreEqual(1, view.Rows.Count, "목록을 다시 읽지 않았다");
+            Assert.AreEqual(11L, view.SelectedPatientId, "고쳤던 줄로 돌아가지 않았다");
+            Assert.IsNull(view.LastMessage, "되읽기는 조용해야 한다 — 사용자가 부탁한 조회가 아니다");
+        }
+
         private static OperationResult<IList<PatientDto>> Rows()
         {
             return Rows(null);

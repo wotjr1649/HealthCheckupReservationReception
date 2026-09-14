@@ -224,7 +224,7 @@ namespace HealthCheckupReservationReception.Views
             // 남는다 — 목록의 `예약` 칸이 방금 낡았으므로 되읽고 그 줄로 돌아간다.
             if (_patientView != null)
             {
-                _patientView.ReloadAfterReservation(patientId, "예약이 등록되었습니다.");
+                _patientView.ReloadAfterSave(patientId, "예약이 등록되었습니다.");
             }
         }
 
@@ -449,14 +449,34 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// DLG-PAT-01 을 연다 (03 §6). 03 §5 는 저장 뒤 수검자 관리 화면이 할 일을 정하지
-        /// 않으므로 목록을 자동으로 다시 읽지 않는다 (07 §14.3 A-11).
+        /// DLG-PAT-01 을 연다 (03 §6).
+        ///
+        /// **[R23] 저장했으면 목록을 되읽고 그 사람으로 돌아간다** (2026-09-14 사용자 지시 —
+        /// *"INSERT, UPDATE, DELETE 가 발생시 SELECT 를 호출하여 수정한 내용이 즉각 frm 에도
+        /// 반영되게끔 하고 싶다"*). 예약 저장이 쓰는 길과 같은 길이다.
+        ///
+        /// [X] **예전에는 아무것도 하지 않았다.** 근거는 *"03 §5 가 저장 뒤 할 일을 정하지
+        ///     않는다"*(07 §14.3 A-11)였는데, 그것은 *정하지 않았다*는 말이지 *하지 말라*는
+        ///     말이 아니었다. 방금 고친 이름이 목록에 그대로 남아 있으면 사용자는 저장이
+        ///     됐는지 알 수 없고, [정보수정] 을 다시 눌러 낡은 행버전을 보내면 `601` 이 난다.
+        ///
+        /// [!] 취소로 닫으면 되읽지 않는다 — 바뀐 것이 없는데 조회 한 번이 나가고 고른 행이
+        ///     풀린다. `FrmPatientEditor` 가 저장했을 때만 `DialogResult.OK` 로 닫는다.
         /// </summary>
         private void OpenPatientEditor(PatientDto patient)
         {
             using (var editor = new FrmPatientEditor(_patientService, _operatorName, patient))
             {
-                editor.ShowDialog(this);
+                if (editor.ShowDialog(this) != DialogResult.OK || editor.SavedPatientId == null)
+                {
+                    return;
+                }
+
+                if (_patientView != null)
+                {
+                    _patientView.ReloadAfterSave(editor.SavedPatientId.Value,
+                        patient == null ? "수검자를 등록했습니다." : "수검자 정보를 저장했습니다.");
+                }
             }
         }
 
