@@ -16,10 +16,8 @@ C# 코드, 화면, 문서 본문은 이 디렉터리의 책임이 아니다.
 
 `../winforms/` 는 **예외 없이 읽기만** 한다. `./scripts/verify-winforms-unchanged.sh` 가 판정한다.
 
-`[!]` **그 게이트는 지금 판정하지 못한다.** Phase 5 UI 대개편 동안 winforms 쪽이 매니페스트
-재생성을 보류했으므로(`../winforms/AGENTS.md`) 이 스크립트는 항상 red 다. **red 를 「database 가
-winforms 를 건드렸다」로 읽지 마라** — 지금은 아무것도 뜻하지 않는다. 읽기 전용 경계 자체는
-그대로 유효하며, 사람이 지킨다.
+`[!]` **red 는 이 계열이 `../winforms/` 를 건드렸다는 뜻이다.** winforms 계열은 자기 변경을
+같은 커밋에서 매니페스트에 반영하므로(`../winforms/AGENTS.md`), 그쪽이 정상이면 green 이다.
 
 `../docs/baseline/` 의 봉인·입주·재봉인 규칙은 **ROOT `AGENTS.md` §2** 다.
 `06` 도 봉인 안이므로 **`06` 을 고치는 것도 재봉인이다** — DB 계약이 바뀌면 `04`·`05`·`06` 세 파일과
@@ -39,9 +37,9 @@ winforms 를 건드렸다」로 읽지 마라** — 지금은 아무것도 뜻�
 **기준선을 열었으면 그 생성기도 함께 연다** — `verify-docs.js` 의 `V24` 가 판정한다.
 어느 생성기가 어느 기준선을 비추는지는 `V24` 의 대응표가 단일 출처다(여기에 베끼지 않는다).
 
-`wireframe/build.js` 만 `pptxgenjs` 를 절대경로 상수 없이 bare `require` 한다 —
-`NODE_PATH='D:/tmp/hcwork/gen/node_modules'` 없이 실행하면 `MODULE_NOT_FOUND` 로 죽는다(실측 확인).
-`build_all.js` 가 그 값을 직접 넣어 주므로 그쪽으로 돌리면 겪지 않는다.
+`wireframe/build.js` 만 `pptxgenjs` 를 bare `require` 한다 — `NODE_PATH` 없이 직접 돌리면
+`MODULE_NOT_FOUND` 로 죽는다. `build_all.js` 가 그 값을 넣어 주므로 그쪽으로 돌리면 겪지 않는다.
+**경로값은 `tools/docgen/paths.js` 가 갖는다** — 여기에 적지 않는다.
 
 ## 4. Source of Truth 우선순위
 
