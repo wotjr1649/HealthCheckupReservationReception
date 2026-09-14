@@ -211,16 +211,9 @@ namespace HealthCheckupReservationReception.Tests.Visual
         {
             int expected = expectedStatus == null ? 0 : 1;
 
-            // 먼저 DB 가 그 상태인지 본다. 화면이 그것을 그대로 비추는지는 그 다음이다.
-            IList<WorkListItemDto> rows = Ok(() => Works().Search(new WorkSearchRequest { ChartNo = chartNo }));
-            Assert.AreEqual(expected, rows.Count, file + ": DB 의 업무 건수가 다르다");
-            if (expectedStatus != null)
-            {
-                Assert.AreEqual(expectedStatus, rows[0].StatusCode, file + ": DB 의 상태코드가 다르다");
-            }
-
             string path = null;
             int shown = -1;
+            string shownStatus = null;
             bool detailFilled = false;
 
             clsCapture.RunSta(() =>
@@ -250,6 +243,13 @@ namespace HealthCheckupReservationReception.Tests.Visual
                     shown = grid.RowCount;
                     if (shown > 0)
                     {
+                        // [X] DB 를 따로 묻지 않는다. 화면에 든 줄은 이미 Presenter → Service
+                        //     → SP → DB 를 지나온 것이고, 따로 물으면 **조회 조건이 갈린다** —
+                        //     화면은 창구별 기간까지 쓰는데 시험은 차트번호만 물었다.
+                        //     보이는 것을 재는 것이 곧 화면과 DB 를 한 번에 재는 것이다.
+                        var row = grid.GetRow(0) as WorkListItemDto;
+                        shownStatus = row == null ? null : row.StatusCode;
+
                         // 조회 직후에는 아무것도 선택되지 않은 상태가 계약이다 (03 §9.4) —
                         // Grid 가 잡아 둔 행은 사용자가 고른 행이 아니다. 사용자가 고르는
                         // 그 지점을 그대로 부른다 (03 §9.1 Targeted Navigation 과 같은 길).
@@ -263,9 +263,10 @@ namespace HealthCheckupReservationReception.Tests.Visual
                 }
             });
 
-            Assert.AreEqual(expected, shown, file + ": 화면 목록의 행수가 DB 와 다르다");
+            Assert.AreEqual(expected, shown, file + ": 화면 목록의 행수가 다르다");
             if (expected > 0)
             {
+                Assert.AreEqual(expectedStatus, shownStatus, file + ": 화면 줄의 상태코드가 다르다");
                 Assert.IsTrue(detailFilled, file + ": 줄을 골랐는데 상세가 비었다 — 배선이 끊겼다");
             }
 
