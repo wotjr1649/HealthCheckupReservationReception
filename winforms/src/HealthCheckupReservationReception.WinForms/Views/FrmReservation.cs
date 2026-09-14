@@ -27,6 +27,9 @@ namespace HealthCheckupReservationReception.Views
     {
         private readonly ReservationPresenter _presenter;
 
+        // [R17] 실행 가드 + 보이는 잠금. 규칙은 clsActionRunner 가 갖는다.
+        private clsActionRunner _save;
+
         // Presenter 가 시킨 값 쓰기가 다시 ScheduleChanged 로 돌아와 무한 왕복하는 것을 막는다.
         private bool _suppress;
 
@@ -353,16 +356,7 @@ namespace HealthCheckupReservationReception.Views
 
         private void btnSave_Click(object sender, EventArgs e)
         {
-            EventHandler handler = SaveRequested;
-            if (handler == null)
-            {
-                return;
-            }
-
-            using (new clsBusyScope(this))
-            {
-                handler(this, EventArgs.Empty);
-            }
+            _save.Run(SaveRequested, this);
         }
 
         private void btnClose_Click(object sender, EventArgs e)

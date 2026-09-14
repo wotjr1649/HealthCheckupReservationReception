@@ -29,6 +29,8 @@ namespace HealthCheckupReservationReception.Views
 
             // 05 §9.6 차단메시지 · 03 §8.11 저장 실패 사유. 붉은 글씨가 오류라는 유일한 단서다.
             clsNotice.Error(lblBlock);
+
+            _save = new clsActionRunner(this, btnSave, btnClose);
         }
     }
 }

@@ -32,8 +32,12 @@ namespace HealthCheckupReservationReception.Views
         private clsSearchConditions _conditions;
         private clsColumnChooser _columns;
 
-        // [R17] 조회 재진입 가드 + 대기 표시. 규칙은 clsSearchRunner 가 갖는다.
-        private clsSearchRunner _search;
+        // [R17] 실행 가드 + 보이는 잠금. 규칙은 clsActionRunner 가 갖는다.
+        private clsActionRunner _search;
+
+        // [X] **여기는 잠글 버튼이 없다.** 업무동작 버튼은 MainForm 의 Ribbon 이 갖고 이
+        //     화면은 손이 닿지 않는다 — 재진입 플래그가 유일한 가드다.
+        private clsActionRunner _actions;
 
         partial void ConfigureUI();
 
@@ -63,10 +67,9 @@ namespace HealthCheckupReservationReception.Views
         public void RequestAction(string actionCode)
         {
             EventHandler<string> handler = ActionRequested;
-            if (handler != null)
-            {
-                using (new clsBusyScope(this)) { handler(this, actionCode); }
-            }
+            if (handler == null) { return; }
+
+            _actions.Run(delegate { handler(this, actionCode); });
         }
 
         public event EventHandler<string> ActionRequested;
@@ -280,7 +283,7 @@ namespace HealthCheckupReservationReception.Views
 
         private void SearchInput_KeyDown(object sender, KeyEventArgs e)
         {
-            if (_search != null) { _search.RunOnEnter(e, SearchRequested, this); }
+            _search.RunOnEnter(e, SearchRequested, this);
         }
 
         // 두 드롭다운은 무엇이 골라졌는지를 적지 않고 늘 제 이름을 적는다 (WF-PAT-01 과 같다) —
@@ -311,12 +314,12 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// [R17] 재진입 가드와 대기 표시는 <see cref="clsSearchRunner"/> 가 갖는다 —
+        /// [R17] 재진입 가드와 대기 표시는 <see cref="clsActionRunner"/> 가 갖는다 —
         /// 왜 둘 다 필요한지도 거기 적혀 있다. `[조회]`·Enter·체크박스가 이 길로 모인다.
         /// </summary>
         private void RaiseSearchRequested()
         {
-            if (_search != null) { _search.Run(SearchRequested, this); }
+            _search.Run(SearchRequested, this);
         }
 
         private void gvWorkList_FocusedRowChanged(object sender, FocusedRowChangedEventArgs e)

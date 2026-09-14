@@ -74,7 +74,8 @@
     <Compile Include="Services\PatientServiceTests.cs" />
     <Compile Include="Services\ReservationServiceTests.cs" />
     <Compile Include="Services\WorkServiceTests.cs" />
-    <Compile Include="Views\clsSearchRunnerTests.cs" />
+    <Compile Include="Views\ActionLockTests.cs" />
+    <Compile Include="Views\clsActionRunnerTests.cs" />
     <Compile Include="Views\LayoutBaselineTests.cs" />
     <Compile Include="Views\ScreenInitializationTests.cs" />
     <Compile Include="Views\UcPatientManagementTests.cs" />

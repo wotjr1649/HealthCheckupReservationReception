@@ -15,6 +15,8 @@ namespace HealthCheckupReservationReception.Views
             clsGridColumns.ShowEmptyText(gvAex, "추가검사 목록을 받지 못했습니다.");
 
             clsNotice.Error(lblValidation);
+
+            _save = new clsActionRunner(this, btnSave, btnClose);
         }
     }
 }

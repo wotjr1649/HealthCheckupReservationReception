@@ -30,8 +30,8 @@ namespace HealthCheckupReservationReception.Views
         private clsSearchConditions _conditions;
         private clsColumnChooser _columns;
 
-        // [R17] 조회 재진입 가드 + 대기 표시. 규칙은 clsSearchRunner 가 갖는다.
-        private clsSearchRunner _search;
+        // [R17] 조회 재진입 가드 + 대기 표시. 규칙은 clsActionRunner 가 갖는다.
+        private clsActionRunner _search;
 
         // 마지막으로 그린 상세. 모달을 여는 Action 이 그대로 받아 간다 (2026-09-14).
         private PatientDto _detail;
@@ -271,7 +271,7 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         private void SearchInput_KeyDown(object sender, KeyEventArgs e)
         {
-            if (_search != null) { _search.RunOnEnter(e, SearchRequested, this); }
+            _search.RunOnEnter(e, SearchRequested, this);
         }
 
         // 2026-09-10 사용자 결정 — 두 드롭다운은 무엇이 골라졌는지를 적지 않고 늘 제 이름을 적는다.
@@ -302,12 +302,12 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
-        /// [R17] 재진입 가드와 대기 표시는 <see cref="clsSearchRunner"/> 가 갖는다 —
+        /// [R17] 재진입 가드와 대기 표시는 <see cref="clsActionRunner"/> 가 갖는다 —
         /// 왜 둘 다 필요한지도 거기 적혀 있다. `[조회]`·Enter·체크박스가 이 길로 모인다.
         /// </summary>
         private void RaiseSearchRequested()
         {
-            if (_search != null) { _search.Run(SearchRequested, this); }
+            _search.Run(SearchRequested, this);
         }
 
         private void gvPatientList_FocusedRowChanged(object sender, FocusedRowChangedEventArgs e)

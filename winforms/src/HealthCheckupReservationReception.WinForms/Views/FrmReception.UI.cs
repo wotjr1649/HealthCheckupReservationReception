@@ -17,6 +17,8 @@ namespace HealthCheckupReservationReception.Views
 
             clsNotice.Ok(lblEligibility);
             clsNotice.Error(lblValidation);
+
+            _receive = new clsActionRunner(this, btnReceive, btnClose);
         }
     }
 }

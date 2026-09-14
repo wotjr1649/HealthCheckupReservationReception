@@ -30,6 +30,7 @@ namespace HealthCheckupReservationReception.Views
         public FrmPatientEditor()
         {
             InitializeComponent();
+            ConfigureUI();
         }
 
         /// <summary>
@@ -37,9 +38,8 @@ namespace HealthCheckupReservationReception.Views
         /// Edit 진입값은 **부모가 받아 둔 상세**다 — 여기서 다시 읽지 않는다 (2026-09-14).
         /// </summary>
         public FrmPatientEditor(IPatientService service, string operatorName, PatientDto patient)
+            : this()
         {
-            InitializeComponent();
-            ConfigureUI();
             _presenter = new PatientEditorPresenter(this, service, operatorName, patient);
         }
 
@@ -85,8 +85,9 @@ namespace HealthCheckupReservationReception.Views
 
         public string Gender { set { txtGender.Text = value; } }
 
-        // [R17] 저장 재진입 가드. 동기 호출 중에 쌓인 클릭이 끝난 뒤 발화하는 것을 막는다.
-        private bool _saving;
+        // [R17] 실행 가드 + 보이는 잠금. 규칙은 clsActionRunner 가 갖는다 —
+        // 이 화면이 손으로 들고 있던 것이 그대로 그 class 가 됐다.
+        private clsActionRunner _save;
 
         public bool SaveEnabled { set { btnSave.Enabled = value; } }
 
@@ -248,21 +249,7 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         private void btnSave_Click(object sender, EventArgs e)
         {
-            EventHandler handler = SaveRequested;
-            if (handler == null || _saving) { return; }
-
-            _saving = true;
-            try
-            {
-                using (new clsBusyScope(this, btnSave, btnClose))
-                {
-                    handler(this, EventArgs.Empty);
-                }
-            }
-            finally
-            {
-                _saving = false;
-            }
+            _save.Run(SaveRequested, this);
         }
 
         /// <summary>

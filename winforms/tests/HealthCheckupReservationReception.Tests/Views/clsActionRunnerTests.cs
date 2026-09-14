@@ -8,21 +8,21 @@ namespace HealthCheckupReservationReception.Tests.Views
     /// <summary>
     /// [R17] 조회 재진입 가드. **2026-09-14 이전에는 이 규칙에 시험이 없었다** —
     /// 두 화면(WF-PAT-01 · WF-WRK-01)에 같은 18줄이 복사돼 있었고, 화면 시험 18건은
-    /// 전부 배치·컬럼·조회조건만 본다. 규칙을 <see cref="clsSearchRunner"/> 한 곳으로
+    /// 전부 배치·컬럼·조회조건만 본다. 규칙을 <see cref="clsActionRunner"/> 한 곳으로
     /// 모으면서 검사도 함께 붙인다 (ROOT AGENTS.md §6 — 검사를 만들 수 없으면 적지 않는다).
     ///
-    /// 화면이 없어도 돌아간다 — `clsSearchRunner` 는 DevExpress 를 쓰지 않고 `Control`
+    /// 화면이 없어도 돌아간다 — `clsActionRunner` 는 DevExpress 를 쓰지 않고 `Control`
     /// 하나면 선다.
     /// </summary>
     [TestClass]
-    public class clsSearchRunnerTests
+    public class clsActionRunnerTests
     {
         [TestMethod]
         public void 도는_동안_다시_불러도_한_번만_돈다()
         {
             using (var host = new Control())
             {
-                var runner = new clsSearchRunner(host);
+                var runner = new clsActionRunner(host);
                 int calls = 0;
                 EventHandler handler = null;
 
@@ -49,7 +49,7 @@ namespace HealthCheckupReservationReception.Tests.Views
         {
             using (var host = new Control())
             {
-                var runner = new clsSearchRunner(host);
+                var runner = new clsActionRunner(host);
                 int calls = 0;
                 EventHandler handler = delegate { calls++; };
 
@@ -65,7 +65,7 @@ namespace HealthCheckupReservationReception.Tests.Views
         {
             using (var host = new Control())
             {
-                var runner = new clsSearchRunner(host);
+                var runner = new clsActionRunner(host);
                 int calls = 0;
 
                 try
@@ -84,11 +84,33 @@ namespace HealthCheckupReservationReception.Tests.Views
         }
 
         [TestMethod]
+        public void 이벤트가_아닌_동작도_같은_가드를_받는다()
+        {
+            // 휴무일 추가·수정·삭제는 이벤트가 아니라 Presenter 를 바로 부른다 (FrmHoliday.Run).
+            using (var host = new Control())
+            {
+                var runner = new clsActionRunner(host);
+                int calls = 0;
+                Action body = null;
+
+                body = delegate
+                {
+                    calls++;
+                    if (calls < 5) { runner.Run(body); }
+                };
+
+                runner.Run(body);
+
+                Assert.AreEqual(1, calls, "Action 경로도 재진입을 막는다");
+            }
+        }
+
+        [TestMethod]
         public void 구독자가_없으면_아무_일도_하지_않는다()
         {
             using (var host = new Control())
             {
-                new clsSearchRunner(host).Run(null, host);
+                new clsActionRunner(host).Run(null, host);
             }
         }
 
@@ -97,7 +119,7 @@ namespace HealthCheckupReservationReception.Tests.Views
         {
             using (var host = new Control())
             {
-                var runner = new clsSearchRunner(host);
+                var runner = new clsActionRunner(host);
                 int calls = 0;
                 EventHandler handler = delegate { calls++; };
 

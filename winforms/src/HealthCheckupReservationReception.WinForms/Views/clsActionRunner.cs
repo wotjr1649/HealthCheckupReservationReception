@@ -4,18 +4,22 @@ using System.Windows.Forms;
 namespace HealthCheckupReservationReception.Views
 {
     /// <summary>
-    /// [R17] 목록 화면의 `[조회]` 한 번을 **정말 한 번으로** 만든다.
+    /// 화면 동작 한 번을 **정말 한 번으로** 만든다 — 조회·저장·접수·휴무일 CRUD·Ribbon
+    /// 업무동작이 전부 이 길로 간다.
     ///
     /// **가드가 둘 다 필요하다** (2026-09-10 사용자 결정).
     /// <see cref="clsBusyScope"/> 는 사용자가 잠긴 것을 **보게** 하고, 여기의 재진입
     /// 가드는 그 사이 들어온 Enter·연타를 막는다. 하나만으로는 구멍이 닫히지 않는다 —
     /// 조회는 UI 스레드에서 동기로 SP 를 부르고, 그동안 쌓인 클릭은 끝난 뒤 발화한다.
     ///
-    /// 킷 §2 — 같은 모양이 구체 화면 둘(WF-PAT-01 · WF-WRK-01)에 있었다. 2026-09-14
-    /// 실측으로 두 벌의 본문이 한 글자도 다르지 않은 것을 확인하고 한 벌로 모았다.
-    /// 규칙이 두 곳에 있으면 한 곳만 고쳐지는 날이 온다 (ROOT AGENTS.md §6).
+    /// [X] **이 가드가 있던 곳은 두 곳뿐이었다** (2026-09-14 실측). 조회(WF-PAT-01 ·
+    ///     WF-WRK-01)와 수검자 저장(DLG-PAT-01) — 둘 다 사용자가 겪은 뒤에 붙은 것이다
+    ///     (2026-09-10 사용자 지적). 나머지 여섯 경로는 `clsBusyScope(this)` 만 들고 있었고,
+    ///     그것은 **잠글 컨트롤을 받지 않으면 커서만 바꾼다.** 예약 저장 · 추가검사 저장 ·
+    ///     접수처리 · 휴무일 추가/수정/삭제 · 휴무일 조회 · Ribbon 업무동작이 그랬다.
+    ///     규칙을 두 곳에서 배우고 나머지에 퍼뜨리지 않은 것이다 (ROOT AGENTS.md §6).
     /// </summary>
-    public sealed class clsSearchRunner
+    public sealed class clsActionRunner
     {
         private readonly Control _cursorHost;
         private readonly Control[] _locked;
@@ -25,28 +29,26 @@ namespace HealthCheckupReservationReception.Views
         /// 인자는 <see cref="clsBusyScope"/> 에 그대로 넘어간다 — 대기 커서를 세울 화면과,
         /// 도는 동안 잠글 컨트롤들이다.
         /// </summary>
-        public clsSearchRunner(Control cursorHost, params Control[] locked)
+        public clsActionRunner(Control cursorHost, params Control[] locked)
         {
             _cursorHost = cursorHost;
             _locked = locked;
         }
 
         /// <summary>
-        /// 조회를 한 번 돌린다. 이미 돌고 있으면 아무 일도 하지 않는다.
-        ///
-        /// <paramref name="handler"/> 는 **읽어 둔 델리게이트**를 받는다 — 화면이
-        /// `SearchRequested` 를 그대로 넘기면 그 시점의 구독자에게 간다.
+        /// 동작을 한 번 돌린다. 이미 돌고 있으면 아무 일도 하지 않는다.
+        /// 이벤트가 아닌 것(휴무일 추가/수정/삭제처럼 Presenter 를 바로 부르는 길)은 이쪽이다.
         /// </summary>
-        public void Run(EventHandler handler, object sender)
+        public void Run(Action body)
         {
-            if (handler == null || _running) { return; }
+            if (body == null || _running) { return; }
 
             _running = true;
             try
             {
                 using (new clsBusyScope(_cursorHost, _locked))
                 {
-                    handler(sender, EventArgs.Empty);
+                    body();
                 }
             }
             finally
@@ -56,7 +58,21 @@ namespace HealthCheckupReservationReception.Views
         }
 
         /// <summary>
+        /// 이벤트를 한 번 올린다.
+        ///
+        /// <paramref name="handler"/> 는 **읽어 둔 델리게이트**를 받는다 — 화면이
+        /// `SaveRequested` 를 그대로 넘기면 그 시점의 구독자에게 간다.
+        /// </summary>
+        public void Run(EventHandler handler, object sender)
+        {
+            if (handler == null) { return; }
+
+            Run(delegate { handler(sender, EventArgs.Empty); });
+        }
+
+        /// <summary>
         /// 조회조건 칸에서 Enter 를 치면 `[조회]` 와 같은 일이 난다 (2026-09-10 사용자 결정).
+        /// 조회 화면만 쓴다.
         ///
         /// [X] `Form.AcceptButton` 을 쓰지 않는다. 그 속성은 폼이 갖는데 목록 화면은
         ///     UserControl 이고, MainForm 에 걸면 어느 업무 화면이 떠 있든 그 버튼이
