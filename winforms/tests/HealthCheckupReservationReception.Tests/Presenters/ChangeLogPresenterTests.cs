@@ -14,6 +14,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
     [TestClass]
     public class ChangeLogPresenterTests
     {
+        // 05 §8.3 — 대상테이블·대상키를 그대로 넘긴다. 화면이 대상을 바꿔 물으면
+        // 다른 행의 이력이 이 창에 뜬다 — 감사 기록에서는 그것이 가장 나쁜 실패다.
         [TestMethod]
         public void 열면_대상을_그대로_물어_목록을_채운다()
         {
@@ -57,6 +59,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.ValidationMessage, "0건을 오류라고 적었다");
         }
 
+        // 이력은 「없다」와 「못 읽었다」가 다르다. 실패에 앞 결과가 남으면
+        // 조작자는 못 읽은 것을 그 대상의 이력으로 읽는다.
         [TestMethod]
         public void 조회가_실패하면_사유를_적고_목록을_비운다()
         {
@@ -85,6 +89,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(0, view.Rows.Count);
         }
 
+        // 05 §8.3 — 대상테이블·대상키는 필수다. 없이 부르면 계약 위반이 DB 에서 드러나고,
+        // 그전에 화면이 막는 편이 왕복 한 번을 아낀다 (킷 §6).
         [TestMethod]
         public void 대상이_없으면_묻지_않는다()
         {

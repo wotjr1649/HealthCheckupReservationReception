@@ -85,6 +85,8 @@ namespace HealthCheckupReservationReception.Tests.Common
             Assert.AreEqual(expected, clsPatientText.FormatBirthGender(birthday, gender), why);
         }
 
+        // 우편번호와 주소처럼 한 칸에 둘을 붙여 보여 주는 자리가 여럿이다. 한쪽이 비었을 때
+        // `/` 만 남으면 값이 깨진 것으로 읽힌다 — 생년월일·성별과 같은 규칙을 쓴다.
         [DataTestMethod]
         [DataRow("12345", "서울시", "12345 / 서울시", "둘 다 있으면 잇는다")]
         [DataRow("12345", "   ", "12345", "공백은 없는 것이다")]

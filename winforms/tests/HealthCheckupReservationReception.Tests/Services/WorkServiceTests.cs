@@ -17,6 +17,8 @@ namespace HealthCheckupReservationReception.Tests.Services
     [TestClass]
     public class WorkServiceTests
     {
+        // 05 §12.1 — `310` 마감경과처럼 막히는 것은 **SP 가 낸 업무 판정**이지 호출 실패가 아니다.
+        // Service 가 그것을 실패로 접으면 화면이 사유를 읽을 길이 사라진다 (05 §3.3).
         [TestMethod]
         public void 접수는_요청을_그대로_넘기고_결과코드를_올려보낸다()
         {
@@ -34,6 +36,8 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.AreEqual(310, result.Value.Result.Code);
         }
 
+        // 05 §12.3 — 취소도 같은 규약이다. 두 경로가 성패를 다르게 다루면 같은 `502` 가
+        // 한쪽에서는 사유로, 다른 쪽에서는 오류로 보인다.
         [TestMethod]
         public void 접수취소도_같은_길로_간다()
         {
@@ -63,6 +67,8 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.IsNull(repository.LastReception, "길이를 넘겼는데 SP 를 불렀다");
         }
 
+        // 05 §3.1 — RS0 는 모든 SP 가 정확히 1행 낸다. 없다는 것은 계약이 깨진 것이므로
+        // 성공으로 넘기지 않는다.
         [TestMethod]
         public void RS0_을_못_읽으면_실패다()
         {

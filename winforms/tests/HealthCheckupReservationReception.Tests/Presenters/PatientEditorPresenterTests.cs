@@ -21,6 +21,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         // 7번째 자리 3 은 2000년대 남자다.
         private const string Male2007 = "070707-3000015";
 
+        // 03 §6.2 — 생년월일·성별은 조작자가 따로 적는 값이 아니라 주민번호에서 나온다.
+        // 두 번 입력받으면 주민번호와 어긋난 생년월일이 저장될 길이 생긴다.
         [TestMethod]
         public void 주민번호_일곱째_자리로_생년월일과_성별을_산출한다()
         {
@@ -85,6 +87,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsFalse(view.SaveEnabled);
         }
 
+        // 03 §6.2 — 9·0 은 1800년대다. 표에 없는 값을 조용히 통과시키면 산출이 불가능한 채로
+        // 저장이 열린다. 무엇이 틀렸는지(1~8)를 말해 주는 것까지가 이 검사다.
         [TestMethod]
         public void 일곱째_자리가_표에_없으면_1_8_범위를_안내한다()
         {
@@ -98,6 +102,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.Hint, "1~8");
         }
 
+        // 13월·32일처럼 없는 날짜는 자리수만 세는 검사로는 통과한다.
+        // 05 §10.1 이 `101` 로 막기 전에 화면이 먼저 말해 주는 자리다.
         [TestMethod]
         public void 앞_여섯자리가_없는_날짜면_그것을_안내한다()
         {
@@ -110,6 +116,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.Hint, "실제 날짜");
         }
 
+        // 안내가 남아 있으면 조작자는 아직 틀린 줄 안다. 고친 것을 화면이 인정하지 않으면
+        // 무엇을 더 고쳐야 하는지 알 길이 없다.
         [TestMethod]
         public void 값이_바로잡히면_안내가_사라진다()
         {
@@ -149,6 +157,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("남", view.Gender);
         }
 
+        // 05 §10.1 — 이름과 주민번호가 `NOT NULL` 이다. 비었는지 보는 것은 화면 몫이고
+        // (킷 §6) 그 둘이 차면 더 막을 이유가 없다 — 나머지 판정은 SP 가 한다.
         [TestMethod]
         public void 이름과_주민번호가_모두_있으면_저장이_열린다()
         {
@@ -234,6 +244,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(31L, view.ClosedPatientId);
         }
 
+        // 05 §10.1 `203` 유사후보 — 조작자가 「입력값 수정」을 골랐는데 그대로 등록을 다시 부르면
+        // 고칠 기회 없이 저장된다. 고르게 해 놓고 답을 무시하는 셈이 된다.
         [TestMethod]
         public void 후보_창에서_입력값_수정을_고르면_다시_부르지_않는다()
         {
@@ -291,6 +303,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(41L, view.ClosedPatientId);
         }
 
+        // 05 §10.1 `202` — 같은 주민번호에 다른 이름이면 동일인이 아닐 수 있다.
+        // 확인하지 않았는데 창이 닫히면 조작자는 무엇으로 저장됐는지 모른 채 다음으로 넘어간다.
         [TestMethod]
         public void 동일_주민번호_이름불일치를_확인하지_않으면_닫지_않는다()
         {

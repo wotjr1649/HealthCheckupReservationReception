@@ -23,6 +23,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §8.5 진행 상태
 
+        // 03 §8.5 — 수검자가 확정되기 전에는 물어볼 대상이 없다. 일정이 열려 있으면
+        // 수검자 없이 `SP-RSV-01` 이 나가고, 저장이 열려 있으면 빈 예약이 저장된다.
         [TestMethod]
         public void 최초에는_일정과_AEX_와_저장이_닫혀_있다()
         {
@@ -35,6 +37,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("대상판정 : 미판정", view.TargetText);
         }
 
+        // [R21] 부모가 목록 RS1 로 받아 둔 행을 그대로 넘긴다 — 여기서 수검자를 다시 조회하지
+        // 않는다. 진입이 조회를 한 번 더 하면 같은 값을 두 번 읽고 그동안 화면이 멈춘다.
         [TestMethod]
         public void 전달키로_들어오면_수검자가_확정되고_일정이_열린다()
         {
@@ -487,6 +491,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 05 §9.12 — `저장가능` 은 DB 것이다
 
+        // 05 §9.12 — `저장가능` 은 DB 가 낸다. 화면이 정원·마감·TGT 를 다시 세어 판정하면
+        // 판정이 두 곳이 되고, 둘이 어긋나는 날 조작자는 왜 막혔는지 알 수 없다.
         [TestMethod]
         public void 저장_버튼은_DB_의_저장가능_그대로다()
         {
@@ -513,6 +519,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §8.7 대상판정 문구
 
+        // 03 §8.7 — 판정문구는 화면 계산결과이며 DB 컬럼으로 저장하지 않는다.
+        // 완료이력이 없는 것과 판정을 못 한 것은 다르다 — 그 둘을 같은 문구로 적지 않는다.
         [TestMethod]
         public void 최초검진이면_대상_최초검진이다()
         {
@@ -524,6 +532,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("대상판정 : 대상 — 최초검진", view.TargetText);
         }
 
+        // 03 §8.7 — 2년 주기가 업무 규칙이므로(00 TGT-04) 조작자가 보는 문구에 최근 완료연도가
+        // 있어야 「왜 지금 대상인가」를 화면에서 바로 읽는다.
         [TestMethod]
         public void 완료이력이_있으면_최근_완료연도를_적는다()
         {
@@ -570,6 +580,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsFalse(view.AexEnabled);
         }
 
+        // 05 §9.8 — 일정 평가가 불가능하면 RS3 이 0행이다. 그 0행을 「비대상」으로 읽으면
+        // 아직 묻지 않은 것을 답이 나온 것처럼 보여 주게 된다.
         [TestMethod]
         public void 일정을_아직_못_잡으면_미판정이다()
         {
@@ -621,6 +633,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(1, service.AvailabilityCalls, "같은 예약일·시간대로 SP 를 다시 불렀다");
         }
 
+        // 05 §9.7 — 정원과 마감은 시간대마다 다르다. 시간대를 바꾸고 묻지 않으면 AM 값으로
+        // PM 을 저장하러 간다.
         [TestMethod]
         public void 시간대를_고르면_다시_묻는다()
         {
@@ -638,6 +652,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §8.11 2단계 저장
 
+        // 저장한 값이 화면에 남아 있으면 다음 수검자에게 앞 사람 값이 섞인다.
+        // 저장 뒤에 갈 곳이 예약 Workbench 인 것은 방금 만든 건을 확인하는 자리이기 때문이다.
         [TestMethod]
         public void 저장에_성공하면_전체를_비우고_예약_Workbench_로_간다()
         {
@@ -995,6 +1011,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsFalse(presenter.HasUnsavedInput);
         }
 
+        // 확정 뒤에는 화면에 입력값이 있다. 묻지 않고 닫으면 조작자가 적은 것이 조용히 사라진다.
         [TestMethod]
         public void 수검자가_확정되면_폐기를_묻는다()
         {

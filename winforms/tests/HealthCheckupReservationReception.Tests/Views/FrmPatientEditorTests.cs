@@ -20,6 +20,8 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class FrmPatientEditorTests
     {
+        // 05 §16.2 — `오류항목` 은 어느 칸이 틀렸는지를 DB 가 알려 주는 값이다.
+        // 그것을 입력칸에 매지 않으면 조작자는 무엇을 고쳐야 하는지 모른 채 메시지만 본다.
         [TestMethod]
         public void 오류항목이_가리키는_입력칸에_Inline_오류가_붙는다()
         {

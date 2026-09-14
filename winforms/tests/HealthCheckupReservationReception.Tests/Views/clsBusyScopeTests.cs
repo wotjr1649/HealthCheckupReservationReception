@@ -25,6 +25,7 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class clsBusyScopeTests
     {
+        // 잠금의 기본 계약이다 — 도는 동안 꺼지고, 끝나면 들어올 때 값으로 돌아온다.
         [TestMethod]
         public void 도는_동안_잠기고_끝나면_원래대로_돌아온다()
         {
@@ -42,6 +43,8 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 되돌리기가 스코프 안의 변경을 덮으면 Presenter 가 정한 Enabled 가 사라진다.
+        // 화면도 Presenter 시험도 초록인데 버튼만 죽는 형태라 여기서만 드러난다.
         [TestMethod]
         public void 스코프_안에서_남이_켠_것을_덮지_않는다()
         {
@@ -61,6 +64,7 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 반대 방향도 같다. 되돌리기가 켜 버리면 이미 지워진 행에 대고 삭제 버튼이 열린다.
         [TestMethod]
         public void 스코프_안에서_남이_끈_것을_덮지_않는다()
         {
@@ -80,6 +84,8 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 호출부가 「지금 잠겨 있나」를 따져야 하면 그 판단이 화면마다 복사된다.
+        // 잠금 밖에서는 그냥 통하는 것이 이 함수를 하나로 두는 이유다.
         [TestMethod]
         public void 잠겨_있지_않으면_그대로_쓴다()
         {
@@ -91,6 +97,7 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 잠글 컨트롤이 없는 경로가 있다. 거기서 터지면 잠금을 쓰는 화면 전부가 못 연다.
         [TestMethod]
         public void null_은_건너뛴다()
         {

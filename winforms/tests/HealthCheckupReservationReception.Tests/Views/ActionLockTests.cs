@@ -26,6 +26,9 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class ActionLockTests
     {
+        // 재는 것은 「핸들러가 도는 동안 그 버튼이 Enabled=false 인가」 하나다.
+        // Presenter 시험은 이벤트를 직접 올리므로 버튼을 거치지 않고, 화면 시험은 배치만 본다 —
+        // 그 틈에서 두 번 누른 저장이 두 번 나갔다.
         [DataTestMethod]
         [DataRow(typeof(FrmReception), "btnReceive", "ReceiveRequested", "DLG-RCP-01 접수처리")]
         [DataRow(typeof(FrmExtraExam), "btnSave", "SaveRequested", "DLG-RCP-02 추가검사 저장")]

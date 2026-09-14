@@ -31,6 +31,8 @@ namespace HealthCheckupReservationReception.Tests.Integration
         // 05 §7.2 — 조건 없이 부르면 103 이다. 조건 하나를 실어 성공 경로로 간다.
         private const string ProbeChartNo = "존재하지-않는-차트번호";
 
+        // 05 §7.2 — 컬럼 이름 오타는 컴파일도 되고 fake 를 쓰는 단위시험도 통과하며
+        // **실행할 때만** 터진다. 문서 대조(`verify-rs-columns.sh`)는 05 를 보지 DB 를 보지 않는다.
         [TestMethod]
         [TestCategory("Db")]
         public void SP_PAT_01_은_RS0_와_RS1_열아홉_컬럼을_계약대로_돌려준다()

@@ -30,6 +30,8 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class ScreenInitializationTests
     {
+        // 실제 결함에서 나온 검사다 — 초기화가 아무도 부르지 않는 메서드 안에만 있으면
+        // 화면은 열리는데 빈 Grid 만 남고, 그것이 「조회 결과가 없다」로 읽힌다.
         [TestMethod]
         public void 수검자_관리는_열리면_스스로_조회한다()
         {
@@ -46,6 +48,8 @@ namespace HealthCheckupReservationReception.Tests.Views
                 "화면이 섰는데 SP-PAT-01 을 한 번도 부르지 않았다 — 목록이 영원히 빈다");
         }
 
+        // 세 목록 화면이 같은 규칙이다. 한 화면만 안 하면 그 화면만 다르게 동작하고,
+        // 조작자는 어느 쪽이 정상인지 알 수 없다.
         [TestMethod]
         public void 예약접수_관리는_열리면_스스로_조회한다()
         {
@@ -62,6 +66,7 @@ namespace HealthCheckupReservationReception.Tests.Views
                 "화면이 섰는데 SP-WRK-01 을 한 번도 부르지 않았다");
         }
 
+        // 세 화면 중 이것만 `OnLoad` 가 없었다. 규칙을 문장으로 두면 다음 화면도 같은 자리에서 빠진다.
         [TestMethod]
         public void 휴무일_관리는_열리면_스스로_조회한다()
         {

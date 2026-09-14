@@ -34,6 +34,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.BlockMessage, "조회기간");
         }
 
+        // 화면 입력만으로 답이 나오는 검사다 (킷 §6). 뒤집힌 기간을 그대로 보내면
+        // DB 는 0건을 성공으로 돌려주고 조작자는 「휴무일이 없다」로 읽는다.
         [TestMethod]
         public void 시작일이_종료일보다_늦으면_SP_를_부르지_않는다()
         {
@@ -93,6 +95,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.RegistryWarning, "120");
         }
 
+        // 05 §12.5 RS2 공휴일등재현황 — 0건은 조회 실패가 아니라 「등재가 없다」는 답이다.
+        // 빈 칸으로 두면 조회가 안 된 것인지 등재가 없는 것인지 구분되지 않는다.
         [TestMethod]
         public void 공휴일이_하나도_없으면_그렇다고_적는다()
         {
@@ -125,6 +129,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(string.Empty, view.InputName, "법정공휴일이 입력행에 실렸다");
         }
 
+        // 03 §24.4 — 고른 행을 입력행에 실어야 수정이 「지우고 다시 적기」가 되지 않는다.
+        // 법정·대체 행은 싣지 않는 것과 한 쌍이다 (05 §12.6 `802`).
         [TestMethod]
         public void 자체휴무일_행을_고르면_입력행에_실린다()
         {
@@ -140,6 +146,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 저장 (05 §12.6~§12.8)
 
+        // 05 §12.6 — `휴무일명` 은 `NOT NULL` 이다. 공백만 있는 값은 화면이 막는다 (킷 §6).
+        // 보내 두고 `100` 을 받아 오면 왕복 한 번이 헛돈다.
         [TestMethod]
         public void 휴무일명이_비면_SP_를_부르지_않는다()
         {
@@ -175,6 +183,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             CollectionAssert.AreEqual(new byte[] { 9 }, service.LastSave.RowVersion);
         }
 
+        // 05 §12.6 `802` — 법정·대체 공휴일은 고쳐도 지워도 안 된다.
+        // 화면이 버튼을 열어 두면 조작자가 눌러 놓고 왜 안 되는지 묻게 된다.
         [TestMethod]
         public void 자체휴무일_행이_없으면_수정도_삭제도_아무_일도_하지_않는다()
         {
@@ -243,6 +253,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("이미 등록된 휴무일입니다.", view.BlockMessage);
         }
 
+        // 저장한 줄이 목록에 반영되지 않으면 조작자는 저장이 안 된 줄 알고 다시 누른다.
+        // 그 줄로 돌아가는 것까지 해야 방금 넣은 것이 무엇인지 눈으로 확인된다.
         [TestMethod]
         public void 저장에_성공하면_목록을_다시_읽고_그_줄로_돌아간다()
         {

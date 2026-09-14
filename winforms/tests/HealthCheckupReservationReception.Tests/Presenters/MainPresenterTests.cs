@@ -14,6 +14,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
     {
         // ── 03 §1.3 공통 업무조건 표시
 
+        // 05 §7.1 — 셸 상태줄의 업무 가능 여부는 `USP_HC_공통업무상태_조회` 가 낸다.
+        // 화면이 시계를 읽어 다시 판정하면 판정이 두 곳이 된다.
         [TestMethod]
         public void 업무가능이면_업무_가능을_표시한다()
         {
@@ -28,6 +30,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.LastMessage);
         }
 
+        // 00 CP-02 · 05 §7.1 — 운영시각 수치를 화면이 갖지 않는다. DB 가 준 문장을 붙일 뿐이다.
+        // 여기에 `09:00~18:00` 을 적으면 같은 값이 `00`·`운영기준`·화면 세 곳이 된다.
         [TestMethod]
         public void 운영시간_밖이면_DB_가_준_운영시각을_붙여_표시만_한다()
         {
@@ -49,6 +53,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             // (`00` §1.1 · 03 §1.3) — 없다는 것은 컴파일이 지킨다.
         }
 
+        // 00 HOL Rule — 휴무일명은 `휴무일` 테이블의 값이다. 화면은 DB 가 준 이름을 그대로 싣는다.
         [TestMethod]
         public void 휴무일이면_휴무일명을_붙인다()
         {
@@ -66,6 +71,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("업무 상태 : 업무 불가 — 오늘은 업무일이 아닙니다. (성탄절)", view.WorkStatusText);
         }
 
+        // 이름이 없는데 괄호만 남으면 `업무 불가 ()` 가 되어 값이 빠진 것처럼 읽힌다.
+        // 빈 괄호는 조작자에게 결함으로 보인다.
         [TestMethod]
         public void 업무불가인데_휴무일명이_없으면_괄호를_붙이지_않는다()
         {
@@ -83,6 +90,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("업무 상태 : 업무 불가 — 오늘은 업무일이 아닙니다.", view.WorkStatusText);
         }
 
+        // 상태를 못 읽었는데 Action 을 열어 두면 조작자가 막힐 일을 모르고 들어간다.
+        // 모르는 것을 `업무 가능` 으로 기본값 삼지 않는다.
         [TestMethod]
         public void 서비스_실패면_확인_불가로_두고_업무_Action_을_닫는다()
         {
@@ -117,6 +126,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.DoesNotMatch(view.LastMessage, new System.Text.RegularExpressions.Regex("DESKTOP"));
         }
 
+        // 변경이력의 `조작자` 는 감사 기록이다 (04 §14). 빈칸을 그대로 보여 주면
+        // 값이 안 들어온 것인지 화면이 안 그린 것인지 구분되지 않는다.
         [TestMethod]
         public void 조작자가_비어_있으면_미지정으로_표시한다()
         {
@@ -203,6 +214,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 view.Calls);
         }
 
+        // 00 RP-05 현장 당일예약 — 저장 뒤에 갈 곳은 예약이 아니라 접수다.
+        // 상단 Page 도 함께 옮기지 않으면 탭과 내용이 어긋난 채 남는다.
         [TestMethod]
         public void WalkIn_저장은_접수_관리_Page_로_옮긴다()
         {

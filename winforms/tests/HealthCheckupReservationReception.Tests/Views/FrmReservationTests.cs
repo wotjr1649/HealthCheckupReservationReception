@@ -25,6 +25,8 @@ namespace HealthCheckupReservationReception.Tests.Views
     {
         private const long PatientId = 1000;
 
+        // 확정 뒤에는 화면에 입력값이 있다. 묻지 않고 닫으면 조작자가 적은 것이 조용히 사라진다.
+        // 「한 번」인 것도 규칙이다 — 두 번 물으면 닫을 때마다 확인창이 겹쳐 뜬다.
         [TestMethod]
         public void 수검자가_확정된_뒤_닫으면_한_번_묻는다()
         {
@@ -42,6 +44,8 @@ namespace HealthCheckupReservationReception.Tests.Views
             });
         }
 
+        // 묻기만 하고 답을 무시하는 구현에서도 화면은 똑같아 보인다.
+        // 「아니오」가 실제로 닫기를 막는지는 시험이 아니면 드러나지 않는다.
         [TestMethod]
         public void 아니오라고_하면_닫히지_않는다()
         {

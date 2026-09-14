@@ -17,6 +17,8 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class clsActionRunnerTests
     {
+        // 조회는 UI 스레드에서 동기로 SP 를 부른다. 그동안 쌓인 클릭·Enter 는 핸들러가 끝난 뒤
+        // 그대로 발화하므로, 가드가 없으면 두 번 누른 만큼 SP 가 두 번 나간다.
         [TestMethod]
         public void 도는_동안_다시_불러도_한_번만_돈다()
         {
@@ -44,6 +46,8 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 가드가 풀리지 않으면 화면이 한 번 조회하고 영영 굳는다 — 재진입을 막는 것과
+        // 한 번만 도는 것은 다르다.
         [TestMethod]
         public void 끝나고_나면_다시_돌_수_있다()
         {
@@ -60,6 +64,8 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 예외가 가드를 켜 둔 채로 빠져나가면 실패 한 번에 화면이 죽는다.
+        // 되돌리기는 `finally` 의 몫이고 그것이 실제로 도는지는 시험이 아니면 드러나지 않는다.
         [TestMethod]
         public void 안에서_터져도_다음_조회가_열린다()
         {
@@ -105,6 +111,8 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 화면을 만드는 중에는 아직 아무도 구독하지 않은 순간이 있다.
+        // 그때 터지면 화면이 열리지도 않는다.
         [TestMethod]
         public void 구독자가_없으면_아무_일도_하지_않는다()
         {
@@ -114,6 +122,8 @@ namespace HealthCheckupReservationReception.Tests.Views
             }
         }
 
+        // 03 §5.2 — 조회는 Enter 다. 처리한 키를 위로 흘려보내면 폼의 AcceptButton 이
+        // 한 번 더 반응해 같은 조회가 두 번 나간다.
         [TestMethod]
         public void Enter_만_조회이고_그_키는_위로_새지_않는다()
         {

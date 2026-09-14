@@ -16,6 +16,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §9.3 조회조건
 
+        // 05 §8.1 — 조회조건은 화면이 담아 SP 로 넘긴다. 화면이 여는 순간 스스로 한 번 조회하는
+        // 것이 WF-WRK-01 의 기본 동작이다 — 빈 Grid 는 「무엇을 검색해야 하는지 모르겠다」로 읽힌다.
         [TestMethod]
         public void 기간이_서_있으면_조회하고_목록을_채운다()
         {
@@ -60,6 +62,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(service.LastSearch, "SP 를 불렀다");
         }
 
+        // 05 §8.1 — 조건 조합에 최소 개수를 두지 않는다. 화면이 「기간도 넣으십시오」로 막으면
+        // 계약이 허락한 조회를 화면이 좁히는 것이 된다.
         [TestMethod]
         public void 차트번호만_있어도_조건이_된다()
         {
@@ -99,6 +103,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §9.5 · §9.6 · §9.7 선택과 Action
 
+        // 05 §8.2 RS4 · 07 §3.6.1 — Ribbon 활성화의 출처는 RS4 `가능한업무` 다.
+        // 화면이 상태코드를 보고 다시 판정하면 DB 가 막은 것을 화면이 열어 버린다.
         [TestMethod]
         public void 행을_고르면_상세와_검사구성이_서고_RS4_가_Ribbon_상태가_된다()
         {
@@ -162,6 +168,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsFalse(view.Actions.EditReservation);
         }
 
+        // 고른 행이 없는데 Action 이 열려 있으면 직전 행에 대고 SP 가 나간다.
+        // 상세를 다시 조회하지 않는 것도 함께 잰다 — 선택 해제는 조회할 일이 아니다.
         [TestMethod]
         public void 선택이_풀리면_상세와_Action_이_닫힌다()
         {
@@ -177,6 +185,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(1, service.DetailCalls, "선택이 없는데 상세를 다시 조회했다");
         }
 
+        // RS4 를 못 읽었는데 Action 을 남겨 두면 무엇이 허용되는지 모르는 채 버튼이 열린다.
+        // 모르는 것을 「가능」으로 기본값 삼지 않는다.
         [TestMethod]
         public void 상세_조회가_실패하면_Action_을_닫고_사유를_알린다()
         {
@@ -232,6 +242,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
         // ── 03 §9.1 Context
 
+        // 03 §9.1 — 두 창구가 한 화면을 쓰므로 어느 쪽으로 열렸는지가 제목에 남아야 한다.
         [TestMethod]
         public void 기본_Context_는_예약_관리다()
         {
@@ -284,6 +295,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNotNull(view.Rows);
         }
 
+        // 저장 직후 그 건을 겨누는 길이다 (07 §3.6.2). 조회조건이 그 건을 담지 못하면 못 찾는데,
+        // 조용히 넘기면 조작자는 저장이 안 된 줄로 읽는다. 오류창이 아니라 Inline 인 것도 규칙이다.
         [TestMethod]
         public void WorkId_를_목록에서_못_찾으면_Inline_으로_알린다()
         {
@@ -358,6 +371,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("접수1번창구", service.LastCancel.OperatorName);
         }
 
+        // 03 §13 CNF-RSV-01 — 취소는 되돌릴 수 없다. 확인창의 「아니오」가 실제로 SP 를 막는지는
+        // 물어보기만 하고 부르는 구현에서도 화면은 똑같아 보이므로 시험이 아니면 드러나지 않는다.
         [TestMethod]
         public void 아니오라고_하면_부르지_않는다()
         {
@@ -374,6 +389,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(reservation.LastCancel, "아니오라고 했는데 SP 를 불렀다");
         }
 
+        // 05 §11.3 · §12.3 — 예약취소와 접수취소는 상태전이가 다르다(CNR vs CNC).
+        // 같은 버튼처럼 보이지만 부르는 SP 가 다르고, 잘못 부르면 상태가 한 칸 어긋난 채 저장된다.
         [TestMethod]
         public void 접수취소는_접수_계열_SP_로_간다()
         {
@@ -428,6 +445,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsTrue(service.DetailCalls > before, "막힌 뒤 최신값을 다시 읽지 않았다");
         }
 
+        // 대상 없이 확인창을 띄우면 조작자가 「예」를 눌러도 아무 일이 없다 — 무엇이 취소됐는지
+        // 모르는 채로 남는다. 물어보기 전에 대상이 있어야 한다.
         [TestMethod]
         public void 행이_없으면_묻지도_않는다()
         {
@@ -473,6 +492,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                 new List<string>(view.StatusChoices));
         }
 
+        // 00 RP-01 · 03 §9.6 — 창구가 다루는 상태가 다르다. 접수 창구의 건이 예약 창구 목록에
+        // 섞이면 조작자가 남의 창구 건을 고르게 된다.
         [TestMethod]
         public void 예약_창구는_예약완료와_예약취소만_본다()
         {

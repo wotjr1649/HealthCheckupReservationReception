@@ -50,6 +50,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.LastMessage);
         }
 
+        // 화면이 열리자마자 모달이 뜨면 조작자는 아무것도 하기 전에 창부터 닫아야 한다.
+        // 초기 조회는 조작자가 시킨 일이 아니므로 Inline 으로 알린다.
         [TestMethod]
         public void 초기_조회가_실패해도_오류창을_띄우지_않는다()
         {
@@ -85,6 +87,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.LastMessage);
         }
 
+        // 05 §7.2 — 조회 계약은 SP 가 갖는다. 화면이 조건을 고르거나 지우면 DB 가 받는 그림이
+        // 화면과 달라지고, 결과가 왜 그런지 설명할 수 없게 된다.
         [TestMethod]
         public void 조회조건은_화면이_담은_그대로_넘어간다()
         {
@@ -145,6 +149,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsNull(view.LastMessage);
         }
 
+        // 실패에 목록을 비우면 조작자는 방금 보던 결과를 잃는다.
+        // 실패는 「새 결과가 없다」이지 「앞 결과가 틀렸다」가 아니다.
         [TestMethod]
         public void 조회_실패는_메시지만_보이고_목록을_건드리지_않는다()
         {
@@ -195,6 +201,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("6603122000019", view.Detail.SocialNumber, "목록 RS1 이 주민번호를 싣지 않았다");
             Assert.IsTrue(view.RowActions.RowSelected);
         }
+        // 03 §5.5 — 상세와 Action 은 고른 행의 것이다. 선택이 풀렸는데 남아 있으면
+        // 직전 행에 대고 수정·예약이 나간다.
         [TestMethod]
         public void 선택이_풀리면_상세와_Action_을_닫는다()
         {
@@ -380,6 +388,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual(1, view.History.Count);
         }
 
+        // 이력은 그 수검자의 것이다. 선택이 풀린 뒤에도 남으면 다음에 고른 사람의 이력으로 읽힌다.
         [TestMethod]
         public void 선택이_풀리면_이력도_비운다()
         {

@@ -17,6 +17,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
     [TestClass]
     public class ExtraExamPresenterTests
     {
+        // 05 §8.2 RS5 — 안 고른 것까지 일곱을 주는 것이 R18 재봉인의 이유다.
+        // 화면이 고른 것만 그리면 접수 뒤에 추가검사를 **더하는** 길이 사라진다.
         [TestMethod]
         public void 열면_RS5_일곱을_그대로_싣는다()
         {
@@ -67,6 +69,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsTrue(view.Closed);
         }
 
+        // 05 §12.2 — `411` 성별조건처럼 막히는 이유가 여럿이다. 창이 닫히면 사유를 읽을 새가 없고,
+        // 조작자는 고른 것을 처음부터 다시 골라야 한다.
         [TestMethod]
         public void DB_가_막으면_사유가_남고_창은_열려_있다()
         {

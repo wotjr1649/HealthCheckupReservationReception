@@ -18,6 +18,9 @@ namespace HealthCheckupReservationReception.Tests.Services
     [TestClass]
     public class ChangeLogServiceTests
     {
+        // 05 §8.3 — 0건은 `결과코드=0` 이다. 감사 기록은 대상 행보다 오래 살기 때문에
+        // `200 PatientNotFound` 를 쓰지 않기로 계약이 정했다. Service 가 0건을 실패로 바꾸면
+        // 화면이 그 설계를 뒤집는다.
         [TestMethod]
         public void 기록이_0건이어도_성공이고_빈_목록이다()
         {
@@ -48,6 +51,8 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.AreEqual(0, result.Value.Rows.Count);
         }
 
+        // 05 §3.1 · §4.3 — 실패 사유의 문장은 DB 가 갖는다. Service 가 바꿔 쓰면 같은 결과코드에
+        // 두 가지 안내가 생긴다.
         [TestMethod]
         public void RS0_실패면_그_메시지로_실패한다()
         {
@@ -70,6 +75,8 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.AreEqual("입력값이 올바르지 않습니다.", result.Message);
         }
 
+        // 05 §3.1 — RS0 는 모든 SP 가 정확히 1행 낸다. 없다는 것은 계약이 깨진 것이므로
+        // 성공으로 넘기지 않는다.
         [TestMethod]
         public void RS0_을_못_읽으면_실패다()
         {

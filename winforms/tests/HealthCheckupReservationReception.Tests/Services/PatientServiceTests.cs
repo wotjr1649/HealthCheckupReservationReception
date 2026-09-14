@@ -115,6 +115,8 @@ namespace HealthCheckupReservationReception.Tests.Services
             CollectionAssert.AreEqual(rowVersion, repository.LastRequest.RowVersion);
         }
 
+        // 05 §3.1 — RS0 는 모든 SP 가 정확히 1행 낸다. 없다는 것은 계약이 깨진 것이므로
+        // 성공으로 넘기지 않는다.
         [TestMethod]
         public void RS0_을_못_읽으면_실패다()
         {

@@ -32,6 +32,9 @@ namespace HealthCheckupReservationReception.Tests.Visual
     [TestClass]
     public class ShellCaptureTests
     {
+        // VS 디자인 표면은 실행 화면이 아니다 — Program.cs 와 Presenter 가 디자인타임에 돌지 않아
+        // 글꼴·업무 Tab·상태바가 나타나지 않는다. 배치를 눈으로 보려면 실행해서 떠야 한다.
+        // 판정이 아니라 증거다.
         [TestMethod]
         [TestCategory("Visual")]
         public void WF00_실행_화면을_PNG_로_뜬다()

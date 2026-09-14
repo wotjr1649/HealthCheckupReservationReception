@@ -10,7 +10,7 @@
 
 `[!]` **건수를 이 문서에 적지 않는다.** 앞선 `2026-09-14-Test-Scenarios.md` 가 「단위시험 277건」
 이라 적었고 그 수는 하루 만에 썩었다. 세는 곳은 `vstest.console.exe` 하나다 (ROOT `AGENTS.md` §6).
-다시 세는 법은 §6 에 있다.
+다시 세는 법은 §7 에 있다.
 
 ---
 
@@ -42,6 +42,20 @@ Table 을 대상으로 한다.
 ## 2. 우리가 단위시험한 것 — `winforms/tests/`
 
 기준선이 비워 둔 층이 전부 여기다. 파일 하나가 화면 하나 또는 규칙 하나를 맡는다.
+
+`[!]` **시험 하나하나의 「이유」와 「결과」는 이 문서가 갖지 않는다.**
+`docs/phase5/output/P5_단위시험_목록.xlsx` 가 그 자리이고, 그것은 손으로 쓰는 것이 아니라
+`winforms/tools/build-test-inventory.js` 가 세 곳에서 읽어 찍는다.
+
+```text
+이유   [TestMethod] 바로 위 주석 (없으면 본문 첫 줄)   — 단일 출처는 코드다
+근거   그 주석 안의 `05 §9.12` 같은 참조
+결과   TestResults/*.trx 의 outcome · 케이스 수 · ms
+```
+
+같은 값을 두 곳에 두지 않으므로(ROOT `AGENTS.md` §6) 아래 표는 **파일이 무엇을 맡는가**만
+적는다. 이유를 고칠 일이 생기면 주석을 고쳐 다시 찍는다 — 엑셀을 손으로 열지 않는다(§3 과
+같은 규칙). 이유 없는 시험이 들어오는 것은 `scripts/test.sh` 의 `TI-001` 이 막는다.
 
 ### 2.1 Common — 값의 표기와 정규화
 
@@ -188,7 +202,39 @@ view.ReserveDate = view.ReserveDate.AddDays(1);
 
 ---
 
-## 6. 다시 세는 법 · 다시 돌리는 법
+## 6. 제출용 엑셀 — `docs/phase5/output/P5_단위시험_목록.xlsx`
+
+공개본 6종과 **층이 다르다.** `tools/docgen/verify_output.js` 가 `PASS`·`FAIL`·`실측`·`게이트`
+·`회귀` 를 금지 어휘로 잡으므로 시험 결과 엑셀은 `docs/baseline/output/` 에 구조적으로 들어갈
+수 없다 — 결과 칸의 단어 자체가 걸린다. 그래서 `docs/phase5/output/` 에 따로 둔다.
+
+```text
+시트 1 요약   실행시각 · 결과파일 · 층별 시험/케이스/PASS/FAIL/미실행
+시트 2 전건   층 · 화면/영역 · 시험 이름 · 이유 · 근거 · 케이스 · 결과 · ms · 파일
+```
+
+생성기가 스스로 판정한다 — 게이트 스크립트를 따로 두지 않았다.
+
+```text
+TI-001  이유 주석 없는 [TestMethod] 가 하나라도 있으면 exit 1     scripts/test.sh 에서 돈다
+TI-002  trx 에만 있고 코드에 없는 시험 = 옛 trx 로 찍고 있다        엑셀을 찍을 때
+TI-003  trx 보다 나중에 고친 시험 소스가 있으면 exit 1             엑셀을 찍을 때
+```
+
+`[!]` **`TI-002`·`TI-003` 을 `scripts/test.sh` 에 두지 않았다.** `TestResults/` 는 `.gitignore`
+대상이라 기계마다 있고 없다 — 저 회귀의 「어디서나 같은 판정」을 깬다. 그 둘이 막으려는 것은
+*옛 결과로 산출물을 찍는 것* 이고, 그 일은 엑셀을 찍는 자리에서만 일어난다.
+
+```bash
+cd winforms
+node tools/build-test-inventory.js selftest   # 게이트가 정말 red 를 내는가 (7건)
+node tools/build-test-inventory.js --check    # 이유 주석만 판정. 엑셀을 쓰지 않는다
+node tools/build-test-inventory.js            # 판정 + 엑셀 생성
+```
+
+---
+
+## 7. 다시 세는 법 · 다시 돌리는 법
 
 ```bash
 cd winforms

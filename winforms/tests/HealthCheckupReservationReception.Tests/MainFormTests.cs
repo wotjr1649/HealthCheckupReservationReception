@@ -17,6 +17,8 @@ namespace HealthCheckupReservationReception.Tests
     [TestClass]
     public class MainFormTests
     {
+        // 킷 §1 — 굴림 9pt · AutoScaleMode.Font 는 Program.cs 가 정하는데 그것이 디자인타임에
+        // 돌지 않는다. 폼이 자기 Font 를 직렬화하지 않으면 다음 디자이너 저장에서 통째로 재조정된다.
         [TestMethod]
         public void MainForm_은_킷_UI_베이스라인을_따른다()
         {

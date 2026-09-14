@@ -39,6 +39,8 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.AreEqual((int)DbCode.SlotFull, result.Value.Summary.BlockCode);
         }
 
+        // 05 §3.1 · §4.3 — 실패 사유의 문장은 DB 가 갖는다. Service 가 바꿔 쓰면 같은 결과코드에
+        // 두 가지 안내가 생긴다.
         [TestMethod]
         public void RS0_실패면_그_메시지로_실패한다()
         {
@@ -67,6 +69,8 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.IsFalse(service.GetAvailability(Request()).IsSuccess);
         }
 
+        // 05 §3.1 — RS0 는 모든 SP 가 정확히 1행 낸다. 없다는 것은 계약이 깨진 것이므로
+        // 성공으로 넘기지 않는다.
         [TestMethod]
         public void RS0_을_못_읽으면_실패다()
         {
@@ -119,6 +123,8 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.AreEqual((int)DbCode.SlotFull, result.Value.Result.Code);
         }
 
+        // 05 §16.3 — 저장 뒤의 `행버전` 은 다음 변경·취소가 쥐고 가야 하는 값이다.
+        // 여기서 잃으면 바로 이어지는 동작이 낙관적 동시성 검사에 걸린다 (06 §26).
         [TestMethod]
         public void 저장이_성공하면_업무ID_와_행버전을_돌려준다()
         {
@@ -155,6 +161,8 @@ namespace HealthCheckupReservationReception.Tests.Services
             Assert.IsNull(repository.LastSave, "길이 위반인데 SP 를 불렀다");
         }
 
+        // 05 §2.2 — 문자열 정규화는 C# 이 먼저 한다. 공백이 섞인 채 저장되면 변경이력의
+        // `조작자` 가 같은 사람인데 다른 값으로 남는다 (04 §14).
         [TestMethod]
         public void 조작자명의_앞뒤_공백은_걷어서_보낸다()
         {

@@ -30,6 +30,8 @@ namespace HealthCheckupReservationReception.Tests.Views
     [TestClass]
     public class LayoutBaselineTests
     {
+        // 2026-09-11 사용자 지시. 절대좌표로 놓인 컨트롤은 DPI·글꼴이 바뀌면 겹치거나 잘린다.
+        // 문장으로만 두면 새 화면 하나가 절대좌표로 들어와도 아무도 모른다.
         [TestMethod]
         public void 모든_화면이_LayoutControl_이나_Dock_으로만_자리를_잡는다()
         {

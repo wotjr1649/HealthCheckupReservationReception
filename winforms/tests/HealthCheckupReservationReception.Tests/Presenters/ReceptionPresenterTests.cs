@@ -38,6 +38,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.AreEqual("접수 가능", view.EligibilityText);
         }
 
+        // 05 §8.2 RS4 — 접수 가능 여부와 사유를 DB 가 함께 준다. 03 §11.3 의 다섯 조건을
+        // 화면에 다시 적으면 판정이 두 곳이 되고 차단 우선순위도 둘이 된다.
         [TestMethod]
         public void 불가면_DB_가_준_사유를_그대로_붙이고_버튼을_닫는다()
         {
@@ -65,6 +67,8 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             StringAssert.Contains(view.EligibilityText, "503");
         }
 
+        // 창이 남아 있으면 조작자가 같은 건을 한 번 더 접수하려 든다 — 그때 돌아오는 것은
+        // `502` 이고, 성공한 일을 실패로 기억하게 된다.
         [TestMethod]
         public void 접수에_성공하면_창을_닫는다()
         {
@@ -107,11 +111,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             Assert.IsTrue(service.DetailCalls > before, "막힌 뒤 최신값을 다시 읽지 않았다");
         }
 
-        [TestMethod]
         /// <summary>
         /// 부모가 빈손으로 열면 비우고 닫는다. 예전에는 「상세를 못 읽으면」이었고, 진입이
         /// 조회를 하지 않게 된 뒤로는 **받은 것이 없을 때**가 그 자리다 (2026-09-14).
         /// </summary>
+        [TestMethod]
         public void 받은_것이_없으면_비우고_버튼을_닫는다()
         {
             var view = new FakeReceptionView();
