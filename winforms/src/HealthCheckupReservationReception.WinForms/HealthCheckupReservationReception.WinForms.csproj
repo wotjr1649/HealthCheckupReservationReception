@@ -54,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common\DbCodes.cs" />
+    <Compile Include="Common\DbSize.cs" />
     <Compile Include="Common\OperationResult.cs" />
     <Compile Include="Common\clsPatientText.cs" />
     <Compile Include="Common\clsWorkText.cs" />

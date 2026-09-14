@@ -62,6 +62,11 @@ run ./scripts/verify-work-actions.sh
 run ./scripts/verify-work-status.sh selftest
 run ./scripts/verify-work-status.sh
 
+# 05 의 Parameter 크기를 C# 이 길이 검증에 그대로 쓴다 — 코드가 크게 잡으면 DB 가 자르고
+# 작게 잡으면 계약이 허락한 입력을 화면이 막는다. 둘 다 조용하다.
+run ./scripts/verify-param-size.sh selftest
+run ./scripts/verify-param-size.sh
+
 # 같은 모양의 검사가 둘이다 — 스크립트를 복사하지 않고 환경변수로 대상을 바꿔 두 번 돌린다.
 run ./scripts/verify-check-values.sh selftest
 run ./scripts/verify-check-values.sh

@@ -50,9 +50,6 @@ namespace HealthCheckupReservationReception.Services
     /// </summary>
     public sealed class ReservationService : IReservationService
     {
-        // 05 §11.1 의 Parameter 크기.
-        private const int OperatorNameMax = 50;
-
         private readonly IReservationRepository _repository;
 
         public ReservationService(IReservationRepository repository)
@@ -104,10 +101,10 @@ namespace HealthCheckupReservationReception.Services
                 OperatorName = Trim(request.OperatorName),
             };
 
-            if (Length(normalized.OperatorName) > OperatorNameMax)
+            if (Length(normalized.OperatorName) > DbSize.OperatorName)
             {
                 return OperationResult<WorkSaveReadDto>.Failure(
-                    "조작자명은 " + OperatorNameMax + "자를 넘을 수 없습니다.");
+                    "조작자명은 " + DbSize.OperatorName + "자를 넘을 수 없습니다.");
             }
 
             WorkSaveReadDto read = _repository.Register(normalized);
@@ -144,9 +141,9 @@ namespace HealthCheckupReservationReception.Services
 
         private OperationResult<WorkSaveReadDto> OperatorFits(string operatorName)
         {
-            return Length(operatorName) > OperatorNameMax
+            return Length(operatorName) > DbSize.OperatorName
                 ? OperationResult<WorkSaveReadDto>.Failure(
-                    "조작자명은 " + OperatorNameMax + "자를 넘을 수 없습니다.")
+                    "조작자명은 " + DbSize.OperatorName + "자를 넘을 수 없습니다.")
                 : null;
         }
 
