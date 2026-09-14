@@ -67,6 +67,11 @@ run ./scripts/verify-work-status.sh
 run ./scripts/verify-param-size.sh selftest
 run ./scripts/verify-param-size.sh
 
+# 잠금 대상 버튼의 Enabled 를 화면이 직접 쓰면, 잠금이 풀릴 때 되돌리기가 그것을 덮는다.
+# 화면은 green 이고 Presenter 시험도 green 인데 버튼만 죽는다 (2026-09-14 실측).
+run ./scripts/verify-enabled-owner.sh selftest
+run ./scripts/verify-enabled-owner.sh
+
 # 같은 모양의 검사가 둘이다 — 스크립트를 복사하지 않고 환경변수로 대상을 바꿔 두 번 돌린다.
 run ./scripts/verify-check-values.sh selftest
 run ./scripts/verify-check-values.sh

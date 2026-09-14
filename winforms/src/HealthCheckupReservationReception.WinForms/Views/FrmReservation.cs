@@ -276,7 +276,7 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         public bool SaveEnabled
         {
-            set { btnSave.Enabled = value; }
+            set { clsBusyScope.SetEnabled(btnSave, value); }
         }
 
         public string BlockMessage

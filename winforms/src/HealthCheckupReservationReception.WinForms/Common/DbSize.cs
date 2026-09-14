@@ -1,8 +1,14 @@
 ﻿namespace HealthCheckupReservationReception.Common
 {
     /// <summary>
-    /// 05 가 정한 Parameter 크기. **여기서 값을 정하지 않는다** — 05 의 Parameter 표가
-    /// 단일 출처이고 `scripts/verify-param-size.sh` 가 이 파일과 그 표를 대조한다.
+    /// 05 가 정한 Parameter 크기 중 **Service 가 길이 검증에 쓰는 것**이다. 여기서 값을
+    /// 정하지 않는다 — 05 의 Parameter 표가 단일 출처이고 `scripts/verify-param-size.sh` 가
+    /// 대조한다.
+    ///
+    /// [!] **같은 계약값이 `Repositories/` 에도 있다.** `SqlParameter` 의 크기가 그것이고,
+    ///     **조용히 자르는 것은 그쪽이다** — 이 파일이 통과시킨 값을 `SqlDbType.NVarChar, 100`
+    ///     이 100자로 잘라 넣는다. 그래서 이 파일 하나로 「한자리에 모았다」가 되지 않는다.
+    ///     게이트가 `PSZ-005` 로 그쪽도 함께 본다.
     ///
     /// [X] **크기가 틀리면 조용하다.** 컴파일도 되고 fake 를 쓰는 단위시험도 같은 상수를
     ///     쓰므로 함께 틀린다. 코드가 05 보다 크게 잡으면 화면이 통과시킨 값을 DB 가

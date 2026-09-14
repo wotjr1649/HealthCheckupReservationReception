@@ -124,7 +124,7 @@ namespace HealthCheckupReservationReception.Views
         {
             set
             {
-                btnSave.Enabled = value;
+                clsBusyScope.SetEnabled(btnSave, value);
                 gcAex.Enabled = value;
             }
         }

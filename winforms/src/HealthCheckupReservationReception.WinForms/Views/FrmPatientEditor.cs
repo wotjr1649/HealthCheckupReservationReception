@@ -89,7 +89,7 @@ namespace HealthCheckupReservationReception.Views
         // 이 화면이 손으로 들고 있던 것이 그대로 그 class 가 됐다.
         private clsActionRunner _save;
 
-        public bool SaveEnabled { set { btnSave.Enabled = value; } }
+        public bool SaveEnabled { set { clsBusyScope.SetEnabled(btnSave, value); } }
 
         /// <summary>
         /// 03 §6.4 — Edit 에는 차트번호 방식 선택이 없다. 기존 차트번호 수동수정만 허용하므로

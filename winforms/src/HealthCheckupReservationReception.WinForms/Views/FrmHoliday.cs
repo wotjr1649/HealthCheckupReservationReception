@@ -167,8 +167,8 @@ namespace HealthCheckupReservationReception.Views
         {
             set
             {
-                btnEdit.Enabled = value;
-                btnDelete.Enabled = value;
+                clsBusyScope.SetEnabled(btnEdit, value);
+                clsBusyScope.SetEnabled(btnDelete, value);
             }
         }
 

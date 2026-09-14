@@ -96,7 +96,7 @@ namespace HealthCheckupReservationReception.Views
 
         public bool ReceiveEnabled
         {
-            set { btnReceive.Enabled = value; }
+            set { clsBusyScope.SetEnabled(btnReceive, value); }
         }
 
         public string ValidationMessage
