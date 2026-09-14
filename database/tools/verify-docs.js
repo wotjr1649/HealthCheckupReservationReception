@@ -270,9 +270,17 @@ function splitFences(src) {
   // dbo 스키마 한정 참조만 센다 — 계획의 SQL 이 테이블을 부르는 형태이고 산문과 섞이지 않는다.
   // SP/TVF/Sequence 는 영문으로 시작하므로 이 정규식에 걸리지 않는다.
   const TBLR3 = /(?:\bdbo\.|\[dbo\]\.)\[?([가-힣][가-힣A-Za-z_0-9]*)\]?/g;
+  // [R20] **지나간 이름은 계획 기록에 남는다.** 예약취소·접수취소가 `USP_HC_업무_취소` 하나로
+  //       합쳐졌는데(05 §11.3), Phase 4 계획은 그때 그 이름으로 설계를 적었다. 기록을 고쳐
+  //       쓰지 않는 것이 이 저장소의 규칙이므로(database/AGENTS.md 머리말) 이름만 통과시킨다.
+  //       V11 의 목적은 그대로다 — 오타와 존재한 적 없는 객체를 잡는 것이고, 아래 둘은
+  //       실제로 존재했던 이름이다. 새 이름을 여기 더하지 마라: 여기 있다는 것은 "지금은
+  //       없지만 그때는 있었다" 는 뜻이다.
+  const RETIRED = ['USP_HC_예약_취소', 'USP_HC_접수_취소'];
   const known = new Set([
     ...(spec.match(OBJ) || []),
     ...[...sec04Summary.matchAll(/\`([가-힣][가-힣A-Za-z_0-9]*)\`/g)].map(x => x[1]),
+    ...RETIRED,
   ]);
   const hits = [];
   for (const [n, s] of Object.entries(plans))
@@ -651,7 +659,8 @@ function splitFences(src) {
       if (!(a < b && b < c)) hits.push(f + ' 순서 어긋남 [6]=' + a + ' [7]=' + b + ' [6b]=' + c);
     }
   }
-  if (bodies !== 8) hits.push('Write SP 본문 ' + bodies + '개 (기대 8)');
+  // [R20] 취소 둘이 USP_HC_업무_취소 하나가 되어 Write SP 본문이 8 → 7 이다.
+  if (bodies !== 7) hits.push('Write SP 본문 ' + bodies + '개 (기대 7)');
   hits.length ? F('V19', '감사/RS1 순서 위반 ' + hits.length + '건', hits.join(String.fromCharCode(10)))
               : P('V19', '감사 INSERT 가 RS1 보다 앞 (Write SP ' + bodies + '개)');
 }

@@ -36,7 +36,6 @@ namespace HealthCheckupReservationReception.Services
         OperationResult<WorkSaveReadDto> Change(ReservationChangeRequest request);
 
         /// <summary>SP-RSV-04 예약 취소 (05 §11.3). RSV → CNR.</summary>
-        OperationResult<WorkSaveReadDto> Cancel(WorkActionRequest request);
     }
 
     // 화면 ID: WF-RSV-01 — 신규 예약 (03 §8)
@@ -141,15 +140,6 @@ namespace HealthCheckupReservationReception.Services
             if (tooLong != null) { return tooLong; }
 
             return Saved(_repository.Change(normalized), "예약을 변경하지 못했습니다.");
-        }
-
-        public OperationResult<WorkSaveReadDto> Cancel(WorkActionRequest request)
-        {
-            WorkActionRequest normalized = WorkAction.Normalize(request);
-            OperationResult<WorkSaveReadDto> tooLong = OperatorFits(normalized.OperatorName);
-            if (tooLong != null) { return tooLong; }
-
-            return Saved(_repository.Cancel(normalized), "예약을 취소하지 못했습니다.");
         }
 
         private OperationResult<WorkSaveReadDto> OperatorFits(string operatorName)

@@ -31,8 +31,12 @@ namespace HealthCheckupReservationReception.Services
         /// </summary>
         OperationResult<WorkSaveReadDto> CompleteReception(WorkActionRequest request);
 
-        /// <summary>SP-RCP-03 접수 취소 (05 §12.3). RCP → CNC.</summary>
-        OperationResult<WorkSaveReadDto> CancelReception(WorkActionRequest request);
+        /// <summary>
+        /// SP-WRK-03 (05 §11.3) — 예약취소·접수취소 공통. `actionCode` 는 05 §8.2 RS4 의
+        /// 업무동작코드이고, 무엇을 취소하는지 **호출자가 말한다**: 현재 상태에서 유도하면
+        /// 화면이 틀렸을 때 DB 가 막아 주지 못한다.
+        /// </summary>
+        OperationResult<WorkSaveReadDto> CancelWork(string actionCode, WorkActionRequest request);
 
         /// <summary>
         /// SP-RCP-02 접수완료 추가검사 변경 (05 §12.2). 상태는 `RCP` 를 유지하고 행버전만 바뀐다.
@@ -142,9 +146,9 @@ namespace HealthCheckupReservationReception.Services
             return Run(request, _repository.CompleteReception, "접수하지 못했습니다.");
         }
 
-        public OperationResult<WorkSaveReadDto> CancelReception(WorkActionRequest request)
+        public OperationResult<WorkSaveReadDto> CancelWork(string actionCode, WorkActionRequest request)
         {
-            return Run(request, _repository.CancelReception, "접수를 취소하지 못했습니다.");
+            return Run(request, r => _repository.CancelWork(actionCode, r), "취소하지 못했습니다.");
         }
 
         /// <summary>

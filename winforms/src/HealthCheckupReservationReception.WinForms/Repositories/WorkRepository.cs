@@ -5,7 +5,7 @@
 //   USP_HC_예약접수상세_조회     SP-WRK-02   RS0~RS5 — 여섯을 한 번에 받는다
 //   USP_HC_접수_완료             SP-RCP-01   RS0+RS1
 //   USP_HC_접수추가검사_변경     SP-RCP-02   RS0+RS1
-//   USP_HC_접수_취소             SP-RCP-03   RS0+RS1
+//   USP_HC_업무_취소             SP-WRK-03   RS0+RS1  예약취소·접수취소 공통
 
 using System;
 using System.Collections.Generic;
@@ -27,8 +27,11 @@ namespace HealthCheckupReservationReception.Repositories
         /// <summary>SP-RCP-01 `[dbo].[USP_HC_접수_완료]` (05 §12.1). RSV → RCP.</summary>
         WorkSaveReadDto CompleteReception(WorkActionRequest request);
 
-        /// <summary>SP-RCP-03 `[dbo].[USP_HC_접수_취소]` (05 §12.3). RCP → CNC.</summary>
-        WorkSaveReadDto CancelReception(WorkActionRequest request);
+        /// <summary>
+        /// SP-WRK-03 `[dbo].[USP_HC_업무_취소]` (05 §11.3). `@업무동작코드` 가 무엇을
+        /// 취소하는지 말한다 — `CANCEL_RESERVATION`(RSV→CNR) · `CANCEL_RECEPTION`(RCP→CNC).
+        /// </summary>
+        WorkSaveReadDto CancelWork(string actionCode, WorkActionRequest request);
 
         /// <summary>SP-RCP-02 `[dbo].[USP_HC_접수추가검사_변경]` (05 §12.2). RCP 유지.</summary>
         WorkSaveReadDto ChangeExtraExam(ExtraExamChangeRequest request);
@@ -138,9 +141,9 @@ namespace HealthCheckupReservationReception.Repositories
         }
 
         /// <summary>SP-RCP-03 (05 §12.3). RCP → CNC. RSV 로 복원하지 않는다.</summary>
-        public WorkSaveReadDto CancelReception(WorkActionRequest request)
+        public WorkSaveReadDto CancelWork(string actionCode, WorkActionRequest request)
         {
-            return Run("dbo.USP_HC_접수_취소", request);
+            return Run("dbo.USP_HC_업무_취소", request, actionCode);
         }
 
         /// <summary>
@@ -172,10 +175,15 @@ namespace HealthCheckupReservationReception.Repositories
             }
         }
 
-        private WorkSaveReadDto Run(string procedure, WorkActionRequest request)
+        private WorkSaveReadDto Run(string procedure, WorkActionRequest request, string actionCode = null)
         {
             using (var command = new SqlCommand(procedure))
             {
+                if (actionCode != null)
+                {
+                    command.Parameters.Add("@업무동작코드", SqlDbType.VarChar, 30).Value = actionCode;
+                }
+
                 ReservationRepository.AddWorkAction(command, request);
                 return ReservationRepository.Save(command, _connectionString);
             }

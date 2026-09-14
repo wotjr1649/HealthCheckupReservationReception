@@ -336,9 +336,13 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public void 예약취소는_묻고_행버전을_실어_보낸다()
         {
             var view = new FakeWorkbenchView { ConfirmAnswer = true, SelectFound = true };
-            var service = new FakeWorkService { SearchResult = Ok(OneRow()), DetailResult = OkDetail(Allowed()) };
-            var reservation = new FakeReservationService { Save = SavedOk() };
-            var presenter = new WorkbenchPresenter(view, service, reservation, Status(Today), "접수1번창구");
+            var service = new FakeWorkService
+            {
+                SearchResult = Ok(OneRow()),
+                DetailResult = OkDetail(Allowed()),
+                SaveResult = SavedOk(),
+            };
+            var presenter = new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
             presenter.LoadInitial();
             view.RaiseSelectionChanged(77);
 
@@ -346,9 +350,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
 
             Assert.AreEqual(1, view.Questions.Count, "묻지 않았거나 두 번 물었다");
             StringAssert.Contains(view.Questions[0], "복원할 수 없습니다");
-            Assert.AreEqual(77L, reservation.LastCancel.WorkId);
-            Assert.IsNotNull(reservation.LastCancel.RowVersion, "행버전을 안 실었다");
-            Assert.AreEqual("접수1번창구", reservation.LastCancel.OperatorName);
+
+            // [R20] 취소가 SP 하나로 합쳐졌다 — **무엇을 취소하는지는 동작코드가 말한다.**
+            Assert.AreEqual(DbWorkAction.CancelReservation, service.LastCancelAction);
+            Assert.AreEqual(77L, service.LastCancel.WorkId);
+            Assert.IsNotNull(service.LastCancel.RowVersion, "행버전을 안 실었다");
+            Assert.AreEqual("접수1번창구", service.LastCancel.OperatorName);
         }
 
         [TestMethod]
@@ -395,10 +402,12 @@ namespace HealthCheckupReservationReception.Tests.Presenters
         public void DB_가_막으면_사유를_적고_최신값을_다시_읽는다()
         {
             var view = new FakeWorkbenchView { ConfirmAnswer = true, SelectFound = true };
-            var service = new FakeWorkService { SearchResult = Ok(OneRow()), DetailResult = OkDetail(Allowed()) };
-            var reservation = new FakeReservationService
+            // [R20] 취소가 WorkService 하나로 합쳐졌다 — 예전에는 예약취소만 ReservationService 였다.
+            var service = new FakeWorkService
             {
-                Save = OperationResult<WorkSaveReadDto>.Success(new WorkSaveReadDto
+                SearchResult = Ok(OneRow()),
+                DetailResult = OkDetail(Allowed()),
+                SaveResult = OperationResult<WorkSaveReadDto>.Success(new WorkSaveReadDto
                 {
                     Result = new DbResult
                     {
@@ -408,7 +417,7 @@ namespace HealthCheckupReservationReception.Tests.Presenters
                     },
                 }),
             };
-            var presenter = new WorkbenchPresenter(view, service, reservation, Status(Today), "접수1번창구");
+            var presenter = new WorkbenchPresenter(view, service, new FakeReservationService(), Status(Today), "접수1번창구");
             presenter.LoadInitial();
             view.RaiseSelectionChanged(77);
             int before = service.DetailCalls;
@@ -763,8 +772,11 @@ namespace HealthCheckupReservationReception.Tests.Presenters
             return SaveResult;
         }
 
-        public OperationResult<WorkSaveReadDto> CancelReception(WorkActionRequest request)
+        public string LastCancelAction { get; private set; }
+
+        public OperationResult<WorkSaveReadDto> CancelWork(string actionCode, WorkActionRequest request)
         {
+            LastCancelAction = actionCode;
             LastCancel = request;
             return SaveResult;
         }

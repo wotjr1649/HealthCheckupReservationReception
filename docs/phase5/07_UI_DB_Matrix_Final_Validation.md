@@ -485,8 +485,8 @@ SP-WRK-02(@업무ID)
 
 | 화면 | Action | 호출 SP | 계약 |
 |---|---|---|---|
-| `CNF-RSV-01` | `[확인]` | `SP-RSV-04` | `05` §11.3 |
-| `CNF-RCP-01` | `[확인]` | `SP-RCP-03` | `05` §12.3 |
+| `CNF-RSV-01` | `[확인]` | `SP-WRK-03` | `05` §11.3 · `@업무동작코드=CANCEL_RESERVATION` |
+| `CNF-RCP-01` | `[확인]` | `SP-WRK-03` | `05` §11.3 · `@업무동작코드=CANCEL_RECEPTION` |
 
 `[B]` 둘 다 Confirm 자체는 DB 를 부르지 않는다. 상태·`행버전` 재확인은 취소 SP 안에서 일어난다
 (`03` §13.1·§13.2).
@@ -570,12 +570,11 @@ RS1 이 2행 이상이면 `701` 이다 (`05` §7.4).
 | `SP-RSV-01` | `WF-RSV-01` · `DLG-RSV-01` |
 | `SP-RSV-02` | `WF-RSV-01` |
 | `SP-RSV-03` | `DLG-RSV-01` |
-| `SP-RSV-04` | `CNF-RSV-01` |
+| `SP-WRK-03` | `CNF-RSV-01` · `CNF-RCP-01` |
 | `SP-WRK-01` | `WF-WRK-01`(`[조회]`) |
 | `SP-WRK-02` | `WF-WRK-01` · `DLG-RSV-01` · `DLG-RCP-01` · `DLG-RCP-02` |
 | `SP-RCP-01` | `DLG-RCP-01` |
 | `SP-RCP-02` | `DLG-RCP-02` |
-| `SP-RCP-03` | `CNF-RCP-01` |
 | `SP-LOG-01` | `DLG-LOG-01` |
 | `SP-HOL-01` | `DLG-HOL-01` |
 | `SP-HOL-02` | `DLG-HOL-01` |
@@ -906,10 +905,10 @@ contract belongs to the service"*, *"Integrity and concurrency live in the datab
      → RS4 「가능한업무」 5행이 Ribbon 다섯 버튼을 그대로 그린다 (§3.6.1)
      → 아래 넷의 진입점이므로 이것 없이는 넷 다 실행본에서 못 연다
 7  DLG-RSV-01  예약 변경        SP-RSV-01 · SP-RSV-03      WF-WRK-01 이 연다
-   CNF-RSV-01  예약 취소        SP-RSV-04                  WF-WRK-01 이 연다
+   CNF-RSV-01  예약 취소        SP-WRK-03 (CANCEL_RESERVATION)  WF-WRK-01 이 연다
    DLG-RCP-01  접수 처리        SP-WRK-02 · SP-RCP-01      WF-WRK-01 이 연다
    DLG-RCP-02  접수 추가검사    SP-WRK-02 · SP-RCP-02      WF-WRK-01 이 연다
-   CNF-RCP-01  접수 취소        SP-RCP-03                  WF-WRK-01 이 연다
+   CNF-RCP-01  접수 취소        SP-WRK-03 (CANCEL_RECEPTION)    WF-WRK-01 이 연다
 8  DLG-LOG-01  변경이력 열람    SP-LOG-01
      → WF-PAT-01 과 WF-WRK-01 둘 다에서 연다. 스텁 두 개가 이때 닫힌다
 9  DLG-HOL-01  휴무일 관리      SP-HOL-01~04

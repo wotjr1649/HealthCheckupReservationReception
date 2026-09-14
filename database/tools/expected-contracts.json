@@ -2077,7 +2077,7 @@
     ]
   },
   "RWR-040_예약취소_미존재_WorkId": {
-    "sp": "USP_HC_예약_취소",
+    "sp": "USP_HC_업무_취소",
     "rs0Success": 0,
     "rs0Code": 500,
     "resultSets": [
@@ -2094,7 +2094,7 @@
     ]
   },
   "RWR-041_예약취소_stale_RowVersion": {
-    "sp": "USP_HC_예약_취소",
+    "sp": "USP_HC_업무_취소",
     "rs0Success": 0,
     "rs0Code": 601,
     "resultSets": [
@@ -2111,7 +2111,7 @@
     ]
   },
   "RWR-042_예약취소_이미_CNR": {
-    "sp": "USP_HC_예약_취소",
+    "sp": "USP_HC_업무_취소",
     "rs0Success": 0,
     "rs0Code": 502,
     "resultSets": [
@@ -2128,7 +2128,7 @@
     ]
   },
   "RWR-043_예약취소_성공": {
-    "sp": "USP_HC_예약_취소",
+    "sp": "USP_HC_업무_취소",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
@@ -2482,7 +2482,7 @@
     ]
   },
   "CWR-040_접수취소_RSV상태": {
-    "sp": "USP_HC_접수_취소",
+    "sp": "USP_HC_업무_취소",
     "rs0Success": 0,
     "rs0Code": 502,
     "resultSets": [
@@ -2499,7 +2499,7 @@
     ]
   },
   "CWR-041_접수취소_stale_RowVersion": {
-    "sp": "USP_HC_접수_취소",
+    "sp": "USP_HC_업무_취소",
     "rs0Success": 0,
     "rs0Code": 601,
     "resultSets": [
@@ -2516,7 +2516,7 @@
     ]
   },
   "CWR-042_접수취소_성공": {
-    "sp": "USP_HC_접수_취소",
+    "sp": "USP_HC_업무_취소",
     "rs0Success": 1,
     "rs0Code": 0,
     "resultSets": [
@@ -2541,7 +2541,7 @@
     ]
   },
   "CWR-043_접수취소_이미_CNC": {
-    "sp": "USP_HC_접수_취소",
+    "sp": "USP_HC_업무_취소",
     "rs0Success": 0,
     "rs0Code": 502,
     "resultSets": [

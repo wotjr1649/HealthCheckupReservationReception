@@ -1,10 +1,11 @@
-# 검진 예약·접수 관리 프로그램 — DB Rule·Stored Procedure 계약서
+﻿# 검진 예약·접수 관리 프로그램 — DB Rule·Stored Procedure 계약서
 
 - **문서명:** `05_DB_Rule_SP_Contract.md`
 - **상태:** FINAL / GO / READ-ONLY — Phase 3 Rule·Stored Procedure 계약 확정
-- **문서 버전:** v3.9
+- **문서 버전:** v4.0
 - **기준일:** 2026-09-08
-- **기준선 ID:** `HC-RSV-RCP-20260911-R18`
+- **기준선 ID:** `HC-RSV-RCP-20260914-R20`  (직전 `HC-RSV-RCP-20260911-R18`)
+- **R20 개정 범위:** 2026-09-14 사용자 지시. **예약취소(`SP-RSV-04`)와 접수취소(`SP-RCP-03`)를 `SP-WRK-03` `[dbo].[USP_HC_업무_취소]` 하나로 합친다.** 두 SP 의 본문은 주석을 빼면 **네 리터럴만** 달랐다 — 허용 상태 `RSV`/`RCP` 와 결과 상태 `CNR`/`CNC` 뿐이고 잠금 자원명·검증순서·결과코드·감사·Result Set 이 전부 같았다(실측). 그 넷을 `@업무동작코드`(`CANCEL_RESERVATION`/`CANCEL_RECEPTION`)가 고른다. `[!]` **동작을 현재 상태에서 유도하지 않는다** — 그러면 접수 건에 `[예약취소]`를 눌러도 SP 가 막지 않아 화면이 틀렸을 때 DB 가 세우던 방어선이 사라진다. 동작코드는 §8.2 RS4 가 이미 쓰는 어휘라 새 마법값이 아니다. 고치는 곳은 §1.3 표·§11.3·§12.3 셋이고 **절 번호를 밀지 않는다**(§12.4 가 적은 이유 그대로 — 밀리면 `06`·계획 문서의 §13·§14·§16.5·§17 참조가 어긋난다). 다른 SP 의 Parameter·Result Set·ResultCode·검증순서는 한 줄도 바뀌지 않는다
 - **R18 개정 범위:** `06` 재봉인과 한 쌍이다. §8.2 `SELECT_예약접수상세` 에 **`RS5 추가검사구성` 을 더한다** — 정확히 7행이고 `선택여부`·`선택가능`·`사유코드`·`사유메시지` 를 함께 낸다. `03` §12 `DLG-RCP-02` 가 AEX 를 고치라고 요구하는데 **그 일곱을 읽는 길이 계약에 없었다**: `RS3` 는 저장된 코드만 주고, 일곱을 주는 유일한 Result Set 인 §9.10 `RS5` 는 `SELECT_예약가능정보` 것이며 그 SP 는 `RCP` 업무를 `502` 로 거부한다(실측 2026-09-11). `[!]` **기존 Result Set 을 고치지 않고 뒤에 더한다** — `RS0`~`RS4` 의 순서·컬럼·행수가 한 칸도 바뀌지 않으므로 이미 읽는 쪽은 손댈 것이 없다. 새 계산식도 없다: §9.10 이 쓰는 `UFN_HC_추가검사확인` 을 `저장검사사용여부=1` 로 한 번 더 부른다. Parameter·ResultCode·다른 SP 는 한 줄도 바뀌지 않는다
 - **R17 개정 범위:** `03`·`04` 재봉인에 딸린다. §7.2 입력표의 검색방식 두 칸이다 — `@차트번호` 정확검색 → **포함검색**, `@성명` 접두검색 → **포함검색**. `SELECT_예약접수목록`(§8.1)의 `@차트번호` 는 **정확검색 그대로**다. Parameter 이름·타입·NULL 허용·Result Set·정렬·결과코드는 한 줄도 바뀌지 않는다
 - **R16 개정 범위:** `03`·`04` 재봉인에 딸린다. §7.2 의 *"모든 조건이 NULL이면 결과코드=103"* 을 **전체 조회**로 바꾸고 §13 의 허용 결과코드에서 `103` 을 뺀다 — `SELECT_수검자목록` 두 줄이다. `103 NeedSearchCondition` 자체는 남는다: `SELECT_예약접수목록`(§8.1)이 그대로 쓴다. Parameter·Result Set 컬럼·정렬·다른 SP 는 한 줄도 바뀌지 않는다
@@ -21,7 +22,7 @@
 - **Database:** `HealthCheckupReservationReceptionDb`
 - **DB Domain Prefix:** `HC = Health Checkup`
 - **대상 환경:** C# WinForms / .NET Framework 4.6.1 / DevExpress Components 20.2 / Microsoft SQL Server 2012 이상 / Stored Procedure
-- **확정 객체:** 외부 호출 Stored Procedure 20개 / 내부 Inline TVF 4개 / Trigger 0개 / TVP 0개 / DELETE SP 0개
+- **확정 객체:** 외부 호출 Stored Procedure 19개 / 내부 Inline TVF 4개 / Trigger 0개 / TVP 0개 / DELETE SP 0개
 - **기준문서:**
   - `00_Project_Policy.md` — FINAL / GO / READ-ONLY
   - `01_Process_Definition.md` — FINAL / GO / READ-ONLY
@@ -141,7 +142,7 @@ Function은 다음 형식을 사용한다.
 [dbo].[UFN_HC_{한글Rule명}]
 ```
 
-## 1.3 외부 호출 Stored Procedure 20개
+## 1.3 외부 호출 Stored Procedure 19개
 
 | ID | 물리 객체명 | 구분 | 책임 |
 |---|---|:---:|---|
@@ -154,19 +155,18 @@ Function은 다음 형식을 사용한다.
 | SP-RSV-01 | `[dbo].[USP_HC_예약가능정보_조회]` | SELECT | 날짜·시간대·정원·TGT·NEX·AEX 사전정보 |
 | SP-RSV-02 | `[dbo].[USP_HC_예약_등록]` | INSERT | Normal/WalkIn 예약 생성 |
 | SP-RSV-03 | `[dbo].[USP_HC_예약_변경]` | UPDATE | 예약일·시간대·AEX 영향범위 변경 |
-| SP-RSV-04 | `[dbo].[USP_HC_예약_취소]` | UPDATE | RSV → CNR |
 | SP-WRK-01 | `[dbo].[USP_HC_예약접수목록_조회]` | SELECT | Workbench 공통 목록 |
 | SP-WRK-02 | `[dbo].[USP_HC_예약접수상세_조회]` | SELECT | Work 상세·검사구성·Action 가능 여부 |
+| SP-WRK-03 | `[dbo].[USP_HC_업무_취소]` | UPDATE | `@업무동작코드` 로 RSV → CNR · RCP → CNC |
 | SP-RCP-01 | `[dbo].[USP_HC_접수_완료]` | UPDATE | RSV → RCP |
 | SP-RCP-02 | `[dbo].[USP_HC_접수추가검사_변경]` | UPDATE | RCP 상태 AEX 변경 |
-| SP-RCP-03 | `[dbo].[USP_HC_접수_취소]` | UPDATE | RCP → CNC |
 | SP-LOG-01 | `[dbo].[USP_HC_변경이력_조회]` | SELECT | 대상 행 1개의 변경기록 최신순 열람 |
 | SP-HOL-01 | `[dbo].[USP_HC_휴무일목록_조회]` | SELECT | 기간·구분별 휴무일 목록과 공휴일 등재현황 |
 | SP-HOL-02 | `[dbo].[USP_HC_자체휴무일_등록]` | INSERT | 자체휴무일 1행 생성 |
 | SP-HOL-03 | `[dbo].[USP_HC_자체휴무일_수정]` | UPDATE | 자체휴무일 1행 수정 |
 | SP-HOL-04 | `[dbo].[USP_HC_자체휴무일_삭제]` | DELETE | 자체휴무일 1행 물리 삭제 |
 
-Write Stored Procedure 8개(`SP-PAT-03`·`SP-PAT-04`·`SP-RSV-02`~`04`·`SP-RCP-01`~`03`)는 **실제로 바꾼 컬럼마다** `변경이력` 1행을 기록한다. 데이터를 바꾸지 않은 호출은 기록하지 않는다. 기록은 트랜잭션 밖에서 자체 `TRY/CATCH`로 수행하며 실패해도 업무 호출 결과를 바꾸지 않는다 — `04_DB_Design.md` §8.6.4.
+Write Stored Procedure 7개(`SP-PAT-03`·`SP-PAT-04`·`SP-RSV-02`·`SP-RSV-03`·`SP-WRK-03`·`SP-RCP-01`·`SP-RCP-02`)는 **실제로 바꾼 컬럼마다** `변경이력` 1행을 기록한다. 데이터를 바꾸지 않은 호출은 기록하지 않는다. 기록은 트랜잭션 밖에서 자체 `TRY/CATCH`로 수행하며 실패해도 업무 호출 결과를 바꾸지 않는다 — `04_DB_Design.md` §8.6.4.
 ## 1.4 내부 Inline TVF 4개
 
 | ID | 물리 객체명 | 책임 |
@@ -1889,15 +1889,32 @@ UPDATE 없음
 
 ---
 
-## 11.3 `[dbo].[USP_HC_예약_취소]`
+## 11.3 `[dbo].[USP_HC_업무_취소]` — SP-WRK-03
+
+**[R20] 예약취소와 접수취소를 한 SP 로 합쳤다.** 두 본문은 주석을 빼면 **네 리터럴만** 달랐다
+(허용 상태 `RSV`/`RCP`, 결과 상태 `CNR`/`CNC`) — 잠금·검증순서·결과코드·감사·Result Set 이 모두
+같았다. 그 넷을 `@업무동작코드` 가 고른다.
 
 ### 입력
 
 | Parameter | 타입 | NULL |
 |---|---|:---:|
+| `@업무동작코드` | `VARCHAR(30)` | X |
 | `@업무ID` | `BIGINT` | X |
 | `@행버전` | `BINARY(8)` | X |
 | `@조작자명` | `NVARCHAR(50)` | X |
+
+`@업무동작코드`는 §8.2 RS4 의 업무동작코드와 같은 어휘다. 둘만 받는다.
+
+| `@업무동작코드` | 허용 상태 | 결과 상태 |
+|---|:---:|:---:|
+| `CANCEL_RESERVATION` | `RSV` | `CNR` |
+| `CANCEL_RECEPTION` | `RCP` | `CNC` |
+
+그 밖의 값은 `101`이고 `오류항목`은 `업무동작코드`다.
+
+`[!]` **동작을 현재 상태에서 유도하지 않는다.** 그러면 접수 건에 `[예약취소]`를 눌러도 SP 가
+막지 않아, 화면이 틀렸을 때 DB 가 세우던 방어선이 사라진다. 호출자가 무엇을 하려는지 말한다.
 
 ### Result Set
 
@@ -1910,16 +1927,17 @@ RS1 Work결과
 
 ```text
 필수값
+→ 업무동작코드 유효값
 → Work 존재
-→ 상태코드=RSV
+→ 상태코드=허용 상태
 → 행버전
 → 현재 공통 업무 가능
-→ RSV→CNR
+→ 허용 상태 → 결과 상태
 ```
 
 - 검사구성 두 컬럼은 지우지 않는다.
-- 예약 마감시각은 취소 가능조건이 아니다.
-- CNR에서 RSV로 복원하지 않는다.
+- 예약·접수 마감시각은 취소 가능조건이 아니다.
+- `CNR`·`CNC`에서 되돌리지 않는다.
 
 ---
 
@@ -2015,37 +2033,13 @@ No-op에서는 현재 Master 비활성·성별·중복 Rule을 재평가하지 �
 
 ---
 
-## 12.3 `[dbo].[USP_HC_접수_취소]`
+## 12.3 접수취소 — §11.3 으로 합쳤다
 
-### 입력
+**[R20]** 접수취소는 `[dbo].[USP_HC_업무_취소]`(§11.3, `SP-WRK-03`)가 맡는다.
+`@업무동작코드 = 'CANCEL_RECEPTION'` 이 `RCP → CNC` 를 고른다.
 
-| Parameter | 타입 | NULL |
-|---|---|:---:|
-| `@업무ID` | `BIGINT` | X |
-| `@행버전` | `BINARY(8)` | X |
-| `@조작자명` | `NVARCHAR(50)` | X |
-
-### Result Set
-
-```text
-RS0 처리결과
-RS1 Work결과
-```
-
-### 검증순서
-
-```text
-필수값
-→ Work 존재
-→ 상태코드=RCP
-→ 행버전
-→ 현재 공통 업무 가능
-→ RCP→CNC
-```
-
-- RSV로 복원하지 않는다.
-- 검사구성 두 컬럼은 보존한다.
-- 접수 마감시각은 접수취소 가능조건이 아니다.
+`[!]` **절 번호를 밀지 않는다.** §12.4 가 적은 이유 그대로다 — 번호가 밀리면 `06`·계획 문서가
+가리키는 `05` §13·§14·§16.5·§17 참조가 전부 어긋난다. 그래서 이 절은 남고 내용만 가리킨다.
 
 ---
 
@@ -2747,7 +2741,7 @@ DB Role·GRANT EXECUTE·직접 DML 통제
 ```text
 프로그램·DB 명칭
 HC 접두사 의미
-20개 Stored Procedure 이름과 수
+19개 Stored Procedure 이름과 수
 4개 Inline TVF 이름과 수
 각 SP Parameter 이름·타입·NULL (R3에서 Write SP 8개에 `@조작자명`을 추가하며 한 번 열렸고, 그 외에는 고정이다)
 RS0 공통 컬럼

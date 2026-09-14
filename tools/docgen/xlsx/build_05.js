@@ -70,8 +70,9 @@ for (const o of of(/^(입력|\d+\.\d+\.\d+ 입력|\d+\.\d+ 입력 Signature)$/))
 const S3 = [];
 const rs0 = M.tables(secs.find(s => /^3\.1 RS0/.test(s.title)).text)[0];
 const workRs1 = M.tables(secs.find(s => /^11\. 예약 Write SP 계약$/.test(s.title)).text)[0];
-const WRITE_RS1 = ['USP_HC_예약_등록', 'USP_HC_예약_변경', 'USP_HC_예약_취소',
-                   'USP_HC_접수_완료', 'USP_HC_접수추가검사_변경', 'USP_HC_접수_취소'];
+// [R20] 예약취소·접수취소가 USP_HC_업무_취소 하나가 되었다 (05 §11.3).
+const WRITE_RS1 = ['USP_HC_예약_등록', 'USP_HC_예약_변경', 'USP_HC_업무_취소',
+                   'USP_HC_접수_완료', 'USP_HC_접수추가검사_변경'];
 
 const addRs = (obj, label, t) => {
   // 표 머리글이 [순서|컬럼|…] 인 것과 [컬럼|…] 인 것 두 형태가 있다.

@@ -62,7 +62,7 @@ BEGIN
     -- 접수완료는 창 안이면 503(미래 예약일)이지만 그보다 공통 업무가능이 먼저다 (05 §12.1).
     EXEC [dbo].[USP_HC_접수_완료] @OW2, @ORv2, N'TEST';
     EXEC [dbo].[USP_HC_접수추가검사_변경] @OW, @ORv, 1,1,0,0,0,0,0, N'TEST';
-    EXEC [dbo].[USP_HC_접수_취소] @OW, @ORv, N'TEST';
+    EXEC [dbo].[USP_HC_업무_취소] 'CANCEL_RECEPTION', @OW, @ORv, N'TEST';
 
     DECLARE @Off1 VARCHAR(300) =
           CONVERT(VARCHAR(12), (SELECT COUNT(*) FROM [dbo].[수검자]))     + '|'
@@ -367,7 +367,7 @@ ELSE BEGIN PRINT 'FAIL CWR-025 RSV 상태 Work 의 AEX 가 바뀌었다'; SET @F
 -- UPDATE_접수취소
 ----------------------------------------------------------------------------
 -- CWR-040  RSV 상태에서 접수취소 호출 → 502
-EXEC [dbo].[USP_HC_접수_취소] @Wrsv, @Rrsv, N'TEST';
+EXEC [dbo].[USP_HC_업무_취소] 'CANCEL_RECEPTION', @Wrsv, @Rrsv, N'TEST';
 IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @Wrsv) = 'RSV')
     PRINT 'PASS CWR-040 RSV 상태에서 접수취소가 막혔다';
 ELSE BEGIN PRINT 'FAIL CWR-040 RSV 가 CNC 로 전이됐다'; SET @Fail += 1; END
@@ -379,14 +379,14 @@ BEGIN
     SET @Rv = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @W14);
 
     -- CWR-041  stale 행버전 은 취소하지 않는다
-    EXEC [dbo].[USP_HC_접수_취소] @W14, 0x0000000000000001, N'TEST';
+    EXEC [dbo].[USP_HC_업무_취소] 'CANCEL_RECEPTION', @W14, 0x0000000000000001, N'TEST';
     IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @W14) = 'RCP')
         PRINT 'PASS CWR-041 stale RowVersion 이 접수취소를 막았다';
     ELSE BEGIN PRINT 'FAIL CWR-041 stale 요청이 취소했다'; SET @Fail += 1; END
 
     -- CWR-042 / CWR-052  취소 성공 + 검사구성 보존 + 감사 1행
     SET @H0 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @W14);
-    EXEC [dbo].[USP_HC_접수_취소] @W14, @Rv, N'TEST';
+    EXEC [dbo].[USP_HC_업무_취소] 'CANCEL_RECEPTION', @W14, @Rv, N'TEST';
     SET @H1 = (SELECT COUNT(*) FROM [dbo].[변경이력] WHERE [대상키] = @W14);
     IF ((SELECT [상태코드] FROM [dbo].[예약접수] WHERE [업무ID] = @W14) = 'CNC'
         AND (SELECT ISNULL([국가검사항목], N'') + N'|' + ISNULL([추가검사항목], N'')
@@ -403,7 +403,7 @@ BEGIN
 
     -- CWR-043  CNC 재취소 → 502
     SET @Rv = (SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @W14);
-    EXEC [dbo].[USP_HC_접수_취소] @W14, @Rv, N'TEST';
+    EXEC [dbo].[USP_HC_업무_취소] 'CANCEL_RECEPTION', @W14, @Rv, N'TEST';
     IF ((SELECT [행버전] FROM [dbo].[예약접수] WHERE [업무ID] = @W14) = @Rv)
         PRINT 'PASS CWR-043 CNC 재취소가 아무것도 바꾸지 않았다';
     ELSE BEGIN PRINT 'FAIL CWR-043 CNC 가 다시 취소됐다'; SET @Fail += 1; END

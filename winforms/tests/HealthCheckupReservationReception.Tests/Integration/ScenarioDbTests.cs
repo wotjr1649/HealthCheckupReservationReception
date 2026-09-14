@@ -65,11 +65,11 @@ namespace HealthCheckupReservationReception.Tests.Integration
 
                     if (DbWorkStatus.Received.Equals(read.Detail.StatusCode, StringComparison.Ordinal))
                     {
-                        Works().CancelReception(request);
+                        Works().CancelWork(DbWorkAction.CancelReception, request);
                     }
                     else if (DbWorkStatus.Reserved.Equals(read.Detail.StatusCode, StringComparison.Ordinal))
                     {
-                        Reservations().Cancel(request);
+                        Works().CancelWork(DbWorkAction.CancelReservation, request);
                     }
                 }
                 catch (SqlException)
@@ -150,7 +150,7 @@ namespace HealthCheckupReservationReception.Tests.Integration
             WorkSaveReadDto booked = SaveReservation(BookingFor(patient.PatientId, Today()));
             Assert.AreEqual((int)DbCode.Ok, booked.Result.Code, "예약: " + booked.Result.Message);
 
-            WorkSaveReadDto cancelled = Ok(() => Reservations().Cancel(new WorkActionRequest
+            WorkSaveReadDto cancelled = Ok(() => Works().CancelWork(DbWorkAction.CancelReservation, new WorkActionRequest
             {
                 WorkId = booked.Row.WorkId,
                 RowVersion = booked.Row.RowVersion,
@@ -210,7 +210,7 @@ namespace HealthCheckupReservationReception.Tests.Integration
             SkipIfCutoff(received.Result, "접수");
             Assert.AreEqual((int)DbCode.Ok, received.Result.Code, "접수: " + received.Result.Message);
 
-            WorkSaveReadDto cancelled = Ok(() => Works().CancelReception(new WorkActionRequest
+            WorkSaveReadDto cancelled = Ok(() => Works().CancelWork(DbWorkAction.CancelReception, new WorkActionRequest
             {
                 WorkId = booked.Row.WorkId,
                 RowVersion = received.Row.RowVersion,

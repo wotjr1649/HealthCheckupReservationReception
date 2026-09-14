@@ -339,13 +339,15 @@ namespace HealthCheckupReservationReception.Presenters
                 return;
             }
 
+            // [R20] 취소 둘이 한 SP 가 되면서 이 분기도 사라졌다 — 동작코드를 그대로 넘긴다.
+            // 화면이 무엇을 취소하는지 말하고, 그 상태에서 그 동작이 되는지는 SP 가 판정한다.
             if (DbWorkAction.CancelReservation.Equals(actionCode, StringComparison.Ordinal))
             {
-                Run(CancelReservationAsk, _reservationService.Cancel, "예약을 취소하지 못했습니다.");
+                Run(CancelReservationAsk, actionCode, "예약을 취소하지 못했습니다.");
             }
             else if (DbWorkAction.CancelReception.Equals(actionCode, StringComparison.Ordinal))
             {
-                Run(CancelReceptionAsk, _service.CancelReception, "접수를 취소하지 못했습니다.");
+                Run(CancelReceptionAsk, actionCode, "접수를 취소하지 못했습니다.");
             }
         }
 
@@ -355,10 +357,7 @@ namespace HealthCheckupReservationReception.Presenters
         /// [X] **성공해도 목록을 다시 읽는다.** 상태가 바뀌었고 `행버전` 도 바뀌었다 —
         ///     화면에 남은 옛 값으로 다음 Action 을 걸면 `601` 이 난다.
         /// </summary>
-        private void Run(
-            string question,
-            Func<WorkActionRequest, OperationResult<WorkSaveReadDto>> call,
-            string failure)
+        private void Run(string question, string actionCode, string failure)
         {
             if (!_view.Confirm(question))
             {
@@ -369,7 +368,7 @@ namespace HealthCheckupReservationReception.Presenters
             OperationResult<WorkSaveReadDto> result;
             try
             {
-                result = call(new WorkActionRequest
+                result = _service.CancelWork(actionCode, new WorkActionRequest
                 {
                     WorkId = workId,
                     RowVersion = _detail.RowVersion,

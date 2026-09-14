@@ -4,7 +4,6 @@
 //   USP_HC_예약가능정보_조회   SP-RSV-01   RS0~RS5 — 여섯을 한 번에 받는다
 //   USP_HC_예약_등록           SP-RSV-02   RS0+RS1
 //   USP_HC_예약_변경           SP-RSV-03   RS0+RS1
-//   USP_HC_예약_취소           SP-RSV-04   RS0+RS1
 
 using System;
 using System.Collections.Generic;
@@ -27,8 +26,6 @@ namespace HealthCheckupReservationReception.Repositories
         /// <summary>SP-RSV-03 `[dbo].[USP_HC_예약_변경]` (05 §11.2).</summary>
         WorkSaveReadDto Change(ReservationChangeRequest request);
 
-        /// <summary>SP-RSV-04 `[dbo].[USP_HC_예약_취소]` (05 §11.3).</summary>
-        WorkSaveReadDto Cancel(WorkActionRequest request);
     }
 
     // 화면 ID: WF-RSV-01 — 신규 예약 (03 §8)
@@ -320,18 +317,8 @@ namespace HealthCheckupReservationReception.Repositories
             }
         }
 
-        /// <summary>SP-RSV-04 (05 §11.3). RSV → CNR. 검사구성 두 컬럼은 지우지 않는다.</summary>
-        public WorkSaveReadDto Cancel(WorkActionRequest request)
-        {
-            using (var command = new SqlCommand("dbo.USP_HC_예약_취소"))
-            {
-                AddWorkAction(command, request);
-                return Save(command);
-            }
-        }
-
         /// <summary>
-        /// `@업무ID`·`@행버전`·`@조작자명` 셋만 보내는 SP 들의 공통 Parameter (05 §11.3 · §12.1 · §12.3).
+        /// `@업무ID`·`@행버전`·`@조작자명` 셋만 보내는 SP 들의 공통 Parameter (05 §11.3 · §12.1).
         /// </summary>
         internal static void AddWorkAction(SqlCommand command, WorkActionRequest request)
         {

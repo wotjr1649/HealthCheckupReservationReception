@@ -18,9 +18,10 @@ IF ((SELECT COUNT(*) FROM sys.objects WHERE type = 'IF' AND name LIKE 'UFN[_]HC[
     PRINT 'PASS VER-002 Inline TVF 4';
 ELSE BEGIN PRINT 'FAIL VER-002 TVF 수 불일치'; SET @Fail += 1; END
 
--- 05 §1.3 의 외부 호출 SP 20개. SELECT 9 / INSERT 3 / UPDATE 7 / DELETE 1 (06 §18).
-IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 20)
-    PRINT 'PASS VER-003 Stored Procedure 20';
+-- 05 §1.3 의 외부 호출 SP 19개. SELECT 9 / INSERT 3 / UPDATE 6 / DELETE 1 (06 §18).
+-- [R20] 예약취소·접수취소가 USP_HC_업무_취소 하나가 되어 20 → 19 다.
+IF ((SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'USP[_]HC[_]%') = 19)
+    PRINT 'PASS VER-003 Stored Procedure 19';
 ELSE BEGIN PRINT 'FAIL VER-003 SP 수 불일치'; SET @Fail += 1; END
 
 IF ((SELECT COUNT(*) FROM sys.sequences) = 1)

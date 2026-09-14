@@ -1,4 +1,4 @@
-PASS RBD-004 인벤토리 지문 일치  INVENTORY|7|4|20|1|7|2|2|1|5|28|10|0|0|19|41
+PASS RBD-004 인벤토리 지문 일치  INVENTORY|7|4|19|1|7|2|2|1|5|28|10|0|0|19|41
 PASS RBD-006 Seed 역할 분포 NEX 13 / AEX 7 / 겸용 1 / AEX Active 7
 PASS RBD-010 DB 에 credential·대칭키·HC Login 0건 (파일 스캔은 verify-no-secret.sh)
 --- OBJECTS ---
@@ -53,9 +53,9 @@ OBJ|P |USP_HC_수검자목록_조회
 OBJ|P |USP_HC_수검자상세_조회
 OBJ|P |USP_HC_수검자유효업무_조회
 OBJ|P |USP_HC_수검자정보_수정
+OBJ|P |USP_HC_업무_취소
 OBJ|P |USP_HC_예약_등록
 OBJ|P |USP_HC_예약_변경
-OBJ|P |USP_HC_예약_취소
 OBJ|P |USP_HC_예약가능정보_조회
 OBJ|P |USP_HC_예약접수목록_조회
 OBJ|P |USP_HC_예약접수상세_조회
@@ -63,7 +63,6 @@ OBJ|P |USP_HC_자체휴무일_등록
 OBJ|P |USP_HC_자체휴무일_삭제
 OBJ|P |USP_HC_자체휴무일_수정
 OBJ|P |USP_HC_접수_완료
-OBJ|P |USP_HC_접수_취소
 OBJ|P |USP_HC_접수추가검사_변경
 OBJ|P |USP_HC_휴무일목록_조회
 OBJ|PK|PK_검사코드
@@ -217,6 +216,10 @@ PRM|USP_HC_수검자정보_수정|11|@상세주소|nvarchar|400
 PRM|USP_HC_수검자정보_수정|12|@비고|nvarchar|-1
 PRM|USP_HC_수검자정보_수정|13|@B형간염제외여부|bit|1
 PRM|USP_HC_수검자정보_수정|14|@조작자명|nvarchar|100
+PRM|USP_HC_업무_취소|1|@업무동작코드|varchar|30
+PRM|USP_HC_업무_취소|2|@업무ID|bigint|8
+PRM|USP_HC_업무_취소|3|@행버전|binary|8
+PRM|USP_HC_업무_취소|4|@조작자명|nvarchar|100
 PRM|USP_HC_예약_등록|1|@수검자ID|bigint|8
 PRM|USP_HC_예약_등록|2|@예약구분|varchar|10
 PRM|USP_HC_예약_등록|3|@예약일|date|3
@@ -241,9 +244,6 @@ PRM|USP_HC_예약_변경|9|@추가검사05선택여부|bit|1
 PRM|USP_HC_예약_변경|10|@추가검사06선택여부|bit|1
 PRM|USP_HC_예약_변경|11|@추가검사07선택여부|bit|1
 PRM|USP_HC_예약_변경|12|@조작자명|nvarchar|100
-PRM|USP_HC_예약_취소|1|@업무ID|bigint|8
-PRM|USP_HC_예약_취소|2|@행버전|binary|8
-PRM|USP_HC_예약_취소|3|@조작자명|nvarchar|100
 PRM|USP_HC_예약가능정보_조회|1|@수검자ID|bigint|8
 PRM|USP_HC_예약가능정보_조회|2|@업무ID|bigint|8
 PRM|USP_HC_예약가능정보_조회|3|@행버전|binary|8
@@ -277,9 +277,6 @@ PRM|USP_HC_자체휴무일_수정|5|@비고|nvarchar|1000
 PRM|USP_HC_접수_완료|1|@업무ID|bigint|8
 PRM|USP_HC_접수_완료|2|@행버전|binary|8
 PRM|USP_HC_접수_완료|3|@조작자명|nvarchar|100
-PRM|USP_HC_접수_취소|1|@업무ID|bigint|8
-PRM|USP_HC_접수_취소|2|@행버전|binary|8
-PRM|USP_HC_접수_취소|3|@조작자명|nvarchar|100
 PRM|USP_HC_접수추가검사_변경|1|@업무ID|bigint|8
 PRM|USP_HC_접수추가검사_변경|2|@행버전|binary|8
 PRM|USP_HC_접수추가검사_변경|3|@추가검사01선택여부|bit|1
