@@ -159,7 +159,7 @@ runs, and catches what a unit test cannot
                             Views/, no AddWithValue, no inline DML. Architecture, not design
   verify-rs-columns.sh      `reader.GetOrdinal("오늘날짜")` typos: they compile, they pass the
                             fake-repository tests, and they blow up only at runtime
-  verify-dbcode.sh          DbCode.cs ↔ 05 §16.1 — the enum is copied, so it is checked
+  verify-dbcode.sh          DbCode ↔ 05 §16.1 — the enum is copied, so it is checked
   verify-social-century.sh  03 §6.2 주민번호 century table ↔ the presenter's branch
   verify-contract-names.sh  05 §1.1 names ↔ App.config · csproj
   verify-ui-db-matrix.sh    07 §3·§4 ID lists ↔ 03 §2 · 05 §1.3 (ID lists only, not status)

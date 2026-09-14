@@ -185,7 +185,13 @@ namespace HealthCheckupReservationReception.Services
             System.Func<WorkActionRequest, WorkSaveReadDto> call,
             string failure)
         {
-            WorkActionRequest normalized = WorkAction.Normalize(request);
+            var normalized = new WorkActionRequest
+            {
+                WorkId = request.WorkId,
+                RowVersion = request.RowVersion,
+                OperatorName = Trim(request.OperatorName),
+            };
+
             if (Length(normalized.OperatorName) > OperatorNameMax)
             {
                 return OperationResult<WorkSaveReadDto>.Failure(

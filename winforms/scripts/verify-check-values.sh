@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# `Common/Db*.cs` 의 상수 ↔ 배포된 CHECK 제약의 허용값 대조.
+# `Common/DbCodes.cs` 의 상수 class ↔ 배포된 CHECK 제약의 허용값 대조.
 #
 # 어떤 제약을 어느 파일과 대조할지는 **환경변수로 받는다** — 같은 검사가 둘 이상이기
 # 때문이다 (2026-09-11). 스크립트를 복사하면 한쪽만 고쳐지는 날이 온다.
 #
 #   CONSTRAINT  제약 이름          기본 CK_휴무일_TYPE
-#   CODE        대조할 C# 파일      기본 Common/DbHolidayType.cs
+#   CODE        대조할 C# 파일      기본 Common/DbCodes.cs
+#   CLASS       그 파일의 어느 class  기본 DbHolidayType
 #   LABEL       메시지에 적을 이름   기본 휴무구분
 #
 # `04` 가 그 컬럼의 허용값을 못박고 배포 스크립트의 CHECK 제약이 그것을 실제로 강제한다.
@@ -23,7 +24,9 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 
 : "${SCHEMA:=../database/deploy/01_Schema.sql}"
-: "${CODE:=src/HealthCheckupReservationReception.WinForms/Common/DbHolidayType.cs}"
+: "${CODE:=src/HealthCheckupReservationReception.WinForms/Common/DbCodes.cs}"
+# 한 파일에 상수 class 가 여럿이다 — 어느 것을 볼지 말한다 (2026-09-14).
+: "${CLASS:=DbHolidayType}"
 : "${CONSTRAINT:=CK_휴무일_TYPE}"
 : "${LABEL:=휴무구분}"
 FAIL=0
@@ -38,22 +41,39 @@ schemavalues() {
     | sed "s|^N'||; s|'$||" \
     | sort -u
 }
-# public const string X = "Y"; 의 Y.
-codevalues() {
+# `public static class <이름>` 줄부터 그 class 의 닫는 `}` 까지만 남긴다. 빈 값이면 파일 전체다.
+#
+# [X] **class 를 못 찾으면 출력이 빈다.** 그때는 아래 CHK-000 이 FAIL 을 낸다 — 한쪽이 비면
+#     차집합이 0 이 되어 조용히 통과하는 그 함정을 그것이 이미 막고 있다.
+scope() {  # scope <class 이름>
+  if [ -z "${1:-}" ]; then cat; return 0; fi
+  awk -v c="$1" '$0 ~ ("class[[:space:]]+" c "[[:space:]]*$") { f=1; next } f && /^[[:space:]]*}[[:space:]]*$/ { exit } f'
+}
+# public const string X = "Y"; 의 Y. 지정한 class 안에서만 센다.
+codevalues() {  # codevalues <파일> <class 이름>
   tr -d '\r' < "$1" \
+    | scope "$2" \
     | sed -n 's|^[[:space:]]*public const string [A-Za-z][A-Za-z0-9]* = "\([^"]*\)";[[:space:]]*$|\1|p' \
     | sort -u
 }
 
 if [ "${1:-check}" = "selftest" ]; then
   D=$(mktemp -d); RC=0
-  run() { # run <라벨> <기대 exit> <schema 본문> <code 본문>
+  # runfile 은 code.cs 를 통째로 받는다. run 은 본문을 대상 class 로 감싸 준다 —
+  # 게이트가 class 단위로 좁혀 읽으므로 감싸지 않으면 아무것도 못 읽는다.
+  runfile() { # runfile <라벨> <기대 exit> <schema 본문> <code 파일 전체>
     printf '%s\n' "$3" > "$D/schema.sql"
     printf '%s\n' "$4" > "$D/code.cs"
     SCHEMA="$D/schema.sql" CODE="$D/code.cs" CONSTRAINT=CK_휴무일_TYPE LABEL=휴무구분 "$0" check > "$D/out.txt" 2>&1
     local got=$?
     if [ "$got" -eq "$2" ]; then echo "PASS CHK-SELFTEST $1"
     else echo "FAIL CHK-SELFTEST $1 (기대 exit $2, 실제 $got)"; sed 's/^/    /' "$D/out.txt"; RC=1; fi
+  }
+  run() { # run <라벨> <기대 exit> <schema 본문> <class 본문>
+    runfile "$1" "$2" "$3" "    public static class DbHolidayType
+    {
+$4
+    }"
   }
   SOK="    CONSTRAINT [CK_휴무일_TYPE] CHECK ([휴무구분] IN (N'법정공휴일', N'자체휴무일')),"
   COK='        public const string Statutory = "법정공휴일";
@@ -70,6 +90,22 @@ if [ "${1:-check}" = "selftest" ]; then
   # 다른 테이블의 CHECK 를 섞어 세지 않는다.
   run '다른 제약을 섞지 않는다'         0 "    CONSTRAINT [CK_남_TYPE] CHECK ([X] IN (N'남의값')),
 $SOK" "$COK"
+  # ── 2026-09-14 Common/DbCodes.cs 로 합치면서. 한 파일의 다른 class 를 섞어 세면 안 된다.
+  runfile '같은 파일의 다른 class 를 세지 않는다' 0 "$SOK" '    public static class DbHolidayType
+    {
+        public const string Statutory = "법정공휴일";
+        public const string Own = "자체휴무일";
+    }
+
+    public static class DbLogTarget
+    {
+        public const string Patient = "수검자";
+    }'
+  runfile 'class 를 못 찾으면 FAIL 이다' 1 "$SOK" '    public static class 딴것
+    {
+        public const string Statutory = "법정공휴일";
+        public const string Own = "자체휴무일";
+    }'
   rm -f "$D/schema.sql" "$D/code.cs" "$D/out.txt"
   rmdir "$D"
   exit $RC
@@ -83,10 +119,10 @@ T=$(mktemp -d)
 trap 'rm -f "$T"/schema.txt "$T"/code.txt; rmdir "$T"' EXIT
 
 schemavalues "$SCHEMA" > "$T/schema.txt"
-codevalues "$CODE"     > "$T/code.txt"
+codevalues "$CODE" "$CLASS" > "$T/code.txt"
 
 if [ ! -s "$T/schema.txt" ] || [ ! -s "$T/code.txt" ]; then
-  say FAIL "CHK-000 $LABEL 을(를) 못 읽었다 (제약 $(wc -l < "$T/schema.txt") · 코드 $(wc -l < "$T/code.txt")) — 형식이 바뀌었다"
+  say FAIL "CHK-000 $LABEL 을(를) 못 읽었다 (제약 $(wc -l < "$T/schema.txt") · 코드 $(wc -l < "$T/code.txt")) — 형식이 바뀌었거나 class $CLASS 를 못 찾았다"
   echo "== FAIL =="; exit 1
 fi
 

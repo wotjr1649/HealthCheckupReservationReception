@@ -53,15 +53,8 @@
     <Reference Include="DevExpress.XtraLayout.v20.2" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Common\DbCode.cs" />
-    <Compile Include="Common\DbReserveType.cs" />
-    <Compile Include="Common\DbWorkAction.cs" />
-    <Compile Include="Common\DbHolidayAction.cs" />
-    <Compile Include="Common\DbWorkStatus.cs" />
-    <Compile Include="Common\DbHolidayType.cs" />
-    <Compile Include="Common\DbLogTarget.cs" />
+    <Compile Include="Common\DbCodes.cs" />
     <Compile Include="Common\OperationResult.cs" />
-    <Compile Include="Common\WorkAction.cs" />
     <Compile Include="Common\clsPatientText.cs" />
     <Compile Include="Common\clsWorkText.cs" />
     <Compile Include="Models\CommonModels.cs" />
