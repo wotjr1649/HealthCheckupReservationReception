@@ -50,31 +50,47 @@ namespace HealthCheckupReservationReception.Tests
         }
 
         /// <summary>
-        /// **Page 는 「가는 곳」만 갖는다** (2026-09-11 사용자 결정 · 문서 §4.7).
+        /// **Page 는 「가는 곳」이고, 예외는 열리지 않는 문 하나다** (2026-09-14 사용자 지시).
         ///
-        /// [X] 그룹이 없는 Page 가 곧 「눌러도 아무 데도 안 가는 Page」다. 예전에는 그런 것이
-        ///     둘(`신규 예약` · `휴무일 관리`) 있었고, 같은 띠에서 어떤 것은 가고 어떤 것은
-        ///     떠서 예측이 되지 않았다 — 사용자가 「기능 배치가 중구난방」이라 보고한 자리다.
-        ///     여기서는 **그 모양 자체**를 막는다: Page 는 반드시 명령 그룹을 갖는다.
+        /// [X] 그룹 없는 Page 가 예전에는 「눌러도 아무 데도 안 가는 Page」였다. 그런 것이
+        ///     둘(`신규 예약` · `휴무일 관리`) 있었고 눌리면 탭이 바뀌었다 제자리로 돌아와
+        ///     예측이 되지 않았다 — 사용자가 「기능 배치가 중구난방」이라 보고한 자리다.
+        ///     지금 `휴무일 관리` 는 **탭이 아예 바뀌지 않는다**: 전환을 취소하고 Modal 만 연다.
+        ///     그래서 재는 것이 "그룹이 있는가" 가 아니라 **"그룹이 없으면 정말 안 열리는가"** 다.
         ///
         /// Page 의 개수·이름은 적지 않는다 — `MainPresenterTests` 가 `BusinessNavigation`
         /// 전체를 돌며 「가지 않는 Page」를 잡고, 그것이 단일 출처다 (ROOT AGENTS.md §6).
         /// </summary>
         [TestMethod]
-        public void Ribbon_Page_는_전부_명령_그룹을_갖는다()
+        public void 그룹_없는_Page_는_열리지_않는_문_하나뿐이다()
         {
             RunSta(() =>
             {
                 using (MainForm form = NewShell())
                 {
+                    // 문은 Modal 을 BeginInvoke 로 미루므로 핸들이 있어야 한다. 시험에는
+                    // 메시지 펌프가 없어 그 지연 호출이 끝내 돌지 않는다 — 창은 뜨지 않는다.
+                    IntPtr handle = form.Handle;
+                    Assert.AreNotEqual(IntPtr.Zero, handle, "Shell 핸들이 만들어지지 않았다");
+
+                    RibbonPage opened = form.Ribbon.SelectedPage;
+                    var doors = new List<string>();
+
                     foreach (RibbonPage page in form.Ribbon.Pages)
                     {
-                        Assert.AreNotEqual(0, page.Groups.Count,
-                            page.Text + " 는 그룹이 없다 — 장소가 아니라 명령이라는 뜻이므로 Page 가 아니어야 한다");
+                        if (page.Groups.Count != 0)
+                        {
+                            continue;
+                        }
+
+                        doors.Add(page.Text);
+                        form.Ribbon.SelectedPage = page;
+                        Assert.AreSame(opened, form.Ribbon.SelectedPage,
+                            page.Text + " 를 누르니 탭이 옮겨갔다 — 그룹이 없으면 빈 탭이 열린다");
                     }
 
-                    // 휴무일 관리도 Page 다 (2026-09-11 사용자 지시로 업무 화면이 되었다).
-                    // Application 버튼은 그래서 다시 꺼졌다 — 거기 둘 것이 없다.
+                    CollectionAssert.AreEqual(new List<string> { "휴무일 관리" }, doors,
+                        "그룹 없는 Page 는 휴무일 관리 하나다 — 나머지는 장소이므로 그룹을 갖는다");
                 }
             });
         }
@@ -116,20 +132,19 @@ namespace HealthCheckupReservationReception.Tests
 
                         inspected.Add(page.Text);
 
-                        // 2026-09-11 — `기준정보` 그룹이 생겼다. 그것은 **업무 Action 이 아니라**
-                        // DLG-HOL-01 모달로 가는 문이므로 업무 그룹 뒤에 따로 선다 (03 §24.2).
-                        // 규칙은 그대로다: `[보기]` 는 **업무 그룹 중** 마지막이다.
+                        // 2026-09-14 — `기준정보` 그룹이 세 Page 에서 사라졌다. 휴무일 관리는
+                        // 그룹이 아니라 `접수 관리` 오른쪽 탭 자리의 문이 되었다 (03 §24.2).
+                        // 그래서 `[보기]` 가 다시 마지막이다.
                         var order = new List<string>();
                         foreach (RibbonPageGroup group in page.Groups)
                         {
                             order.Add(group.Text);
                         }
 
-                        int view = order.IndexOf("보기");
-                        int basis = order.IndexOf("기준정보");
-                        Assert.AreNotEqual(-1, basis, page.Text + " 에 [기준정보] 가 없다 — 휴무일 관리로 가는 문이 사라졌다");
-                        Assert.AreEqual(order.Count - 1, basis, page.Text + " 의 [기준정보] 는 맨 뒤다");
-                        Assert.AreEqual(basis - 1, view, page.Text + " 의 [보기] 는 업무 그룹 중 마지막이다");
+                        Assert.AreEqual(-1, order.IndexOf("기준정보"),
+                            page.Text + " 에 [기준정보] 가 남아 있다 — 휴무일 관리는 탭 자리 하나다");
+                        Assert.AreEqual(order.Count - 1, order.IndexOf("보기"),
+                            page.Text + " 의 [보기] 는 마지막 그룹이다");
                     }
 
                     // 아무 Page 도 집지 못하면 위 단언이 한 번도 돌지 않는다.
@@ -382,8 +397,9 @@ namespace HealthCheckupReservationReception.Tests
         //     아니라 끄지 않았던 것이다. 배치 게이트(SCR-*)는 설계 소스에 **있는** 것만 보므로
         //     "설계에 없는데 켜진 것" 은 잡지 못한다. 그 자리를 이 시험이 맡는다.
         //
-        // Application Button 은 2026-09-11 에 이 목록에서 빠졌다 — 휴무일 관리가 거기 산다.
-        // 「끄지 않았던 것」이 아니라 **쓰려고 켠 것**이라 성질이 다르다 (§4.7).
+        // Application Button 은 2026-09-11 에 「휴무일 관리가 거기 산다」는 이유로 이 목록에서
+        // 빠졌는데, 실제로 거기 산 적이 없다 — Designer 는 그때도 끈 채였다. 2026-09-14 로
+        // 휴무일 관리가 탭 자리를 받아 이유가 완전히 사라졌으므로 목록에 되돌린다.
         [TestMethod]
         public void 쓰지_않는_리본_크롬은_꺼져_있다()
         {
@@ -392,6 +408,8 @@ namespace HealthCheckupReservationReception.Tests
                 using (MainForm form = NewShell())
                 {
                     RibbonControl ribbon = form.Ribbon;
+                    Assert.AreEqual(DefaultBoolean.False, ribbon.ShowApplicationButton,
+                        "Application Button");
                     Assert.AreEqual(DefaultBoolean.False, ribbon.ShowDisplayOptionsMenuButton,
                         "제목표시줄의 리본 표시 옵션");
                     Assert.AreEqual(DefaultBoolean.False, ribbon.ShowExpandCollapseButton,

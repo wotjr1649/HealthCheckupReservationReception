@@ -318,17 +318,30 @@ namespace HealthCheckupReservationReception.Views
         /// <summary>
         /// 03 §24.2 — `[휴무일 관리]` 는 **업무 Tab 을 열지 않고** DLG-HOL-01 Modal 을 직접 연다.
         /// 기준정보 정비이므로 열려 있는 업무 Tab 의 상태·Dirty·Single Instance 계약에 관여하지
-        /// 않는다. 그래서 페이지가 아니라 페이지 머리줄의 버튼 하나다.
+        /// 않는다. 2026-09-14 사용자 지시로 자리는 `접수 관리` 오른쪽 탭이지만, **탭이 열리지는
+        /// 않는다** — 전환을 취소하고 Modal 만 띄우므로 선택된 페이지는 그대로 남는다.
         ///
-        /// `[!]` **공통 업무불가로 이 버튼을 닫지 않는다** (03 §24.2). 정비가 필요한 바로 그
+        /// `[!]` **공통 업무불가로 이 문을 닫지 않는다** (03 §24.2). 정비가 필요한 바로 그
         ///      시각(운영시간 밖)에 막히면 안 된다.
         /// </summary>
-        private void barBtnHolidayManage_ItemClick(object sender, ItemClickEventArgs e)
+        private void barRibbonMain_SelectedPageChanging(object sender, RibbonPageChangingEventArgs e)
         {
-            using (var dialog = new FrmHoliday(_holidayService, _statusService))
+            if (e.Page != barPageHoliday)
             {
-                dialog.ShowDialog(this);
+                return;
             }
+
+            e.Cancel = true;
+
+            // 클릭을 리본이 아직 쥐고 있는 사이에 Modal 을 세우지 않는다. 전환 취소가 끝난
+            // 다음 열어야 탭이 눌린 모양으로 남지 않는다.
+            BeginInvoke((MethodInvoker)(() =>
+            {
+                using (var dialog = new FrmHoliday(_holidayService, _statusService))
+                {
+                    dialog.ShowDialog(this);
+                }
+            }));
         }
 
         public void SelectNavigationPage(BusinessNavigation page)
