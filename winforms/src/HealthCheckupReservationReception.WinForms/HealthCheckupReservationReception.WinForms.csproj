@@ -136,6 +136,7 @@
     <Compile Include="Views\IWorkbenchView.cs" />
     <Compile Include="Views\IReservationView.cs" />
     <Compile Include="Views\clsBusyScope.cs" />
+    <Compile Include="Views\clsGlyph.cs" />
     <Compile Include="Views\clsGridColumns.cs" />
     <Compile Include="Views\clsNotice.cs" />
     <Compile Include="Views\clsActionRunner.cs" />
@@ -215,6 +216,12 @@
   <ItemGroup>
     <EmbeddedResource Include="Properties\licenses.licx" />
     <EmbeddedResource Include="Resources\App.ico" />
+    <EmbeddedResource Include="Resources\Icons\Add.svg" />
+    <EmbeddedResource Include="Resources\Icons\Close.svg" />
+    <EmbeddedResource Include="Resources\Icons\Delete.svg" />
+    <EmbeddedResource Include="Resources\Icons\Edit.svg" />
+    <EmbeddedResource Include="Resources\Icons\Save.svg" />
+    <EmbeddedResource Include="Resources\Icons\Search.svg" />
     <EmbeddedResource Include="Resources\Icons\ChangeLog.svg" />
     <EmbeddedResource Include="Resources\Icons\PatientEdit.svg" />
     <EmbeddedResource Include="Resources\Icons\PatientNew.svg" />
