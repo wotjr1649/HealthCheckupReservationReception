@@ -43,7 +43,16 @@ run() {                       # run <파일> <로그번호>
   echo "$log" >> artifacts/logs/_manifest.txt
   echo "--- $f"
   sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -i "$f" -o "$log" || rc=$?
-  iconv -f UTF-16 -t UTF-8 "$log" | grep -E '^(PASS|FAIL|SKIP|INFO|Msg )' || true
+  # [X] **`NOT RUN` 이 이 grep 에 없었다 (2026-09-15 실측).** 시험 파일이 PRINT 한
+  #     `NOT RUN RBK-008` 이 집계 로그에 닿지 못해, 그 파일이 전건 PASS 로 보였다 —
+  #     이 스크립트가 아래에서 「실행하지 않은 것을 통과로 읽히게 하지 않는다」고
+  #     적어 둔 바로 그 규칙을 스스로 어기고 있었다. 보이게 하고, 세어서 요약에 넣는다.
+  local out
+  out=$(iconv -f UTF-16 -t UTF-8 "$log")
+  printf '%s\n' "$out" | grep -E '^(PASS|FAIL|SKIP|NOT RUN|INFO|Msg )' || true
+  local nr
+  nr=$(printf '%s\n' "$out" | grep -c '^NOT RUN') || nr=0
+  NOTRUN=$((NOTRUN + nr))
   [ "$rc" -ne 0 ] && { echo "!! $f exit=$rc"; FAILED=1; }
   return 0
 }

@@ -189,7 +189,7 @@ cdcba0d936d371d5a3b975f470c82db895105d20b03064b625f0e0176ed74c6c *../winforms/te
 5ee2604947f504a807d586630648a60ebc76e9c00bb73478b4a01527eb08b9c8 *../winforms/tests/HealthCheckupReservationReception.Tests/Visual/ShellCaptureTests.cs
 28e3f7d54aa69f7a59721fe5dbec327fad5cf5e036e6be1ee40dff5c11c35188 *../winforms/tests/HealthCheckupReservationReception.Tests/Visual/clsCapture.cs
 460fb6f9c1b939e9f6b6f8b4fca545922965612b3a5d1d523f47231bac9f639e *../winforms/tools/build-app-icon.js
-e7296a8eaede26084564ae0416dca31f53428f7987ad01b080c70d7bf4da77a4 *../winforms/tools/build-db-test-inventory.js
+79cc8438552161a34cec78467756e7e3e631553090d3cd3694efa33ac74ad7d0 *../winforms/tools/build-db-test-inventory.js
 bba975bc279d2be007341ffef18019f3adb2cb35783f9baa2af819a4cf79212e *../winforms/tools/build-scenario-evidence.js
 5918f61ebb79700becac2476b4d5a8d86d1ea464be48a7261064c72f4317b15f *../winforms/tools/build-scenario-inventory.js
 eb4605dfec175bcfdf96c0fcc2db91fea9abb6577efe617f09a556c0f44eb3eb *../winforms/tools/build-test-inventory.js

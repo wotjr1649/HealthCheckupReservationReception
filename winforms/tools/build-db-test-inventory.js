@@ -58,6 +58,16 @@ const SECTION_RE = /^--- tests\/(.+\.sql)\s*$/;
 const SECTION_END_RE = /^(contract-verify|clean-rebuild|concurrency) FAILED=/;
 
 /*
+ * 하니스가 마지막에 찍는 줄. **이것이 없으면 아직 돌고 있는 로그다.**
+ *
+ * [X] **돌고 있는 로그를 읽어 찍은 적이 있다 (2026-09-15 실측).** 회차가 11:28 에 끝났는데
+ *     11:21 에 찍어서, 410건 중 370건만 담긴 엑셀이 커밋됐다 — 빠진 40건에 **동시성
+ *     CON-001~008 전부와 C# 호출 CS-001~016 이 들어 있었다.** 로그는 append 라 중간에
+ *     읽어도 앞부분이 멀쩡해서, 결과물만 보면 아무 이상이 없다. 그래서 기계가 막는다.
+ */
+const DONE_RE = /^=== (실패 0건|실패한 단계가 있습니다)/m;
+
+/*
  * 근거 참조. `05 §9.11` 과 `스펙 §21.1` 둘 다 쓰인다 — `스펙` 은 `06` 의 옛 이름이고
  * 계약시험이 그 시절 표기를 그대로 갖고 있다. 읽는 쪽이 맞춘다.
  */
@@ -241,6 +251,11 @@ function main() {
   const logFile = newestLog();
   if (!logFile) {
     fail('database/artifacts/logs/ 에 full_test_run*.log 이 없다 — database/scripts/test.sh 를 먼저 돌린다');
+    return Promise.resolve();
+  }
+
+  if (!DONE_RE.test(fs.readFileSync(logFile, 'utf8'))) {
+    fail('로그가 하니스의 끝맺음 줄로 끝나지 않는다 — 아직 돌고 있다: ' + path.basename(logFile));
     return Promise.resolve();
   }
 
