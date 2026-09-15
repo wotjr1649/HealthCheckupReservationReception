@@ -129,10 +129,15 @@
 
 ## 2026-09-15 실행 결과
 
-`database/scripts/test.sh` 를 운영시간 안에서 돌렸다 — rebuild · 스키마 · Seed · Rule ·
-SELECT · 쓰기 · 계약 · 동시성 · 음성시험 · clean-rebuild **FAIL 0 · SKIP 0 · NOT RUN 1**.
-`NOT RUN` 하나는 `RBD-001`(잘못된 서버명 `50020`)이고 인스턴스가 하나뿐이라 **구조적으로**
-음성시험이 불가능하다.
+`database/scripts/test.sh` 를 운영시간 안에서 돌렸다. 결과는 `P5_DB시험_목록.xlsx` 가
+실행 로그에서 그대로 뽑아 싣는다 — **이 문서는 수를 적지 않는다**(ROOT `AGENTS.md` §6).
 
-`[X]` 하니스가 파일 게이트 앞에서 멈춰 남은 여섯을 따로 돌렸다 — 전부 PASS.
-`database/scripts/test.sh` 에는 `winforms` 쪽과 달리 게이트별 `timeout` 이 없다.
+`[X]` **하니스가 파일 게이트 앞에서 멈춘다 — 같은 날 두 번 재현했다.** 둘 다
+clean-rebuild 직후였고, 각 게이트를 따로 돌리면 0~2초에 끝난다(실측). 원인을 못 짚었으므로
+`winforms/scripts/test.sh` 가 같은 증상에 세운 것과 같은 **게이트별 `timeout`** 을 두었다 —
+멈춤은 조용한 무판정이 아니라 `FAIL` 이어야 한다.
+
+`[!]` **첫 실행을 「전 구간 FAIL 0」이라 적었던 것은 틀렸다.** 그 로그에는 `FAIL` 두 줄이
+있었고, 원인은 **회귀가 도는 동안 내가 `winforms/` 에 시험을 더한 것**이다(`G01 WinForms
+변경 감지`). SQL 구간은 그때도 `FAIL 0` 이었지만 문장이 사실과 달랐다. 지금 실린 것은
+`winforms/` 를 건드리지 않고 다시 돌린 로그다.

@@ -149,10 +149,10 @@ AEX 성별조건을 실물 DB 에 붙어 잰다. 규칙이 바뀌면 그 시험�
 R20~R24 를 지나며 거짓이 되었다(ROOT `AGENTS.md` §6). **회차별 실행 기록의 단일 출처는
 `06` §42 회차표**이고, 계약을 열지 않은 실행은 거기에 행을 남기지 않는다.
 
-`[I]` 2026-09-15 에 `database/scripts/test.sh` 를 운영시간 안에서 한 번 돌렸다 —
-rebuild·스키마·Seed·Rule·SELECT·쓰기·계약·동시성·음성시험·clean-rebuild 전 구간
-**FAIL 0 · SKIP 0 · NOT RUN 1**(구조적으로 불가능한 `RBD-001`). 계약을 열지 않았으므로
-`06` 에 회차 행을 두지 않는다. 로그는 `database/artifacts/logs/full_test_run_20260915.log`.
+`[I]` 2026-09-15 에 `database/scripts/test.sh` 를 운영시간 안에서 돌렸다. **결과를 여기
+적지 않는다** — `docs/phase5/output/P5_DB시험_목록.xlsx` 가 실행 로그에서 그대로 뽑아
+싣고, 구획별 건수와 `NOT RUN` 까지 그 엑셀이 갖는다(ROOT `AGENTS.md` §6). 계약을 열지
+않았으므로 `06` 에 회차 행을 두지 않는다.
 
 ---
 

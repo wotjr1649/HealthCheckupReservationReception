@@ -31,6 +31,7 @@
 |---|---|---|---|
 | 단위시험 목록 | `docs/phase5/output/P5_단위시험_목록.xlsx` | `winforms/tools/build-test-inventory.js` | 같은 생성기 (`TI-000`~`003`) |
 | 통합시험 시나리오 | `docs/phase5/output/P5_통합시험_시나리오.xlsx` | `winforms/tools/build-scenario-inventory.js` | 같은 생성기 |
+| DB 계약시험 목록 | `docs/phase5/output/P5_DB시험_목록.xlsx` | `winforms/tools/build-db-test-inventory.js` | 같은 생성기 (`FAIL` 이 하나라도 있으면 찍지 않는다) |
 | 화면 증빙 | `docs/phase5/output/screens/` | `Visual/ScenarioCaptureTests` 가 뜨고 `winforms/tools/build-scenario-evidence.js` 가 옮긴다 | 같은 생성기 |
 
 세 산출물 모두 **손으로 쓰는 칸이 없다.** 이유·시나리오·설명은 각각 코드 주석과 시나리오
