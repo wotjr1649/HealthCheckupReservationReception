@@ -6,6 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4D1F2A70-8C33-4B21-9E0A-1A2B3C4D5E01}</ProjectGuid>
     <OutputType>WinExe</OutputType>
+    <ApplicationIcon>Resources\App.ico</ApplicationIcon>
     <RootNamespace>HealthCheckupReservationReception</RootNamespace>
     <AssemblyName>HealthCheckupReservationReception.WinForms</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
@@ -163,6 +164,10 @@
     <Compile Include="Views\UcWorkbench.Designer.cs">
       <DependentUpon>UcWorkbench.cs</DependentUpon>
     </Compile>
+    <Compile Include="Views\MainForm.UI.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Views\UcWorkbench.UI.cs">
       <DependentUpon>UcWorkbench.cs</DependentUpon>
       <SubType>Code</SubType>
@@ -209,6 +214,16 @@
        심지 않고, 첫 디자이너 세션이 항목을 채운다. -->
   <ItemGroup>
     <EmbeddedResource Include="Properties\licenses.licx" />
+    <EmbeddedResource Include="Resources\App.ico" />
+    <EmbeddedResource Include="Resources\Icons\ChangeLog.svg" />
+    <EmbeddedResource Include="Resources\Icons\PatientEdit.svg" />
+    <EmbeddedResource Include="Resources\Icons\PatientNew.svg" />
+    <EmbeddedResource Include="Resources\Icons\ReceptionCancel.svg" />
+    <EmbeddedResource Include="Resources\Icons\ReceptionExtra.svg" />
+    <EmbeddedResource Include="Resources\Icons\ReceptionStart.svg" />
+    <EmbeddedResource Include="Resources\Icons\Reserve.svg" />
+    <EmbeddedResource Include="Resources\Icons\ReserveCancel.svg" />
+    <EmbeddedResource Include="Resources\Icons\ReserveEdit.svg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -48,9 +48,12 @@ namespace HealthCheckupReservationReception.Views
         ///     서비스도 Presenter 도 만들지 않는다. 디자인 표면에서 DB 에 닿으면 안 된다
         ///     (`references/designer.md` 함정 2). 실행 경로는 아래 생성자다.
         /// </summary>
+        partial void ConfigureUI();
+
         public MainForm()
         {
             InitializeComponent();
+            ConfigureUI();
         }
 
         public MainForm(
@@ -64,6 +67,7 @@ namespace HealthCheckupReservationReception.Views
             bool moveToReceptionAfterSave)
         {
             InitializeComponent();
+            ConfigureUI();
             ClampToWorkingArea();
             _statusService = statusService;
             _holidayService = holidayService;

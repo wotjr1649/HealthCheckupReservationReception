@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Threading;
 using System.Windows.Forms;
 using DevExpress.Utils;
+using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
@@ -439,6 +440,50 @@ namespace HealthCheckupReservationReception.Tests
                     // 버튼만 숨기면 페이지 헤더 더블클릭으로 여전히 접힌다. 경로를 막고 상태를 고정한다.
                     Assert.IsFalse(ribbon.AllowMinimizeRibbon, "리본 최소화 경로");
                     Assert.IsFalse(ribbon.Minimized, "리본은 펼친 상태로 고정한다");
+                }
+            });
+        }
+
+        // 대상: MainForm (WF-00) — Ribbon 버튼 전부의 아이콘
+        // 목적: 2026-09-15 사용자 요청으로 버튼에 아이콘을 넣었다. 아이콘은 리소스 이름으로
+        //       찾아 붙이므로 이름이 한 글자 틀리면 그 버튼만 조용히 글자만 남는다 —
+        //       Designer 가 직렬화하는 값이 아니라 코드가 붙이는 값이라, 화면을 열어 보기
+        //       전에는 아무도 모른다. 버튼을 새로 더하면서 아이콘을 빼먹는 것도 같은 모양으로
+        //       지나간다.
+        // 확인: Ribbon 의 모든 BarButtonItem 이 SvgImage 를 갖는다. 훑은 버튼이 0개이면
+        //       아무것도 재지 않은 green 이므로 그것도 실패로 센다.
+        [TestMethod]
+        public void 리본_버튼은_전부_아이콘을_갖는다()
+        {
+            RunSta(() =>
+            {
+                using (MainForm form = NewShell())
+                {
+                    var bare = new List<string>();
+                    int seen = 0;
+                    foreach (RibbonPage page in form.Ribbon.Pages)
+                    {
+                        foreach (RibbonPageGroup group in page.Groups)
+                        {
+                            foreach (BarItemLink link in group.ItemLinks)
+                            {
+                                var button = link.Item as BarButtonItem;
+                                if (button == null)
+                                {
+                                    continue;
+                                }
+
+                                seen++;
+                                if (button.ImageOptions.SvgImage == null)
+                                {
+                                    bare.Add(page.Text + " / " + button.Caption);
+                                }
+                            }
+                        }
+                    }
+
+                    Assert.AreNotEqual(0, seen, "Ribbon 에서 버튼을 하나도 찾지 못했다 — 아무것도 재지 않았다");
+                    Assert.AreEqual(0, bare.Count, "아이콘 없는 버튼: " + string.Join(", ", bare));
                 }
             });
         }
