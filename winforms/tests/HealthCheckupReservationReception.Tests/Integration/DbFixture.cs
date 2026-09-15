@@ -97,6 +97,40 @@ namespace HealthCheckupReservationReception.Tests.Integration
             _saved = null;
         }
 
+        /// <summary>창을 열어 두었는가. DB 에 못 붙었으면 false 이고, 그때는 판정하지 않는다.</summary>
+        internal static bool WindowIsOpen
+        {
+            get { return _saved != null; }
+        }
+
+        /// <summary>
+        /// 창을 **지금이 들지 않는 자리로** 옮겨 한 번 돌린다.
+        ///
+        /// [X] 빈 창(시작 = 종료)은 만들 수 없다 — 스키마의 `CK_운영기준_HOURS` 가
+        ///     `시작 < 종료` 를 요구한다(04 §8.7). 그래서 **DB 에 몇 시인지 묻고**
+        ///     반나절 건너편에 한 시간짜리 창을 둔다. 시각을 고정해 넣으면 하필 그 시각에
+        ///     돌 때 조용히 반대 결과가 나오고, PC 시계로 고르면 DB 시계와 다르다(05 §2.3).
+        ///
+        /// [!] 되돌림을 `finally` 에 둔다. 본문이 실패해도 다음 시험은 열린 창에서 돈다.
+        /// </summary>
+        internal static void WithClosedWindow(Action body)
+        {
+            int hour = ServerHour();
+            var closed = (string[])OpenWindow.Clone();
+            closed[0] = hour < 12 ? "22:00:00" : "00:00:00";
+            closed[1] = hour < 12 ? "23:00:00" : "01:00:00";
+
+            WriteWindow(closed);
+            try
+            {
+                body();
+            }
+            finally
+            {
+                WriteWindow(OpenWindow);
+            }
+        }
+
         // 대상: 시험 어셈블리의 [assembly: Parallelize] 선언 유무
         // 목적: 이 폴더의 시험은 운영기준 한 행과 시간대 정원을 공유한다. 병렬로 돌면 한
         //       시험이 연 창을 다른 시험이 되돌리고, 그 순간 남은 시험은 다른 제품을 재게
@@ -147,6 +181,18 @@ namespace HealthCheckupReservationReception.Tests.Integration
             {
                 Assert.Inconclusive("DB 에 붙지 못했다 — " + ex.Message);
                 throw;
+            }
+        }
+
+        /// <summary>DB 의 현재 시각(시). PC 시계를 쓰지 않는다 — 다른 시계다 (05 §2.3).</summary>
+        private static int ServerHour()
+        {
+            using (var connection = new SqlConnection(ConnectionString()))
+            using (var command = new SqlCommand("SELECT DATEPART(HOUR, SYSDATETIME());", connection))
+            {
+                command.CommandType = CommandType.Text;
+                connection.Open();
+                return Convert.ToInt32(command.ExecuteScalar());
             }
         }
 

@@ -10,6 +10,9 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         partial void ConfigureUI()
         {
+            // 버튼 아이콘 (2026-09-15 사용자 요청). 뜻이 같으면 Ribbon 과 같은 그림을 쓴다.
+            clsGlyph.Apply(btnClose, "Close");
+
             colRecordedAt.DisplayFormat.FormatType = FormatType.DateTime;
             colRecordedAt.DisplayFormat.FormatString = "yyyy-MM-dd HH:mm:ss";
 

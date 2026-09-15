@@ -320,6 +320,165 @@ namespace HealthCheckupReservationReception.Tests.Integration
             Assert.IsNull(OneHoliday(HolidayProbe), "물리 삭제인데 행이 남았다 (05 §12.8)");
         }
 
+        // 대상: 실물 DB — 예약구분 WALKIN 으로 예약가능정보 조회(SP-RSV-01)와 예약 등록(SP-RSV-02)
+        // 목적: 01 「프로세스 간 통합 검증」 §3 이 현장 당일예약을 P02-01 의 WalkIn 재사용으로
+        //       정했고 02 기능정의 No 26 이 같은 자리다. 그런데 WALKIN 은 Presenter 단위시험
+        //       (fake)에만 있고 실물 DB 로는 한 번도 가 본 적이 없었다 — 예약구분은 어느 마감을
+        //       보는지를 가르는 값이라(NORMAL 은 예약마감, WALKIN 은 접수마감) fake 가 잘못
+        //       읽었으면 창구에서 당일예약만 조용히 막힌다.
+        // 확인: WALKIN 으로 오늘을 물으면 결과코드 0 에 시간대가 서고, 그 자리로 등록하면
+        //       결과코드 0 · 상태코드 RSV 다 — WalkIn 도 예약을 세우고 접수는 그 다음이다.
+        [TestMethod]
+        [TestCategory("Db")]
+        public void SP_RSV_02_는_WALKIN_으로도_오늘_예약을_세운다()
+        {
+            long patientId = NewPatient();
+            DateTime day = Today();
+
+            ReservationAvailabilityReadDto read = Availability(
+                patientId, null, null, day, null, NoAex(), DbReserveType.WalkIn);
+            Assert.AreEqual((int)DbCode.Ok, read.Result.Code, "WalkIn 예약가능정보: " + read.Result.Message);
+            Assert.IsNotNull(read.Slots, "RS2 를 읽지 못했다");
+
+            SlotInfoDto open = OpenSlot(read);
+            WorkSaveReadDto saved = Book(patientId, day, open.SlotCode, DbReserveType.WalkIn);
+
+            Assert.AreEqual(DbWorkStatus.Reserved, saved.Row.StatusCode,
+                "WalkIn 이 예약을 세우지 않았다 (01 §3 — 접수는 그 다음이다)");
+        }
+
+        // 대상: 실물 DB — 예약 변경(SP-RSV-03)의 **예약일 변경** 경로
+        // 목적: 01 §4 가 「예약일 변경 → 일정검증 → TGT 재판정 → NEX 재구성 → AEX 재검증 →
+        //       유효한 경우만 저장」으로 정했고 02 No 19 가 같은 자리다. 셋 중 이 갈래가 가장
+        //       많은 것을 다시 계산하는데(05 §11.2 변경 Matrix 의 첫 줄) 실물로는 한 번도 밟지
+        //       않았다 — 지금까지 실물로 돈 것은 AEX 만 바꾸는 갈래뿐이다.
+        // 확인: 앞으로 열려 있는 업무일로 옮기면 결과코드 0 · 상태 RSV · 행버전이 바뀌고,
+        //       상세 조회의 예약일이 실제로 그 날짜다 (요청만 받고 안 옮기면 화면이 거짓말을 한다).
+        [TestMethod]
+        [TestCategory("Db")]
+        public void SP_RSV_03_은_예약일을_옮기고_상세가_그날로_바뀐다()
+        {
+            long patientId = NewPatient();
+            DateTime day = Today();
+            SlotInfoDto slot = OpenSlot(Opening(patientId, day));
+            WorkSaveReadDto booked = Book(patientId, day, slot.SlotCode);
+
+            OpenDay target = FindOpenDay(patientId, booked.Row.WorkId, booked.Row.RowVersion, day);
+
+            WorkSaveReadDto moved = Run(() => Reservations().Change(new ReservationChangeRequest
+            {
+                WorkId = booked.Row.WorkId,
+                RowVersion = booked.Row.RowVersion,
+                ReserveDate = target.Day,
+                SlotCode = target.SlotCode,
+                AexSelected = NoAex(),
+                OperatorName = Operator,
+            }));
+
+            Assert.AreEqual((int)DbCode.Ok, moved.Result.Code, "예약일 변경: " + moved.Result.Message);
+            Assert.AreEqual(DbWorkStatus.Reserved, moved.Row.StatusCode, "예약일 변경이 상태를 옮겼다");
+            Assert.AreNotEqual(Hex(booked.Row.RowVersion), Hex(moved.Row.RowVersion),
+                "행이 바뀌었는데 행버전이 그대로다");
+
+            WorkDetailReadDto detail = Run(() => Works().ReadDetail(booked.Row.WorkId));
+            Assert.AreEqual(target.Day.Date, detail.Detail.ReserveDate.Date, "예약일이 옮겨지지 않았다");
+        }
+
+        // 대상: 실물 DB — 예약 변경(SP-RSV-03)의 **시간대만 변경** 경로
+        // 목적: 02 No 20 과 05 §11.2 가 「시간대만 변경이면 TGT/NEX/AEX 를 재평가하지 않고
+        //       검사구성을 재조립하지 않는다」로 정했다. 재조립해 버리면 예약 당시의 검사구성이
+        //       조용히 달라지고, 수검자는 같은 날 다른 검사를 받게 된다. 조회 SP 의 SLOT 범위는
+        //       쟀지만 **저장 경로**는 실물로 밟은 적이 없다.
+        // 확인: 같은 날 반대 시간대로 바꾸면 결과코드 0 · 행버전이 바뀌고, 상세의 시간대코드가
+        //       그 칸이며 **예약일은 그대로**다.
+        [TestMethod]
+        [TestCategory("Db")]
+        public void SP_RSV_03_은_시간대만_바꾸면_그_칸만_바뀐다()
+        {
+            long patientId = NewPatient();
+            DateTime day = Today();
+            ReservationAvailabilityReadDto opening = Opening(patientId, day);
+            SlotInfoDto chosen = OpenSlot(opening);
+            string other = OtherSlot(opening, chosen.SlotCode);
+            WorkSaveReadDto booked = Book(patientId, day, chosen.SlotCode);
+
+            // 반대쪽이 열려 있는지 먼저 묻는다 — 토요일 오후처럼 닫혀 있으면 잴 것이 없다.
+            ReservationAvailabilityReadDto scope =
+                Availability(patientId, booked.Row.WorkId, booked.Row.RowVersion, day, other, NoAex());
+            SlotInfoDto seat = SlotOf(scope, other);
+            if (seat == null || !seat.Selectable)
+            {
+                Assert.Inconclusive("반대 시간대가 닫혀 있다 — 요일·마감·정원 중 하나다. 판정하지 않는다.");
+            }
+
+            WorkSaveReadDto moved = Run(() => Reservations().Change(new ReservationChangeRequest
+            {
+                WorkId = booked.Row.WorkId,
+                RowVersion = booked.Row.RowVersion,
+                ReserveDate = day,
+                SlotCode = other,
+                AexSelected = NoAex(),
+                OperatorName = Operator,
+            }));
+
+            Assert.AreEqual((int)DbCode.Ok, moved.Result.Code, "시간대 변경: " + moved.Result.Message);
+            Assert.AreNotEqual(Hex(booked.Row.RowVersion), Hex(moved.Row.RowVersion),
+                "행이 바뀌었는데 행버전이 그대로다");
+
+            WorkDetailReadDto detail = Run(() => Works().ReadDetail(booked.Row.WorkId));
+            Assert.AreEqual(other, detail.Detail.SlotCode, "시간대가 바뀌지 않았다");
+            Assert.AreEqual(day.Date, detail.Detail.ReserveDate.Date, "시간대만 바꿨는데 예약일이 움직였다");
+        }
+
+        // 대상: 실물 DB — 운영시간 **밖**에서 쓰기 SP 를 부른다 (F-COM-007)
+        // 목적: 02 No 36 이 「P01~P03 모든 업무 Action 은 DB 현재일이 업무 가능일이고 운영시간
+        //       안일 때만 수행된다」로 정했다. 그런데 이 폴더의 시험은 창을 열어 그 판정을
+        //       **피해 왔다** — 피하는 것과 재는 것은 다르다. 창이 실제로 막는지 한 번은 봐야,
+        //       나머지 시험이 창 덕분에 도는 것인지 우연히 도는 것인지 갈린다.
+        // 확인: 창을 비운 채 예약을 등록하면 결과코드 309(운영시간 밖)로 막히고 RS1 이 없다.
+        //       창은 finally 로 되돌아오며, 그 뒤 같은 요청이 결과코드 0 으로 선다.
+        [TestMethod]
+        [TestCategory("Db")]
+        public void 운영시간_밖에서는_쓰기가_309_로_막힌다()
+        {
+            if (!DbFixture.WindowIsOpen)
+            {
+                Assert.Inconclusive("운영기준을 읽지 못해 창을 다룰 수 없다 — 판정하지 않는다.");
+            }
+
+            // 수검자 등록도 쓰기라 창을 닫기 전에 만든다.
+            long patientId = NewPatient();
+            DateTime day = Today();
+            SlotInfoDto slot = OpenSlot(Opening(patientId, day));
+
+            var request = new ReservationSaveRequest
+            {
+                PatientId = patientId,
+                ReserveType = DbReserveType.Normal,
+                ReserveDate = day,
+                SlotCode = slot.SlotCode,
+                AexSelected = NoAex(),
+                OperatorName = Operator,
+            };
+
+            WorkSaveReadDto blocked = null;
+            DbFixture.WithClosedWindow(() => blocked = Run(() => Reservations().Register(request)));
+
+            Assert.AreEqual((int)DbCode.OutsideHours, blocked.Result.Code,
+                "운영시간 밖인데 막히지 않았다: " + blocked.Result.Message);
+            Assert.IsNull(blocked.Row, "실패인데 RS1 을 읽었다 (05 §3.5)");
+
+            // 창이 되돌아왔는지는 같은 요청으로 확인한다 — 선언이 아니라 동작으로 본다.
+            WorkSaveReadDto saved = Run(() => Reservations().Register(request));
+            if (saved.Row != null)
+            {
+                _created.Add(saved.Row.WorkId);
+            }
+
+            Assert.AreEqual((int)DbCode.Ok, saved.Result.Code,
+                "창을 되돌렸는데 여전히 막힌다: " + saved.Result.Message);
+        }
+
         // ── 여기서부터는 조립용이다.
 
         /// <summary>`05` §9.11 표 한 줄을 그대로 건다.</summary>
@@ -344,14 +503,15 @@ namespace HealthCheckupReservationReception.Tests.Integration
         }
 
         private static ReservationAvailabilityReadDto Availability(
-            long patientId, long? workId, byte[] rowVersion, DateTime day, string slotCode, bool[] aex)
+            long patientId, long? workId, byte[] rowVersion, DateTime day, string slotCode, bool[] aex,
+            string reserveType = DbReserveType.Normal)
         {
             return Run(() => Reservations().ReadAvailability(new ReservationAvailabilityRequest
             {
                 PatientId = patientId,
                 WorkId = workId,
                 RowVersion = rowVersion,
-                ReserveType = DbReserveType.Normal,
+                ReserveType = reserveType,
                 ReserveDate = day,
                 SlotCode = slotCode,
                 AexSelected = aex,
@@ -426,6 +586,45 @@ namespace HealthCheckupReservationReception.Tests.Integration
             return want;
         }
 
+        /// <summary>옮겨 갈 자리 하나. 값 둘을 함께 나르려고 둔다 (킷 §1 — ValueTuple 을 쓰지 않는다).</summary>
+        private sealed class OpenDay
+        {
+            public DateTime Day { get; set; }
+            public string SlotCode { get; set; }
+        }
+
+        /// <summary>
+        /// 옮겨 갈 업무일을 **DB 에 물어서** 고른다 — 요일·휴무일·마감·정원이 정하므로
+        /// 시험이 날짜를 지어내지 않는다. 두 주를 봐도 없으면 잴 것이 없다.
+        /// </summary>
+        private static OpenDay FindOpenDay(long patientId, long workId, byte[] rowVersion, DateTime from)
+        {
+            for (int i = 1; i <= 14; i++)
+            {
+                DateTime day = from.AddDays(i);
+                ReservationAvailabilityReadDto read = Availability(patientId, workId, rowVersion, day, null, NoAex());
+                if (read.Result.Code != (int)DbCode.Ok || read.Slots == null)
+                {
+                    continue;
+                }
+
+                SlotInfoDto open = read.Slots.FirstOrDefault(s => s.Selectable);
+                if (open != null)
+                {
+                    return new OpenDay { Day = day, SlotCode = open.SlotCode };
+                }
+            }
+
+            Assert.Inconclusive("앞으로 두 주 안에 열린 자리가 없다 — 휴무일·정원 때문이다. 판정하지 않는다.");
+            return null;
+        }
+
+        private static SlotInfoDto SlotOf(ReservationAvailabilityReadDto read, string slotCode)
+        {
+            return read.Slots == null
+                ? null
+                : read.Slots.FirstOrDefault(s => s.SlotCode.Equals(slotCode, StringComparison.Ordinal));
+        }
         private static bool[] NoAex()
         {
             return new bool[ReservationAvailabilityRequest.AexParameterCount];
@@ -438,12 +637,13 @@ namespace HealthCheckupReservationReception.Tests.Integration
             return want;
         }
 
-        private WorkSaveReadDto Book(long patientId, DateTime day, string slotCode)
+        private WorkSaveReadDto Book(long patientId, DateTime day, string slotCode,
+            string reserveType = DbReserveType.Normal)
         {
             WorkSaveReadDto saved = Run(() => Reservations().Register(new ReservationSaveRequest
             {
                 PatientId = patientId,
-                ReserveType = DbReserveType.Normal,
+                ReserveType = reserveType,
                 ReserveDate = day,
                 SlotCode = slotCode,
                 AexSelected = NoAex(),

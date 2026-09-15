@@ -5,6 +5,7 @@ using System.Threading;
 using System.Windows.Forms;
 using DevExpress.Utils;
 using DevExpress.XtraBars;
+using DevExpress.XtraEditors;
 using DevExpress.XtraBars.Ribbon;
 using HealthCheckupReservationReception.Common;
 using HealthCheckupReservationReception.Models;
@@ -486,6 +487,50 @@ namespace HealthCheckupReservationReception.Tests
                     Assert.AreEqual(0, bare.Count, "아이콘 없는 버튼: " + string.Join(", ", bare));
                 }
             });
+        }
+
+        // 대상: DLG-HOL-01 (FrmHoliday) — 대화상자 버튼의 아이콘
+        // 목적: 2026-09-15 사용자가 물어서 드러난 자리다. 리본에만 아이콘을 넣어 두어
+        //       대화상자는 글자만 남아 있었고, 창구에서는 절반만 바뀐 화면으로 보인다.
+        //       휴무일 관리는 버튼이 다섯으로 가장 많아 하나를 빠뜨리기도 가장 쉽다.
+        // 확인: 폼 안의 SimpleButton 전부가 SvgImage 를 갖는다. 훑은 버튼이 0개이면
+        //       아무것도 재지 않은 green 이므로 그것도 실패로 센다.
+        [TestMethod]
+        public void 대화상자_버튼도_아이콘을_갖는다()
+        {
+            RunSta(() =>
+            {
+                using (var form = new FrmHoliday(new FakeHolidayService(), new FakeCommonStatusService()))
+                {
+                    var bare = new List<string>();
+                    int seen = Walk(form, bare);
+
+                    Assert.AreNotEqual(0, seen, "대화상자에서 버튼을 하나도 찾지 못했다 — 아무것도 재지 않았다");
+                    Assert.AreEqual(0, bare.Count, "아이콘 없는 버튼: " + string.Join(", ", bare));
+                }
+            });
+        }
+
+        /// <summary>담은 컨트롤까지 내려가며 센다. 버튼은 LayoutControl 안에 있다.</summary>
+        private static int Walk(Control parent, List<string> bare)
+        {
+            int seen = 0;
+            foreach (Control child in parent.Controls)
+            {
+                var button = child as SimpleButton;
+                if (button != null)
+                {
+                    seen++;
+                    if (button.ImageOptions.SvgImage == null)
+                    {
+                        bare.Add(button.Name + " (" + button.Text + ")");
+                    }
+                }
+
+                seen += Walk(child, bare);
+            }
+
+            return seen;
         }
 
         private static MainForm NewShell()

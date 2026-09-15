@@ -11,6 +11,13 @@ namespace HealthCheckupReservationReception.Views
         /// </summary>
         partial void ConfigureUI()
         {
+            // 버튼 아이콘 (2026-09-15 사용자 요청). 뜻이 같으면 Ribbon 과 같은 그림을 쓴다.
+            clsGlyph.Apply(btnSearch, "Search");
+            clsGlyph.Apply(btnAdd, "Add");
+            clsGlyph.Apply(btnEdit, "Edit");
+            clsGlyph.Apply(btnDelete, "Delete");
+            clsGlyph.Apply(btnClose, "Close");
+
             clsGridColumns.Center(colHolidayDate, colHolidayType, colIsActive);
             clsGridColumns.Left(colHolidayName, colMemo);
             clsGridColumns.Date(colHolidayDate);
