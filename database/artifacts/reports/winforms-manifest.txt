@@ -26,12 +26,13 @@ b9c1f5c5bf130920c0457f576c902f7e43e23664790f40729e6094f51d08d65e *../winforms/.c
 7e346e6424c8b55410783d7fca243321f9da7ea21ebae71161c2c18ad3491646 *../winforms/CLAUDE.md
 94732445f4c922609e3e15c196b1abf3519f03972705c04d2bde07582e5a3f9b *../winforms/HealthCheckupReservationReception.sln
 94667ecae73cdb8ab0b3ceff3a56c514bce03f16c5091d23ec2115fb465cceac *../winforms/artifacts/db-frozen-manifest.txt
+3c975ce9dea46c3fba202f1cd1bc4c151c80993343cef0ed213e2a467b072d9b *../winforms/docs/architecture.html
 adf67b6e0a13850c1b178a1fea810afae8529255da10699902bafdb14985fde8 *../winforms/scripts/cleanup-scenario-works.sh
 b1cb16ad24330cda0ead1899e6c632310fd300a95ca30bc20192a0eeb59900fb *../winforms/scripts/measure-cutoff.sh
 29f1adc3b39d8572c52342f17a85e03011024af50f38a51e10ca86e41a13f9e9 *../winforms/scripts/seed-probe-works.sh
 abf5f23dd8122f535e9873b965260b5fbbc9c20333f7452516e1763ce04517b9 *../winforms/scripts/seed-tgt-cases.sh
 8952512c39f1077dfce04262def2ee40a463f296709c49a8fa6f834fadd3af58 *../winforms/scripts/seed-today.sh
-41bac9efd91b08fab1f9522998b575c24818d29bb5aaa91569b9e416b37e3523 *../winforms/scripts/test.sh
+b64458d7bb5c94aadadd82990a6d25346437e11b9c3d5f274fd26355e3ef4fc4 *../winforms/scripts/test.sh
 8d8dc9531106987297d44c8f822a821f57f66e4f96744d72e1f8f7392eb3dc72 *../winforms/scripts/verify-check-values.sh
 f8846954aab7c520622acdb25d40441f4febeea805553d5211f3271ad9b242fd *../winforms/scripts/verify-contract-names.sh
 2a41f96e6a49ca74b53af27a624dac47b21467e0189457ac43bd62ddc6ed299c *../winforms/scripts/verify-db-frozen.sh
@@ -148,8 +149,9 @@ d7834145066beccf792587c1bcf9c971269899378d7fc01adf63f747e0a08f0a *../winforms/sr
 b1f4e047e60c8a1a03eb3d73cad5c79e250b8667d02baa21c710204f3c4bbc5e *../winforms/src/HealthCheckupReservationReception.WinForms/Views/clsSearchConditions.cs
 57259c2d87abfb371ebb75f3cfabc21d02e33b77d848284568c1601e6610f154 *../winforms/tests/HealthCheckupReservationReception.Tests/Common/clsPatientTextTests.cs
 32aefea689fdfa22c1958e5b386d28c8afd4dbe81900a5d7b065b75876698274 *../winforms/tests/HealthCheckupReservationReception.Tests/Common/clsWorkTextTests.cs
-f386d7a242f897f31dbeeb321595fad748419a5b0af2cf7db3fc40ad4d9c20e2 *../winforms/tests/HealthCheckupReservationReception.Tests/HealthCheckupReservationReception.Tests.csproj
+2008e7895edc7ec6ea2d46d77ea80b8a43a9775da8d083c6b56b02e5291c07fe *../winforms/tests/HealthCheckupReservationReception.Tests/HealthCheckupReservationReception.Tests.csproj
 f83a0f6e67a2ece8b0328213587dc19e35836340f7111678514a386c0dbb93d0 *../winforms/tests/HealthCheckupReservationReception.Tests/Integration/DbFixture.cs
+7421d111a2c818aae3800fbcc36291bd87814a10ccd51929e642e2a6ae8b2a65 *../winforms/tests/HealthCheckupReservationReception.Tests/Integration/ExamRuleDbTests.cs
 bbd7835191fba1f138631d23199185e20d53c99cf252de2b170168b0eb2c181c *../winforms/tests/HealthCheckupReservationReception.Tests/Integration/PatientRepositoryDbTests.cs
 13927a2c940cb0e3f6b3b17f8c20721040b258c4d99d849e649887ba6d58fd2b *../winforms/tests/HealthCheckupReservationReception.Tests/Integration/ScenarioDbTests.cs
 3d467a7c747e1f866c920cbacb7488833176606671d43f007261671bab0465bb *../winforms/tests/HealthCheckupReservationReception.Tests/Integration/SelectRepositoryDbTests.cs
@@ -187,8 +189,10 @@ cdcba0d936d371d5a3b975f470c82db895105d20b03064b625f0e0176ed74c6c *../winforms/te
 5ee2604947f504a807d586630648a60ebc76e9c00bb73478b4a01527eb08b9c8 *../winforms/tests/HealthCheckupReservationReception.Tests/Visual/ShellCaptureTests.cs
 28e3f7d54aa69f7a59721fe5dbec327fad5cf5e036e6be1ee40dff5c11c35188 *../winforms/tests/HealthCheckupReservationReception.Tests/Visual/clsCapture.cs
 460fb6f9c1b939e9f6b6f8b4fca545922965612b3a5d1d523f47231bac9f639e *../winforms/tools/build-app-icon.js
+79cc8438552161a34cec78467756e7e3e631553090d3cd3694efa33ac74ad7d0 *../winforms/tools/build-db-test-inventory.js
 bba975bc279d2be007341ffef18019f3adb2cb35783f9baa2af819a4cf79212e *../winforms/tools/build-scenario-evidence.js
 5918f61ebb79700becac2476b4d5a8d86d1ea464be48a7261064c72f4317b15f *../winforms/tools/build-scenario-inventory.js
 eb4605dfec175bcfdf96c0fcc2db91fea9abb6577efe617f09a556c0f44eb3eb *../winforms/tools/build-test-inventory.js
 376b14aedb1ad13908827fd3a054012bc0fb02b86c980b502ac025df34fb8f68 *../winforms/tools/capture-shell.ps1
+76eebd970858e2e7993a6e7d44119703268a4fd77ff25eff17558055403d3144 *../winforms/tools/verify-policy-coverage.js
 a5386d089ebb2990ad9b2dffbf90ed05a50458226ce3b48c0e24856eca98a781 *../winforms/tools/verify-screen-design.js

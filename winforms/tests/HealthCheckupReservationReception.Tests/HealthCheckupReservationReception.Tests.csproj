@@ -60,6 +60,7 @@
     <Compile Include="Common\clsPatientTextTests.cs" />
     <Compile Include="Common\clsWorkTextTests.cs" />
     <Compile Include="Integration\DbFixture.cs" />
+    <Compile Include="Integration\ExamRuleDbTests.cs" />
     <Compile Include="Integration\PatientRepositoryDbTests.cs" />
     <Compile Include="Integration\ScenarioDbTests.cs" />
     <Compile Include="Integration\SelectRepositoryDbTests.cs" />

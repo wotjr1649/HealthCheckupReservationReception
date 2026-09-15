@@ -43,7 +43,16 @@ run() {                       # run <파일> <로그번호>
   echo "$log" >> artifacts/logs/_manifest.txt
   echo "--- $f"
   sqlcmd -S "$SRV" -E -d "$DB" -b -I -u -i "$f" -o "$log" || rc=$?
-  iconv -f UTF-16 -t UTF-8 "$log" | grep -E '^(PASS|FAIL|SKIP|INFO|Msg )' || true
+  # [X] **`NOT RUN` 이 이 grep 에 없었다 (2026-09-15 실측).** 시험 파일이 PRINT 한
+  #     `NOT RUN RBK-008` 이 집계 로그에 닿지 못해, 그 파일이 전건 PASS 로 보였다 —
+  #     이 스크립트가 아래에서 「실행하지 않은 것을 통과로 읽히게 하지 않는다」고
+  #     적어 둔 바로 그 규칙을 스스로 어기고 있었다. 보이게 하고, 세어서 요약에 넣는다.
+  local out
+  out=$(iconv -f UTF-16 -t UTF-8 "$log")
+  printf '%s\n' "$out" | grep -E '^(PASS|FAIL|SKIP|NOT RUN|INFO|Msg )' || true
+  local nr
+  nr=$(printf '%s\n' "$out" | grep -c '^NOT RUN') || nr=0
+  NOTRUN=$((NOTRUN + nr))
   [ "$rc" -ne 0 ] && { echo "!! $f exit=$rc"; FAILED=1; }
   return 0
 }
@@ -139,11 +148,27 @@ fi
 # [X] 봉인 건수를 이 줄에 적어 두었더니 06 이 입주해 7건이 된 뒤에도 "6/6" 을 찍었다.
 #     매 회차 거짓을 출력하면서 아무도 잡지 않았다 (ROOT AGENTS.md §6). 세는 곳을 하나로 둔다 —
 #     게이트가 낸 값을 그대로 옮긴다.
+# [X] **파일 게이트가 간헐적으로 멈춘다 — 2026-09-15 에 두 번 재현했다.**
+#     둘 다 clean-rebuild 직후였고, 각 게이트를 따로 돌리면 0~2초에 끝난다(실측).
+#     원인을 못 짚었으므로 winforms/scripts/test.sh 가 같은 증상에 세운 것과 같은
+#     경계를 둔다 — 경계가 없으면 멈춘 게이트 하나가 회귀 전체를 영원히 잡고,
+#     그 사이 아무 판정도 나오지 않는다. 멈춤은 조용한 무판정이 아니라 FAIL 이어야 한다.
+GATE_TIMEOUT=${GATE_TIMEOUT:-180}
+gate() {                      # gate <라벨> <명령...>
+  local label="$1"; shift
+  timeout -k 10 "$GATE_TIMEOUT" "$@"
+  local rc=$?
+  if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
+    echo "FAIL $label 시간 초과 — ${GATE_TIMEOUT}초 안에 끝나지 않았다"
+    return 1
+  fi
+  return $rc
+}
 G0=0
-BL=$(./scripts/verify-baseline.sh 2>&1 | tail -1) || { echo "$BL"; ./scripts/verify-baseline.sh; G0=1; }
-./scripts/verify-winforms-unchanged.sh > /dev/null || { ./scripts/verify-winforms-unchanged.sh; G0=1; }
-./scripts/verify-winforms-unchanged.sh selftest > /dev/null || { ./scripts/verify-winforms-unchanged.sh selftest; G0=1; }
-./scripts/verify-schema-doc.sh         > /dev/null || { ./scripts/verify-schema-doc.sh;         G0=1; }
+BL=$(gate G00 ./scripts/verify-baseline.sh 2>&1 | tail -1) || { echo "$BL"; ./scripts/verify-baseline.sh; G0=1; }
+gate G01 ./scripts/verify-winforms-unchanged.sh > /dev/null || { ./scripts/verify-winforms-unchanged.sh; G0=1; }
+gate G01-SELFTEST ./scripts/verify-winforms-unchanged.sh selftest > /dev/null || { ./scripts/verify-winforms-unchanged.sh selftest; G0=1; }
+gate G05 ./scripts/verify-schema-doc.sh > /dev/null || { ./scripts/verify-schema-doc.sh; G0=1; }
 if [ "$G0" -eq 0 ]; then
   echo "PASS G00 기준선 $(echo "$BL" | tr -d '= ') · G01 WinForms 변경 0건(+변조 감지 자체시험) · G05 스키마↔04 양방향 대조"
 else
@@ -151,17 +176,17 @@ else
 fi
 
 # 문서 정합성 게이트 (스펙 §45.3)
-node tools/verify-docs.js || FAILED=1
+gate V-DOCS node tools/verify-docs.js || FAILED=1
 
 # 공휴일 Seed 만료·사본 일치 (00 HOL-06 · 06 §14.7). DB 없이 돈다.
 # [!] 이 게이트는 **날짜가 지나면 저절로 red 가 된다.** 그것이 목적이다 —
 #     공휴일 Seed 는 만료해도 아무것도 실패하지 않고 조용히 오판정을 낸다.
-./scripts/verify-holiday-seed.sh || FAILED=1
+gate HOL-SEED ./scripts/verify-holiday-seed.sh || FAILED=1
 
 # R4-2 기대값 ↔ 기준선 (06 §46.3). verify-contract.js 는 기대값과 실행결과를 맞출 뿐이라
 # 둘이 **같이** 틀리면 통과한다 — 06 §44.8 의 결함이 그 축으로 살아남았다.
 # 기대값의 Result Set 컬럼을 기준선 05 의 표와 직접 대조하는 것은 이 게이트뿐이다.
-node tools/verify-rs-contract.js || FAILED=1
+gate RS-CONTRACT node tools/verify-rs-contract.js || FAILED=1
 
 # RBD-001(잘못된 서버명 50020)은 인스턴스가 1개뿐이라 음성 시험이 **구조적으로** 불가능하다.
 # clean-rebuild-verify.sh 가 NOT RUN 으로 출력하는데 여기서 세지 않으면 요약이 "NOT RUN 0" 을

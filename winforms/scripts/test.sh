@@ -96,6 +96,13 @@ run node tools/verify-screen-design.js source
 run ./scripts/verify-ui-db-matrix.sh selftest
 run ./scripts/verify-ui-db-matrix.sh
 
+# 00 의 정책 규칙 55개가 전부 대조표에 있는가. DB 시험은 규칙 이름이 아니라 결과코드로
+# 적혀 있어서, 「AEX-03 은 누가 재나」를 찾으려면 사람이 동작으로 뒤져야 했다 (2026-09-15).
+# [X] 이 게이트는 「그 시험이 그 규칙을 잰다」를 판정하지 않는다 — 그러려면 시험마다 규칙
+#     ID 를 적어야 하고 값이 두 곳이 된다. 막는 것은 **표가 조용히 낡는 것** 하나다.
+run node tools/verify-policy-coverage.js selftest
+run node tools/verify-policy-coverage.js
+
 # 단위시험 목록 엑셀(`docs/phase5/output/`)의 「이유」 칸은 [TestMethod] 위의 주석이 그대로
 # 간다 — 값이 두 곳에 있지 않다 (ROOT AGENTS.md §6). 그래서 이유 없는 시험이 들어오면
 # 산출물에 빈칸이 생기고, 빈칸은 다음 사람에게 「이 시험은 이유가 없다」로 읽힌다.
