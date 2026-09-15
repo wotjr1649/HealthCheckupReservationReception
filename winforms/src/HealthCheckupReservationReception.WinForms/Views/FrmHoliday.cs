@@ -67,7 +67,7 @@ namespace HealthCheckupReservationReception.Views
 
         private void btnAdd_Click(object sender, EventArgs e) { Run(Register); }
 
-        private void btnEdit_Click(object sender, EventArgs e) { Run(Update); }
+        private void btnEdit_Click(object sender, EventArgs e) { Run(Modify); }
 
         private void btnDelete_Click(object sender, EventArgs e) { Run(Delete); }
 
@@ -79,7 +79,11 @@ namespace HealthCheckupReservationReception.Views
 
         private void Register() { _presenter.Register(); }
 
-        private void Update() { _presenter.Update(); }
+        // [X] **`Update` 라 부르지 않는다.** `Control.Update()` 와 이름이 같아 가리게 되고
+        //     (CS0108), 그러면 위의 `Run(Update)` 는 **이 메서드를 지우거나 이름을 바꾸는
+        //     순간 조용히 `Control.Update()`(다시 그리기)에 붙는다** — 컴파일도 되고 수정
+        //     버튼은 아무것도 저장하지 않는다. Register·Delete 는 Control 에 같은 이름이 없다.
+        private void Modify() { _presenter.Update(); }
 
         private void Delete() { _presenter.Delete(); }
 

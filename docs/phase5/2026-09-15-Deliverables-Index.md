@@ -44,6 +44,7 @@
 | 통합시험 설계·실측·리뷰 잔여 | `docs/phase5/2026-09-15-Integration-Test-Design.md` |
 | 단위시험 ↔ 기준선 시험계약 대조 | `docs/phase5/2026-09-15-Unit-Test-Inventory.md` |
 | 마감시각 실측 | `docs/phase5/2026-09-14-Cutoff-Field-Measurement.md` |
+| 잔여 대장 — 무엇이 열려 있고 무엇이 열 조건인가 | `docs/phase5/2026-09-15-Leftover-Ledger.md` |
 
 `[I]` 시나리오 문서의 **결과 칸은 손으로 적지 않는다** — 증거 칸이 시험 이름이고, 그 시험이
 실물 DB 에 붙어 돈다.

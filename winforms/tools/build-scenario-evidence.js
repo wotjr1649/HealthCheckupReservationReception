@@ -41,9 +41,22 @@ function fail(line) {
   failed = 1;
 }
 
-/* 문서가 백틱으로 감싼 `*.png` 가 곧 증빙 목록이다. 표의 칸 위치에 기대지 않는다. */
+/*
+ * §2.5 표가 백틱으로 감싼 `*.png` 가 곧 증빙 목록이다. 표의 칸 위치에 기대지 않는다.
+ *
+ * `[X]` **문서 전체를 긁지 않는다.** 다른 절에 그림 이름을 한 번 적으면 그것까지 증빙
+ *       목록에 끌려 들어와, 있지도 않은 파일을 찾다가 red 가 된다 (2026-09-15 자기 리뷰).
+ */
 function wanted() {
-  const doc = fs.readFileSync(DOC, 'utf8');
+  const whole = fs.readFileSync(DOC, 'utf8');
+  const at = whole.indexOf('\n## 2.5 ');
+  if (at === -1) {
+    return [];
+  }
+
+  const rest = whole.slice(at + 1);
+  const next = rest.indexOf('\n## ');
+  const doc = next === -1 ? rest : rest.slice(0, next);
   const names = [];
   const re = /`([^`\s]+\.png)`/g;
   let m;
@@ -61,7 +74,7 @@ function main() {
 
   const names = wanted();
   if (!names.length) {
-    fail('문서에서 증빙 그림 이름을 하나도 못 읽었다 — 표 형식이 바뀌었다: ' + DOC);
+    fail('§2.5 표에서 증빙 그림 이름을 하나도 못 읽었다 — 절 제목이나 표 형식이 바뀌었다: ' + DOC);
     return;
   }
 
