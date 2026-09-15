@@ -26,7 +26,7 @@ namespace HealthCheckupReservationReception.Repositories
     }
 
     /// <summary>
-    /// WF-PAT-01 이 쓰는 두 조회 SP (05 §7.2 · §7.3).
+    /// WF-PAT-01 이 쓰는 세 SP — 조회 하나와 쓰기 둘 (05 §7.2 · §10.1 · §10.2).
     /// Parameter 는 이름·타입·크기를 계약 그대로 명시한다. AddWithValue 를 쓰지 않는다 (킷 §3).
     /// </summary>
     public sealed class PatientRepository : IPatientRepository

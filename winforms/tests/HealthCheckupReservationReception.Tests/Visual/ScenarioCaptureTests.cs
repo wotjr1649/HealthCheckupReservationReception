@@ -412,7 +412,9 @@ namespace HealthCheckupReservationReception.Tests.Visual
             PatientSaveReadDto saved = Ok(() => Patients().Register(new PatientSaveRequest
             {
                 AutoChartNo = true,
-                Name = "증빙" + DateTime.Now.ToString("HHmmss"),
+                // [X] 밀리초까지 쓴다. HHmmss 로는 같은 초에 돈 두 시험이 **같은 이름**을 갖고,
+                //     증빙 두 장을 나란히 보는 사람이 같은 사람으로 읽는다 (2026-09-15 자기 리뷰).
+                Name = "증빙" + DateTime.Now.ToString("HHmmssfff"),
                 SocialNumber = NewSocialNumber(),
                 MobilePhone = "010-4200-0000",
                 Memo = "시나리오 증빙이 만든 수검자",
