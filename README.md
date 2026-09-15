@@ -30,6 +30,9 @@ C# WinForms · .NET Framework 4.6.1 · DevExpress 20.2 · SQL Server (Stored Pro
 
 원본은 `docs/baseline/`, 사내 공개본(xlsx·pptx)은 `docs/baseline/output/` 에 있다.
 
+**무엇이 어디에 있고 무엇이 그것을 지키는지**는 `docs/phase5/2026-09-15-Deliverables-Index.md`
+한 장에 있다 — 산출물·시험 문서·소스·게이트를 가리키기만 하고 값을 갖지 않는다.
+
 `[X]` · `[!]` 로 시작하는 주석은 **「무엇이 조용히 틀리는가」**를 적은 것이다.
 대부분 실제로 한 번 겪고 나서 쓴 것이다.
 
