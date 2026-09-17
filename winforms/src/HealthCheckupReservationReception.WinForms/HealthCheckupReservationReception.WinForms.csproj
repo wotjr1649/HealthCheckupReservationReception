@@ -215,6 +215,15 @@
        심지 않고, 첫 디자이너 세션이 항목을 채운다. -->
   <ItemGroup>
     <EmbeddedResource Include="Properties\licenses.licx" />
+    <EmbeddedResource Include="Views\FrmReservation.resx">
+      <DependentUpon>FrmReservation.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\UcPatientManagement.resx">
+      <DependentUpon>UcPatientManagement.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\UcWorkbench.resx">
+      <DependentUpon>UcWorkbench.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Resources\App.ico" />
     <EmbeddedResource Include="Resources\Icons\Add.svg" />
     <EmbeddedResource Include="Resources\Icons\Close.svg" />
