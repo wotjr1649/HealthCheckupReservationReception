@@ -24,10 +24,17 @@ winforms/tests/    단위·통합 테스트
 Visual Studio 2019와 DevExpress 20.2가 설치된 환경에서 실행합니다.
 
 ```text
+MSBuild winforms/HealthCheckupReservationReception.sln -t:restore
 MSBuild winforms/HealthCheckupReservationReception.sln -p:Configuration=Debug
-vstest.console winforms/tests/HealthCheckupReservationReception.Tests/bin/Debug/HealthCheckupReservationReception.Tests.dll
+vstest.console winforms/tests/HealthCheckupReservationReception.Tests/bin/Debug/HealthCheckupReservationReception.Tests.dll /TestCaseFilter:"TestCategory!=Db"
 ```
 
 데이터베이스 연결은 Windows 통합 인증을 사용합니다. 실제 실행 전
 `winforms/src/HealthCheckupReservationReception.WinForms/App.config`의 SQL Server 인스턴스를
 로컬 환경에 맞게 설정하십시오.
+
+`Db` 카테고리는 데이터를 변경하므로 폐기 가능한 로컬 시험 DB에서만 실행합니다.
+
+```text
+vstest.console winforms/tests/HealthCheckupReservationReception.Tests/bin/Debug/HealthCheckupReservationReception.Tests.dll /TestCaseFilter:"TestCategory=Db"
+```
