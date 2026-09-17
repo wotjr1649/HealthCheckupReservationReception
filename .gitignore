@@ -13,6 +13,11 @@ TestResults/
 **/CLAUDE.md
 **/artifacts/logs/
 **/artifacts/reports/
+database/artifacts/
+database/scripts/
+database/tools/
+winforms/scripts/
+winforms/tools/
 
 # Private specifications and generated deliverables
 docs/
