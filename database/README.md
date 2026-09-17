@@ -32,4 +32,3 @@ SQL Server에서 사용하는 스키마, Seed, 함수, Stored Procedure와 검�
 
 `tests/`에는 스키마, 업무 규칙, Stored Procedure, 롤백 및 동시성 검증 SQL이 있습니다.
 파일명 순서와 시나리오별 선행 조건을 유지해야 하며, 시험 중 데이터가 변경됩니다.
-
